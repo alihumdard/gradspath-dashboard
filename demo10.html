@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>demo10</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="demo10.css" />
+</head>
+
+<body>
+  <div class="page">
+    <div class="layout">
+      <section class="form-panel">
+        <a href="demo1.html"
+          style="text-decoration: none; color: var(--purple); font-weight: 700; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+          <span>←</span> Back to Dashboard
+        </a>
+        <h1>Mentor Settings</h1>
+        <p class="subtitle">Add the information students will see on your profile.</p>
+
+        <form id="mentorForm" novalidate>
+          <div class="field">
+            <label for="mentorType">Mentor Type</label>
+            <div class="select-wrap">
+              <select id="mentorType">
+                <option value="grad">Grad Mentor</option>
+                <option value="professional">Professional</option>
+              </select>
+            </div>
+            <p class="helper-text">Grad mentors must use an .edu email. Professionals can use any email.</p>
+          </div>
+
+          <div class="field">
+            <label>Profile Image</label>
+            <input type="file" id="profileImageInput" accept="image/*" hidden />
+
+            <div class="upload-dropzone" id="uploadDropzone" tabindex="0">
+              <div class="upload-icon">↑</div>
+              <p class="upload-main">Drop image here to upload, or click here to browse</p>
+              <p class="upload-sub">PNG, JPG, or JPEG</p>
+            </div>
+
+            <div class="image-actions-row">
+              <button type="button" class="remove-image-btn" id="removeImageBtn">Remove Current Image</button>
+            </div>
+
+            <p class="error-text" id="imageError"></p>
+          </div>
+
+          <div class="crop-section" id="cropSection">
+            <div class="crop-toolbar">
+              <p class="crop-label">Crop Image</p>
+              <label class="zoom-wrap">
+                <span>Zoom</span>
+                <input type="range" id="zoomSlider" min="1" max="3" step="0.01" value="1" />
+              </label>
+            </div>
+
+            <div class="crop-stage">
+              <div class="crop-box" id="cropBox">
+                <img id="cropImage" alt="Crop image" />
+                <div class="crop-mask"></div>
+              </div>
+            </div>
+
+            <div class="crop-actions">
+              <button type="button" class="secondary-btn" id="resetCropBtn">Reset</button>
+              <button type="button" class="primary-btn" id="applyCropBtn">Apply</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="fullName">Full Name</label>
+            <input type="text" id="fullName" placeholder="Enter your full name" />
+            <p class="error-text" id="nameError"></p>
+          </div>
+
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="Enter your email" />
+            <p class="error-text" id="emailError"></p>
+          </div>
+
+          <div class="field">
+            <label for="officeHours">Office Hours</label>
+            <input type="text" id="officeHours" placeholder="Every Tuesday at 5pm EST" />
+            <p class="error-text" id="officeHoursError"></p>
+          </div>
+
+          <div class="field">
+            <label for="calendlyLink">Calendly Link</label>
+            <input type="url" id="calendlyLink" placeholder="Enter your Calendly link" />
+            <p class="error-text" id="calendlyError"></p>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="program">Program</label>
+              <input type="text" id="program" list="programSuggestions" placeholder="" autocomplete="off" />
+              <datalist id="programSuggestions">
+                <option value="MBA"></option>
+                <option value="Law"></option>
+                <option value="CMHC"></option>
+                <option value="MSW"></option>
+                <option value="MFT"></option>
+                <option value="Clinical PsyD"></option>
+              </datalist>
+              <p class="error-text" id="programError"></p>
+            </div>
+
+            <div class="field">
+              <label for="school">Grad School</label>
+              <input type="text" id="school" list="schoolSuggestions" placeholder="" autocomplete="off" />
+              <datalist id="schoolSuggestions">
+                <option value="Harvard"></option>
+                <option value="Wharton"></option>
+                <option value="Yale Law"></option>
+                <option value="Stanford"></option>
+                <option value="Columbia"></option>
+                <option value="NYU"></option>
+                <option value="Boston College"></option>
+                <option value="Northwestern"></option>
+                <option value="Vanderbilt"></option>
+              </datalist>
+              <p class="error-text" id="schoolError"></p>
+            </div>
+          </div>
+
+          <p class="helper-text helper-spacing">
+            Use the short recommended version like Harvard, Wharton, or Yale Law.
+          </p>
+
+          <div class="field">
+            <label for="description">Description</label>
+            <textarea id="description" rows="6"
+              placeholder="Write a short description about yourself and how you help students."></textarea>
+            <p class="error-text" id="descriptionError"></p>
+          </div>
+
+          <div class="field">
+            <label>Join the Slack</label>
+
+            <div class="slack-box">
+              <p class="slack-text">
+                Join the Slack and follow the directions before enabling payouts.
+              </p>
+
+              <div class="slack-actions">
+                <a href="https://grads-paths.slack.com/archives/C0ALAKW1FJA" target="_blank" rel="noopener noreferrer"
+                  class="slack-btn" id="joinSlackBtn">
+                  Join the Slack
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Enable Payouts</label>
+
+            <div class="payout-box">
+              <p class="payout-text">
+                When Enable Payouts is clicked, your backend starts the Stripe Connect onboarding through Stripe.
+              </p>
+              <p class="payout-text">
+                Stripe opens its secure onboarding page where the mentor enters:
+              </p>
+              <ul class="payout-list">
+                <li>SSN</li>
+                <li>Address</li>
+                <li>Date of Birth</li>
+                <li>Bank Account</li>
+              </ul>
+
+              <div class="payout-actions">
+                <button type="button" class="primary-btn" id="enablePayoutsBtn">Enable Payouts</button>
+                <span class="payout-status" id="payoutStatus">Not enabled</span>
+              </div>
+            </div>
+
+            <p class="error-text" id="payoutError"></p>
+          </div>
+
+          <button type="submit" class="save-btn">Save Changes</button>
+        </form>
+      </section>
+
+      <aside class="preview-panel">
+        <h2>What Users Will See</h2>
+
+        <div class="mentor-card">
+          <div class="card-top">
+            <div class="avatar" id="avatar">
+              <img id="avatarImage" alt="Mentor" />
+              <span id="avatarInitials"></span>
+            </div>
+
+            <div class="card-main">
+              <h3 id="cardName"></h3>
+              <p class="card-subtitle" id="cardSubtitle"></p>
+
+              <p class="office-hours-inline" id="officeHoursDisplay">
+                <span>Office Hours:</span>
+                <span id="officeHoursText"></span>
+              </p>
+            </div>
+
+            <div class="rating-badge">
+              <span class="star">★</span>
+              <span id="ratingValue">#</span>
+            </div>
+          </div>
+
+          <div class="card-description-wrap">
+            <p class="card-description collapsed" id="cardDescription"></p>
+
+            <button type="button" class="read-more-btn" id="readMoreBtn">
+              Read More
+              <span class="read-more-arrow">⌄</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script src="demo10.js"></script>
+</body>
+
+</html>

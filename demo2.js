@@ -1,0 +1,43 @@
+const programPills = document.querySelectorAll(".program-pill");
+const programNote = document.getElementById("programNote");
+const summaryProgram = document.getElementById("summaryProgram");
+const subscribeButton = document.getElementById("subscribeButton");
+const checkoutSection = document.getElementById("checkoutSection");
+const payButton = document.getElementById("payButton");
+const heroIcon = document.querySelector(".icon-top");
+
+function updateProgram(program) {
+  summaryProgram.textContent = program;
+  programNote.textContent =
+    "Your selected program helps us track demand and improve matching. Credits can be used across all office hours, not just one program.";
+}
+
+programPills.forEach((pill) => {
+  pill.addEventListener("click", () => {
+    programPills.forEach((item) => item.classList.remove("selected"));
+    pill.classList.add("selected");
+    updateProgram(pill.dataset.program);
+  });
+});
+
+subscribeButton.addEventListener("click", () => {
+  checkoutSection.classList.remove("hidden");
+  checkoutSection.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+});
+
+payButton.addEventListener("click", () => {
+  alert("Replace this with your real Stripe checkout flow.");
+});
+
+if (heroIcon) {
+  heroIcon.addEventListener("mouseenter", () => {
+    heroIcon.style.transform = "scale(1.06)";
+  });
+
+  heroIcon.addEventListener("mouseleave", () => {
+    heroIcon.style.transform = "scale(1)";
+  });
+}

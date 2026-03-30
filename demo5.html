@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>demo5</title>
+  <link rel="stylesheet" href="demo5.css" />
+</head>
+<body>
+  <main class="main-content simple-layout">
+    <section class="page-header clean-header">
+      <div class="page-header-top">
+        <div class="page-header-copy">
+          <h1>Feedback</h1>
+          <p>
+            Browse mentor feedback, filter by program and mentor type, and review
+            student experiences across Grads Paths.
+          </p>
+        </div>
+
+        <a href="demo1.html" class="dashboard-btn">Back to Dashboard</a>
+      </div>
+    </section>
+
+    <section class="overview-grid">
+      <div class="overview-card">
+        <div class="overview-label">Average Rating</div>
+        <div class="overview-value">4.9</div>
+        <div class="overview-sub">Across 214 completed sessions</div>
+      </div>
+
+      <div class="overview-card">
+        <div class="overview-label">Recommend Rate</div>
+        <div class="overview-value">96%</div>
+        <div class="overview-sub">Students would book again</div>
+      </div>
+
+      <div class="overview-card">
+        <div class="overview-label">Most Mentioned</div>
+        <div class="overview-value small-value">Clear advice</div>
+        <div class="overview-sub">Also: honest, strategic, supportive</div>
+      </div>
+    </section>
+
+    <section class="feedback-controls">
+      <div class="control-left">
+        <input
+          type="text"
+          id="mentorSearch"
+          class="mentor-search"
+          placeholder="Search mentor name, school, program..."
+        />
+      </div>
+
+      <div class="control-right">
+        <select id="programFilter">
+          <option value="all">All Programs</option>
+          <option value="mba">MBA</option>
+          <option value="law">Law</option>
+          <option value="therapy">Therapy</option>
+        </select>
+
+        <select id="professionFilter">
+          <option value="all">All Mentor Types</option>
+          <option value="graduate">Graduate Mentors</option>
+          <option value="professional">Professional Mentors</option>
+        </select>
+
+        <select id="sortMentors">
+          <option value="rating">Highest Rating</option>
+          <option value="reviews">Most Reviews</option>
+          <option value="sessions">Most Sessions</option>
+          <option value="name">Name A-Z</option>
+        </select>
+      </div>
+    </section>
+
+    <section id="categorySections"></section>
+  </main>
+
+  <div class="modal-overlay" id="mentorModal">
+    <div class="mentor-modal full-form-modal">
+      <button class="modal-close" id="closeModal">×</button>
+      <div class="direct-form-view" id="directFormView"></div>
+    </div>
+  </div>
+
+  <script src="demo5.js"></script>
+</body>
+</html>

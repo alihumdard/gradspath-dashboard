@@ -1,0 +1,147 @@
+const body = document.body;
+
+const themeToggle = document.getElementById("themeToggle");
+const openStoreBtn = document.getElementById("openStoreBtn");
+const closeStoreBtn = document.getElementById("closeStoreBtn");
+const storeModal = document.getElementById("storeModal");
+
+const storeOptions = document.querySelectorAll(".store-option");
+const officeHoursPanel = document.getElementById("officeHoursPanel");
+const oneOnThreePanel = document.getElementById("oneOnThreePanel");
+const oneOnFivePanel = document.getElementById("oneOnFivePanel");
+
+const pathwayButtons = document.querySelectorAll(".pathway-btn");
+const officeHoursProgramLabel = document.getElementById("officeHoursProgramLabel");
+const officeHoursPriceLabel = document.getElementById("officeHoursPriceLabel");
+const creditAssignmentNote = document.getElementById("creditAssignmentNote");
+
+const readMoreButtons = document.querySelectorAll(".read-more-btn");
+const servicesToggles = document.querySelectorAll(".services-toggle");
+
+const officeHoursPricing = {
+  MBA: "$200/month",
+  Law: "$200/month",
+  Therapy: "$200/month"
+};
+
+if (themeToggle) {
+  themeToggle.addEventListener("click", () => {
+    const currentTheme = body.getAttribute("data-theme");
+    body.setAttribute("data-theme", currentTheme === "light" ? "dark" : "light");
+  });
+}
+
+function openModal() {
+  if (!storeModal) return;
+  storeModal.classList.add("show");
+  body.classList.add("modal-open");
+}
+
+function closeModal() {
+  if (!storeModal) return;
+  storeModal.classList.remove("show");
+  body.classList.remove("modal-open");
+}
+
+if (openStoreBtn) {
+  openStoreBtn.addEventListener("click", openModal);
+}
+
+if (closeStoreBtn) {
+  closeStoreBtn.addEventListener("click", closeModal);
+}
+
+if (storeModal) {
+  storeModal.addEventListener("click", (e) => {
+    if (e.target === storeModal) closeModal();
+  });
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && storeModal && storeModal.classList.contains("show")) {
+    closeModal();
+  }
+});
+
+function hideAllStorePanels() {
+  if (officeHoursPanel) officeHoursPanel.classList.add("hidden-panel");
+  if (oneOnThreePanel) oneOnThreePanel.classList.add("hidden-panel");
+  if (oneOnFivePanel) oneOnFivePanel.classList.add("hidden-panel");
+}
+
+storeOptions.forEach((option) => {
+  option.addEventListener("click", () => {
+    storeOptions.forEach((btn) => btn.classList.remove("active-store-option"));
+    option.classList.add("active-store-option");
+
+    hideAllStorePanels();
+
+    const service = option.dataset.service;
+    if (service === "office-hours" && officeHoursPanel) {
+      officeHoursPanel.classList.remove("hidden-panel");
+    }
+    if (service === "one-on-three" && oneOnThreePanel) {
+      oneOnThreePanel.classList.remove("hidden-panel");
+    }
+    if (service === "one-on-five" && oneOnFivePanel) {
+      oneOnFivePanel.classList.remove("hidden-panel");
+    }
+  });
+});
+
+pathwayButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    pathwayButtons.forEach((btn) => btn.classList.remove("active-pathway"));
+    button.classList.add("active-pathway");
+
+    const pathway = button.dataset.pathway;
+    if (officeHoursProgramLabel) {
+      officeHoursProgramLabel.textContent = pathway;
+    }
+    if (officeHoursPriceLabel) {
+      officeHoursPriceLabel.textContent = officeHoursPricing[pathway] || "$200/month";
+    }
+    if (creditAssignmentNote) {
+      creditAssignmentNote.textContent = `Credits will be applied to ${pathway} office hours.`;
+    }
+  });
+});
+
+document.querySelectorAll(".payment-type-row").forEach((row) => {
+  const buttons = row.querySelectorAll(".pay-type-btn");
+
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      buttons.forEach((btn) => btn.classList.remove("active-pay-type"));
+      button.classList.add("active-pay-type");
+    });
+  });
+});
+
+readMoreButtons.forEach((button) => {
+  const block = button.closest(".read-more-block");
+  const label = button.querySelector(".read-more-label");
+
+  button.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!block || !label) return;
+
+    block.classList.toggle("expanded");
+    label.textContent = block.classList.contains("expanded") ? "Read Less" : "Read More";
+  });
+});
+
+servicesToggles.forEach((toggle) => {
+  toggle.addEventListener("click", () => {
+    const accordion = toggle.closest(".services-accordion");
+    if (!accordion) return;
+    accordion.classList.toggle("open");
+  });
+});
+
+document.querySelectorAll(".book-now-btn").forEach((button) => {
+  button.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openModal();
+  });
+});
