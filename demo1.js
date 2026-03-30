@@ -174,3 +174,31 @@ document.querySelectorAll(".book-now-btn").forEach((button) => {
     openModal();
   });
 });
+
+// Sidebar navigation logic
+const navItems = document.querySelectorAll(".nav-item");
+
+// Function to set active state
+function setActiveNav() {
+  const currentPath = window.location.pathname.split("/").pop() || "demo1.html";
+
+  navItems.forEach((item) => {
+    const href = item.getAttribute("href");
+    if (href === currentPath) {
+      item.classList.add("active");
+    } else {
+      item.classList.remove("active");
+    }
+  });
+}
+
+// Initial activation on load
+setActiveNav();
+
+// Handle clicks for immediate feedback
+navItems.forEach((item) => {
+  item.addEventListener("click", () => {
+    navItems.forEach((nav) => nav.classList.remove("active"));
+    item.classList.add("active");
+  });
+});

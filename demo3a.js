@@ -1049,15 +1049,15 @@ function renderAllUniversitiesView() {
   lucide.createIcons();
 }
 
-backBtn.addEventListener("click", showUniversities);
+if (backBtn) {
+  backBtn.addEventListener("click", showUniversities);
+}
 
-dashboardBtn.addEventListener("click", () => {
-  window.location.href = "/dashboard";
-});
-
-seeAllMentorsBtn.addEventListener("click", () => {
-  window.location.href = "/mentors";
-});
+if (seeAllMentorsBtn) {
+  seeAllMentorsBtn.addEventListener("click", () => {
+    window.location.href = "demo4.html";
+  });
+}
 
 schoolSearchInput.addEventListener("input", (event) => {
   state.search = event.target.value;
@@ -1066,7 +1066,7 @@ schoolSearchInput.addEventListener("input", (event) => {
 
 renderAllUniversitiesView();
 
-// Mobile sidebar toggle
+// Mobile sidebar toggle & Navigation Logic
 const menuBtn = document.getElementById("mobileMenuToggle");
 const overlay = document.getElementById("sidebarOverlay");
 const shell = document.querySelector(".app-shell");
@@ -1077,3 +1077,28 @@ if (menuBtn && shell) {
 if (overlay && shell) {
   overlay.onclick = () => shell.classList.remove("sidebar-active");
 }
+
+const navItems = document.querySelectorAll(".nav-item");
+
+function setActiveNav() {
+  const currentPath = window.location.pathname.split("/").pop() || "demo1.html";
+
+  navItems.forEach((item) => {
+    const href = item.getAttribute("href");
+    if (href === currentPath) {
+      item.classList.add("active");
+    } else {
+      item.classList.remove("active");
+    }
+  });
+}
+
+setActiveNav();
+
+navItems.forEach((item) => {
+  item.addEventListener("click", () => {
+    navItems.forEach((nav) => nav.classList.remove("active"));
+    item.classList.add("active");
+    if (shell) shell.classList.remove("sidebar-active");
+  });
+});

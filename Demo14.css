@@ -1118,7 +1118,8 @@ h3 {
   line-height: 1.55;
   font-weight: 600;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1592,8 +1593,11 @@ h3 {
 }
 
 .nav-item.active {
+  background: #f7f3ff;
   border-color: #7c4dff;
+  box-shadow: 0 10px 22px rgba(124, 77, 255, 0.08);
   color: #7c4dff;
+  transform: translateY(-1px);
 }
 
 .main-content {

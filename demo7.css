@@ -167,14 +167,15 @@ body {
 }
 
 .nav-item.active {
-  background: transparent;
+  background: var(--hover-bg);
   border-color: var(--active-blue);
-  box-shadow: none;
-  color: var(--text);
+  box-shadow: var(--hover-shadow);
+  color: var(--active-blue);
+  transform: translateY(-1px);
 }
 
 .nav-item.active .nav-icon {
-  color: #808998;
+  color: var(--active-blue);
 }
 
 .nav-left {
@@ -837,8 +838,11 @@ textarea::placeholder {
 }
 
 .nav-item.active {
+  background: #f7f3ff;
   border-color: #7c4dff;
+  box-shadow: 0 10px 22px rgba(124, 77, 255, 0.08);
   color: #7c4dff;
+  transform: translateY(-1px);
 }
 
 .main-content {

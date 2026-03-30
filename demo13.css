@@ -16,6 +16,14 @@
   --green-bg: #eaf8f0;
   --green-text: #16b081;
   --shadow: 0 8px 20px rgba(48, 38, 95, 0.045);
+  --sidebar-bg: #ffffff;
+  --overlay: rgba(0, 0, 0, 0.3);
+  --ease: 0.3s ease;
+  --hover-bg: #f7f3ff;
+  --hover-line: #ddd2ff;
+  --hover-shadow: 0 10px 22px rgba(124, 77, 255, 0.08);
+  --active-blue: #7c4dff;
+  --panel-soft-2: #f9f7ff;
 }
 
 body {
@@ -170,14 +178,15 @@ body {
 }
 
 .nav-item.active {
-  background: transparent;
+  background: var(--hover-bg);
   border-color: var(--active-blue);
-  box-shadow: none;
-  color: var(--text);
+  box-shadow: var(--hover-shadow);
+  color: var(--active-blue);
+  transform: translateY(-1px);
 }
 
 .nav-item.active .nav-icon {
-  color: #808998;
+  color: var(--active-blue);
 }
 
 .nav-left {
@@ -1098,8 +1107,11 @@ body {
 }
 
 .nav-item.active {
+  background: #f7f3ff;
   border-color: #7c4dff;
+  box-shadow: 0 10px 22px rgba(124, 77, 255, 0.08);
   color: #7c4dff;
+  transform: translateY(-1px);
 }
 
 .main-content {
