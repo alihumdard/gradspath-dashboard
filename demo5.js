@@ -12,8 +12,16 @@ const mentorData = [
     reviews: 35,
     sessions: 49,
     officeHours: "Every Tuesday at 5 PM EST",
-    description: "Expert in grad school applications for STEM fields. I help with statement of purpose review.",
-    services: ["Free Consultation", "Office Hours", "Tutoring", "Program Insights", "Interview Prep", "Application Review"],
+    description:
+      "Expert in grad school applications for STEM fields. I help with statement of purpose review.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Tutoring",
+      "Program Insights",
+      "Interview Prep",
+      "Application Review",
+    ],
     reviewList: [
       {
         student: "Boston College Student",
@@ -22,7 +30,8 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "5",
         recommendation: "Yes",
-        quickFeedback: "Very clear, practical advice that helped me improve my essays in one session."
+        quickFeedback:
+          "Very clear, practical advice that helped me improve my essays in one session.",
       },
       {
         student: "Villanova Student",
@@ -31,7 +40,8 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "4",
         recommendation: "Yes",
-        quickFeedback: "Helped me understand differences across counseling and clinical routes."
+        quickFeedback:
+          "Helped me understand differences across counseling and clinical routes.",
       },
       {
         student: "Fordham Student",
@@ -40,9 +50,10 @@ const mentorData = [
         meetingRating: 4,
         mentorKnowledge: "4",
         recommendation: "Yes",
-        quickFeedback: "Helpful and easy to talk to. I left with better clarity about next steps."
-      }
-    ]
+        quickFeedback:
+          "Helpful and easy to talk to. I left with better clarity about next steps.",
+      },
+    ],
   },
   {
     id: 2,
@@ -57,8 +68,15 @@ const mentorData = [
     reviews: 38,
     sessions: 52,
     officeHours: "Every Wednesday at 7 PM EST",
-    description: "Former McKinsey consultant. I can help with case prep and business school interviews.",
-    services: ["Free Consultation", "Office Hours", "Interview Prep", "Program Insights", "Application Review"],
+    description:
+      "Former McKinsey consultant. I can help with case prep and business school interviews.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Interview Prep",
+      "Program Insights",
+      "Application Review",
+    ],
     reviewList: [
       {
         student: "Boston College Student",
@@ -67,7 +85,8 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "5",
         recommendation: "Yes",
-        quickFeedback: "Excellent mock interview and specific tips I could apply immediately."
+        quickFeedback:
+          "Excellent mock interview and specific tips I could apply immediately.",
       },
       {
         student: "Villanova Student",
@@ -76,7 +95,8 @@ const mentorData = [
         meetingRating: 4,
         mentorKnowledge: "5",
         recommendation: "Yes",
-        quickFeedback: "Very strategic about my MBA story and helped me tighten my school list."
+        quickFeedback:
+          "Very strategic about my MBA story and helped me tighten my school list.",
       },
       {
         student: "NYU Student",
@@ -85,9 +105,10 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "5",
         recommendation: "Yes",
-        quickFeedback: "Strong consulting advice and very honest about what programs made the most sense."
-      }
-    ]
+        quickFeedback:
+          "Strong consulting advice and very honest about what programs made the most sense.",
+      },
+    ],
   },
   {
     id: 3,
@@ -102,8 +123,15 @@ const mentorData = [
     reviews: 33,
     sessions: 46,
     officeHours: "Every Monday at 6 PM EST",
-    description: "Specializing in public interest law applications and LSAT strategy.",
-    services: ["Free Consultation", "Office Hours", "Tutoring", "Program Insights", "Application Review"],
+    description:
+      "Specializing in public interest law applications and LSAT strategy.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Tutoring",
+      "Program Insights",
+      "Application Review",
+    ],
     reviewList: [
       {
         student: "Boston College Student",
@@ -112,7 +140,8 @@ const mentorData = [
         meetingRating: 4,
         mentorKnowledge: "4",
         recommendation: "Yes",
-        quickFeedback: "Great breakdown of my school list and stronger essay structure."
+        quickFeedback:
+          "Great breakdown of my school list and stronger essay structure.",
       },
       {
         student: "Villanova Student",
@@ -121,9 +150,10 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "4",
         recommendation: "Yes",
-        quickFeedback: "Very honest feedback on my personal statement and school balance."
-      }
-    ]
+        quickFeedback:
+          "Very honest feedback on my personal statement and school balance.",
+      },
+    ],
   },
   {
     id: 4,
@@ -138,8 +168,15 @@ const mentorData = [
     reviews: 29,
     sessions: 41,
     officeHours: "Every Thursday at 8 PM EST",
-    description: "Focused on leadership essays, deferred MBA planning, and how to frame internships effectively.",
-    services: ["Free Consultation", "Office Hours", "Program Insights", "Interview Prep", "Application Review"],
+    description:
+      "Focused on leadership essays, deferred MBA planning, and how to frame internships effectively.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Program Insights",
+      "Interview Prep",
+      "Application Review",
+    ],
     reviewList: [
       {
         student: "Boston College Student",
@@ -148,7 +185,8 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "5",
         recommendation: "Yes",
-        quickFeedback: "Super clear guidance on essays and how to make my experience sound more cohesive."
+        quickFeedback:
+          "Super clear guidance on essays and how to make my experience sound more cohesive.",
       },
       {
         student: "Fordham Student",
@@ -157,7 +195,8 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "5",
         recommendation: "Yes",
-        quickFeedback: "Helped me understand what mattered most in my application and what to leave out."
+        quickFeedback:
+          "Helped me understand what mattered most in my application and what to leave out.",
       },
       {
         student: "Holy Cross Student",
@@ -166,9 +205,10 @@ const mentorData = [
         meetingRating: 4,
         mentorKnowledge: "4",
         recommendation: "Yes",
-        quickFeedback: "Very helpful on deferred MBA planning and what experiences I should prioritize."
-      }
-    ]
+        quickFeedback:
+          "Very helpful on deferred MBA planning and what experiences I should prioritize.",
+      },
+    ],
   },
   {
     id: 5,
@@ -183,8 +223,14 @@ const mentorData = [
     reviews: 25,
     sessions: 34,
     officeHours: "Every Tuesday at 8 PM EST",
-    description: "Helpful for entrepreneurship-focused MBA applicants and school fit strategy.",
-    services: ["Free Consultation", "Office Hours", "Program Insights", "Application Review"],
+    description:
+      "Helpful for entrepreneurship-focused MBA applicants and school fit strategy.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Program Insights",
+      "Application Review",
+    ],
     reviewList: [
       {
         student: "Northeastern Student",
@@ -193,9 +239,10 @@ const mentorData = [
         meetingRating: 4,
         mentorKnowledge: "5",
         recommendation: "Yes",
-        quickFeedback: "Really helped me sharpen why MBA and how to explain my startup experience."
-      }
-    ]
+        quickFeedback:
+          "Really helped me sharpen why MBA and how to explain my startup experience.",
+      },
+    ],
   },
   {
     id: 6,
@@ -210,8 +257,15 @@ const mentorData = [
     reviews: 22,
     sessions: 31,
     officeHours: "Every Sunday at 6 PM EST",
-    description: "Best for applicants targeting finance, consulting, and interview prep.",
-    services: ["Free Consultation", "Office Hours", "Interview Prep", "Program Insights", "Application Review"],
+    description:
+      "Best for applicants targeting finance, consulting, and interview prep.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Interview Prep",
+      "Program Insights",
+      "Application Review",
+    ],
     reviewList: [
       {
         student: "Holy Cross Student",
@@ -220,7 +274,8 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "5",
         recommendation: "Yes",
-        quickFeedback: "Very practical and gave me exact steps to improve before applying."
+        quickFeedback:
+          "Very practical and gave me exact steps to improve before applying.",
       },
       {
         student: "Boston College Student",
@@ -229,9 +284,10 @@ const mentorData = [
         meetingRating: 4,
         mentorKnowledge: "4",
         recommendation: "Yes",
-        quickFeedback: "Clear advice on what to improve before interviews and which stories to use."
-      }
-    ]
+        quickFeedback:
+          "Clear advice on what to improve before interviews and which stories to use.",
+      },
+    ],
   },
   {
     id: 7,
@@ -246,8 +302,14 @@ const mentorData = [
     reviews: 19,
     sessions: 26,
     officeHours: "Every Wednesday at 6 PM EST",
-    description: "Strong for teamwork stories, leadership framing, and behavioral interview prep.",
-    services: ["Free Consultation", "Office Hours", "Interview Prep", "Program Insights"],
+    description:
+      "Strong for teamwork stories, leadership framing, and behavioral interview prep.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Interview Prep",
+      "Program Insights",
+    ],
     reviewList: [
       {
         student: "Boston College Student",
@@ -256,9 +318,10 @@ const mentorData = [
         meetingRating: 4,
         mentorKnowledge: "4",
         recommendation: "Yes",
-        quickFeedback: "Great at helping me turn vague experiences into stronger examples."
-      }
-    ]
+        quickFeedback:
+          "Great at helping me turn vague experiences into stronger examples.",
+      },
+    ],
   },
   {
     id: 8,
@@ -273,8 +336,14 @@ const mentorData = [
     reviews: 21,
     sessions: 28,
     officeHours: "Every Friday at 5 PM EST",
-    description: "Best for analytics applicants, tech backgrounds, and story positioning.",
-    services: ["Free Consultation", "Office Hours", "Program Insights", "Application Review"],
+    description:
+      "Best for analytics applicants, tech backgrounds, and story positioning.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Program Insights",
+      "Application Review",
+    ],
     reviewList: [
       {
         student: "Villanova Student",
@@ -283,9 +352,10 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "4",
         recommendation: "Yes",
-        quickFeedback: "She made my tech background much easier to explain in MBA terms."
-      }
-    ]
+        quickFeedback:
+          "She made my tech background much easier to explain in MBA terms.",
+      },
+    ],
   },
   {
     id: 9,
@@ -300,8 +370,15 @@ const mentorData = [
     reviews: 27,
     sessions: 39,
     officeHours: "Every Thursday at 6 PM EST",
-    description: "Helpful for constitutional law interest, admissions positioning, and interview-style conversations.",
-    services: ["Free Consultation", "Office Hours", "Program Insights", "Interview Prep", "Application Review"],
+    description:
+      "Helpful for constitutional law interest, admissions positioning, and interview-style conversations.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Program Insights",
+      "Interview Prep",
+      "Application Review",
+    ],
     reviewList: [
       {
         student: "Fordham Student",
@@ -310,9 +387,10 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "5",
         recommendation: "Yes",
-        quickFeedback: "He helped me make my law school narrative much more focused."
-      }
-    ]
+        quickFeedback:
+          "He helped me make my law school narrative much more focused.",
+      },
+    ],
   },
   {
     id: 10,
@@ -327,8 +405,14 @@ const mentorData = [
     reviews: 24,
     sessions: 30,
     officeHours: "Every Tuesday at 7 PM EST",
-    description: "Strong for LSAT mindset, statement editing, and application timing.",
-    services: ["Free Consultation", "Office Hours", "Tutoring", "Application Review"],
+    description:
+      "Strong for LSAT mindset, statement editing, and application timing.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Tutoring",
+      "Application Review",
+    ],
     reviewList: [
       {
         student: "Boston College Student",
@@ -337,9 +421,10 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "4",
         recommendation: "Yes",
-        quickFeedback: "Very direct and helpful. I left with a much better plan."
-      }
-    ]
+        quickFeedback:
+          "Very direct and helpful. I left with a much better plan.",
+      },
+    ],
   },
   {
     id: 11,
@@ -354,8 +439,14 @@ const mentorData = [
     reviews: 20,
     sessions: 27,
     officeHours: "Every Monday at 7 PM EST",
-    description: "Best for public service law, admissions strategy, and school selection.",
-    services: ["Free Consultation", "Office Hours", "Program Insights", "Application Review"],
+    description:
+      "Best for public service law, admissions strategy, and school selection.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Program Insights",
+      "Application Review",
+    ],
     reviewList: [
       {
         student: "Holy Cross Student",
@@ -364,9 +455,10 @@ const mentorData = [
         meetingRating: 4,
         mentorKnowledge: "4",
         recommendation: "Yes",
-        quickFeedback: "She gave me a much more realistic list and helped me think strategically."
-      }
-    ]
+        quickFeedback:
+          "She gave me a much more realistic list and helped me think strategically.",
+      },
+    ],
   },
   {
     id: 12,
@@ -381,8 +473,14 @@ const mentorData = [
     reviews: 18,
     sessions: 22,
     officeHours: "Every Wednesday at 5 PM EST",
-    description: "Analytical feedback on essays, school fit, and admissions competitiveness.",
-    services: ["Free Consultation", "Office Hours", "Application Review", "Program Insights"],
+    description:
+      "Analytical feedback on essays, school fit, and admissions competitiveness.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Application Review",
+      "Program Insights",
+    ],
     reviewList: [
       {
         student: "Northeastern Student",
@@ -391,9 +489,10 @@ const mentorData = [
         meetingRating: 4,
         mentorKnowledge: "5",
         recommendation: "Yes",
-        quickFeedback: "Really strong at identifying weak points in my application."
-      }
-    ]
+        quickFeedback:
+          "Really strong at identifying weak points in my application.",
+      },
+    ],
   },
   {
     id: 13,
@@ -408,8 +507,14 @@ const mentorData = [
     reviews: 19,
     sessions: 25,
     officeHours: "Every Thursday at 5 PM EST",
-    description: "Strong on law school interviews, applications, and writing structure.",
-    services: ["Free Consultation", "Office Hours", "Interview Prep", "Application Review"],
+    description:
+      "Strong on law school interviews, applications, and writing structure.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Interview Prep",
+      "Application Review",
+    ],
     reviewList: [
       {
         student: "Boston College Student",
@@ -418,9 +523,10 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "4",
         recommendation: "Yes",
-        quickFeedback: "She made the whole process feel less overwhelming and more manageable."
-      }
-    ]
+        quickFeedback:
+          "She made the whole process feel less overwhelming and more manageable.",
+      },
+    ],
   },
   {
     id: 14,
@@ -435,8 +541,14 @@ const mentorData = [
     reviews: 26,
     sessions: 36,
     officeHours: "Every Friday at 6 PM EST",
-    description: "Guidance on research fit, doctoral applications, and therapist training paths.",
-    services: ["Free Consultation", "Office Hours", "Program Insights", "Application Review"],
+    description:
+      "Guidance on research fit, doctoral applications, and therapist training paths.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Program Insights",
+      "Application Review",
+    ],
     reviewList: [
       {
         student: "Fordham Student",
@@ -445,9 +557,10 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "5",
         recommendation: "Yes",
-        quickFeedback: "Very thoughtful advice and strong direction on research positioning."
-      }
-    ]
+        quickFeedback:
+          "Very thoughtful advice and strong direction on research positioning.",
+      },
+    ],
   },
   {
     id: 15,
@@ -462,8 +575,14 @@ const mentorData = [
     reviews: 21,
     sessions: 29,
     officeHours: "Every Sunday at 4 PM EST",
-    description: "Helpful for counseling psychology, master's programs, and licensure path questions.",
-    services: ["Free Consultation", "Office Hours", "Program Insights", "Tutoring"],
+    description:
+      "Helpful for counseling psychology, master's programs, and licensure path questions.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Program Insights",
+      "Tutoring",
+    ],
     reviewList: [
       {
         student: "Boston College Student",
@@ -472,9 +591,10 @@ const mentorData = [
         meetingRating: 4,
         mentorKnowledge: "4",
         recommendation: "Yes",
-        quickFeedback: "She explained the different therapy routes much more clearly than anyone else."
-      }
-    ]
+        quickFeedback:
+          "She explained the different therapy routes much more clearly than anyone else.",
+      },
+    ],
   },
   {
     id: 16,
@@ -489,7 +609,8 @@ const mentorData = [
     reviews: 17,
     sessions: 23,
     officeHours: "Every Tuesday at 4 PM EST",
-    description: "Best for social work pathways, graduate school fit, and career direction.",
+    description:
+      "Best for social work pathways, graduate school fit, and career direction.",
     services: ["Free Consultation", "Office Hours", "Program Insights"],
     reviewList: [
       {
@@ -499,9 +620,10 @@ const mentorData = [
         meetingRating: 4,
         mentorKnowledge: "4",
         recommendation: "Yes",
-        quickFeedback: "Very supportive and practical. I left with much more clarity."
-      }
-    ]
+        quickFeedback:
+          "Very supportive and practical. I left with much more clarity.",
+      },
+    ],
   },
   {
     id: 17,
@@ -516,8 +638,14 @@ const mentorData = [
     reviews: 20,
     sessions: 27,
     officeHours: "Every Wednesday at 4 PM EST",
-    description: "Strong for school counseling, program comparisons, and application planning.",
-    services: ["Free Consultation", "Office Hours", "Program Insights", "Application Review"],
+    description:
+      "Strong for school counseling, program comparisons, and application planning.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Program Insights",
+      "Application Review",
+    ],
     reviewList: [
       {
         student: "Villanova Student",
@@ -526,9 +654,10 @@ const mentorData = [
         meetingRating: 5,
         mentorKnowledge: "5",
         recommendation: "Yes",
-        quickFeedback: "Very organized and helped me narrow down where I should actually apply."
-      }
-    ]
+        quickFeedback:
+          "Very organized and helped me narrow down where I should actually apply.",
+      },
+    ],
   },
   {
     id: 18,
@@ -543,8 +672,14 @@ const mentorData = [
     reviews: 18,
     sessions: 24,
     officeHours: "Every Thursday at 4 PM EST",
-    description: "Helpful for PsyD fit, interview prep, and balancing clinical interests.",
-    services: ["Free Consultation", "Office Hours", "Interview Prep", "Program Insights"],
+    description:
+      "Helpful for PsyD fit, interview prep, and balancing clinical interests.",
+    services: [
+      "Free Consultation",
+      "Office Hours",
+      "Interview Prep",
+      "Program Insights",
+    ],
     reviewList: [
       {
         student: "Northeastern Student",
@@ -553,9 +688,10 @@ const mentorData = [
         meetingRating: 4,
         mentorKnowledge: "5",
         recommendation: "Yes",
-        quickFeedback: "She was very honest and helped me better understand program fit."
-      }
-    ]
+        quickFeedback:
+          "She was very honest and helped me better understand program fit.",
+      },
+    ],
   },
   {
     id: 19,
@@ -570,45 +706,46 @@ const mentorData = [
     reviews: 12,
     sessions: 17,
     officeHours: "Every Monday at 8 PM EST",
-    description: "Helpful for deferred MBA planning and leadership story building.",
+    description:
+      "Helpful for deferred MBA planning and leadership story building.",
     services: ["Free Consultation", "Office Hours", "Program Insights"],
-    reviewList: []
-  }
+    reviewList: [],
+  },
 ];
 
 const categoryConfig = [
   {
     key: "mba",
     title: "MBA Mentors",
-    subtitle: "Top feedback in business school advising."
+    subtitle: "Top feedback in business school advising.",
   },
   {
     key: "law",
     title: "Law Mentors",
-    subtitle: "Strongest-rated law school mentors."
+    subtitle: "Strongest-rated law school mentors.",
   },
   {
     key: "therapy",
     title: "Therapy Mentors",
-    subtitle: "Top mentors across therapy and psychology pathways."
-  }
+    subtitle: "Top mentors across therapy and psychology pathways.",
+  },
 ];
 
 const serviceIcons = {
-  "Tutoring": `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm8-1h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v1.2A4.9 4.9 0 0 1 11 9.5V10h2.5l2.2 2.2A1 1 0 0 0 17.4 12V11.4A2 2 0 0 0 16 10Zm-8 3c-3.2 0-6 1.6-6 3.6 0 .8.7 1.4 1.5 1.4h9c.8 0 1.5-.6 1.5-1.4C14 14.6 11.2 13 8 13Z"/></svg>`,
+  Tutoring: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm8-1h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v1.2A4.9 4.9 0 0 1 11 9.5V10h2.5l2.2 2.2A1 1 0 0 0 17.4 12V11.4A2 2 0 0 0 16 10Zm-8 3c-3.2 0-6 1.6-6 3.6 0 .8.7 1.4 1.5 1.4h9c.8 0 1.5-.6 1.5-1.4C14 14.6 11.2 13 8 13Z"/></svg>`,
   "Program Insights": `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 8l10 5 8.2-4.1V15H22V8L12 3Zm-6.8 8.8V15c0 1.9 3.1 3.5 6.8 3.5s6.8-1.6 6.8-3.5v-3.2L12 15.2l-6.8-3.4Z"/></svg>`,
   "Interview Prep": `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7V5a3 3 0 0 1 6 0v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2Zm2 0h2V5a1 1 0 1 0-2 0v2Z"/></svg>`,
   "Application Review": `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm6 1.5V9h4.5M9 16.2l5.9-5.9 1.8 1.8-5.9 5.9H9v-1.8Z"/></svg>`,
   "Gap Year Planning": `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.9 9h-3.1a15.7 15.7 0 0 0-1.2-4A8.1 8.1 0 0 1 18.9 11ZM12 4.1c1 1.1 2 3.4 2.4 6H9.6c.4-2.6 1.4-4.9 2.4-6ZM5.1 13h3.1c.2 1.4.6 2.8 1.2 4a8.1 8.1 0 0 1-4.3-4Zm3.1-2H5.1a8.1 8.1 0 0 1 4.3-4c-.6 1.2-1 2.6-1.2 4Zm3.8 8c-1-1.1-2-3.4-2.4-6h4.8c-.4 2.6-1.4 4.9-2.4 6Zm2.6-2c.6-1.2 1-2.6 1.2-4h3.1a8.1 8.1 0 0 1-4.3 4Z"/></svg>`,
-  "Office Hours": `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 5v4.4l3 1.8-.8 1.4L11 12V7Z"/></svg>`
+  "Office Hours": `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 5v4.4l3 1.8-.8 1.4L11 12V7Z"/></svg>`,
 };
 
 const knowledgeLabels = {
-  "1": "Very Low — Not prepared",
-  "2": "Low — Some gaps",
-  "3": "Moderate — Good overall",
-  "4": "High — Strong guidance",
-  "5": "Excellent — Very strong insight"
+  1: "Very Low — Not prepared",
+  2: "Low — Some gaps",
+  3: "Moderate — Good overall",
+  4: "High — Strong guidance",
+  5: "Excellent — Very strong insight",
 };
 
 const categorySections = document.getElementById("categorySections");
@@ -632,7 +769,8 @@ function sortMentorList(list) {
 
   return [...list].sort((a, b) => {
     if (sortValue === "rating") return b.rating - a.rating;
-    if (sortValue === "reviews") return getActualReviewCount(b) - getActualReviewCount(a);
+    if (sortValue === "reviews")
+      return getActualReviewCount(b) - getActualReviewCount(a);
     if (sortValue === "sessions") return b.sessions - a.sessions;
     if (sortValue === "name") return a.name.localeCompare(b.name);
     return 0;
@@ -646,7 +784,10 @@ function getFilteredMentors() {
 
   return mentorData.filter((mentor) => {
     const searchableReviews = (mentor.reviewList || [])
-      .map((review) => `${review.student} ${review.serviceUsed} ${review.quickFeedback}`)
+      .map(
+        (review) =>
+          `${review.student} ${review.serviceUsed} ${review.quickFeedback}`,
+      )
       .join(" ");
 
     const searchableText = [
@@ -658,14 +799,16 @@ function getFilteredMentors() {
       mentor.description,
       mentor.officeHours || "",
       ...(mentor.services || []),
-      searchableReviews
+      searchableReviews,
     ]
       .join(" ")
       .toLowerCase();
 
     const matchesSearch = !query || searchableText.includes(query);
-    const matchesProgram = selectedProgram === "all" || mentor.category === selectedProgram;
-    const matchesProfession = selectedProfession === "all" || mentor.profession === selectedProfession;
+    const matchesProgram =
+      selectedProgram === "all" || mentor.category === selectedProgram;
+    const matchesProfession =
+      selectedProfession === "all" || mentor.profession === selectedProfession;
 
     return matchesSearch && matchesProgram && matchesProfession;
   });
@@ -727,7 +870,9 @@ function createUserNotesSection(mentor) {
         ? `
           <div class="more-reviews-wrap" id="more-reviews-${mentor.id}">
             ${extraReviews
-              .map((review, index) => createReviewPreview(review, mentor.id, index + 2))
+              .map((review, index) =>
+                createReviewPreview(review, mentor.id, index + 2),
+              )
               .join("")}
           </div>
 
@@ -748,7 +893,9 @@ function createUserNotesSection(mentor) {
 
 function createMentorCard(mentor) {
   const professionLabel =
-    mentor.profession === "graduate" ? "Graduate Mentor" : "Professional Mentor";
+    mentor.profession === "graduate"
+      ? "Graduate Mentor"
+      : "Professional Mentor";
 
   const reviewCount = getActualReviewCount(mentor);
   const card = document.createElement("article");
@@ -824,7 +971,10 @@ function createMentorCard(mentor) {
 
   card.querySelectorAll(".student-note-view-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      openReviewModal(Number(btn.dataset.mentorId), Number(btn.dataset.reviewIndex));
+      openReviewModal(
+        Number(btn.dataset.mentorId),
+        Number(btn.dataset.reviewIndex),
+      );
     });
   });
 
@@ -839,13 +989,13 @@ function renderCategories() {
 
   if (programFilter.value !== "all") {
     categoriesToRender = categoryConfig.filter(
-      (category) => category.key === programFilter.value
+      (category) => category.key === programFilter.value,
     );
   }
 
   categoriesToRender.forEach((category) => {
     const allInCategory = filteredMentors.filter(
-      (mentor) => mentor.category === category.key
+      (mentor) => mentor.category === category.key,
     );
     const sorted = sortMentorList(allInCategory);
     const isExpanded = expandedCategories.has(category.key);
@@ -920,7 +1070,7 @@ function createServiceGrid(activeService) {
     "Interview Prep",
     "Application Review",
     "Gap Year Planning",
-    "Office Hours"
+    "Office Hours",
   ];
 
   return serviceNames
@@ -946,7 +1096,9 @@ function openReviewModal(mentorId, reviewIndex) {
   if (!review) return;
 
   const professionLabel =
-    mentor.profession === "graduate" ? "Graduate Mentor" : "Professional Mentor";
+    mentor.profession === "graduate"
+      ? "Graduate Mentor"
+      : "Professional Mentor";
 
   directFormView.innerHTML = `
     <div class="direct-header">
@@ -1058,3 +1210,15 @@ document.addEventListener("keydown", (event) => {
 });
 
 renderCategories();
+
+// Mobile sidebar toggle
+const menuBtn = document.getElementById("mobileMenuToggle");
+const overlay = document.getElementById("sidebarOverlay");
+const shell = document.querySelector(".app-shell");
+
+if (menuBtn && shell) {
+  menuBtn.onclick = () => shell.classList.add("sidebar-active");
+}
+if (overlay && shell) {
+  overlay.onclick = () => shell.classList.remove("sidebar-active");
+}

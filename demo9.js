@@ -1,14 +1,14 @@
 const meetingData = {
   mentorName: "Emily Carter • Graduate Mentor • MBA • Harvard",
   zoomLink: "https://zoom.us/j/9876543210",
-  selectedService: "Office Hours"
+  selectedService: "Office Hours",
 };
 
 const bookedDates = {
   "2026-03-21": { time: "1:00 PM", service: "Office Hours" },
   "2026-04-09": { time: "11:00 AM", service: "Office Hours" },
   "2026-04-24": { time: "2:30 PM", service: "Office Hours" },
-  "2026-05-06": { time: "3:00 PM", service: "Office Hours" }
+  "2026-05-06": { time: "3:00 PM", service: "Office Hours" },
 };
 
 const mentorNameEl = document.getElementById("mentorName");
@@ -41,15 +41,37 @@ const chatWindow = document.getElementById("chatWindow");
 const viewButtons = document.querySelectorAll(".view-btn");
 
 const monthNames = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const weekDayShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const weekDayLong = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const weekDayLong = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 const today = new Date();
-const todayKey = formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+const todayKey = formatDateKey(
+  today.getFullYear(),
+  today.getMonth(),
+  today.getDate(),
+);
 
 let currentDate = new Date(today.getFullYear(), today.getMonth(), 1);
 let currentView = "month";
@@ -149,7 +171,11 @@ function buildMonthDropdown() {
   monthTitleButton.style.opacity = "1";
 
   for (let offset = 0; offset < 24; offset++) {
-    const optionDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1);
+    const optionDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + offset,
+      1,
+    );
     const year = optionDate.getFullYear();
     const monthIndex = optionDate.getMonth();
     const label = `${monthNames[monthIndex]} ${year}`;
@@ -159,7 +185,10 @@ function buildMonthDropdown() {
     option.className = "month-option";
     option.textContent = label;
 
-    if (year === currentDate.getFullYear() && monthIndex === currentDate.getMonth()) {
+    if (
+      year === currentDate.getFullYear() &&
+      monthIndex === currentDate.getMonth()
+    ) {
       option.classList.add("active");
     }
 
@@ -273,7 +302,11 @@ function renderWeekView() {
     const dayDate = new Date(start);
     dayDate.setDate(start.getDate() + i);
 
-    const key = formatDateKey(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate());
+    const key = formatDateKey(
+      dayDate.getFullYear(),
+      dayDate.getMonth(),
+      dayDate.getDate(),
+    );
     const booking = bookedDates[key];
 
     const card = document.createElement("button");
@@ -328,7 +361,11 @@ function renderWeekView() {
 }
 
 function renderDayView() {
-  const key = formatDateKey(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+  const key = formatDateKey(
+    currentDate.getFullYear(),
+    currentDate.getMonth(),
+    currentDate.getDate(),
+  );
   const booking = bookedDates[key];
 
   const wrapper = document.createElement("div");
@@ -550,18 +587,33 @@ monthTitleButton.addEventListener("click", () => {
 });
 
 document.addEventListener("click", (event) => {
-  if (!monthTitleButton.contains(event.target) && !monthDropdown.contains(event.target)) {
+  if (
+    !monthTitleButton.contains(event.target) &&
+    !monthDropdown.contains(event.target)
+  ) {
     monthDropdown.classList.remove("open");
   }
 });
 
 prevMonthBtn.addEventListener("click", () => {
   if (currentView === "month") {
-    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    currentDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() - 1,
+      1,
+    );
   } else if (currentView === "week") {
-    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 7);
+    currentDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate() - 7,
+    );
   } else if (currentView === "day") {
-    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() - 1);
+    currentDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate() - 1,
+    );
   } else {
     currentDate = new Date(currentDate.getFullYear() - 1, 0, 1);
   }
@@ -571,11 +623,23 @@ prevMonthBtn.addEventListener("click", () => {
 
 nextMonthBtn.addEventListener("click", () => {
   if (currentView === "month") {
-    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+    currentDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + 1,
+      1,
+    );
   } else if (currentView === "week") {
-    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 7);
+    currentDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate() + 7,
+    );
   } else if (currentView === "day") {
-    currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 1);
+    currentDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate() + 1,
+    );
   } else {
     currentDate = new Date(currentDate.getFullYear() + 1, 0, 1);
   }
@@ -589,7 +653,11 @@ todayBtn.addEventListener("click", () => {
   } else if (currentView === "year") {
     currentDate = new Date(today.getFullYear(), 0, 1);
   } else {
-    currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    currentDate = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    );
   }
 
   renderCalendar();
@@ -640,7 +708,8 @@ chatForm.addEventListener("submit", function (e) {
 
     const mentorBubble = document.createElement("div");
     mentorBubble.className = "chat-bubble";
-    mentorBubble.textContent = "Thanks for the message. I saw this and will be ready for our session.";
+    mentorBubble.textContent =
+      "Thanks for the message. I saw this and will be ready for our session.";
 
     mentorWrap.appendChild(mentorMeta);
     mentorWrap.appendChild(mentorBubble);
@@ -695,3 +764,14 @@ updateMeetingInfoFromSelected();
 setActiveViewButton();
 renderCalendar();
 renderUpcomingAppointments();
+// Mobile sidebar toggle
+const menuBtn = document.getElementById("mobileMenuToggle");
+const overlay = document.getElementById("sidebarOverlay");
+const shell = document.querySelector(".app-shell");
+
+if (menuBtn && shell) {
+  menuBtn.onclick = () => shell.classList.add("sidebar-active");
+}
+if (overlay && shell) {
+  overlay.onclick = () => shell.classList.remove("sidebar-active");
+}

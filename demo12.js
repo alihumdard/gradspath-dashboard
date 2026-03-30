@@ -57,7 +57,9 @@ navLinks.forEach((link) => {
 /* USERS FILTERING */
 const usersSearch = document.getElementById("usersSearch");
 const usersProgramFilter = document.getElementById("usersProgramFilter");
-const usersInstitutionFilter = document.getElementById("usersInstitutionFilter");
+const usersInstitutionFilter = document.getElementById(
+  "usersInstitutionFilter",
+);
 const usersRows = document.querySelectorAll("#usersTable tbody tr");
 
 function filterUsers() {
@@ -72,9 +74,11 @@ function filterUsers() {
 
     const matchesSearch = text.includes(search);
     const matchesProgram = program === "all" || rowProgram === program;
-    const matchesInstitution = institution === "all" || rowInstitution === institution;
+    const matchesInstitution =
+      institution === "all" || rowInstitution === institution;
 
-    row.style.display = matchesSearch && matchesProgram && matchesInstitution ? "" : "none";
+    row.style.display =
+      matchesSearch && matchesProgram && matchesInstitution ? "" : "none";
   });
 }
 
@@ -102,7 +106,8 @@ function filterMentors() {
     const matchesProgram = program === "all" || rowProgram === program;
     const matchesStatus = status === "all" || rowStatus === status;
 
-    row.style.display = matchesSearch && matchesProgram && matchesStatus ? "" : "none";
+    row.style.display =
+      matchesSearch && matchesProgram && matchesStatus ? "" : "none";
   });
 }
 
@@ -126,47 +131,51 @@ function initializeCharts() {
       legend: {
         labels: {
           color: getChartTextColor(),
-          font: { family: "Inter" }
-        }
-      }
+          font: { family: "Inter" },
+        },
+      },
     },
     scales: {
       x: {
         ticks: { color: getChartTextColor() },
-        grid: { color: getGridColor() }
+        grid: { color: getGridColor() },
       },
       y: {
         ticks: { color: getChartTextColor() },
-        grid: { color: getGridColor() }
-      }
-    }
+        grid: { color: getGridColor() },
+      },
+    },
   };
 
   new Chart(document.getElementById("bookingsChart"), {
     type: "line",
     data: {
       labels: ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
-      datasets: [{
-        label: "Bookings",
-        data: [38, 46, 51, 64, 78, 96],
-        borderWidth: 2,
-        tension: 0.35
-      }]
+      datasets: [
+        {
+          label: "Bookings",
+          data: [38, 46, 51, 64, 78, 96],
+          borderWidth: 2,
+          tension: 0.35,
+        },
+      ],
     },
-    options: sharedOptions
+    options: sharedOptions,
   });
 
   new Chart(document.getElementById("revenueChart"), {
     type: "bar",
     data: {
       labels: ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
-      datasets: [{
-        label: "Revenue",
-        data: [4200, 5100, 5900, 7600, 9800, 12840],
-        borderWidth: 1
-      }]
+      datasets: [
+        {
+          label: "Revenue",
+          data: [4200, 5100, 5900, 7600, 9800, 12840],
+          borderWidth: 1,
+        },
+      ],
     },
-    options: sharedOptions
+    options: sharedOptions,
   });
 
   new Chart(document.getElementById("servicesChart"), {
@@ -179,26 +188,30 @@ function initializeCharts() {
         "Interview Prep",
         "Application Review",
         "Gap Year Planning",
-        "Office Hours"
+        "Office Hours",
       ],
-      datasets: [{
-        label: "Bookings",
-        data: [22, 8, 31, 24, 18, 6, 14],
-        borderWidth: 1
-      }]
+      datasets: [
+        {
+          label: "Bookings",
+          data: [22, 8, 31, 24, 18, 6, 14],
+          borderWidth: 1,
+        },
+      ],
     },
-    options: sharedOptions
+    options: sharedOptions,
   });
 
   new Chart(document.getElementById("programRevenueChart"), {
     type: "doughnut",
     data: {
       labels: ["MBA", "Law", "CMHC", "MFT", "MSW", "Clinical Psy"],
-      datasets: [{
-        label: "Revenue",
-        data: [6920, 3740, 2180, 900, 1450, 1100],
-        borderWidth: 1
-      }]
+      datasets: [
+        {
+          label: "Revenue",
+          data: [6920, 3740, 2180, 900, 1450, 1100],
+          borderWidth: 1,
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -207,26 +220,34 @@ function initializeCharts() {
         legend: {
           labels: {
             color: getChartTextColor(),
-            font: { family: "Inter" }
-          }
-        }
-      }
-    }
+            font: { family: "Inter" },
+          },
+        },
+      },
+    },
   });
 
   new Chart(document.getElementById("topMentorsChart"), {
     type: "bar",
     data: {
-      labels: ["Sarah Kim", "Daniel Brooks", "Rachel Adams", "Leah Morris", "Anthony Cruz"],
-      datasets: [{
-        label: "Revenue",
-        data: [1870, 1190, 790, 720, 610],
-        borderWidth: 1
-      }]
+      labels: [
+        "Sarah Kim",
+        "Daniel Brooks",
+        "Rachel Adams",
+        "Leah Morris",
+        "Anthony Cruz",
+      ],
+      datasets: [
+        {
+          label: "Revenue",
+          data: [1870, 1190, 790, 720, 610],
+          borderWidth: 1,
+        },
+      ],
     },
     options: {
       ...sharedOptions,
-      indexAxis: "y"
-    }
+      indexAxis: "y",
+    },
   });
 }

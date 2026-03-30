@@ -4,6 +4,23 @@ const themeToggle = document.getElementById("themeToggle");
 const openStoreBtn = document.getElementById("openStoreBtn");
 const closeStoreBtn = document.getElementById("closeStoreBtn");
 const storeModal = document.getElementById("storeModal");
+const mobileMenuToggle = document.getElementById("mobileMenuToggle");
+const sidebarOverlay = document.getElementById("sidebarOverlay");
+const appShell = document.querySelector(".app-shell");
+
+if (mobileMenuToggle) {
+  mobileMenuToggle.addEventListener("click", () => {
+    appShell.classList.add("sidebar-active");
+    body.classList.add("sidebar-open");
+  });
+}
+
+if (sidebarOverlay) {
+  sidebarOverlay.addEventListener("click", () => {
+    appShell.classList.remove("sidebar-active");
+    body.classList.remove("sidebar-open");
+  });
+}
 
 const storeOptions = document.querySelectorAll(".store-option");
 const officeHoursPanel = document.getElementById("officeHoursPanel");
@@ -11,7 +28,9 @@ const oneOnThreePanel = document.getElementById("oneOnThreePanel");
 const oneOnFivePanel = document.getElementById("oneOnFivePanel");
 
 const pathwayButtons = document.querySelectorAll(".pathway-btn");
-const officeHoursProgramLabel = document.getElementById("officeHoursProgramLabel");
+const officeHoursProgramLabel = document.getElementById(
+  "officeHoursProgramLabel",
+);
 const officeHoursPriceLabel = document.getElementById("officeHoursPriceLabel");
 const creditAssignmentNote = document.getElementById("creditAssignmentNote");
 
@@ -21,13 +40,16 @@ const servicesToggles = document.querySelectorAll(".services-toggle");
 const officeHoursPricing = {
   MBA: "$200/month",
   Law: "$200/month",
-  Therapy: "$200/month"
+  Therapy: "$200/month",
 };
 
 if (themeToggle) {
   themeToggle.addEventListener("click", () => {
     const currentTheme = body.getAttribute("data-theme");
-    body.setAttribute("data-theme", currentTheme === "light" ? "dark" : "light");
+    body.setAttribute(
+      "data-theme",
+      currentTheme === "light" ? "dark" : "light",
+    );
   });
 }
 
@@ -58,7 +80,11 @@ if (storeModal) {
 }
 
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && storeModal && storeModal.classList.contains("show")) {
+  if (
+    e.key === "Escape" &&
+    storeModal &&
+    storeModal.classList.contains("show")
+  ) {
     closeModal();
   }
 });
@@ -99,7 +125,8 @@ pathwayButtons.forEach((button) => {
       officeHoursProgramLabel.textContent = pathway;
     }
     if (officeHoursPriceLabel) {
-      officeHoursPriceLabel.textContent = officeHoursPricing[pathway] || "$200/month";
+      officeHoursPriceLabel.textContent =
+        officeHoursPricing[pathway] || "$200/month";
     }
     if (creditAssignmentNote) {
       creditAssignmentNote.textContent = `Credits will be applied to ${pathway} office hours.`;
@@ -127,7 +154,9 @@ readMoreButtons.forEach((button) => {
     if (!block || !label) return;
 
     block.classList.toggle("expanded");
-    label.textContent = block.classList.contains("expanded") ? "Read Less" : "Read More";
+    label.textContent = block.classList.contains("expanded")
+      ? "Read Less"
+      : "Read More";
   });
 });
 

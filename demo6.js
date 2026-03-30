@@ -3,7 +3,7 @@ const ratingLabels = {
   2: "2 out of 5 — Fair",
   3: "3 out of 5 — Good",
   4: "4 out of 5 — Very Good",
-  5: "5 out of 5 — Excellent"
+  5: "5 out of 5 — Excellent",
 };
 
 const allowedServices = [
@@ -12,7 +12,7 @@ const allowedServices = [
   "Interview Prep",
   "Application Review",
   "Gap Year Planning",
-  "Office Hours"
+  "Office Hours",
 ];
 
 const starContainer = document.getElementById("meetingRating");
@@ -39,9 +39,9 @@ const currentUser = {
   sessionDate: new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
-    day: "numeric"
+    day: "numeric",
   }),
-  serviceUsed: "Office Hours"
+  serviceUsed: "Office Hours",
 };
 
 function populateSessionDetails() {
@@ -128,8 +128,12 @@ feedbackForm.addEventListener("submit", (event) => {
   const sessionDate = sessionDateField.value.trim();
   const serviceUsed = serviceUsedField.value.trim();
   const meetingRating = ratingInput.value;
-  const mentorKnowledge = document.querySelector('input[name="mentorKnowledge"]:checked');
-  const recommendation = document.querySelector('input[name="recommendation"]:checked');
+  const mentorKnowledge = document.querySelector(
+    'input[name="mentorKnowledge"]:checked',
+  );
+  const recommendation = document.querySelector(
+    'input[name="recommendation"]:checked',
+  );
   const feedbackText = quickFeedback.value.trim();
 
   if (!fullName) {
@@ -180,7 +184,7 @@ feedbackForm.addEventListener("submit", (event) => {
     meetingRating,
     mentorKnowledge: mentorKnowledge.value,
     recommendation: recommendation.value,
-    quickFeedback: feedbackText
+    quickFeedback: feedbackText,
   };
 
   console.log("Submitted feedback:", formData);
@@ -189,3 +193,14 @@ feedbackForm.addEventListener("submit", (event) => {
 });
 
 populateSessionDetails();
+// Mobile sidebar toggle
+const menuBtn = document.getElementById("mobileMenuToggle");
+const overlay = document.getElementById("sidebarOverlay");
+const shell = document.querySelector(".app-shell");
+
+if (menuBtn && shell) {
+  menuBtn.onclick = () => shell.classList.add("sidebar-active");
+}
+if (overlay && shell) {
+  overlay.onclick = () => shell.classList.remove("sidebar-active");
+}

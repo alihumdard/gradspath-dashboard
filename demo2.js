@@ -24,7 +24,7 @@ subscribeButton.addEventListener("click", () => {
   checkoutSection.classList.remove("hidden");
   checkoutSection.scrollIntoView({
     behavior: "smooth",
-    block: "start"
+    block: "start",
   });
 });
 
@@ -40,4 +40,16 @@ if (heroIcon) {
   heroIcon.addEventListener("mouseleave", () => {
     heroIcon.style.transform = "scale(1)";
   });
+}
+
+// Mobile sidebar toggle
+const menuBtn = document.getElementById("mobileMenuToggle");
+const overlay = document.getElementById("sidebarOverlay");
+const shell = document.querySelector(".app-shell");
+
+if (menuBtn && shell) {
+  menuBtn.onclick = () => shell.classList.add("sidebar-active");
+}
+if (overlay && shell) {
+  overlay.onclick = () => shell.classList.remove("sidebar-active");
 }

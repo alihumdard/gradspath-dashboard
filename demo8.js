@@ -18,7 +18,7 @@ const usersData = [
         sessionReflection:
           "Strength: The user was highly engaged, open to direct feedback, and had strong raw material to work with. Challenge: Several examples were trying to do too much at once, so the story lost some clarity and needed sharper prioritization.",
         otherNotes:
-          "The user responds well to straightforward and practical guidance. Another session would be useful after the revised draft is complete so the final structure and tone can be polished."
+          "The user responds well to straightforward and practical guidance. Another session would be useful after the revised draft is complete so the final structure and tone can be polished.",
       },
       {
         mentor: "Marcus Lee",
@@ -34,7 +34,7 @@ const usersData = [
         sessionReflection:
           "Strength: Asked thoughtful questions and was very open to feedback. Challenge: Still deciding which differentiators matter most, which can create a less focused overall story.",
         otherNotes:
-          "Good momentum overall. He should continue with a more intentional school-specific plan once the core story is fully locked in."
+          "Good momentum overall. He should continue with a more intentional school-specific plan once the core story is fully locked in.",
       },
       {
         mentor: "Rachel Greene",
@@ -50,9 +50,9 @@ const usersData = [
         sessionReflection:
           "Strength: Strong ambition and clear energy. Challenge: At times the school list felt broader than necessary and not yet tied tightly enough to the overall narrative.",
         otherNotes:
-          "This note would be helpful for any mentor reviewing school-specific essay strategy later."
-      }
-    ]
+          "This note would be helpful for any mentor reviewing school-specific essay strategy later.",
+      },
+    ],
   },
   {
     id: 2,
@@ -73,7 +73,7 @@ const usersData = [
         sessionReflection:
           "Strength: Very reflective and engaged. Challenge: She still needs more clarity around ideal program structure and future setting.",
         otherNotes:
-          "A follow-up session would be useful after she completes another round of school research."
+          "A follow-up session would be useful after she completes another round of school research.",
       },
       {
         mentor: "Sarah Jenkin",
@@ -89,7 +89,7 @@ const usersData = [
         sessionReflection:
           "Strength: Good motivation and clear values behind her goals. Challenge: The writing can drift broad before landing on the strongest point.",
         otherNotes:
-          "Very coachable and likely to improve fast with another revision pass."
+          "Very coachable and likely to improve fast with another revision pass.",
       },
       {
         mentor: "Alyssa Hart",
@@ -105,9 +105,9 @@ const usersData = [
         sessionReflection:
           "Strength: Sincere and mission-driven voice. Challenge: Some important ideas were buried too deep in the draft and need to come forward earlier.",
         otherNotes:
-          "Would be a strong candidate for another application-focused session."
-      }
-    ]
+          "Would be a strong candidate for another application-focused session.",
+      },
+    ],
   },
   {
     id: 3,
@@ -128,7 +128,7 @@ const usersData = [
         sessionReflection:
           "Strength: Thoughtful answers and strong reasons for pursuing law. Challenge: Tends to over-answer and move away from the main question.",
         otherNotes:
-          "One more mock session would likely help a lot before formal interviews."
+          "One more mock session would likely help a lot before formal interviews.",
       },
       {
         mentor: "Daniel Cho",
@@ -144,9 +144,9 @@ const usersData = [
         sessionReflection:
           "Strength: Solid baseline content and clear motivation. Challenge: The strongest material appears too late in the draft.",
         otherNotes:
-          "The writing can become much stronger with a tighter structure and stronger opening paragraph."
-      }
-    ]
+          "The writing can become much stronger with a tighter structure and stronger opening paragraph.",
+      },
+    ],
   },
   {
     id: 4,
@@ -167,9 +167,9 @@ const usersData = [
         sessionReflection:
           "Strength: Very reflective and asks strong questions. Challenge: Still needs more clarity on long-term direction and ideal populations.",
         otherNotes:
-          "Would benefit from another session after doing additional research on programs."
-      }
-    ]
+          "Would benefit from another session after doing additional research on programs.",
+      },
+    ],
   },
   {
     id: 5,
@@ -190,9 +190,9 @@ const usersData = [
         sessionReflection:
           "Strength: Leadership examples are strong and there is good self-awareness. Challenge: Needs more school-specific framing and fewer generic phrases.",
         otherNotes:
-          "The user is in a strong position once the materials become more consistent."
-      }
-    ]
+          "The user is in a strong position once the materials become more consistent.",
+      },
+    ],
   },
   {
     id: 6,
@@ -212,11 +212,10 @@ const usersData = [
           "The user left with a clearer understanding of how formal writing can sometimes create distance and how reflection can improve warmth and connection.",
         sessionReflection:
           "Strength: Very polished and prepared. Challenge: The writing can feel slightly too formal and less human.",
-        otherNotes:
-          "A final pass focused just on voice would help a lot."
-      }
-    ]
-  }
+        otherNotes: "A final pass focused just on voice would help a lot.",
+      },
+    ],
+  },
 ];
 
 usersData.forEach((user) => {
@@ -281,8 +280,7 @@ function renderUsers() {
   const mentorTerm = mentorSearch.value.trim().toLowerCase();
 
   const filteredUsers = usersData.filter((user) => {
-    const matchesUser =
-      !userTerm || user.name.toLowerCase().includes(userTerm);
+    const matchesUser = !userTerm || user.name.toLowerCase().includes(userTerm);
 
     const matchesMentor =
       !mentorTerm ||
@@ -343,7 +341,7 @@ function renderUsers() {
               <p class="note-box-preview">“${escapeHtml(note.sessionWork)}”</p>
             </div>
           </button>
-        `
+        `,
           )
           .join("")}
       </div>
@@ -456,3 +454,14 @@ document.addEventListener("keydown", (e) => {
 });
 
 renderUsers();
+// Mobile sidebar toggle
+const menuBtn = document.getElementById("mobileMenuToggle");
+const overlay = document.getElementById("sidebarOverlay");
+const shell = document.querySelector(".app-shell");
+
+if (menuBtn && shell) {
+  menuBtn.onclick = () => shell.classList.add("sidebar-active");
+}
+if (overlay && shell) {
+  overlay.onclick = () => shell.classList.remove("sidebar-active");
+}

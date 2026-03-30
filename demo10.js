@@ -60,7 +60,7 @@ let cropState = {
   startX: 0,
   startY: 0,
   startOffsetX: 0,
-  startOffsetY: 0
+  startOffsetY: 0,
 };
 
 function getInitials(name) {
@@ -156,7 +156,7 @@ function validateName() {
     return false;
   }
 
-  if (parts.some(part => part.length < 2)) {
+  if (parts.some((part) => part.length < 2)) {
     showError(nameError, "Each part of the name should be at least 2 letters.");
     return false;
   }
@@ -278,7 +278,10 @@ function validateDescription() {
   }
 
   if (value.length < 40) {
-    showError(descriptionError, "Description should be at least 40 characters.");
+    showError(
+      descriptionError,
+      "Description should be at least 40 characters.",
+    );
     return false;
   }
 
@@ -316,7 +319,7 @@ function validateForm() {
     validateSchool(),
     validateDescription(),
     validateImage(),
-    validatePayouts()
+    validatePayouts(),
   ].every(Boolean);
 }
 
@@ -404,7 +407,7 @@ function setupCrop() {
 
   cropState.minScale = Math.max(
     boxSize / cropState.naturalWidth,
-    boxSize / cropState.naturalHeight
+    boxSize / cropState.naturalHeight,
   );
 
   cropState.scale = cropState.minScale;
@@ -502,16 +505,24 @@ window.addEventListener("mousemove", (e) => {
 
 window.addEventListener("mouseup", endDrag);
 
-cropBox.addEventListener("touchstart", (e) => {
-  const touch = e.touches[0];
-  startDrag(touch.clientX, touch.clientY);
-}, { passive: true });
+cropBox.addEventListener(
+  "touchstart",
+  (e) => {
+    const touch = e.touches[0];
+    startDrag(touch.clientX, touch.clientY);
+  },
+  { passive: true },
+);
 
-window.addEventListener("touchmove", (e) => {
-  if (!cropState.dragging) return;
-  const touch = e.touches[0];
-  duringDrag(touch.clientX, touch.clientY);
-}, { passive: true });
+window.addEventListener(
+  "touchmove",
+  (e) => {
+    if (!cropState.dragging) return;
+    const touch = e.touches[0];
+    duringDrag(touch.clientX, touch.clientY);
+  },
+  { passive: true },
+);
 
 window.addEventListener("touchend", endDrag);
 
@@ -531,8 +542,8 @@ applyCropBtn.addEventListener("click", () => {
 
   const ctx = canvas.getContext("2d");
 
-  const sourceX = (-cropState.x) / cropState.scale;
-  const sourceY = (-cropState.y) / cropState.scale;
+  const sourceX = -cropState.x / cropState.scale;
+  const sourceY = -cropState.y / cropState.scale;
   const sourceSize = boxSize / cropState.scale;
 
   ctx.drawImage(
@@ -544,7 +555,7 @@ applyCropBtn.addEventListener("click", () => {
     0,
     0,
     outputSize,
-    outputSize
+    outputSize,
   );
 
   const croppedDataUrl = canvas.toDataURL("image/png");
@@ -568,7 +579,8 @@ enablePayoutsBtn.addEventListener("click", () => {
 });
 
 function saveForm(imageData = null) {
-  const existing = JSON.parse(localStorage.getItem("demo10MentorSettings")) || {};
+  const existing =
+    JSON.parse(localStorage.getItem("demo10MentorSettings")) || {};
   const finalImage = imageData !== null ? imageData : existing.image || "";
 
   const data = {
@@ -581,7 +593,7 @@ function saveForm(imageData = null) {
     school: school.value.trim(),
     description: description.value.trim(),
     payoutsEnabled,
-    image: finalImage
+    image: finalImage,
   };
 
   localStorage.setItem("demo10MentorSettings", JSON.stringify(data));
@@ -661,3 +673,14 @@ mentorForm.addEventListener("submit", (e) => {
 });
 
 loadForm();
+// Mobile sidebar toggle
+const menuBtn = document.getElementById("mobileMenuToggle");
+const overlay = document.getElementById("sidebarOverlay");
+const shell = document.querySelector(".app-shell");
+
+if (menuBtn && shell) {
+  menuBtn.onclick = () => shell.classList.add("sidebar-active");
+}
+if (overlay && shell) {
+  overlay.onclick = () => shell.classList.remove("sidebar-active");
+}

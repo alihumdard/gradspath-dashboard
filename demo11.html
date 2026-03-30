@@ -14,10 +14,278 @@
 
   <link rel="stylesheet" href="demo11.css" />
 </head>
-<body>
-  <div class="page-shell">
-    <header class="topbar">
-      <div class="topbar-left">
+ <body data-theme="light">
+    <div class="app-shell">
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+      <aside class="sidebar">
+        <div class="sidebar-top">
+          <div class="brand">
+            <div class="brand-icon">GP</div>
+            <div class="brand-copy">
+              <div class="brand-title">Grads Paths</div>
+              <div class="brand-subtitle">STUDENT PORTAL</div>
+            </div>
+          </div>
+
+          <a href="#" class="back-link">
+            <span class="back-link-arrow">←</span>
+            <span>Back to the Website</span>
+          </a>
+        </div>
+
+        <nav class="sidebar-nav">
+          <div class="nav-group">
+            <a href="demo1.html" class="nav-item single-link active">
+              <span class="nav-left">
+                <span class="nav-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9.5" cy="7" r="3"></circle>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a3 3 0 0 1 0 5.74"></path>
+                  </svg>
+                </span>
+                <span class="nav-text">Find Mentors</span>
+              </span>
+            </a>
+          </div>
+
+          <div class="nav-group">
+            <a href="demo3a.html" class="nav-item single-link">
+              <span class="nav-left">
+                <span class="nav-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M3 21h18"></path>
+                    <path d="M5 21V7l7-4 7 4v14"></path>
+                    <path d="M9 9h.01"></path>
+                    <path d="M9 13h.01"></path>
+                    <path d="M9 17h.01"></path>
+                    <path d="M15 9h.01"></path>
+                    <path d="M15 13h.01"></path>
+                    <path d="M15 17h.01"></path>
+                  </svg>
+                </span>
+                <span class="nav-text">Institutions</span>
+              </span>
+            </a>
+          </div>
+
+          <div class="nav-group">
+            <a href="demo4.html" class="nav-item single-link">
+              <span class="nav-left">
+                <span class="nav-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M4 6.5h16"></path>
+                    <path d="M4 12h16"></path>
+                    <path d="M4 17.5h16"></path>
+                  </svg>
+                </span>
+                <span class="nav-text">Programs</span>
+              </span>
+            </a>
+          </div>
+
+          <div class="nav-group">
+            <a href="demo13.html" class="nav-item single-link">
+              <span class="nav-left">
+                <span class="nav-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+                    <path d="M16 3v4"></path>
+                    <path d="M8 3v4"></path>
+                    <path d="M3 11h18"></path>
+                  </svg>
+                </span>
+                <span class="nav-text">Office Hours</span>
+              </span>
+            </a>
+          </div>
+
+          <div class="nav-group">
+            <a href="demo5.html" class="nav-item single-link">
+              <span class="nav-left">
+                <span class="nav-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"
+                    ></path>
+                  </svg>
+                </span>
+                <span class="nav-text">Feedback</span>
+              </span>
+            </a>
+          </div>
+
+          <div class="nav-group mentor-only">
+            <a href="demo8.html" class="nav-item single-link">
+              <span class="nav-left">
+                <span class="nav-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M12 20h9"></path>
+                    <path
+                      d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"
+                    ></path>
+                  </svg>
+                </span>
+                <span class="nav-text">Mentor Notes on Users</span>
+              </span>
+            </a>
+            <div class="helper-note">Only visible to verified mentors</div>
+          </div>
+
+          <div class="nav-group">
+            <a href="demo9.html" class="nav-item single-link">
+              <span class="nav-left">
+                <span class="nav-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                    <path d="M16 2v4"></path>
+                    <path d="M8 2v4"></path>
+                    <path d="M3 10h18"></path>
+                  </svg>
+                </span>
+                <span class="nav-text">Bookings</span>
+              </span>
+            </a>
+          </div>
+
+          <div class="nav-group">
+            <a href="#" class="nav-item single-link">
+              <span class="nav-left">
+                <span class="nav-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M9.09 9a3 3 0 1 1 5.82 1c0 2-3 3-3 3"></path>
+                    <path d="M12 17h.01"></path>
+                  </svg>
+                </span>
+                <span class="nav-text">Support</span>
+              </span>
+            </a>
+            <div class="helper-note">Create a support ticket</div>
+          </div>
+
+          <div class="nav-section-label">Settings</div>
+
+          <div class="nav-group">
+            <a href="#" class="nav-item single-link">
+              <span class="nav-left">
+                <span class="nav-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+                    ></path>
+                  </svg>
+                </span>
+                <span class="nav-text">Settings</span>
+              </span>
+            </a>
+            <div class="helper-note">
+              Users and mentors can update profile details and displayed
+              information
+            </div>
+          </div>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <header class="shell-topbar">
+          <div class="shell-topbar-left">
+            <button
+              class="mobile-menu-toggle"
+              id="mobileMenuToggle"
+              type="button"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="shell-topbar-right">
+            <a
+              href="demo1.html"
+              class="recommended-badge"
+              style="position: static"
+              >← Back to Dashboard</a
+            >
+          </div>
+        </header>
+       <div class="page-shell">
+    <header class="booking-topbar">
+      <div class="booking-topbar-left">
         <button class="back-arrow-btn" type="button" aria-label="Go back">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M15.5 19 8.5 12l7-7" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -30,7 +298,7 @@
         </div>
       </div>
 
-      <div class="topbar-right">
+      <div class="booking-topbar-right">
         <a href="demo1.html" class="back-dashboard-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">Back to Dashboard</a>
 
         <div class="credit-pill" aria-label="Available credits">
@@ -252,14 +520,15 @@
       </section>
     </main>
   </div>
-
-  <div class="modal-overlay" id="creditModal" hidden>
-    <div class="credit-modal" role="dialog" aria-modal="true" aria-labelledby="officeHoursTitle">
-      <button class="modal-close" id="closeCreditModal" type="button" aria-label="Close modal">×</button>
+      </main>
+    </div>
+<div class="global-modal-overlay" id="creditModal" hidden>
+    <div class="office-hours-modal-panel" role="dialog" aria-modal="true" aria-labelledby="officeHoursTitle">
+      <button class="modal-close-btn" id="closeCreditModal" type="button" aria-label="Close modal">×</button>
 
       <div class="modal-badge">Best Value</div>
 
-      <div class="modal-icon">
+      <div class="modal-hero-icon">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M7 3h10M8 6h8m-9 3h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Zm3 5 2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -269,7 +538,7 @@
       <div class="modal-price">$200</div>
       <div class="modal-price-sub">USD / month</div>
 
-      <p class="modal-desc">
+      <p class="modal-summary-text">
         Flexible office hour access for students who want consistent support, better value, and simpler monthly booking.
       </p>
 
@@ -285,7 +554,7 @@
         </p>
       </div>
 
-      <button class="subscribe-btn" type="button">Subscribe to Office Hours</button>
+      <button class="office-hours-subscribe-btn" type="button">Subscribe to Office Hours</button>
 
       <ul class="benefits-list">
         <li>5 credits per month to use across MBA, Law, or Therapy office hours</li>
@@ -298,29 +567,31 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="storeModal" hidden>
-    <div class="credit-modal store-modal-panel" role="dialog" aria-modal="true" aria-labelledby="storeTitle">
-      <button class="modal-close" id="closeStoreModal" type="button" aria-label="Close store modal">×</button>
+  <div class="global-modal-overlay" id="storeModal" hidden>
+    <div class="store-modal-panel-inner" role="dialog" aria-modal="true" aria-labelledby="storeTitle">
+      <button class="modal-close-btn" id="closeStoreModal" type="button" aria-label="Close store modal">×</button>
 
-      <div class="modal-icon">
+      <div class="modal-hero-icon">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M6 8h12l-1 11H7L6 8Zm2-3h8l1 3H7l1-3Zm1 7h6M10 15h4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
 
       <h2 id="storeTitle">Store</h2>
-      <p class="modal-desc">
+      <p class="modal-summary-text">
         Buy credits or start an Office Hours subscription.
       </p>
 
       <div class="store-options">
         <button class="store-option-btn" type="button">Buy 1 Credit</button>
         <button class="store-option-btn" type="button">Buy 5 Credits</button>
-        <a href="demo2.html" class="subscribe-btn">Subscribe to Office Hours</a>
+        <a href="demo2.html" class="store-subscribe-link">Subscribe to Office Hours</a>
       </div>
     </div>
   </div>
-
-  <script src="demo11.js"></script>
-</body>
+    <script src="demo11.js"></script>
+  </body>
 </html>
+ 
+
+  

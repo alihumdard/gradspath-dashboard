@@ -22,7 +22,7 @@ const allowedServices = [
   "Interview Prep",
   "Application Review",
   "Gap Year Planning",
-  "Office Hours"
+  "Office Hours",
 ];
 
 /*
@@ -37,9 +37,9 @@ const currentSession = {
   sessionDate: new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
-    day: "numeric"
+    day: "numeric",
   }),
-  sessionType: "Application Review"
+  sessionType: "Application Review",
 };
 
 function populateSessionDetails() {
@@ -142,7 +142,7 @@ mentorNotesForm.addEventListener("submit", function (e) {
     nextSteps: nextStepsValue,
     sessionOutcome: sessionOutcomeValue,
     sessionReflection: sessionReflectionValue,
-    otherNotes: otherNotesValue
+    otherNotes: otherNotesValue,
   };
 
   console.log("Submitted mentor notes:", formData);
@@ -151,3 +151,14 @@ mentorNotesForm.addEventListener("submit", function (e) {
 });
 
 populateSessionDetails();
+// Mobile sidebar toggle
+const menuBtn = document.getElementById("mobileMenuToggle");
+const overlay = document.getElementById("sidebarOverlay");
+const shell = document.querySelector(".app-shell");
+
+if (menuBtn && shell) {
+  menuBtn.onclick = () => shell.classList.add("sidebar-active");
+}
+if (overlay && shell) {
+  overlay.onclick = () => shell.classList.remove("sidebar-active");
+}

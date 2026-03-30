@@ -2,7 +2,7 @@ const graduatesProgramOptions = [
   { value: "all", label: "All" },
   { value: "mba", label: "MBA" },
   { value: "law", label: "Law" },
-  { value: "therapy", label: "Therapy" }
+  { value: "therapy", label: "Therapy" },
 ];
 
 const professionalsProgramOptions = [
@@ -10,7 +10,7 @@ const professionalsProgramOptions = [
   { value: "accountant", label: "Accountant" },
   { value: "lawyer", label: "Lawyer" },
   { value: "therapist", label: "Therapist" },
-  { value: "nurse", label: "Nurse" }
+  { value: "nurse", label: "Nurse" },
 ];
 
 const defaultServices = [
@@ -19,7 +19,7 @@ const defaultServices = [
   "Tutoring",
   "Program Insights",
   "Interview Prep",
-  "Application Review"
+  "Application Review",
 ];
 
 const mentors = [
@@ -34,10 +34,13 @@ const mentors = [
     rating: 5.0,
     officeHours: "Every Tuesday at 5 PM EST",
     bio: "Expert in grad school applications for STEM fields. I help with statement of purpose review.",
-    bioExtra: "I also help with school selection, application positioning, and interview prep.",
+    bioExtra:
+      "I also help with school selection, application positioning, and interview prep.",
     services: defaultServices,
-    reviewShort: "Very clear, practical advice that helped me improve my essays in one session.",
-    reviewExtra: "She was direct, organized, and gave me very clear next steps."
+    reviewShort:
+      "Very clear, practical advice that helped me improve my essays in one session.",
+    reviewExtra:
+      "She was direct, organized, and gave me very clear next steps.",
   },
   {
     id: 2,
@@ -50,10 +53,12 @@ const mentors = [
     rating: 5.0,
     officeHours: "Every Thursday at 7 PM EST",
     bio: "I help with law school applications, personal statements, and 1L transition advice.",
-    bioExtra: "I can also support LSAT planning, school fit, and stronger application strategy.",
+    bioExtra:
+      "I can also support LSAT planning, school fit, and stronger application strategy.",
     services: defaultServices,
-    reviewShort: "Daniel gave clear feedback on my law school materials and was very honest in the best way.",
-    reviewExtra: "He helped me rethink my personal statement and timing."
+    reviewShort:
+      "Daniel gave clear feedback on my law school materials and was very honest in the best way.",
+    reviewExtra: "He helped me rethink my personal statement and timing.",
   },
   {
     id: 3,
@@ -66,10 +71,12 @@ const mentors = [
     rating: 4.9,
     officeHours: "Every Wednesday at 7 PM EST",
     bio: "Former McKinsey consultant. I can help with case prep and business school interviews.",
-    bioExtra: "Happy to help with resume strategy, mock interviews, and school selection.",
+    bioExtra:
+      "Happy to help with resume strategy, mock interviews, and school selection.",
     services: defaultServices,
-    reviewShort: "Michael was incredibly helpful and direct. He made the MBA process feel clearer and more manageable.",
-    reviewExtra: "His advice was practical and easy to use immediately."
+    reviewShort:
+      "Michael was incredibly helpful and direct. He made the MBA process feel clearer and more manageable.",
+    reviewExtra: "His advice was practical and easy to use immediately.",
   },
   {
     id: 4,
@@ -82,10 +89,12 @@ const mentors = [
     rating: 4.9,
     officeHours: "Every Monday at 6 PM EST",
     bio: "I can help students understand counseling programs, interview expectations, and career paths.",
-    bioExtra: "Especially helpful for practicum questions and personal statements.",
+    bioExtra:
+      "Especially helpful for practicum questions and personal statements.",
     services: defaultServices,
-    reviewShort: "Emma was thoughtful, knowledgeable, and helped me better understand counseling programs.",
-    reviewExtra: "She made the process feel less overwhelming."
+    reviewShort:
+      "Emma was thoughtful, knowledgeable, and helped me better understand counseling programs.",
+    reviewExtra: "She made the process feel less overwhelming.",
   },
   {
     id: 5,
@@ -98,10 +107,12 @@ const mentors = [
     rating: 4.9,
     officeHours: "Every Friday at 5 PM EST",
     bio: "Support for law school essays, interviews, application review, and overall planning.",
-    bioExtra: "I can help applicants sharpen their narrative and school choice strategy.",
+    bioExtra:
+      "I can help applicants sharpen their narrative and school choice strategy.",
     services: defaultServices,
-    reviewShort: "Ava gave very strong feedback on my materials and helped me improve both clarity and confidence.",
-    reviewExtra: "Her advice felt realistic and strategic."
+    reviewShort:
+      "Ava gave very strong feedback on my materials and helped me improve both clarity and confidence.",
+    reviewExtra: "Her advice felt realistic and strategic.",
   },
   {
     id: 6,
@@ -114,10 +125,12 @@ const mentors = [
     rating: 4.8,
     officeHours: "Every Sunday at 4 PM EST",
     bio: "Happy to help with school selection, applications, and preparing for admissions interviews.",
-    bioExtra: "Strong fit for consulting, tech, and entrepreneurship applicants.",
+    bioExtra:
+      "Strong fit for consulting, tech, and entrepreneurship applicants.",
     services: defaultServices,
-    reviewShort: "James was easy to talk to and really helpful for organizing my school list and interview strategy.",
-    reviewExtra: "I left with clearer priorities and better positioning."
+    reviewShort:
+      "James was easy to talk to and really helpful for organizing my school list and interview strategy.",
+    reviewExtra: "I left with clearer priorities and better positioning.",
   },
   {
     id: 7,
@@ -130,10 +143,12 @@ const mentors = [
     rating: 5.0,
     officeHours: "Every Tuesday at 6 PM EST",
     bio: "Licensed accountant helping students understand accounting careers, recruiting, and professional readiness.",
-    bioExtra: "Great for internships, firm recruiting, and long-term business career planning.",
+    bioExtra:
+      "Great for internships, firm recruiting, and long-term business career planning.",
     services: defaultServices,
-    reviewShort: "Rachel gave me a much clearer understanding of accounting recruiting and what employers are actually looking for.",
-    reviewExtra: "She broke down next steps really well."
+    reviewShort:
+      "Rachel gave me a much clearer understanding of accounting recruiting and what employers are actually looking for.",
+    reviewExtra: "She broke down next steps really well.",
   },
   {
     id: 8,
@@ -146,10 +161,12 @@ const mentors = [
     rating: 4.9,
     officeHours: "Every Thursday at 8 PM EST",
     bio: "Practicing lawyer offering support on legal careers, interviewing, and professional development.",
-    bioExtra: "Helpful for understanding practice areas and workplace expectations.",
+    bioExtra:
+      "Helpful for understanding practice areas and workplace expectations.",
     services: defaultServices,
-    reviewShort: "Marcus was very informative and helped me better understand both the field itself and how to think about my next steps.",
-    reviewExtra: "He explained things clearly and realistically."
+    reviewShort:
+      "Marcus was very informative and helped me better understand both the field itself and how to think about my next steps.",
+    reviewExtra: "He explained things clearly and realistically.",
   },
   {
     id: 9,
@@ -162,10 +179,12 @@ const mentors = [
     rating: 4.9,
     officeHours: "Every Wednesday at 5 PM EST",
     bio: "Licensed therapist offering field insight, interview prep, and career guidance for helping professions.",
-    bioExtra: "Helpful for counseling work, graduate training, and licensure questions.",
+    bioExtra:
+      "Helpful for counseling work, graduate training, and licensure questions.",
     services: defaultServices,
-    reviewShort: "Leah was thoughtful and deeply knowledgeable. She helped me understand what the field really looks like in practice.",
-    reviewExtra: "Her guidance felt grounded and reassuring."
+    reviewShort:
+      "Leah was thoughtful and deeply knowledgeable. She helped me understand what the field really looks like in practice.",
+    reviewExtra: "Her guidance felt grounded and reassuring.",
   },
   {
     id: 10,
@@ -178,11 +197,13 @@ const mentors = [
     rating: 4.8,
     officeHours: "Every Monday at 7 PM EST",
     bio: "Registered nurse helping students explore healthcare careers, patient-facing work, and professional growth.",
-    bioExtra: "Great for nursing responsibilities, healthcare environments, and career development.",
+    bioExtra:
+      "Great for nursing responsibilities, healthcare environments, and career development.",
     services: defaultServices,
-    reviewShort: "Natalie gave me a much better picture of what nursing work looks like day to day and what skills matter most.",
-    reviewExtra: "She was encouraging and specific."
-  }
+    reviewShort:
+      "Natalie gave me a much better picture of what nursing work looks like day to day and what skills matter most.",
+    reviewExtra: "She was encouraging and specific.",
+  },
 ];
 
 const mentorGrid = document.getElementById("mentorGrid");
@@ -222,13 +243,15 @@ function renderProgramPills() {
         >
           ${option.label}
         </button>
-      `
+      `,
     )
     .join("");
 
   programPillsContainer.querySelectorAll(".filter-pill").forEach((pill) => {
     pill.addEventListener("click", () => {
-      programPillsContainer.querySelectorAll(".filter-pill").forEach((p) => p.classList.remove("active"));
+      programPillsContainer
+        .querySelectorAll(".filter-pill")
+        .forEach((p) => p.classList.remove("active"));
       pill.classList.add("active");
       activeProgram = pill.dataset.program;
       renderMentors();
@@ -245,12 +268,16 @@ function getFilteredMentors() {
 
   if (mentorSearchTerm.trim()) {
     const q = mentorSearchTerm.trim().toLowerCase();
-    filtered = filtered.filter((mentor) => mentor.name.toLowerCase().includes(q));
+    filtered = filtered.filter((mentor) =>
+      mentor.name.toLowerCase().includes(q),
+    );
   }
 
   if (schoolSearchTerm.trim()) {
     const q = schoolSearchTerm.trim().toLowerCase();
-    filtered = filtered.filter((mentor) => mentor.school.toLowerCase().includes(q));
+    filtered = filtered.filter((mentor) =>
+      mentor.school.toLowerCase().includes(q),
+    );
   }
 
   filtered.sort((a, b) => b.rating - a.rating);
@@ -292,7 +319,7 @@ function createMentorCard(mentor) {
 
       <div class="services-dropdown">
         <div class="service-grid">
-          ${mentor.services.map(service => `<div class="service-pill">${service}</div>`).join("")}
+          ${mentor.services.map((service) => `<div class="service-pill">${service}</div>`).join("")}
         </div>
       </div>
     </div>
@@ -338,11 +365,17 @@ function createMentorCard(mentor) {
 function updateMeta(count) {
   const tabLabel = activeTab === "graduates" ? "Graduates" : "Professionals";
   const options = getProgramOptionsForTab();
-  const activeProgramOption = options.find(option => option.value === activeProgram);
+  const activeProgramOption = options.find(
+    (option) => option.value === activeProgram,
+  );
   const programLabel = activeProgramOption ? activeProgramOption.label : "All";
 
-  const mentorText = mentorSearchTerm.trim() ? `Mentor: ${mentorSearchTerm.trim()}` : "All Mentors";
-  const schoolText = schoolSearchTerm.trim() ? `School: ${schoolSearchTerm.trim()}` : "All Schools";
+  const mentorText = mentorSearchTerm.trim()
+    ? `Mentor: ${mentorSearchTerm.trim()}`
+    : "All Mentors";
+  const schoolText = schoolSearchTerm.trim()
+    ? `School: ${schoolSearchTerm.trim()}`
+    : "All Schools";
 
   activeFilters.textContent = `${tabLabel} • ${programLabel} • ${mentorText} • ${schoolText}`;
   resultsCount.textContent = `${count} mentor${count === 1 ? "" : "s"} shown`;
@@ -359,7 +392,9 @@ function renderMentors() {
   }
 
   emptyState.classList.add("hidden");
-  filtered.forEach((mentor) => mentorGrid.appendChild(createMentorCard(mentor)));
+  filtered.forEach((mentor) =>
+    mentorGrid.appendChild(createMentorCard(mentor)),
+  );
 }
 
 tabPills.forEach((pill) => {

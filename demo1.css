@@ -29,7 +29,7 @@ body[data-theme="light"] {
   --avatar-bg: #f2f2f5;
   --hover-bg: #f7f3ff;
   --hover-line: #d7c8ff;
-  --hover-shadow: 0 14px 30px rgba(122, 77, 255, 0.10);
+  --hover-shadow: 0 14px 30px rgba(122, 77, 255, 0.1);
   --teal: #27c7b8;
   --service-line: #d7c8ff;
   --active-blue: #1565d8;
@@ -66,10 +66,18 @@ body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
-body.modal-open {
+body.modal-open,
+body.sidebar-open {
   overflow: hidden;
 }
 
@@ -98,6 +106,24 @@ button,
 .app-shell {
   display: flex;
   min-height: 100vh;
+  position: relative;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 998;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ease);
+}
+
+.app-shell.sidebar-active .sidebar-overlay {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .sidebar {
@@ -105,6 +131,8 @@ button,
   background: var(--sidebar-bg);
   border-right: 1px solid var(--line);
   padding: 18px 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .sidebar-top {
@@ -283,6 +311,32 @@ button,
   gap: 20px;
 }
 
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.mobile-menu-toggle {
+  display: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft-2);
+  color: var(--text);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mobile-menu-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
 .search-wrap {
   max-width: 330px;
   width: 100%;
@@ -302,7 +356,7 @@ button,
 
 .search-input:focus {
   border-color: var(--hover-line);
-  box-shadow: 0 0 0 3px rgba(122, 77, 255, 0.10);
+  box-shadow: 0 0 0 3px rgba(122, 77, 255, 0.1);
 }
 
 .topbar-right {
@@ -969,7 +1023,7 @@ button,
 .meeting-form-grid input:focus,
 .meeting-form-grid select:focus {
   border-color: var(--hover-line);
-  box-shadow: 0 0 0 3px rgba(122, 77, 255, 0.10);
+  box-shadow: 0 0 0 3px rgba(122, 77, 255, 0.1);
 }
 
 .meeting-form-grid {
@@ -998,49 +1052,96 @@ button,
   }
 }
 
-@media (max-width: 980px) {
-  .app-shell {
-    flex-direction: column;
+@media (max-width: 991px) {
+  .mobile-menu-toggle {
+    display: flex;
   }
 
   .sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--line);
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform var(--ease);
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.1);
+    width: 280px;
+    border-right: 1px solid var(--line);
   }
 
-  .topbar,
-  .mentor-hero,
-  .section-head {
+  .app-shell.sidebar-active .sidebar {
+    transform: translateX(0);
+  }
+
+  .topbar {
+    padding: 0 16px;
+    height: 64px;
+  }
+
+  .search-wrap {
+    max-width: none;
+  }
+
+  .mentor-hero {
     flex-direction: column;
     align-items: flex-start;
+    padding: 20px 24px;
+    gap: 16px;
   }
 
   .mentor-hero-links {
-    gap: 12px;
+    gap: 14px;
   }
 
-  .view-all-institutions-btn {
-    margin-top: 8px;
+  .mentor-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
   }
+}
 
-  .mentor-grid,
-  .school-grid,
-  .store-option-row,
-  .pathway-row,
-  .payment-type-row,
-  .meeting-form-grid,
-  .payment-row,
-  .service-grid {
+@media (max-width: 768px) {
+  .mentor-grid {
     grid-template-columns: 1fr;
   }
 
-  .mentor-hero-left h1 {
-    font-size: 36px;
+  .school-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .feedback-header {
-    align-items: flex-start;
-    flex-direction: column;
+  .topbar-right .credits-box,
+  .topbar-right .theme-toggle {
+    display: none;
+  }
+
+  .mentor-hero-left h1 {
+    font-size: 32px;
+  }
+
+  .store-modal {
+    border-radius: 20px;
+  }
+
+  .store-modal-inner {
+    padding: 20px;
+  }
+
+  .store-modal-inner h2 {
+    font-size: 32px;
+  }
+
+  .store-option-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .pathway-row,
+  .payment-type-row,
+  .payment-row {
+    grid-template-columns: 1fr;
+  }
+
+  .meeting-form-grid {
+    grid-template-columns: 1fr;
   }
 }

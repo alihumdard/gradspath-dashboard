@@ -1,108 +1,139 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>demo4</title>
-  <link rel="stylesheet" href="demo4.css" />
-</head>
-<body>
-  <div class="page-shell">
-    <header class="page-header">
-      <div>
-        <h1>Explore Mentors</h1>
-        <p>Browse graduate students and professionals by category, mentor name, and school.</p>
-      </div>
-      <a href="demo1.html" style="text-decoration: none;">
-        <button class="back-btn" type="button">Back to Dashboard</button>
-      </a>
-    </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>demo4</title>
+    <link rel="stylesheet" href="demo4.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="page-header">
+        <div>
+          <h1>Explore Mentors</h1>
+          <p>
+            Browse graduate students and professionals by category, mentor name,
+            and school.
+          </p>
+        </div>
+        <a href="demo1.html" style="text-decoration: none">
+          <button class="back-btn" type="button">Back to Dashboard</button>
+        </a>
+      </header>
 
-    <section class="controls-panel">
-      <div class="controls-grid">
-        <div class="control-card">
-          <div class="control-heading">
-            <div class="control-icon-box">
-              <svg viewBox="0 0 24 24" class="outline-icon" aria-hidden="true">
-                <path d="M12 4 3 8.5 12 13l9-4.5L12 4Z"></path>
-                <path d="M6 11.5V15c0 1.5 2.7 3 6 3s6-1.5 6-3v-3.5"></path>
-              </svg>
+      <section class="controls-panel">
+        <div class="controls-grid">
+          <div class="control-card">
+            <div class="control-heading">
+              <div class="control-icon-box">
+                <svg
+                  viewBox="0 0 24 24"
+                  class="outline-icon"
+                  aria-hidden="true"
+                >
+                  <path d="M12 4 3 8.5 12 13l9-4.5L12 4Z"></path>
+                  <path d="M6 11.5V15c0 1.5 2.7 3 6 3s6-1.5 6-3v-3.5"></path>
+                </svg>
+              </div>
+              <div>
+                <h3>Mentor Type</h3>
+                <p>Choose who you want to view</p>
+              </div>
             </div>
-            <div>
-              <h3>Mentor Type</h3>
-              <p>Choose who you want to view</p>
+
+            <div class="pill-row" id="tabPills">
+              <button
+                class="filter-pill active"
+                data-tab="graduates"
+                type="button"
+              >
+                Graduates
+              </button>
+              <button
+                class="filter-pill"
+                data-tab="professionals"
+                type="button"
+              >
+                Professionals
+              </button>
             </div>
           </div>
 
-          <div class="pill-row" id="tabPills">
-            <button class="filter-pill active" data-tab="graduates" type="button">Graduates</button>
-            <button class="filter-pill" data-tab="professionals" type="button">Professionals</button>
+          <div class="control-card">
+            <div class="control-heading">
+              <div class="control-icon-box">
+                <svg
+                  viewBox="0 0 24 24"
+                  class="outline-icon"
+                  aria-hidden="true"
+                >
+                  <path d="M7 7h10"></path>
+                  <path d="M7 12h10"></path>
+                  <path d="M7 17h6"></path>
+                  <path d="M4 7h.01"></path>
+                  <path d="M4 12h.01"></path>
+                  <path d="M4 17h.01"></path>
+                </svg>
+              </div>
+              <div>
+                <h3>Program Type</h3>
+                <p>Filter by mentor category</p>
+              </div>
+            </div>
+
+            <div class="pill-row" id="programPills"></div>
           </div>
         </div>
 
-        <div class="control-card">
-          <div class="control-heading">
-            <div class="control-icon-box">
-              <svg viewBox="0 0 24 24" class="outline-icon" aria-hidden="true">
-                <path d="M7 7h10"></path>
-                <path d="M7 12h10"></path>
-                <path d="M7 17h6"></path>
-                <path d="M4 7h.01"></path>
-                <path d="M4 12h.01"></path>
-                <path d="M4 17h.01"></path>
-              </svg>
+        <div class="lower-controls">
+          <div class="search-wrap">
+            <label for="searchMentor">Search Mentor</label>
+            <div class="search-input-wrap">
+              <span class="search-icon">
+                <svg viewBox="0 0 24 24" class="search-svg" aria-hidden="true">
+                  <circle cx="11" cy="11" r="6"></circle>
+                  <path d="m20 20-4.2-4.2"></path>
+                </svg>
+              </span>
+              <input
+                type="text"
+                id="searchMentor"
+                placeholder="Search by mentor name"
+              />
             </div>
-            <div>
-              <h3>Program Type</h3>
-              <p>Filter by mentor category</p>
+          </div>
+
+          <div class="search-wrap">
+            <label for="searchSchool">Search School</label>
+            <div class="search-input-wrap">
+              <span class="search-icon">
+                <svg viewBox="0 0 24 24" class="search-svg" aria-hidden="true">
+                  <circle cx="11" cy="11" r="6"></circle>
+                  <path d="m20 20-4.2-4.2"></path>
+                </svg>
+              </span>
+              <input
+                type="text"
+                id="searchSchool"
+                placeholder="Search by school"
+              />
             </div>
           </div>
-
-          <div class="pill-row" id="programPills"></div>
         </div>
-      </div>
+      </section>
 
-      <div class="lower-controls">
-        <div class="search-wrap">
-          <label for="searchMentor">Search Mentor</label>
-          <div class="search-input-wrap">
-            <span class="search-icon">
-              <svg viewBox="0 0 24 24" class="search-svg" aria-hidden="true">
-                <circle cx="11" cy="11" r="6"></circle>
-                <path d="m20 20-4.2-4.2"></path>
-              </svg>
-            </span>
-            <input type="text" id="searchMentor" placeholder="Search by mentor name" />
-          </div>
-        </div>
+      <section class="results-meta">
+        <div class="active-filters" id="activeFilters">All Mentors</div>
+        <div class="results-count" id="resultsCount">0 mentors shown</div>
+      </section>
 
-        <div class="search-wrap">
-          <label for="searchSchool">Search School</label>
-          <div class="search-input-wrap">
-            <span class="search-icon">
-              <svg viewBox="0 0 24 24" class="search-svg" aria-hidden="true">
-                <circle cx="11" cy="11" r="6"></circle>
-                <path d="m20 20-4.2-4.2"></path>
-              </svg>
-            </span>
-            <input type="text" id="searchSchool" placeholder="Search by school" />
-          </div>
-        </div>
-      </div>
-    </section>
+      <section class="mentor-grid" id="mentorGrid"></section>
 
-    <section class="results-meta">
-      <div class="active-filters" id="activeFilters">All Mentors</div>
-      <div class="results-count" id="resultsCount">0 mentors shown</div>
-    </section>
+      <section class="empty-state hidden" id="emptyState">
+        No mentors match these filters right now.
+      </section>
+    </div>
 
-    <section class="mentor-grid" id="mentorGrid"></section>
-
-    <section class="empty-state hidden" id="emptyState">
-      No mentors match these filters right now.
-    </section>
-  </div>
-
-  <script src="demo4.js"></script>
-</body>
+    <script src="demo4.js"></script>
+  </body>
 </html>
