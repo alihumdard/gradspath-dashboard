@@ -9,32 +9,6 @@ if (menuBtn && shell) {
 if (overlay && shell) {
   overlay.onclick = () => shell.classList.remove("sidebar-active");
 }
-
-// Sidebar navigation logic
-const navItems = document.querySelectorAll(".nav-item");
-
-function setActiveNav() {
-  const currentPath = window.location.pathname.split("/").pop() || "demo1.html";
-
-  navItems.forEach((item) => {
-    const href = item.getAttribute("href");
-    if (href === currentPath) {
-      item.classList.add("active");
-    } else {
-      item.classList.remove("active");
-    }
-  });
-}
-
-setActiveNav();
-
-navItems.forEach((item) => {
-  item.addEventListener("click", () => {
-    navItems.forEach((nav) => nav.classList.remove("active"));
-    item.classList.add("active");
-    if (shell) shell.classList.remove("sidebar-active");
-  });
-});
 const demo14ServiceMeta = {
   "Free Consultation": {
     label: "Free Consultation",

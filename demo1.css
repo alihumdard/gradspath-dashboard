@@ -436,7 +436,7 @@ button,
 
 .mentor-hero {
   margin: 20px 28px 0;
-  padding: 26px 34px;
+  padding: 26px 0px;
   background: transparent;
   border-radius: 0;
   display: flex;
@@ -1087,7 +1087,7 @@ button,
   .mentor-hero {
     flex-direction: column;
     align-items: flex-start;
-    padding: 20px 24px;
+    padding: 20px 0px;
     gap: 16px;
   }
 

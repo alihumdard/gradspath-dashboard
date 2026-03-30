@@ -570,7 +570,7 @@ h1 {
 .info-box strong,
 .info-box a {
   display: block;
-  font-size: 18px;
+  font-size: 12px;
   line-height: 1.2;
   font-weight: 800;
   color: var(--text);
@@ -586,7 +586,7 @@ h1 {
 }
 
 .mentor-profile-box strong {
-  font-size: 17px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
@@ -619,7 +619,7 @@ h1 {
 .calendar-view-switch {
   display: inline-flex;
   align-items: center;
-  padding: 4px;
+  padding: 2px;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: #faf8ff;
@@ -627,8 +627,8 @@ h1 {
 }
 
 .view-btn {
-  min-width: 78px;
-  height: 38px;
+  min-width: 70px;
+  height: 32px;
   border: none;
   border-radius: 12px;
   background: transparent;
