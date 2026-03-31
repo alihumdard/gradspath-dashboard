@@ -1,14 +1,52 @@
-// Mobile sidebar toggle
-const menuBtn = document.getElementById("mobileMenuToggle");
-const overlay = document.getElementById("sidebarOverlay");
-const shell = document.querySelector(".app-shell");
+document.addEventListener("DOMContentLoaded", () => {
+  // Mobile sidebar toggle
+  const menuBtn = document.getElementById("mobileMenuToggle");
+  const overlay = document.getElementById("sidebarOverlay");
+  const shell = document.querySelector(".app-shell");
 
-if (menuBtn && shell) {
-  menuBtn.onclick = () => shell.classList.add("sidebar-active");
-}
-if (overlay && shell) {
-  overlay.onclick = () => shell.classList.remove("sidebar-active");
-}
+  if (menuBtn && shell) {
+    menuBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      shell.classList.add("sidebar-active");
+    });
+  }
+
+  if (overlay && shell) {
+    overlay.addEventListener("click", (e) => {
+      e.preventDefault();
+      shell.classList.remove("sidebar-active");
+    });
+  }
+
+  // Sidebar navigation logic
+  const navItems = document.querySelectorAll(".nav-item");
+
+  function setActiveNav() {
+    const currentPath =
+      window.location.pathname.split("/").pop() || "demo1.html";
+
+    navItems.forEach((item) => {
+      const href = item.getAttribute("href");
+      // Use lowercase comparison for better cross-platform reliability
+      if (href && href.toLowerCase() === currentPath.toLowerCase()) {
+        item.classList.add("active");
+      } else {
+        item.classList.remove("active");
+      }
+    });
+  }
+
+  setActiveNav();
+
+  navItems.forEach((item) => {
+    item.addEventListener("click", () => {
+      navItems.forEach((nav) => nav.classList.remove("active"));
+      item.classList.add("active");
+      if (shell) shell.classList.remove("sidebar-active");
+    });
+  });
+});
+
 const demo14ServiceMeta = {
   "Free Consultation": {
     label: "Free Consultation",
