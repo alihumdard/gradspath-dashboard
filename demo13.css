@@ -1046,3 +1046,38 @@ body {
     padding-top: 0;
   }
 }
+
+/* Uniform sidebar + main content spacing and typography across pages */
+.sidebar {
+  width: 294px !important;
+  min-width: 294px !important;
+}
+.main-content {
+  flex: 1 !important;
+  padding: 24px !important;
+  min-width: 0;
+}
+.page-shell, .demo14-page-wrap, .page-wrap {
+  max-width: 1400px !important;
+  margin: 0 auto !important;
+  padding-top: 12px !important;
+  padding-bottom: 24px !important;
+}
+.page-top {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  gap: 24px !important;
+  margin-bottom: 24px !important;
+}
+.title-wrap h1, .page-heading h1 {
+  font-size: 34px !important;
+  line-height: 1.2 !important;
+  margin-bottom: 12px !important;
+}
+.title-wrap p, .page-heading p, .info-copy p {
+  font-size: 16px !important;
+  color: #5f6585 !important;
+  max-width: 870px !important;
+}
+

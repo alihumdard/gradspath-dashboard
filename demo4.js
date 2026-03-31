@@ -350,6 +350,11 @@ function createMentorCard(mentor) {
     feedbackBtn.textContent = expanded ? "Read Less ▲" : "Read More ▼";
   });
 
+  const bookNowBtn = article.querySelector(".book-now-btn");
+  bookNowBtn.addEventListener("click", () => {
+    window.location.href = "demo11.html";
+  });
+
   const servicesAccordion = article.querySelector(".services-accordion");
   const servicesToggle = article.querySelector(".services-toggle");
   const servicesIcon = article.querySelector(".services-toggle-icon");
