@@ -1,16 +1,61 @@
-:root {
+body[data-theme="light"] {
   --bg: #f5f5f8;
+  --sidebar-bg: #ffffff;
   --panel: #ffffff;
-  --panel-soft: #fbfbff;
-  --panel-alt: #f7f7fb;
-  --border: #e8e8ef;
-  --text: #20263a;
-  --muted: #737b90;
-  --purple: #6f4cf6;
-  --purple-dark: #4f2fcf;
-  --purple-soft: #f1ecff;
-  --teal: #26c4b7;
-  --teal-soft: #e8faf7;
+  --hero-bg: #f3eef9;
+  --panel-soft: #ffffff;
+  --panel-soft-2: #fbfbff;
+  --line: #ececf1;
+  --purple: #6142f5;
+  --purple-dark: #23293a;
+  --muted: #6b7285;
+  --text: #252c3c;
+  --shadow: 0 12px 28px rgba(18, 24, 38, 0.04);
+  --overlay: rgba(30, 16, 70, 0.18);
+  --rating-bg: #eefaf7;
+  --rating-text: #27c7b8;
+  --avatar-bg: #f2f2f5;
+  --hover-bg: #f7f3ff;
+  --hover-line: #d7c8ff;
+  --hover-shadow: 0 14px 30px rgba(122, 77, 255, 0.1);
+  --teal: #27c7b8;
+  --service-line: #d7c8ff;
+  --active-blue: #1156d8;
+}
+
+body[data-theme="dark"] {
+  --bg: #131018;
+  --sidebar-bg: #1b1722;
+  --panel: #1f1a28;
+  --hero-bg: #241d31;
+  --panel-soft: #1f1a28;
+  --panel-soft-2: #2b2635;
+  --line: #3b3447;
+  --purple: #9a7cff;
+  --purple-dark: #f0e9ff;
+  --muted: #b8afc9;
+  --text: #efeaf8;
+  --shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  --overlay: rgba(0, 0, 0, 0.45);
+  --rating-bg: #20312f;
+  --rating-text: #46d8ca;
+  --avatar-bg: #2b2635;
+  --hover-bg: #2a2236;
+  --hover-line: #5b4a83;
+  --hover-shadow: 0 18px 34px rgba(0, 0, 0, 0.24);
+  --teal: #46d8ca;
+  --service-line: #5b4a83;
+  --active-blue: #3b82f6;
+}
+
+:root {
+  --radius-xl: 24px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --ease: 0.18s ease;
+
+  /* Global tokens */
   --shadow: 0 10px 28px rgba(26, 31, 44, 0.05);
   --gold: #f3be4d;
   --success-green: #167947;
@@ -53,11 +98,12 @@ textarea {
   font: inherit;
 }
 
-.main-content.simple-layout {
+.simple-layout {
   width: 100%;
-  max-width: 1440px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 30px 42px 48px;
+  padding: 20px;
+  display: block;
 }
 .app-shell {
   display: flex;
@@ -115,13 +161,13 @@ textarea {
   justify-content: center;
   color: white;
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 600;
   flex-shrink: 0;
 }
 
 .brand-title {
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -164,7 +210,7 @@ textarea {
   letter-spacing: 1.4px;
   text-transform: uppercase;
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 600;
   margin-top: 8px;
   margin-bottom: 0;
 }
@@ -228,11 +274,12 @@ textarea {
 .nav-icon {
   width: 20px;
   height: 20px;
-  color: #808998;
+  color: var(--muted);
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: color var(--ease);
 }
 
 .nav-icon svg {
@@ -259,13 +306,14 @@ textarea {
 
 .topbar {
   height: 72px;
-  background: #ffffff;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  display: flex; /* Visible on all screens */
+  background: var(--sidebar-bg);
+  border-bottom: 1px solid var(--line);
+  display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
   gap: 20px;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .topbar-left,
@@ -276,13 +324,13 @@ textarea {
 }
 
 .mobile-menu-toggle {
-  display: flex;
+  display: none;
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  border: 1.5px solid rgba(124, 77, 255, 0.15);
-  background: #fbf9ff;
-  color: #7c4dff;
+  border: 1px solid var(--line);
+  background: var(--panel-soft-2);
+  color: var(--purple);
   align-items: center;
   justify-content: center;
   cursor: pointer;
@@ -302,20 +350,20 @@ textarea {
 }
 
 .search-wrap {
-  max-width: 330px;
-  width: 100%;
+  display: none;
 }
 
 .search-input {
   width: 100%;
-  height: 40px;
+  height: 44px;
   border: 1px solid var(--line);
   background: var(--panel-soft-2);
   color: var(--text);
   border-radius: 13px;
-  padding: 0 14px;
+  padding: 0 16px;
   font-size: 14px;
   outline: none;
+  transition: all 0.2s ease;
 }
 
 .search-input:focus {
@@ -338,7 +386,7 @@ textarea {
   background: var(--panel-soft-2);
   color: var(--purple-dark);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -346,6 +394,7 @@ textarea {
   background: var(--hover-bg);
   border-color: var(--hover-line);
   transform: translateY(-1px);
+  color: var(--purple);
 }
 
 .credits-box {
@@ -375,11 +424,10 @@ textarea {
   height: 40px;
   padding: 0 15px;
   border-radius: 13px;
-  border: none;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 13px;
   cursor: pointer;
-  background: linear-gradient(135deg, #7a4dff, #9f55ff);
+  background: linear-gradient(135deg, var(--purple), var(--active-blue));
   color: white;
   box-shadow: 0 10px 22px rgba(122, 77, 255, 0.2);
   text-decoration: none;
@@ -413,7 +461,7 @@ textarea {
   line-height: 0.96;
   color: var(--text);
   letter-spacing: -0.05em;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .page-header-copy p {
@@ -435,7 +483,7 @@ textarea {
   border-radius: 22px;
   background: linear-gradient(135deg, #7a55f6, #a455f3);
   color: #fff;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1rem;
   box-shadow: 0 10px 22px rgba(111, 76, 246, 0.18);
   flex-shrink: 0;
@@ -450,10 +498,11 @@ textarea {
 
 .overview-card {
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 24px;
   padding: 24px 26px;
   box-shadow: var(--shadow);
+  transition: transform var(--ease), border-color var(--ease);
 }
 
 .overview-label {
@@ -465,8 +514,8 @@ textarea {
 
 .overview-value {
   font-size: 2.55rem;
-  font-weight: 800;
-  color: var(--purple-dark);
+  font-weight: 600;
+  color: var(--purple);
   line-height: 1;
   margin-bottom: 10px;
   letter-spacing: -0.04em;
@@ -518,7 +567,7 @@ textarea {
 
 .mentor-search {
   min-width: 360px;
-  width: 420px;
+  width: 400px;
 }
 
 .feedback-controls select {
@@ -540,7 +589,7 @@ textarea {
 .category-title-wrap h2 {
   margin: 0;
   font-size: 1.12rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--text);
 }
@@ -561,7 +610,7 @@ textarea {
   background: none;
   border: none;
   color: var(--purple-dark);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 0.96rem;
   cursor: pointer;
   padding: 0;
@@ -575,13 +624,18 @@ textarea {
 
 .mentor-card {
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--line);
   border-radius: 26px;
   padding: 22px;
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   min-height: 340px;
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.mentor-card:hover {
+  border-color: var(--hover-line);
 }
 
 .mentor-card-top {
@@ -602,11 +656,11 @@ textarea {
   width: 68px;
   height: 68px;
   border-radius: 18px;
-  background: #f0f0f6;
-  color: #272d3b;
+  background: var(--avatar-bg);
+  color: var(--text);
   display: grid;
   place-items: center;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.08rem;
   flex-shrink: 0;
 }
@@ -614,25 +668,25 @@ textarea {
 .mentor-name {
   margin: 0 0 3px;
   font-size: 1.08rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
 
 .mentor-meta {
   margin: 0;
-  color: #4c5367;
+  color: var(--muted);
   font-size: 0.93rem;
   font-weight: 600;
   line-height: 1.35;
 }
 
 .rating-badge {
-  background: var(--teal-soft);
-  color: var(--teal);
+  background: var(--rating-bg);
+  color: var(--rating-text);
   border-radius: 12px;
   padding: 9px 13px;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 0.92rem;
   min-width: 82px;
   text-align: center;
@@ -651,7 +705,7 @@ textarea {
 
 .office-hours-label {
   color: var(--purple);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .office-hours-value {
@@ -677,7 +731,7 @@ textarea {
   background: none;
   border: none;
   color: var(--purple);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 0.96rem;
   cursor: pointer;
   padding: 0;
@@ -699,7 +753,7 @@ textarea {
 
 .services-label {
   color: #6d748c;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   font-size: 0.8rem;
   margin-bottom: 12px;
@@ -714,11 +768,11 @@ textarea {
 
 .service-pill {
   min-height: 52px;
-  border: 2px solid #d9c8ff;
+  border: 2px solid var(--service-line);
   border-radius: 20px;
-  background: #fff;
+  background: var(--panel);
   color: var(--purple);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 0.95rem;
   display: flex;
   align-items: center;
@@ -729,7 +783,7 @@ textarea {
 
 .student-note-label {
   color: var(--teal);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   font-size: 0.8rem;
   margin-bottom: 10px;
@@ -741,8 +795,8 @@ textarea {
 }
 
 .student-note-card {
-  border: 1px solid var(--border);
-  background: var(--panel-alt);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-2);
   border-radius: 20px;
   padding: 16px 18px;
 }
@@ -757,7 +811,7 @@ textarea {
 
 .student-note-student {
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text);
   line-height: 1.2;
 }
@@ -774,12 +828,19 @@ textarea {
   min-width: 92px;
   height: 44px;
   border-radius: 999px;
-  border: 1px solid #dddbea;
-  background: #fff;
-  color: var(--purple-dark);
-  font-weight: 800;
+  border: 1.5px solid var(--line);
+  background: var(--panel);
+  color: var(--purple);
+  font-weight: 600;
   font-size: 0.96rem;
   cursor: pointer;
+  transition: var(--ease);
+}
+
+.student-note-view-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--hover-line);
+  transform: translateY(-1px);
 }
 
 .student-note-preview {
@@ -821,7 +882,7 @@ textarea {
   background: none;
   border: none;
   color: var(--purple);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 0.96rem;
   cursor: pointer;
   padding: 0;
@@ -862,7 +923,7 @@ textarea {
   border-radius: 36px;
   background: linear-gradient(135deg, #7a55f6, #a455f3);
   color: #fff;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1rem;
   box-shadow: 0 10px 22px rgba(111, 76, 246, 0.18);
   cursor: pointer;
@@ -881,12 +942,14 @@ textarea {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(17, 18, 26, 0.54);
+  background: var(--overlay);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: none;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  z-index: 50;
+  z-index: 2000;
 }
 
 .modal-overlay.open {
@@ -898,11 +961,17 @@ textarea {
   max-height: 90vh;
   overflow: auto;
   background: var(--panel);
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 28px;
   box-shadow: var(--shadow);
   padding: 24px;
   position: relative;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mentor-modal::-webkit-scrollbar {
+  display: none;
 }
 
 .modal-close {
@@ -915,13 +984,12 @@ textarea {
   width: 42px;
   height: 42px;
   border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--panel);
+  border: 1px solid var(--line);
+  background: var(--panel-soft-2);
   color: var(--text);
   font-size: 1.55rem;
   cursor: pointer;
   z-index: 20;
-  box-shadow: 0 6px 18px rgba(26, 31, 44, 0.08);
 }
 
 .direct-form-view {
@@ -939,7 +1007,7 @@ textarea {
   background: var(--purple-soft);
   color: var(--purple-dark);
   font-size: 0.73rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-bottom: 10px;
@@ -948,7 +1016,7 @@ textarea {
 .direct-header h2 {
   margin: 0 0 8px;
   font-size: 1.55rem;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.03em;
 }
 
@@ -961,16 +1029,16 @@ textarea {
 }
 
 .direct-section {
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   border-radius: 22px;
-  background: var(--panel-soft);
+  background: var(--panel-soft-2);
   padding: 18px;
   margin-bottom: 14px;
 }
 
 .direct-section-title {
   font-size: 0.92rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text);
   margin: 0 0 12px;
 }
@@ -982,8 +1050,8 @@ textarea {
 }
 
 .direct-field {
-  border: 1px solid var(--border);
-  background: #fff;
+  border: 1px solid var(--line);
+  background: var(--panel);
   border-radius: 16px;
   padding: 12px 14px;
 }
@@ -994,7 +1062,7 @@ textarea {
 
 .direct-field-label {
   font-size: 0.77rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
   margin-bottom: 6px;
   text-transform: uppercase;
@@ -1023,9 +1091,9 @@ textarea {
   padding: 7px 12px;
   border-radius: 999px;
   font-size: 0.85rem;
-  font-weight: 800;
-  border: 1px solid var(--border);
-  background: #fff;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  background: var(--panel);
 }
 
 .direct-binary-badge.yes {
@@ -1048,9 +1116,9 @@ textarea {
 
 .direct-service-card {
   min-height: 104px;
-  border: 2px solid #e3def5;
+  border: 2px solid var(--line);
   border-radius: 20px;
-  background: #fff;
+  background: var(--panel);
   opacity: 0.45;
   transform: scale(0.98);
   display: flex;
@@ -1060,22 +1128,23 @@ textarea {
   gap: 10px;
   padding: 14px 10px;
   text-align: center;
+  transition: all 0.2s ease;
 }
 
 .direct-service-card.active {
   opacity: 1;
-  border-color: #8c64ff;
-  background: linear-gradient(180deg, #ffffff 0%, #faf7ff 100%);
+  border-color: var(--purple);
+  background: var(--hover-bg);
   transform: scale(1);
-  box-shadow: 0 8px 18px rgba(109, 74, 255, 0.08);
+  box-shadow: var(--shadow);
 }
 
 .direct-service-icon {
   width: 52px;
   height: 52px;
   border-radius: 16px;
-  background: #f5efff;
-  border: 1px solid #e4d6ff;
+  background: var(--avatar-bg);
+  border: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1089,7 +1158,7 @@ textarea {
 
 .direct-service-card span {
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.15;
   max-width: 92px;
 }
@@ -1098,8 +1167,8 @@ textarea {
   margin: 0;
   font-size: 0.96rem;
   line-height: 1.6;
-  font-weight: 700;
-  color: #5f667d;
+  font-weight: 600;
+  color: var(--muted);
   white-space: pre-wrap;
 }
 
@@ -1163,8 +1232,8 @@ textarea {
 }
 
 @media (max-width: 720px) {
-  .main-content.simple-layout {
-    padding: 22px 18px 36px;
+  .simple-layout {
+    padding: 15px;
   }
 
   .page-header-copy h1 {
@@ -1217,13 +1286,13 @@ textarea {
 .sidebar-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--overlay);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   z-index: 998;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--ease);
 }
 
 .app-shell.sidebar-active .sidebar-overlay {
@@ -1233,8 +1302,8 @@ textarea {
 
 .sidebar {
   width: 294px;
-  background: #ffffff;
-  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--line);
   padding: 18px 16px;
   height: 100vh;
   position: sticky;
@@ -1242,17 +1311,18 @@ textarea {
   flex-shrink: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  transition: background 0.3s ease, border-color 0.3s ease;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .sidebar::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  display: none;
 }
 
 .sidebar-top {
   padding: 8px 0 22px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--line);
   margin-bottom: 18px;
 }
 
@@ -1274,21 +1344,21 @@ textarea {
   justify-content: center;
   color: white;
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 600;
   flex-shrink: 0;
 }
 
 .brand-title {
   font-size: 17px;
-  font-weight: 800;
-  color: #1f2430;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .brand-subtitle {
   margin-top: 6px;
   font-size: 10px;
   letter-spacing: 2px;
-  color: #7c8395;
+  color: var(--muted);
 }
 
 .sidebar-nav {
@@ -1305,20 +1375,22 @@ textarea {
   align-items: center;
   padding: 0 14px;
   text-decoration: none;
-  color: #1f2430;
+  color: var(--text);
   font-size: 14px;
   font-weight: 700;
+  transition: var(--ease);
 }
 
 .nav-item:hover {
-  background: #f7f3ff;
+  background: var(--hover-bg);
+  color: var(--purple);
 }
 
 .nav-item.active {
-  background: #f7f3ff;
-  border-color: #7c4dff;
-  box-shadow: 0 10px 22px rgba(124, 77, 255, 0.08);
-  color: #7c4dff;
+  background: var(--hover-bg);
+  border: 1px solid var(--hover-line);
+  box-shadow: var(--shadow);
+  color: var(--purple);
   transform: translateY(-1px);
 }
 
@@ -1327,8 +1399,24 @@ textarea {
   min-width: 0;
 }
 
+body[data-theme="dark"] .sidebar-top .brand-icon svg,
+body[data-theme="dark"] .nav-icon svg,
+body[data-theme="dark"] .mobile-menu-toggle svg {
+  filter: brightness(0) saturate(100%) invert(85%) sepia(12%) saturate(800%) hue-rotate(220deg) brightness(100%) contrast(100%);
+}
+
 @media (max-width: 991px) {
+  .mobile-menu-toggle {
+    display: flex;
+  }
+
+  .credits-box {
+    display: none;
+  }
+
   .topbar {
+    height: 64px;
+    padding: 0 16px;
     display: flex;
     position: sticky;
     top: 0;
@@ -1368,7 +1456,7 @@ textarea {
 }
 .main-content {
   flex: 1 !important;
-  padding: 24px !important;
+  padding: 0px !important;
   min-width: 0;
 }
 .page-shell, .demo14-page-wrap, .page-wrap {
