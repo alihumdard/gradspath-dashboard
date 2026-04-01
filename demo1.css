@@ -62,6 +62,7 @@ body[data-theme="dark"] {
 
 html,
 body {
+  height: 100%;
   margin: 0;
   padding: 0;
   background: var(--bg);
@@ -74,6 +75,7 @@ body {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
+  overflow: hidden;
 }
 
 body.modal-open,
@@ -105,8 +107,9 @@ button,
 
 .app-shell {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
   position: relative;
+  overflow: hidden;
 }
 
 .sidebar-overlay {
@@ -131,8 +134,18 @@ button,
   background: var(--sidebar-bg);
   border-right: 1px solid var(--line);
   padding: 18px 16px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Hide scrollbar for Firefox */
+  -ms-overflow-style: none; /* Hide scrollbar for IE/Edge */
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome/Safari */
 }
 
 .sidebar-top {
@@ -159,13 +172,13 @@ button,
   justify-content: center;
   color: white;
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 600;
   flex-shrink: 0;
 }
 
 .brand-title {
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text);
 }
 
@@ -208,7 +221,7 @@ button,
   letter-spacing: 1.4px;
   text-transform: uppercase;
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 600;
   margin-top: 8px;
   margin-bottom: 0;
 }
@@ -298,7 +311,9 @@ button,
 
 .main-content {
   flex: 1;
-  padding: 0;
+  height: 100vh;
+  overflow-y: auto;
+  min-width: 0;
 }
 
 .topbar {
@@ -375,7 +390,7 @@ button,
   background: var(--panel-soft-2);
   color: var(--purple-dark);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -386,10 +401,10 @@ button,
 }
 
 .credits-box {
-  min-height: 50px;
+  min-height: 40px;
   border: 1px solid var(--line);
   background: var(--sidebar-bg);
-  border-radius: 16px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -413,7 +428,7 @@ button,
   padding: 0 15px;
   border-radius: 13px;
   border: none;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 13px;
   cursor: pointer;
   background: linear-gradient(135deg, #7a4dff, #9f55ff);
@@ -435,8 +450,8 @@ button,
 }
 
 .mentor-hero {
-  margin: 20px 28px 0;
-  padding: 26px 0px;
+  margin: 17px;
+  padding: 10px 0px;
   background: transparent;
   border-radius: 0;
   display: flex;
@@ -447,7 +462,8 @@ button,
 
 .mentor-hero-left h1 {
   margin: 0 0 4px 0;
-  font-size: 40px;
+  font-weight: 600;
+  font-size: 2rem;
   line-height: 1;
   letter-spacing: -0.03em;
   color: var(--purple-dark);
@@ -469,7 +485,7 @@ button,
 
 .mentor-hero-links a {
   text-decoration: none;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 13px;
 }
 
@@ -487,7 +503,7 @@ button,
 }
 
 .content-section {
-  padding: 14px 28px 0;
+  padding: 17px;
 }
 
 .section-head {
@@ -554,13 +570,13 @@ button,
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
   flex-shrink: 0;
 }
 
 .mentor-name {
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text);
   margin-bottom: 3px;
 }
@@ -575,7 +591,7 @@ button,
 .mentor-rating {
   background: var(--rating-bg);
   color: var(--rating-text);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 12px;
   border-radius: 8px;
   padding: 6px 10px;
@@ -590,7 +606,7 @@ button,
 
 .mentor-office-hours-title {
   color: var(--purple);
-  font-weight: 800;
+  font-weight: 600;
   margin-right: 6px;
 }
 
@@ -669,7 +685,7 @@ button,
 
 .services-toggle-text {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -712,7 +728,7 @@ button,
   color: var(--purple);
   background: transparent;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.2;
   user-select: none;
   pointer-events: none;
@@ -732,7 +748,7 @@ button,
 
 .student-note-title {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--teal);
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -883,7 +899,7 @@ button,
   color: var(--purple);
   border-radius: 20px;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -944,7 +960,7 @@ button,
   background: var(--sidebar-bg);
   color: var(--purple);
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -976,7 +992,7 @@ button,
 
 .rules-title {
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--purple-dark);
   margin-bottom: 10px;
 }
@@ -994,7 +1010,7 @@ button,
   justify-content: space-between;
   gap: 20px;
   font-size: 21px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--purple-dark);
   margin-bottom: 16px;
 }
@@ -1110,9 +1126,15 @@ button,
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .topbar-right .credits-box,
-  .topbar-right .theme-toggle {
+  .topbar-right .credits-box {
     display: none;
+  }
+  .topbar-right .theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    padding: 0 10px;
   }
 
   .mentor-hero-left h1 {
@@ -1154,10 +1176,12 @@ button,
 }
 .main-content {
   flex: 1 !important;
-  padding: 24px !important;
+  padding: 0px !important;
   min-width: 0;
 }
-.page-shell, .demo14-page-wrap, .page-wrap {
+.page-shell,
+.demo14-page-wrap,
+.page-wrap {
   max-width: 1400px !important;
   margin: 0 auto !important;
   padding-top: 12px !important;
@@ -1170,12 +1194,15 @@ button,
   gap: 24px !important;
   margin-bottom: 24px !important;
 }
-.title-wrap h1, .page-heading h1 {
+.title-wrap h1,
+.page-heading h1 {
   font-size: 34px !important;
   line-height: 1.2 !important;
   margin-bottom: 12px !important;
 }
-.title-wrap p, .page-heading p, .info-copy p {
+.title-wrap p,
+.page-heading p,
+.info-copy p {
   font-size: 16px !important;
   color: #5f6585 !important;
   max-width: 870px !important;

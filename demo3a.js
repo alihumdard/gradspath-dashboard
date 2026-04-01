@@ -522,6 +522,8 @@ const mentorPanelTitle = document.getElementById("mentorPanelTitle");
 const mentorPanelSubtext = document.getElementById("mentorPanelSubtext");
 const seeAllMentorsBtn = document.getElementById("seeAllMentorsBtn");
 const schoolSearchInput = document.getElementById("schoolSearchInput");
+const topbarSearch = document.getElementById("topbarSearch");
+const themeToggle = document.getElementById("themeToggle");
 
 const state = {
   tier: "All",
@@ -1059,10 +1061,27 @@ if (seeAllMentorsBtn) {
   });
 }
 
-schoolSearchInput.addEventListener("input", (event) => {
-  state.search = event.target.value;
-  renderAllUniversitiesView();
-});
+// Theme logic is at the end of the file.
+
+if (topbarSearch) {
+  topbarSearch.addEventListener("input", (event) => {
+    state.search = event.target.value;
+    if (schoolSearchInput) {
+      schoolSearchInput.value = state.search;
+    }
+    renderAllUniversitiesView();
+  });
+}
+
+if (schoolSearchInput) {
+  schoolSearchInput.addEventListener("input", (event) => {
+    state.search = event.target.value;
+    if (topbarSearch) {
+      topbarSearch.value = state.search;
+    }
+    renderAllUniversitiesView();
+  });
+}
 
 renderAllUniversitiesView();
 
@@ -1077,6 +1096,19 @@ if (menuBtn && shell) {
 if (overlay && shell) {
   overlay.onclick = () => shell.classList.remove("sidebar-active");
 }
+
+// Initial state check
+if (themeToggle) {
+  themeToggle.onclick = () => {
+    const body = document.body;
+    const currentTheme = body.getAttribute("data-theme") || "light";
+    const newTheme = currentTheme === "dark" ? "light" : "dark";
+    body.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+  };
+}
+
+// Default to light mode (persistence load removed from script)
 
 const navItems = document.querySelectorAll(".nav-item");
 
@@ -1102,3 +1134,4 @@ navItems.forEach((item) => {
     if (shell) shell.classList.remove("sidebar-active");
   });
 });
+
