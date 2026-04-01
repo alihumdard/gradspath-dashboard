@@ -250,7 +250,7 @@ h3 {
   height: 72px;
   background: #ffffff;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  display: none; /* Hidden on desktop */
+  display: flex; /* Visible on all screens */
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
