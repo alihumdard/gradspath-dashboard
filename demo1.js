@@ -46,14 +46,15 @@ const officeHoursPricing = {
 // Load saved theme from localStorage, default to 'light'
 (function initTheme() {
   const savedTheme = localStorage.getItem("theme") || "light";
-  body.setAttribute("data-theme", savedTheme);
+  document.documentElement.setAttribute("data-theme", savedTheme);
 })();
 
 if (themeToggle) {
   themeToggle.addEventListener("click", () => {
-    const currentTheme = body.getAttribute("data-theme") || "light";
+    const currentTheme =
+      document.documentElement.getAttribute("data-theme") || "light";
     const newTheme = currentTheme === "light" ? "dark" : "light";
-    body.setAttribute("data-theme", newTheme);
+    document.documentElement.setAttribute("data-theme", newTheme);
     localStorage.setItem("theme", newTheme);
   });
 }

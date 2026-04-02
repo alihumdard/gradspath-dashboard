@@ -7,8 +7,8 @@
   --ease: 0.2s ease;
 }
 
-body[data-theme="light"] {
-  --bg: #f6f3fb;
+[data-theme="light"] {
+  --bg: #f5f5f8;
   --sidebar-bg: #ffffff;
   --panel: #ffffff;
   --panel-soft: #ffffff;
@@ -31,12 +31,12 @@ body[data-theme="light"] {
   --hover-shadow: 0 14px 30px rgba(122, 77, 255, 0.1);
 }
 
-body[data-theme="dark"] {
-  --bg: #0f1013;
-  --sidebar-bg: #14161b;
-  --panel: #1b1e24;
+[data-theme="dark"] {
+  --bg: #131018;
+  --sidebar-bg: #1f1a28;
+  --panel: #1f1a28;
   --panel-soft: #1b1e24;
-  --panel-soft-2: #242831;
+  --panel-soft-2: #1f1a28;
   --card: #1b1e24;
   --card-soft: #1e222a;
   --text: #ffffff;
@@ -406,7 +406,9 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease;
 }
 
 .store-btn:hover,
@@ -674,7 +676,7 @@ a {
 .note-box-name {
   margin: 0 0 4px;
   color: var(--text);
-  font-size: 0.80rem;
+  font-size: 0.8rem;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -1176,7 +1178,7 @@ a {
   .mobile-menu-toggle {
     display: flex;
   }
-  
+
   .topbar {
     display: flex;
     position: sticky;
@@ -1220,7 +1222,9 @@ a {
   padding: 0px !important;
   min-width: 0;
 }
-.page-shell, .demo14-page-wrap, .page-wrap {
+.page-shell,
+.demo14-page-wrap,
+.page-wrap {
   max-width: 1400px !important;
   margin: 0 auto !important;
   padding-top: 12px !important;
@@ -1233,12 +1237,15 @@ a {
   gap: 24px !important;
   margin-bottom: 24px !important;
 }
-.title-wrap h1, .page-heading h1 {
+.title-wrap h1,
+.page-heading h1 {
   font-size: 34px !important;
   line-height: 1.2 !important;
   margin-bottom: 12px !important;
 }
-.title-wrap p, .page-heading p, .info-copy p {
+.title-wrap p,
+.page-heading p,
+.info-copy p {
   font-size: 16px !important;
   color: var(--muted) !important;
   max-width: 870px !important;

@@ -10,8 +10,8 @@
   --ease: 0.18s ease;
 }
 
-body[data-theme="light"] {
-  --bg: #ffffff;
+[data-theme="light"] {
+  --bg: #f5f5f8;
   --sidebar-bg: #ffffff;
   --panel: #ffffff;
   --hero-bg: #f3eef9;
@@ -40,7 +40,7 @@ body[data-theme="light"] {
   --glass-bg: rgba(255, 255, 255, 0.94);
 }
 
-body[data-theme="dark"] {
+[data-theme="dark"] {
   --bg: #0f0b15;
   --sidebar-bg: #16121d;
   --panel: #1b1625;

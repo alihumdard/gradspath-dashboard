@@ -14,8 +14,14 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+     <script>
+      (function () {
+        const savedTheme = localStorage.getItem("theme") || "light";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+      })();
+    </script>
   </head>
-  <body data-theme="light">
+  <body>
     <div class="app-shell">
       <div class="sidebar-overlay" id="sidebarOverlay"></div>
       <aside class="sidebar">
