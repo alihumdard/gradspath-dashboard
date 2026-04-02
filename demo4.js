@@ -227,10 +227,16 @@ let activeProgram = "all";
 let mentorSearchTerm = "";
 let schoolSearchTerm = "";
 
+// Load saved theme from localStorage, default to 'light'
+(function initTheme() {
+  const savedTheme = localStorage.getItem("theme") || "light";
+  body.setAttribute("data-theme", savedTheme);
+})();
+
 // Theme Switching
 if (themeToggle) {
   themeToggle.addEventListener("click", () => {
-    const currentTheme = body.getAttribute("data-theme");
+    const currentTheme = body.getAttribute("data-theme") || "light";
     const newTheme = currentTheme === "dark" ? "light" : "dark";
     body.setAttribute("data-theme", newTheme);
     localStorage.setItem("theme", newTheme);

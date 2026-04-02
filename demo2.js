@@ -7,22 +7,21 @@ const payButton = document.getElementById("payButton");
 const themeToggle = document.getElementById("themeToggle");
 const heroIcon = document.querySelector(".icon-top");
 
+// Load saved theme from localStorage, default to 'light'
+(function initTheme() {
+  const savedTheme = localStorage.getItem("theme") || "light";
+  document.body.setAttribute("data-theme", savedTheme);
+})();
+
 // Theme Toggle Logic
 if (themeToggle) {
   themeToggle.addEventListener("click", () => {
-    const currentTheme = document.body.getAttribute("data-theme");
+    const currentTheme = document.body.getAttribute("data-theme") || "light";
     const newTheme = currentTheme === "dark" ? "light" : "dark";
     document.body.setAttribute("data-theme", newTheme);
     localStorage.setItem("theme", newTheme);
   });
 }
-
-// Load saved theme
-// Load saved theme (Temporarily disabled to fulfill the "default to light" requirement)
-// const savedTheme = localStorage.getItem("theme");
-// if (savedTheme) {
-//   document.body.setAttribute("data-theme", savedTheme);
-// }
 
 function updateProgram(program) {
   summaryProgram.textContent = program;

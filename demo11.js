@@ -1,4 +1,21 @@
+const body = document.body;
+const themeToggle = document.getElementById("themeToggle");
 const userHasOfficeHoursCredits = false;
+
+// Theme logic (consistent with demo1)
+(function initTheme() {
+  const savedTheme = localStorage.getItem("theme") || "light";
+  body.setAttribute("data-theme", savedTheme);
+})();
+
+if (themeToggle) {
+  themeToggle.addEventListener("click", () => {
+    const currentTheme = body.getAttribute("data-theme") || "light";
+    const newTheme = currentTheme === "light" ? "dark" : "light";
+    body.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+  });
+}
 
 const services = [
   {

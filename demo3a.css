@@ -466,13 +466,13 @@ body {
 .top-bar h1 {
   margin: 0;
   font-size: 2rem;
-  line-height: 1.1;
+  line-height: 0.5;
   font-weight: 600;
   letter-spacing: -0.03em;
 }
 
 .intro-text {
-  margin: 0 0 28px;
+  margin: 0 0 40px;
   font-size: 1rem;
   line-height: 1.5;
   color: var(--muted);

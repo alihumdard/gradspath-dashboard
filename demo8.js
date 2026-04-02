@@ -460,10 +460,36 @@ const overlay = document.getElementById("sidebarOverlay");
 const shell = document.querySelector(".app-shell");
 
 if (menuBtn && shell) {
-  menuBtn.onclick = () => shell.classList.add("sidebar-active");
+  menuBtn.addEventListener("click", () => shell.classList.add("sidebar-active"));
 }
 if (overlay && shell) {
-  overlay.onclick = () => shell.classList.remove("sidebar-active");
+  overlay.addEventListener("click", () => shell.classList.remove("sidebar-active"));
+}
+
+// Theme Toggle Logic
+const themeToggle = document.getElementById("themeToggle");
+const body = document.body;
+
+function updateTheme(theme) {
+  body.setAttribute("data-theme", theme);
+  localStorage.setItem("theme", theme);
+  
+  // Optional: Update toggle button text or icon if needed
+  if (themeToggle) {
+    themeToggle.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
+  }
+}
+
+// Load saved theme from localStorage, default to 'light'
+const savedTheme = localStorage.getItem("theme") || "light";
+updateTheme(savedTheme);
+
+if (themeToggle) {
+  themeToggle.addEventListener("click", () => {
+    const currentTheme = body.getAttribute("data-theme") || "light";
+    const newTheme = currentTheme === "dark" ? "light" : "dark";
+    updateTheme(newTheme);
+  });
 }
 
 // Sidebar navigation logic

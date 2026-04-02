@@ -43,13 +43,18 @@ const officeHoursPricing = {
   Therapy: "$200/month",
 };
 
+// Load saved theme from localStorage, default to 'light'
+(function initTheme() {
+  const savedTheme = localStorage.getItem("theme") || "light";
+  body.setAttribute("data-theme", savedTheme);
+})();
+
 if (themeToggle) {
   themeToggle.addEventListener("click", () => {
-    const currentTheme = body.getAttribute("data-theme");
-    body.setAttribute(
-      "data-theme",
-      currentTheme === "light" ? "dark" : "light",
-    );
+    const currentTheme = body.getAttribute("data-theme") || "light";
+    const newTheme = currentTheme === "light" ? "dark" : "light";
+    body.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
   });
 }
 

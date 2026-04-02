@@ -278,9 +278,9 @@ document.addEventListener("DOMContentLoaded", () => {
   mentorsStatusFilter.addEventListener("change", filterMentors);
 
   // Mobile sidebar toggle
-  const menuBtn = document.getElementById("mobileMenuToggle");
-  const overlay = document.getElementById("sidebarOverlay");
-  const shell = document.querySelector(".app-shell");
+  const menuBtn = document.getElementById("mobileMenuToggle") || document.getElementById("adminMenuToggle");
+  const overlay = document.getElementById("sidebarOverlay") || document.getElementById("adminSidebarOverlay");
+  const shell = document.querySelector(".app-shell") || document.querySelector(".dashboard");
 
   if (menuBtn && shell) {
     menuBtn.addEventListener("click", (e) => {
