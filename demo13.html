@@ -5,9 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>dashboard - Office Hours This Week</title>
     <link rel="stylesheet" href="demo13.css" />
+     <script>
+      (function () {
+        const savedTheme = localStorage.getItem("theme") || "light";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+      })();
+    </script>
   </head>
 
-  <body data-theme="light">
+  <body>
     <div class="app-shell">
       <div class="sidebar-overlay" id="sidebarOverlay"></div>
       <aside class="sidebar">

@@ -6,9 +6,15 @@
     <title>demo3a</title>
     <link rel="stylesheet" href="demo3a.css" />
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+      (function () {
+        const savedTheme = localStorage.getItem("theme") || "light";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+      })();
+    </script>
   </head>
 
-  <body data-theme="light">
+  <body>
     <div class="app-shell">
       <div class="sidebar-overlay" id="sidebarOverlay"></div>
       <aside class="sidebar">

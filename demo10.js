@@ -685,7 +685,7 @@ function updateTheme(theme) {
   localStorage.setItem("theme", theme);
   
   if (themeToggle) {
-    themeToggle.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
+    themeToggle.textContent = theme === "dark" ? "Light / Dark" : "Dark / Light";
   }
 }
 
