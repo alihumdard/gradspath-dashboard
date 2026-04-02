@@ -1340,8 +1340,7 @@ body {
   }
 
   .search-wrap {
-    display: flex;
-    max-width: none;
+    display: none;
   }
 
   .topbar-right .credits-box {
