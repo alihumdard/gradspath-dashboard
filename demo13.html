@@ -266,14 +266,15 @@
                 <line x1="3" y1="18" x2="21" y2="18"></line>
               </svg>
             </button>
-            <div class="search-wrap">
+            <!-- <div class="search-wrap">
               <input
                 type="text"
                 class="search-input"
                 placeholder="Search mentors, universities..."
               />
-            </div>
+            </div> -->
           </div>
+
           <div class="topbar-right">
             <button class="theme-toggle" id="themeToggle" type="button">
               Light / Dark
@@ -447,19 +448,6 @@
         </section>
       </main>
     </div>
-    <script>
-      const bookBtn = card.querySelector(".book-now-btn");
-      bookBtn.addEventListener("click", () => {
-        const confirmBooking = confirm(
-          "Booking this session will use 1 credit. Proceed?",
-        );
-        if (confirmBooking) {
-          // Logic to deduct 1 credit here
-          alert("Success! Your seat is reserved.");
-          window.location.href = "demo9.html"; // Redirect straight to Bookings
-        }
-      });
-    </script>
     <script src="demo13.js"></script>
   </body>
 </html>

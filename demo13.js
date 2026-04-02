@@ -151,13 +151,6 @@ const mentors = [
   }
 ];
 
-const mentorGrid = document.getElementById("mentorGrid");
-const mentorSearchInput = document.getElementById("mentorSearch");
-const schoolSearchInput = document.getElementById("schoolSearch");
-const mentorCount = document.getElementById("mentorCount");
-const resultsSummary = document.getElementById("resultsSummary");
-const filterPills = document.querySelectorAll(".filter-pill");
-
 const state = {
   mentorType: "Graduates",
   programType: "All",
@@ -165,19 +158,58 @@ const state = {
   schoolSearch: ""
 };
 
+// UI Elements
+const body = document.body;
+const appShell = document.querySelector(".app-shell");
+const themeToggle = document.getElementById("themeToggle");
+const mobileMenuToggle = document.getElementById("mobileMenuToggle");
+const sidebarOverlay = document.getElementById("sidebarOverlay");
+const mentorGrid = document.getElementById("mentorGrid");
+const mentorSearchInput = document.getElementById("mentorSearch");
+const schoolSearchInput = document.getElementById("schoolSearch");
+const mentorCount = document.getElementById("mentorCount");
+const resultsSummary = document.getElementById("resultsSummary");
+const filterPills = document.querySelectorAll(".filter-pill");
+
+// Theme Logic
+function initTheme() {
+  const savedTheme = localStorage.getItem("theme") || "light";
+  body.setAttribute("data-theme", savedTheme);
+}
+
+if (themeToggle) {
+  themeToggle.addEventListener("click", () => {
+    const currentTheme = body.getAttribute("data-theme");
+    const newTheme = currentTheme === "light" ? "dark" : "light";
+    body.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+  });
+}
+
+// Sidebar Logic
+if (mobileMenuToggle) {
+  mobileMenuToggle.addEventListener("click", () => {
+    appShell.classList.add("sidebar-active");
+  });
+}
+
+if (sidebarOverlay) {
+  sidebarOverlay.addEventListener("click", () => {
+    appShell.classList.remove("sidebar-active");
+  });
+}
+
+// Helper Functions
 function getSpotsNote(mentor) {
   if (mentor.spotsFilled === 1) {
     return "Only one student is currently booked. If no one else joins by the cutoff, this student may choose another eligible service shown below.";
   }
-
   if (mentor.spotsFilled >= mentor.maxSpots) {
     return "This session is full for this week.";
   }
-
   if (mentor.spotsFilled === 0) {
     return "No students are currently booked. The scheduled service for this week is currently open.";
   }
-
   return "Multiple students are already booked, so the session will stay focused on this week's designated rotating service.";
 }
 
@@ -191,83 +223,46 @@ function getDisplayProgramLine(mentor) {
 }
 
 function renderMentorIcon(type) {
-  if (type === "law") {
-    return `
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 3 4 7v2h16V7l-8-4Zm-6 8h12v2H6v-2Zm1 4h10l1 5H6l1-5Z"/>
-      </svg>
-    `;
-  }
-
-  if (type === "mba") {
-    return `
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M3 6.5 12 3l9 3.5-9 3.5L3 6.5Zm3 5.2 6 2.3 6-2.3V16l-6 2.5L6 16v-4.3Zm-3 2.1 2 .8V18l7 3 7-3v-3.4l2-.8V18l-9 3.5L3 18v-4.2Z"/>
-      </svg>
-    `;
-  }
-
-  return `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 2a5 5 0 0 0-5 5c0 3.9 5 9 5 9s5-5.1 5-9a5 5 0 0 0-5-5Zm0 7.1A2.1 2.1 0 1 1 12 5a2.1 2.1 0 0 1 0 4.1ZM5 20c0-2.8 3.1-4.5 7-4.5s7 1.7 7 4.5v1H5v-1Z"/>
-    `;
+  const icons = {
+    law: `<svg viewBox="0 0 24 24"><path d="M12 3 4 7v2h16V7l-8-4Zm-6 8h12v2H6v-2Zm1 4h10l1 5H6l1-5Z"/></svg>`,
+    mba: `<svg viewBox="0 0 24 24"><path d="M3 6.5 12 3l9 3.5-9 3.5L3 6.5Zm3 5.2 6 2.3 6-2.3V16l-6 2.5L6 16v-4.3Zm-3 2.1 2 .8V18l7 3 7-3v-3.4l2-.8V18l-9 3.5L3 18v-4.2Z"/></svg>`,
+    therapy: `<svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5c0 3.9 5 9 5 9s5-5.1 5-9a5 5 0 0 0-5-5Zm0 7.1A2.1 2.1 0 1 1 12 5a2.1 2.1 0 0 1 0 4.1ZM5 20c0-2.8 3.1-4.5 7-4.5s7 1.7 7 4.5v1H5v-1Z"/></svg>`
+  };
+  return icons[type] || icons.therapy;
 }
 
 function renderMentors() {
   const filtered = mentors.filter((mentor) => {
     const matchesMentorType = mentor.mentorType === state.mentorType;
-    const matchesProgram =
-      state.programType === "All" || mentor.program === state.programType;
-    const matchesMentorSearch = mentor.name
-      .toLowerCase()
-      .includes(state.mentorSearch.toLowerCase());
-    const matchesSchoolSearch = mentor.school
-      .toLowerCase()
-      .includes(state.schoolSearch.toLowerCase());
-
-    return (
-      matchesMentorType &&
-      matchesProgram &&
-      matchesMentorSearch &&
-      matchesSchoolSearch
-    );
+    const matchesProgram = state.programType === "All" || mentor.program === state.programType;
+    const matchesMentorSearch = mentor.name.toLowerCase().includes(state.mentorSearch.toLowerCase());
+    const matchesSchoolSearch = mentor.school.toLowerCase().includes(state.schoolSearch.toLowerCase());
+    return matchesMentorType && matchesProgram && matchesMentorSearch && matchesSchoolSearch;
   });
 
   mentorCount.textContent = filtered.length;
-
-  const mentorText = state.mentorSearch ? state.mentorSearch : "All Mentors";
-  const schoolText = state.schoolSearch ? state.schoolSearch : "All Schools";
-
-  resultsSummary.textContent = `${state.mentorType} • ${state.programType} • ${mentorText} • ${schoolText}`;
+  resultsSummary.textContent = `${state.mentorType} • ${state.programType} • ${state.mentorSearch || "All Mentors"} • ${state.schoolSearch || "All Schools"}`;
 
   if (!filtered.length) {
-    mentorGrid.innerHTML = `
-      <div class="empty-state">
-        No mentors match your current filters.
-      </div>
-    `;
+    mentorGrid.innerHTML = `<div class="empty-state">No mentors match your current filters.</div>`;
     return;
   }
 
-  mentorGrid.innerHTML = filtered
-    .map((mentor) => {
-      const isFull = mentor.spotsFilled >= mentor.maxSpots;
-      const progress = (mentor.spotsFilled / mentor.maxSpots) * 100;
-      const shortDescription = truncateText(mentor.description, 120);
+  mentorGrid.innerHTML = filtered.map((mentor) => {
+    const isFull = mentor.spotsFilled >= mentor.maxSpots;
+    const progress = (mentor.spotsFilled / mentor.maxSpots) * 100;
+    const shortDescription = truncateText(mentor.description, 120);
 
-      return `
+    return `
         <article class="mentor-card">
           <div class="card-header">
             <div class="mentor-meta">
-              <div class="avatar-box">
-                ${renderMentorIcon(mentor.icon)}
-              </div>
+              <div class="avatar-box">${renderMentorIcon(mentor.icon)}</div>
               <div class="meta-text">
                 <h3>${mentor.name}</h3>
                 <p>${getDisplayProgramLine(mentor)}</p>
               </div>
             </div>
-
             <div class="rating-pill">★ ${mentor.rating.toFixed(1)}</div>
           </div>
 
@@ -276,46 +271,23 @@ function renderMentors() {
           </p>
 
           <div class="description-block">
-            <p
-              class="description-text"
-              data-full="${mentor.description.replace(/"/g, "&quot;")}"
-              data-short="${shortDescription.replace(/"/g, "&quot;")}"
-              data-expanded="false"
-            >
+            <p class="description-text" 
+               data-full="${mentor.description.replace(/"/g, "&quot;")}" 
+               data-short="${shortDescription.replace(/"/g, "&quot;")}" 
+               data-expanded="false">
               ${shortDescription}
             </p>
-            ${
-              mentor.description.length > 120
-                ? `<button class="read-more-btn" type="button">Read More</button>`
-                : ""
-            }
+            ${mentor.description.length > 120 ? `<button class="read-more-btn" type="button">Read More</button>` : ""}
           </div>
 
           <div class="card-main-box">
             <div class="info-grid">
-              <div class="info-item">
-                <span class="info-label">This Week's Service</span>
-                <span class="info-value">${mentor.weeklyService}</span>
-              </div>
-
-              <div class="info-item">
-                <span class="info-label">Session Time</span>
-                <span class="info-value">${mentor.sessionTime}</span>
-              </div>
-
-              <div class="info-item">
-                <span class="info-label">Rotation</span>
-                <span class="info-value">${mentor.rotation}</span>
-              </div>
-
+              <div class="info-item"><span class="info-label">This Week's Service</span><span class="info-value">${mentor.weeklyService}</span></div>
+              <div class="info-item"><span class="info-label">Session Time</span><span class="info-value">${mentor.sessionTime}</span></div>
+              <div class="info-item"><span class="info-label">Rotation</span><span class="info-value">${mentor.rotation}</span></div>
               <div class="info-item spots-item">
-                <div class="spots-top">
-                  <span class="info-label">Spots Filled</span>
-                  <span class="spots-count">${mentor.spotsFilled}/${mentor.maxSpots}</span>
-                </div>
-                <div class="progress-track">
-                  <div class="progress-fill" style="width: ${progress}%"></div>
-                </div>
+                <div class="spots-top"><span class="info-label">Spots Filled</span><span class="spots-count">${mentor.spotsFilled}/${mentor.maxSpots}</span></div>
+                <div class="progress-track"><div class="progress-fill" style="width: ${progress}%"></div></div>
               </div>
             </div>
 
@@ -327,15 +299,7 @@ function renderMentors() {
             <div class="services-display">
               <p class="services-title">Service Options</p>
               <div class="services-grid">
-                ${mentor.servicesOffered
-                  .map(
-                    (service) => `
-                      <div class="service-card ${service === mentor.weeklyService ? "active" : ""}">
-                        ${service}
-                      </div>
-                    `
-                  )
-                  .join("")}
+                ${mentor.servicesOffered.map(service => `<div class="service-card ${service === mentor.weeklyService ? "active" : ""}">${service}</div>`).join("")}
               </div>
             </div>
 
@@ -345,22 +309,18 @@ function renderMentors() {
               </button>
             </div>
           </div>
-        </article>
-      `;
-    })
-    .join("");
+        </article>`;
+  }).join("");
 
-  attachReadMoreEvents();
+  attachEvents();
 }
 
-function attachReadMoreEvents() {
-  const buttons = document.querySelectorAll(".read-more-btn");
-
-  buttons.forEach((button) => {
+function attachEvents() {
+  // Read More
+  document.querySelectorAll(".read-more-btn").forEach(button => {
     button.addEventListener("click", () => {
       const textEl = button.previousElementSibling;
       const expanded = textEl.dataset.expanded === "true";
-
       if (expanded) {
         textEl.textContent = textEl.dataset.short;
         textEl.dataset.expanded = "false";
@@ -372,19 +332,27 @@ function attachReadMoreEvents() {
       }
     });
   });
+
+  // Booking
+  document.querySelectorAll(".book-btn").forEach(button => {
+    button.addEventListener("click", () => {
+      if (button.classList.contains("full")) return;
+      const confirmBooking = confirm("Booking this session will use 1 credit. Proceed?");
+      if (confirmBooking) {
+        alert("Success! Your seat is reserved.");
+        window.location.href = "demo9.html";
+      }
+    });
+  });
 }
 
-filterPills.forEach((pill) => {
+// Global Filtering Listeners
+filterPills.forEach(pill => {
   pill.addEventListener("click", () => {
     const group = pill.dataset.filterGroup;
-    const value = pill.dataset.value;
-
-    document
-      .querySelectorAll(`.filter-pill[data-filter-group="${group}"]`)
-      .forEach((item) => item.classList.remove("active"));
-
+    document.querySelectorAll(`.filter-pill[data-filter-group="${group}"]`).forEach(item => item.classList.remove("active"));
     pill.classList.add("active");
-    state[group] = value;
+    state[group] = pill.dataset.value;
     renderMentors();
   });
 });
@@ -399,4 +367,17 @@ schoolSearchInput.addEventListener("input", (e) => {
   renderMentors();
 });
 
+// Sidebar Active Navigation
+function setActiveNav() {
+  const currentPath = window.location.pathname.split("/").pop() || "demo1.html";
+  document.querySelectorAll(".nav-item").forEach(item => {
+    const href = item.getAttribute("href");
+    if (href === currentPath) item.classList.add("active");
+    else item.classList.remove("active");
+  });
+}
+
+// Initialize
+initTheme();
+setActiveNav();
 renderMentors();

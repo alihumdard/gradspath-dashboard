@@ -206,6 +206,13 @@ const mentors = [
   },
 ];
 
+// UI References
+const body = document.body;
+const themeToggle = document.getElementById("themeToggle");
+const mobileMenuToggle = document.getElementById("mobileMenuToggle");
+const sidebarOverlay = document.getElementById("sidebarOverlay");
+const appShell = document.querySelector(".app-shell");
+
 const mentorGrid = document.getElementById("mentorGrid");
 const searchMentor = document.getElementById("searchMentor");
 const searchSchool = document.getElementById("searchSchool");
@@ -220,6 +227,32 @@ let activeProgram = "all";
 let mentorSearchTerm = "";
 let schoolSearchTerm = "";
 
+// Theme Switching
+if (themeToggle) {
+  themeToggle.addEventListener("click", () => {
+    const currentTheme = body.getAttribute("data-theme");
+    const newTheme = currentTheme === "dark" ? "light" : "dark";
+    body.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+  });
+}
+
+// Sidebar Controls
+if (mobileMenuToggle) {
+  mobileMenuToggle.addEventListener("click", () => {
+    appShell.classList.add("sidebar-active");
+    body.classList.add("sidebar-open");
+  });
+}
+
+if (sidebarOverlay) {
+  sidebarOverlay.addEventListener("click", () => {
+    appShell.classList.remove("sidebar-active");
+    body.classList.remove("sidebar-open");
+  });
+}
+
+// Logic Functions
 function getProgramOptionsForTab() {
   return activeTab === "graduates"
     ? graduatesProgramOptions
@@ -402,6 +435,7 @@ function renderMentors() {
   );
 }
 
+// Action Listeners
 tabPills.forEach((pill) => {
   pill.addEventListener("click", () => {
     tabPills.forEach((p) => p.classList.remove("active"));
@@ -423,5 +457,6 @@ searchSchool.addEventListener("input", (e) => {
   renderMentors();
 });
 
+// Initialization
 renderProgramPills();
 renderMentors();
