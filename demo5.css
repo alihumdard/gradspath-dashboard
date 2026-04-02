@@ -313,7 +313,9 @@ textarea {
   justify-content: space-between;
   padding: 0 24px;
   gap: 20px;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease;
 }
 
 .topbar-left,
@@ -502,7 +504,9 @@ textarea {
   border-radius: 24px;
   padding: 24px 26px;
   box-shadow: var(--shadow);
-  transition: transform var(--ease), border-color var(--ease);
+  transition:
+    transform var(--ease),
+    border-color var(--ease);
 }
 
 .overview-label {
@@ -631,7 +635,9 @@ textarea {
   display: flex;
   flex-direction: column;
   min-height: 340px;
-  transition: transform 0.25s ease, border-color 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .mentor-card:hover {
@@ -676,7 +682,7 @@ textarea {
 .mentor-meta {
   margin: 0;
   color: var(--muted);
-  font-size: 0.80rem;
+  font-size: 0.8rem;
   font-weight: 600;
   line-height: 1.35;
 }
@@ -687,7 +693,7 @@ textarea {
   border-radius: 10px;
   padding: 10px;
   font-weight: 600;
-  font-size: 0.80rem;
+  font-size: 0.8rem;
   min-width: 60px;
   text-align: center;
   line-height: 1;
@@ -1311,7 +1317,9 @@ textarea {
   flex-shrink: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -1388,10 +1396,14 @@ textarea {
 
 .nav-item.active {
   background: var(--hover-bg);
-  border: 1px solid var(--hover-line);
+  border: 1px solid var(--active-blue);
   box-shadow: var(--shadow);
-  color: var(--purple);
+  color: var(--active-blue);
   transform: translateY(-1px);
+}
+
+.nav-item.active .nav-icon {
+  color: inherit;
 }
 
 .main-content {
@@ -1402,7 +1414,12 @@ textarea {
 body[data-theme="dark"] .sidebar-top .brand-icon svg,
 body[data-theme="dark"] .nav-icon svg,
 body[data-theme="dark"] .mobile-menu-toggle svg {
-  filter: brightness(0) saturate(100%) invert(85%) sepia(12%) saturate(800%) hue-rotate(220deg) brightness(100%) contrast(100%);
+  filter: brightness(0) saturate(100%) invert(85%) sepia(12%) saturate(800%)
+    hue-rotate(220deg) brightness(100%) contrast(100%);
+}
+
+body[data-theme="dark"] .nav-item.active .nav-icon svg {
+  filter: none;
 }
 
 @media (max-width: 991px) {
@@ -1459,7 +1476,9 @@ body[data-theme="dark"] .mobile-menu-toggle svg {
   padding: 0px !important;
   min-width: 0;
 }
-.page-shell, .demo14-page-wrap, .page-wrap {
+.page-shell,
+.demo14-page-wrap,
+.page-wrap {
   max-width: 1400px !important;
   margin: 0 auto !important;
   padding-top: 12px !important;
@@ -1472,12 +1491,15 @@ body[data-theme="dark"] .mobile-menu-toggle svg {
   gap: 24px !important;
   margin-bottom: 24px !important;
 }
-.title-wrap h1, .page-heading h1 {
+.title-wrap h1,
+.page-heading h1 {
   font-size: 34px !important;
   line-height: 1.2 !important;
   margin-bottom: 12px !important;
 }
-.title-wrap p, .page-heading p, .info-copy p {
+.title-wrap p,
+.page-heading p,
+.info-copy p {
   font-size: 16px !important;
   color: #5f6585 !important;
   max-width: 870px !important;

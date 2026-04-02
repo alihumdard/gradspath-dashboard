@@ -1698,4 +1698,7 @@ body {
   .topbar-right .credits-box {
     display: none;
   }
+  .intro-text{
+    line-height: 1;
+  }
 }

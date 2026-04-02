@@ -446,7 +446,7 @@ select {
 .intro-text {
   margin: 0;
   font-size: 15px;
-  color: #5f6585;
+  color: var(--text);
   line-height: 1.6;
   max-width: 800px;
 }

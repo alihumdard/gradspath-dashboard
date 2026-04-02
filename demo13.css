@@ -1209,7 +1209,7 @@ body {
 .title-wrap h1, .page-heading h1 {
   font-size: 2rem !important;
   line-height: 1.2 !important;
-  margin-bottom: 5px !important;
+  margin-bottom: 8px !important;
 }
 .title-wrap p, .page-heading p, .info-copy p {
   font-size: 16px !important;
