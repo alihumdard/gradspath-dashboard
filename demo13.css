@@ -469,7 +469,7 @@ body {
   line-height: 1.08;
   font-weight: 600;
   letter-spacing: -0.03em;
-  color: #24283d;
+  color:var(--text);
 }
 
 .info-banner {
@@ -726,9 +726,9 @@ body {
 }
 
 .avatar-box {
-  width: 88px;
-  height: 88px;
-  border-radius: 24px;
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
   background: var(--avatar-bg);
   color: var(--purple);
   display: flex;
@@ -738,8 +738,8 @@ body {
 }
 
 .avatar-box svg {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   fill: currentColor;
 }
 
@@ -748,28 +748,28 @@ body {
 }
 
 .meta-text h3 {
-  margin: 0 0 6px;
-  font-size: 24px;
+  margin: 0 0 0px;
+  font-size: 15px;
   line-height: 1.08;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text);
   letter-spacing: -0.02em;
 }
 
 .meta-text p {
   margin: 0;
-  font-size: 15px;
+  font-size: 13px;
   color: var(--muted);
   line-height: 1.35;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .rating-pill {
   background: var(--green-bg);
   color: var(--green-text);
-  border-radius: 18px;
-  padding: 13px 16px;
-  font-size: 16px;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   line-height: 1;
@@ -1207,9 +1207,9 @@ body {
   margin-bottom: 24px !important;
 }
 .title-wrap h1, .page-heading h1 {
-  font-size: 34px !important;
+  font-size: 2rem !important;
   line-height: 1.2 !important;
-  margin-bottom: 12px !important;
+  margin-bottom: 5px !important;
 }
 .title-wrap p, .page-heading p, .info-copy p {
   font-size: 16px !important;

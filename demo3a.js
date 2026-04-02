@@ -1097,7 +1097,12 @@ if (overlay && shell) {
   overlay.onclick = () => shell.classList.remove("sidebar-active");
 }
 
-// Initial state check
+// Load saved theme from localStorage, default to 'light'
+(function initTheme() {
+  const savedTheme = localStorage.getItem("theme") || "light";
+  document.body.setAttribute("data-theme", savedTheme);
+})();
+
 if (themeToggle) {
   themeToggle.onclick = () => {
     const body = document.body;
@@ -1107,8 +1112,6 @@ if (themeToggle) {
     localStorage.setItem("theme", newTheme);
   };
 }
-
-// Default to light mode (persistence load removed from script)
 
 const navItems = document.querySelectorAll(".nav-item");
 

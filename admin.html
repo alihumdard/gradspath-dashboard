@@ -45,6 +45,7 @@
       </section>
 
       <section class="dashboard hidden" id="dashboard">
+        <div class="sidebar-overlay" id="adminSidebarOverlay"></div>
         <aside class="sidebar">
           <div class="brand">
             <div class="brand-icon">GP</div>
@@ -74,14 +75,22 @@
 
         <main class="main">
           <header class="topbar">
-            <div>
-              <h1>Admin Dashboard</h1>
-              <p>
-                Track users, mentors, service mix, meeting sizes, schools, and
-                revenue.
-              </p>
+            <div class="topbar-row">
+              <div class="topbar-left">
+                <button class="mobile-menu-toggle" id="adminMenuToggle" type="button">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                  </svg>
+                </button>
+                <h1>Admin Dashboard</h1>
+              </div>
+              <div class="status-pill">Live</div>
             </div>
-            <div class="status-pill">Live</div>
+            <p class="topbar-desc">
+              Track users, mentors, service mix, meeting sizes, schools, and revenue.
+            </p>
           </header>
 
           <!-- OVERVIEW -->
@@ -820,10 +829,6 @@
           </section>
 
           <section class="tab-panel" id="manual">
-            <header class="tab-header">
-              <h1>Manual Controls</h1>
-              <p>Manage mentors, users, and pricing in one place.</p>
-            </header>
 
             <section class="demo14-stations-grid">
               <button

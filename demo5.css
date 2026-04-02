@@ -398,10 +398,10 @@ textarea {
 }
 
 .credits-box {
-  min-height: 50px;
+  min-height: 40px;
   border: 1px solid var(--line);
   background: var(--sidebar-bg);
-  border-radius: 16px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -456,8 +456,8 @@ textarea {
 }
 
 .page-header-copy h1 {
-  margin: 0 0 12px;
-  font-size: 3.25rem;
+  margin: 0 0 0px;
+  font-size: 2rem;
   line-height: 0.96;
   color: var(--text);
   letter-spacing: -0.05em;
@@ -653,9 +653,9 @@ textarea {
 }
 
 .mentor-avatar {
-  width: 68px;
-  height: 68px;
-  border-radius: 18px;
+  width: 55px;
+  height: 55px;
+  border-radius: 14px;
   background: var(--avatar-bg);
   color: var(--text);
   display: grid;
@@ -666,9 +666,9 @@ textarea {
 }
 
 .mentor-name {
-  margin: 0 0 3px;
-  font-size: 1.08rem;
-  font-weight: 600;
+  margin: 0 0 0px;
+  font-size: 1.02rem;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
@@ -676,7 +676,7 @@ textarea {
 .mentor-meta {
   margin: 0;
   color: var(--muted);
-  font-size: 0.93rem;
+  font-size: 0.80rem;
   font-weight: 600;
   line-height: 1.35;
 }
@@ -684,11 +684,11 @@ textarea {
 .rating-badge {
   background: var(--rating-bg);
   color: var(--rating-text);
-  border-radius: 12px;
-  padding: 9px 13px;
+  border-radius: 10px;
+  padding: 10px;
   font-weight: 600;
-  font-size: 0.92rem;
-  min-width: 82px;
+  font-size: 0.80rem;
+  min-width: 60px;
   text-align: center;
   line-height: 1;
 }
