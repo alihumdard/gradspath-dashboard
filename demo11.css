@@ -8,6 +8,7 @@
 
 [data-theme="light"] {
   --bg: #f5f5f8;
+  --bg2: #ffffff;
   --sidebar-bg: #ffffff;
   --panel: #ffffff;
   --hero-bg: #f3eef9;
@@ -555,7 +556,7 @@ h1 {
 .calendar-panel,
 .office-hours-modal-panel,
 .store-modal-panel-inner {
-  background: var(--bg);
+  background: var(--bg2);
   border: 1px solid var(--line);
   border-radius: 26px;
   box-shadow: var(--shadow);

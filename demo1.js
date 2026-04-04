@@ -174,12 +174,7 @@ servicesToggles.forEach((toggle) => {
   });
 });
 
-document.querySelectorAll(".book-now-btn").forEach((button) => {
-  button.addEventListener("click", (e) => {
-    e.stopPropagation();
-    openModal();
-  });
-});
+// removed book-now modal logic, so it can redirect directly to demo11.html
 
 // Sidebar navigation logic
 const navItems = document.querySelectorAll(".nav-item");
