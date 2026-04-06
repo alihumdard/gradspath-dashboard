@@ -977,6 +977,12 @@ function createMentorCard(mentor) {
       );
     });
   });
+  const bookBtn = card.querySelector(".book-now-btn");
+  if (bookBtn) {
+    bookBtn.addEventListener("click", () => {
+      window.location.href = "demo11.html";
+    });
+  }
 
   return card;
 }

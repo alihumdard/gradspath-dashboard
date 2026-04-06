@@ -712,18 +712,18 @@ h1 {
 .calendar-view-switch {
   display: inline-flex;
   align-items: center;
-  padding: 2px;
+  padding: 5px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 40px;
   background: var(--panel-soft-2);
   gap: 4px;
 }
 
 .view-btn {
   min-width: 70px;
-  height: 32px;
+  height: 35px;
   border: none;
-  border-radius: 12px;
+  border-radius: 40px;
   background: transparent;
   color: var(--muted);
   font-size: 12px;
@@ -732,7 +732,7 @@ h1 {
 }
 
 .view-btn.active {
-  background: var(--hover-bg);
+  background: linear-gradient(135deg, #7a4dff, #c26be3);
   color: var(--text);
 }
 
@@ -1484,11 +1484,12 @@ h1 {
   }
 
   .service-grid.locked,
-  .info-grid,
   .year-grid {
     grid-template-columns: 1fr 1fr;
   }
-
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
   .month-title-button {
     font-size: 22px;
   }
