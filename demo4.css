@@ -90,6 +90,9 @@ button,
 input,
 select {
   font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border-radius: 10px;
 }
 
 .app-shell {
