@@ -841,11 +841,14 @@ function renderProgramsForSelectedSchool() {
           </div>
 
           <div class="program-footer">
-            <div class="program-footer-left">
+            <div class="program-tags">
               <span class="program-family-pill">${escapeHtml(family)}</span>
               <span class="program-tier-pill">${escapeHtml(program.tierLabel || program.tier)}</span>
             </div>
-            <span class="program-cta">View mentors</span>
+            <div class="program-cta-group">
+                <span class="program-cta">View available mentors</span>
+                <i data-lucide="arrow-right-circle" class="cta-icon"></i>
+            </div>
           </div>
         </div>
       `;

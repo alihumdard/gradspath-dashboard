@@ -510,7 +510,7 @@ textarea {
 }
 
 .overview-label {
-  color: var(--muted);
+  color: var(--text);
   font-size: 0.92rem;
   font-weight: 700;
   margin-bottom: 10px;
@@ -530,7 +530,7 @@ textarea {
 }
 
 .overview-sub {
-  color: var(--muted);
+  color: var(--text);
   font-size: 0.93rem;
   font-weight: 600;
 }
@@ -599,7 +599,7 @@ textarea {
 }
 
 .category-title-wrap p {
-  margin: 5px 0 0;
+  margin: 0px 0 0;
   color: var(--muted);
   font-size: 0.92rem;
   font-weight: 600;
@@ -851,10 +851,10 @@ textarea {
 
 .student-note-preview {
   margin: 0;
-  color: #6f778d;
+  color: var(--text);
   font-size: 0.95rem;
   line-height: 1.45;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .no-notes-card {

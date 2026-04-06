@@ -552,21 +552,21 @@ function closeModal(modal) {
   }
 }
 
-document.querySelector(".back-arrow-btn").addEventListener("click", () => {
-  alert("Go back to previous step.");
-});
+// document.querySelector(".back-arrow-btn").addEventListener("click", () => {
+//   alert("Go back to previous step.");
+// });
 
-document.querySelector(".small-back-arrow").addEventListener("click", () => {
-  alert("Go back to mentor selection.");
-});
+// document.querySelector(".small-back-arrow").addEventListener("click", () => {
+//   alert("Go back to mentor selection.");
+// });
 
-document.querySelector(".back-dashboard-btn").addEventListener("click", () => {
-  alert("Go back to dashboard.");
-});
+// document.querySelector(".back-dashboard-btn").addEventListener("click", () => {
+//   alert("Go back to dashboard.");
+// });
 
-document.querySelector(".secondary-btn").addEventListener("click", () => {
-  alert("Go back.");
-});
+// document.querySelector(".secondary-btn").addEventListener("click", () => {
+//   alert("Go back.");
+// });
 
 continueBtn.addEventListener("click", () => {
   const service = getServiceById(state.selectedServiceId);
@@ -628,17 +628,17 @@ document.querySelectorAll(".program-card").forEach((card) => {
   });
 });
 
-document
-  .querySelector(".office-hours-subscribe-btn")
-  .addEventListener("click", () => {
-    alert("Go to Office Hours subscription checkout.");
-  });
+// document
+//   .querySelector(".office-hours-subscribe-btn")
+//   .addEventListener("click", () => {
+//     alert("Go to Office Hours subscription checkout.");
+//   });
 
-document.querySelectorAll(".store-option-btn").forEach((button) => {
-  button.addEventListener("click", () => {
-    alert(`${button.textContent} clicked.`);
-  });
-});
+// document.querySelectorAll(".store-option-btn").forEach((button) => {
+//   button.addEventListener("click", () => {
+//     alert(`${button.textContent} clicked.`);
+//   });
+// });
 
 closeModal(creditModal);
 closeModal(storeModal);

@@ -20,9 +20,9 @@ const mentors = [
       "Program Insights",
       "Interview Prep",
       "Application Review",
-      "Gap Year Planning"
+      "Gap Year Planning",
     ],
-    icon: "therapy"
+    icon: "therapy",
   },
   {
     id: 2,
@@ -45,9 +45,9 @@ const mentors = [
       "Program Insights",
       "Interview Prep",
       "Application Review",
-      "Gap Year Planning"
+      "Gap Year Planning",
     ],
-    icon: "law"
+    icon: "law",
   },
   {
     id: 3,
@@ -70,9 +70,9 @@ const mentors = [
       "Program Insights",
       "Interview Prep",
       "Application Review",
-      "Gap Year Planning"
+      "Gap Year Planning",
     ],
-    icon: "mba"
+    icon: "mba",
   },
   {
     id: 4,
@@ -95,9 +95,9 @@ const mentors = [
       "Program Insights",
       "Interview Prep",
       "Application Review",
-      "Gap Year Planning"
+      "Gap Year Planning",
     ],
-    icon: "therapy"
+    icon: "therapy",
   },
   {
     id: 5,
@@ -120,9 +120,9 @@ const mentors = [
       "Program Insights",
       "Interview Prep",
       "Application Review",
-      "Gap Year Planning"
+      "Gap Year Planning",
     ],
-    icon: "law"
+    icon: "law",
   },
   {
     id: 6,
@@ -145,17 +145,17 @@ const mentors = [
       "Program Insights",
       "Interview Prep",
       "Application Review",
-      "Gap Year Planning"
+      "Gap Year Planning",
     ],
-    icon: "mba"
-  }
+    icon: "mba",
+  },
 ];
 
 const state = {
   mentorType: "Graduates",
   programType: "All",
   mentorSearch: "",
-  schoolSearch: ""
+  schoolSearch: "",
 };
 
 // UI Elements
@@ -226,7 +226,7 @@ function renderMentorIcon(type) {
   const icons = {
     law: `<svg viewBox="0 0 24 24"><path d="M12 3 4 7v2h16V7l-8-4Zm-6 8h12v2H6v-2Zm1 4h10l1 5H6l1-5Z"/></svg>`,
     mba: `<svg viewBox="0 0 24 24"><path d="M3 6.5 12 3l9 3.5-9 3.5L3 6.5Zm3 5.2 6 2.3 6-2.3V16l-6 2.5L6 16v-4.3Zm-3 2.1 2 .8V18l7 3 7-3v-3.4l2-.8V18l-9 3.5L3 18v-4.2Z"/></svg>`,
-    therapy: `<svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5c0 3.9 5 9 5 9s5-5.1 5-9a5 5 0 0 0-5-5Zm0 7.1A2.1 2.1 0 1 1 12 5a2.1 2.1 0 0 1 0 4.1ZM5 20c0-2.8 3.1-4.5 7-4.5s7 1.7 7 4.5v1H5v-1Z"/></svg>`
+    therapy: `<svg viewBox="0 0 24 24"><path d="M12 2a5 5 0 0 0-5 5c0 3.9 5 9 5 9s5-5.1 5-9a5 5 0 0 0-5-5Zm0 7.1A2.1 2.1 0 1 1 12 5a2.1 2.1 0 0 1 0 4.1ZM5 20c0-2.8 3.1-4.5 7-4.5s7 1.7 7 4.5v1H5v-1Z"/></svg>`,
   };
   return icons[type] || icons.therapy;
 }
@@ -234,10 +234,20 @@ function renderMentorIcon(type) {
 function renderMentors() {
   const filtered = mentors.filter((mentor) => {
     const matchesMentorType = mentor.mentorType === state.mentorType;
-    const matchesProgram = state.programType === "All" || mentor.program === state.programType;
-    const matchesMentorSearch = mentor.name.toLowerCase().includes(state.mentorSearch.toLowerCase());
-    const matchesSchoolSearch = mentor.school.toLowerCase().includes(state.schoolSearch.toLowerCase());
-    return matchesMentorType && matchesProgram && matchesMentorSearch && matchesSchoolSearch;
+    const matchesProgram =
+      state.programType === "All" || mentor.program === state.programType;
+    const matchesMentorSearch = mentor.name
+      .toLowerCase()
+      .includes(state.mentorSearch.toLowerCase());
+    const matchesSchoolSearch = mentor.school
+      .toLowerCase()
+      .includes(state.schoolSearch.toLowerCase());
+    return (
+      matchesMentorType &&
+      matchesProgram &&
+      matchesMentorSearch &&
+      matchesSchoolSearch
+    );
   });
 
   mentorCount.textContent = filtered.length;
@@ -248,12 +258,13 @@ function renderMentors() {
     return;
   }
 
-  mentorGrid.innerHTML = filtered.map((mentor) => {
-    const isFull = mentor.spotsFilled >= mentor.maxSpots;
-    const progress = (mentor.spotsFilled / mentor.maxSpots) * 100;
-    const shortDescription = truncateText(mentor.description, 120);
+  mentorGrid.innerHTML = filtered
+    .map((mentor) => {
+      const isFull = mentor.spotsFilled >= mentor.maxSpots;
+      const progress = (mentor.spotsFilled / mentor.maxSpots) * 100;
+      const shortDescription = truncateText(mentor.description, 120);
 
-    return `
+      return `
         <article class="mentor-card">
           <div class="card-header">
             <div class="mentor-meta">
@@ -299,7 +310,7 @@ function renderMentors() {
             <div class="services-display">
               <p class="services-title">Service Options</p>
               <div class="services-grid">
-                ${mentor.servicesOffered.map(service => `<div class="service-card ${service === mentor.weeklyService ? "active" : ""}">${service}</div>`).join("")}
+                ${mentor.servicesOffered.map((service) => `<div class="service-card ${service === mentor.weeklyService ? "active" : ""}">${service}</div>`).join("")}
               </div>
             </div>
 
@@ -310,14 +321,15 @@ function renderMentors() {
             </div>
           </div>
         </article>`;
-  }).join("");
+    })
+    .join("");
 
   attachEvents();
 }
 
 function attachEvents() {
   // Read More
-  document.querySelectorAll(".read-more-btn").forEach(button => {
+  document.querySelectorAll(".read-more-btn").forEach((button) => {
     button.addEventListener("click", () => {
       const textEl = button.previousElementSibling;
       const expanded = textEl.dataset.expanded === "true";
@@ -334,23 +346,24 @@ function attachEvents() {
   });
 
   // Booking
-  document.querySelectorAll(".book-btn").forEach(button => {
+  document.querySelectorAll(".book-btn").forEach((button) => {
     button.addEventListener("click", () => {
+      // Agar session full hai toh kuch na karein
       if (button.classList.contains("full")) return;
-      const confirmBooking = confirm("Booking this session will use 1 credit. Proceed?");
-      if (confirmBooking) {
-        alert("Success! Your seat is reserved.");
-        window.location.href = "demo9.html";
-      }
+
+      // Pop-ups hata diye gaye hain, ab seedha redirect hoga
+      window.location.href = "demo9.html";
     });
   });
 }
 
 // Global Filtering Listeners
-filterPills.forEach(pill => {
+filterPills.forEach((pill) => {
   pill.addEventListener("click", () => {
     const group = pill.dataset.filterGroup;
-    document.querySelectorAll(`.filter-pill[data-filter-group="${group}"]`).forEach(item => item.classList.remove("active"));
+    document
+      .querySelectorAll(`.filter-pill[data-filter-group="${group}"]`)
+      .forEach((item) => item.classList.remove("active"));
     pill.classList.add("active");
     state[group] = pill.dataset.value;
     renderMentors();
@@ -370,7 +383,7 @@ schoolSearchInput.addEventListener("input", (e) => {
 // Sidebar Active Navigation
 function setActiveNav() {
   const currentPath = window.location.pathname.split("/").pop() || "demo1.html";
-  document.querySelectorAll(".nav-item").forEach(item => {
+  document.querySelectorAll(".nav-item").forEach((item) => {
     const href = item.getAttribute("href");
     if (href === currentPath) item.classList.add("active");
     else item.classList.remove("active");

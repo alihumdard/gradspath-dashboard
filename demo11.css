@@ -19,6 +19,7 @@
   --purple-dark: #23293a;
   --muted: #6b7285;
   --text: #252c3c;
+  --pink: #ff6b9d;
   --shadow: 0 12px 28px rgba(18, 24, 38, 0.04);
   --overlay: rgba(30, 16, 70, 0.18);
   --rating-bg: #eefaf7;
@@ -34,6 +35,7 @@
 
 [data-theme="dark"] {
   --bg: #131018;
+  --bg2: #1f1a28;
   --sidebar-bg: #1b1722;
   --panel: #1f1a28;
   --hero-bg: #241d31;
@@ -44,7 +46,7 @@
   --purple-dark: #f0e9ff;
   --muted: #b8afc9;
   --text: #efeaf8;
-  --pink:#ff6b9d;
+  --pink: #ff6b9d;
   --shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
   --overlay: rgba(0, 0, 0, 0.45);
   --rating-bg: #20312f;
@@ -453,7 +455,7 @@ select {
 }
 
 .booking-topbar-right {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: flex-end;
   gap: 14px;
@@ -537,8 +539,6 @@ h1 {
   font-size: 14px;
 }
 
-
-
 .booking-layout {
   display: grid;
   grid-template-columns: 1.14fr 0.86fr;
@@ -592,7 +592,7 @@ h1 {
 }
 
 .mentor-main h2 {
-  margin: 4px 0 6px;
+  margin: 0px;
   font-size: 30px;
   font-weight: 800;
   color: var(--text);
@@ -673,25 +673,69 @@ h1 {
   padding: 16px;
   text-align: left;
   cursor: pointer;
-  transition: 0.18s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 176px;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
 }
 
 .service-card:hover {
-  transform: translateY(-1px);
-  border-color: var(--hover-line);
+  transform: translateY(-4px);
+  border-color: var(--purple);
+  box-shadow: 0 14px 38px rgba(111, 76, 246, 0.12);
+}
+
+.service-card:hover .service-icon {
+  transform: scale(1.08);
+  border-color: var(--purple);
+}
+
+.service-card.active {
+  background: rgba(111, 76, 246, 0.03);
+  border-color: var(--purple);
+  border-width: 2px;
+  box-shadow: 0 10px 30px rgba(111, 76, 246, 0.08);
+}
+
+.service-card::after {
+  content: "";
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 20px;
+  height: 20px;
+  background: var(--purple);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.2s ease;
+}
+
+.service-card.active::after {
+  content: "✓";
+  opacity: 1;
+  transform: scale(1);
 }
 
 .service-card.accent-purple.active {
   border-color: var(--purple);
-  box-shadow: var(--shadow);
 }
 
 .service-card.accent-pink.active {
-  border-color: var(--purple);
-  box-shadow: var(--shadow);
+  border-color: var(--pink);
+  background: rgba(255, 107, 157, 0.03);
+}
+
+.service-card.accent-pink.active::after {
+  background: var(--pink);
 }
 
 .service-top {
@@ -711,6 +755,7 @@ h1 {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  transition: all 0.25s ease;
 }
 
 .service-card.accent-purple .service-icon {
@@ -729,7 +774,7 @@ h1 {
 }
 
 .service-heading h4 {
-  margin: 0 0 4px;
+  margin: 0 0 0px;
   font-size: 15px;
   font-weight: 800;
   color: var(--text);
@@ -785,17 +830,29 @@ h1 {
 }
 
 .meeting-size-card {
-  border: 2px solid var(--line);
+  border: 1.5px solid var(--line);
   background: var(--card);
   border-radius: 18px;
-  padding: 14px;
+  padding: 16px;
   text-align: left;
   cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meeting-size-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--purple);
+  background: var(--hover-bg);
 }
 
 .meeting-size-card.active {
   border-color: var(--purple);
-  box-shadow: var(--shadow);
+  border-width: 2px;
+  background: rgba(111, 76, 246, 0.05);
+  box-shadow: 0 10px 24px rgba(111, 76, 246, 0.1);
 }
 
 .meeting-size-card strong {
@@ -842,7 +899,7 @@ h1 {
   margin-bottom: 6px;
   font-size: 12px;
   font-weight: 700;
-  color: var(--muted);
+  color: var(--text);
 }
 
 .form-field input,
@@ -1135,7 +1192,7 @@ h1 {
 }
 
 .office-hours-mentor-block h4 {
-  margin: 0 0 4px;
+  margin: 0 0 0px;
   font-size: 18px;
   font-weight: 800;
   color: var(--text);
@@ -1175,7 +1232,7 @@ h1 {
 
 .office-hours-label {
   display: block;
-  margin-bottom: 7px;
+  margin-bottom: 0px;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;

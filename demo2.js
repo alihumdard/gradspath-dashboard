@@ -45,9 +45,9 @@ subscribeButton.addEventListener("click", () => {
   });
 });
 
-payButton.addEventListener("click", () => {
-  alert("Replace this with your real Stripe checkout flow.");
-});
+// payButton.addEventListener("click", () => {
+//   alert("Replace this with your real Stripe checkout flow.");
+// });
 
 if (heroIcon) {
   heroIcon.addEventListener("mouseenter", () => {
