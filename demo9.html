@@ -446,32 +446,37 @@
 
                 <div class="info-grid">
                   <div class="info-box mentor-profile-box">
-                    <span class="label">Mentor</span>
-                    <strong id="mentorName"
-                      >Emily Carter • Graduate Mentor • MBA • Harvard</strong
-                    >
+                    <div class="info-icon"><i data-lucide="user-check"></i></div>
+                    <div class="info-content">
+                        <span class="label">Mentor</span>
+                        <strong id="mentorName">Emily Carter • Graduate Mentor • MBA • Harvard</strong>
+                    </div>
                   </div>
 
                   <div class="info-box">
-                    <span class="label">Date</span>
-                    <strong id="meetingDate">March 21, 2026</strong>
+                    <div class="info-icon"><i data-lucide="calendar"></i></div>
+                    <div class="info-content">
+                        <span class="label">Date</span>
+                        <strong id="meetingDate">March 21, 2026</strong>
+                    </div>
                   </div>
 
                   <div class="info-box">
-                    <span class="label">Time</span>
-                    <strong id="meetingTime">1:00 PM</strong>
+                    <div class="info-icon"><i data-lucide="clock"></i></div>
+                    <div class="info-content">
+                        <span class="label">Time</span>
+                        <strong id="meetingTime">1:00 PM</strong>
+                    </div>
                   </div>
 
-                  <div class="info-box">
-                    <span class="label">Zoom Link</span>
-                    <a
-                      id="zoomLink"
-                      href="https://zoom.us/j/9876543210"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Join Zoom Meeting
-                    </a>
+                  <div class="info-box zoom-box">
+                    <div class="info-icon"><i data-lucide="video"></i></div>
+                    <div class="info-content">
+                        <span class="label">Zoom Link</span>
+                        <a id="zoomLink" href="https://zoom.us/j/9876543210" target="_blank" rel="noopener noreferrer">
+                          Join Meeting
+                        </a>
+                    </div>
                   </div>
                 </div>
               </section>
@@ -656,6 +661,7 @@
       </div>
     </div>
 
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="demo9.js"></script>
   </body>
 </html>

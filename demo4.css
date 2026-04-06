@@ -76,7 +76,9 @@ body {
     "Segoe UI",
     sans-serif;
   overflow: hidden;
-  transition: background var(--ease), color var(--ease);
+  transition:
+    background var(--ease),
+    color var(--ease);
 }
 
 body.modal-open,
@@ -698,7 +700,8 @@ select {
   margin-bottom: 20px;
 }
 
-.bio-short, .bio-full {
+.bio-short,
+.bio-full {
   font-size: 14px;
   line-height: 1.6;
   color: var(--text);
@@ -804,7 +807,8 @@ select {
   cursor: pointer;
 }
 
-.feedback-short, .feedback-full {
+.feedback-short,
+.feedback-full {
   font-size: 13px;
   line-height: 1.5;
   color: var(--text);
@@ -859,7 +863,7 @@ select {
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
   }
-  
+
   .page-wrap {
     padding: 32px 24px 48px;
   }
@@ -905,7 +909,7 @@ select {
     grid-template-columns: 1fr;
     gap: 20px;
   }
-  
+
   .lower-controls {
     grid-template-columns: 1fr;
   }
@@ -929,7 +933,7 @@ select {
     padding: 0 10px;
     font-size: 11px;
   }
-  
+
   .store-btn {
     height: 38px;
     padding: 0 14px;

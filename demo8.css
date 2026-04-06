@@ -716,7 +716,7 @@ a {
 
 .note-box-preview {
   margin: 0;
-  color: var(--muted);
+  color: var(--text);
   font-size: 0.95rem;
   line-height: 1.55;
   font-weight: 600;
@@ -793,6 +793,13 @@ a {
   box-shadow: var(--shadow);
   padding: 24px;
   padding-top: 32px;
+  /* Hide scrollbar but allow scrolling */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.modal-card::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
 }
 
 .modal-close {

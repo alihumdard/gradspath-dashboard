@@ -1594,18 +1594,18 @@ body {
   color: var(--text);
   font-size: 1.5rem;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 0px;
 }
 
 .feedback-card p {
   color: var(--muted);
   font-size: 0.85rem;
   margin-bottom: 24px;
-  line-height: 1.4;
+  line-height: 1;
 }
 
 .form-field {
-  margin-bottom: 18px;
+  margin-bottom: 0px;
 }
 
 .form-field label {
@@ -1613,7 +1613,7 @@ body {
   font-size: 0.7rem;
   font-weight: 700;
   color: var(--purple);
-  margin-bottom: 6px;
+  margin-bottom: 0px;
   text-transform: uppercase;
 }
 
@@ -1651,7 +1651,8 @@ body {
 }
 
 .send-message-btn:hover {
-  background: var(--purple-dark);
+  background: var(--bg-hover);
+  color: var(--text);
   transform: translateY(-1px);
 }
 
@@ -1698,7 +1699,7 @@ body {
   .topbar-right .credits-box {
     display: none;
   }
-  .intro-text{
+  .intro-text {
     line-height: 1;
   }
 }

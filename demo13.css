@@ -68,7 +68,8 @@
 
 body[data-theme="dark"] .info-icon,
 body[data-theme="dark"] .control-icon-img {
-  filter: brightness(0) saturate(100%) invert(85%) sepia(12%) saturate(800%) hue-rotate(220deg) brightness(100%) contrast(100%);
+  filter: brightness(0) saturate(100%) invert(85%) sepia(12%) saturate(800%)
+    hue-rotate(220deg) brightness(100%) contrast(100%);
 }
 
 :root {
@@ -469,7 +470,7 @@ body {
   line-height: 1.08;
   font-weight: 600;
   letter-spacing: -0.03em;
-  color:var(--text);
+  color: var(--text);
 }
 
 .info-banner {
@@ -1072,7 +1073,6 @@ body {
   }
 }
 
-
 @media (max-width: 1250px) {
   .mentor-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1193,7 +1193,9 @@ body {
   padding: 0px !important;
   min-width: 0;
 }
-.page-shell, .demo14-page-wrap, .page-wrap {
+.page-shell,
+.demo14-page-wrap,
+.page-wrap {
   max-width: 1400px !important;
   margin: 0 auto !important;
   padding-top: 12px !important;
@@ -1206,14 +1208,16 @@ body {
   gap: 24px !important;
   margin-bottom: 24px !important;
 }
-.title-wrap h1, .page-heading h1 {
+.title-wrap h1,
+.page-heading h1 {
   font-size: 2rem !important;
   line-height: 1.2 !important;
   margin-bottom: 8px !important;
 }
-.title-wrap p, .page-heading p, .info-copy p {
+.title-wrap p,
+.page-heading p,
+.info-copy p {
   font-size: 16px !important;
-  color: var(--muted) !important;
+  color: var(--text) !important;
   max-width: 870px !important;
 }
-

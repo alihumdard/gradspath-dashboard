@@ -41,9 +41,10 @@ const chatWindow = document.getElementById("chatWindow");
 const viewButtons = document.querySelectorAll(".view-btn");
 const themeToggle = document.getElementById("themeToggle");
 const body = document.body;
+const root = document.documentElement;
 
 function updateTheme(theme) {
-  body.setAttribute("data-theme", theme);
+  root.setAttribute("data-theme", theme);
   localStorage.setItem("theme", theme);
   
   if (themeToggle) {
@@ -57,7 +58,7 @@ updateTheme(savedTheme);
 
 if (themeToggle) {
   themeToggle.addEventListener("click", () => {
-    const currentTheme = body.getAttribute("data-theme") || "light";
+    const currentTheme = root.getAttribute("data-theme") || "light";
     const newTheme = currentTheme === "dark" ? "light" : "dark";
     updateTheme(newTheme);
   });
@@ -824,3 +825,8 @@ navItems.forEach((item) => {
     if (shell) shell.classList.remove("sidebar-active");
   });
 });
+
+// Initialize Lucide icons
+if (typeof lucide !== "undefined") {
+  lucide.createIcons();
+}
