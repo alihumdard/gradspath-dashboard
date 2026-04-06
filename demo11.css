@@ -19,6 +19,7 @@
   --purple-dark: #23293a;
   --muted: #6b7285;
   --text: #252c3c;
+  --pink: #ff6b9d;
   --shadow: 0 12px 28px rgba(18, 24, 38, 0.04);
   --overlay: rgba(30, 16, 70, 0.18);
   --rating-bg: #eefaf7;
@@ -454,7 +455,7 @@ select {
 }
 
 .booking-topbar-right {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: flex-end;
   gap: 14px;
