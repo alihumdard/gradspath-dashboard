@@ -718,13 +718,15 @@ body {
 .save-btn,
 .slack-btn {
   background: var(--purple);
-  color: #fff;
+  color: var(--text);
 }
 
 .primary-btn:hover,
 .save-btn:hover,
 .slack-btn:hover {
-  background: var(--purple-dark);
+  background: var(--purple);
+  box-shadow: 1px 2px 5px 3px rgba(20, 18, 24, 0.2);
+  color: var(--text);
 }
 
 .save-btn {
