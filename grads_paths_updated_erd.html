@@ -1,0 +1,485 @@
+
+<style>
+h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+#wrap{font-family:var(--font-sans,sans-serif);padding:0 0 24px}
+#tabs{display:flex;gap:6px;flex-wrap:wrap;padding:12px 0 14px}
+.tab{padding:5px 14px;border-radius:99px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--color-border-secondary);color:var(--color-text-secondary);background:var(--color-background-secondary);transition:all .15s}
+.tab.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:transparent}
+#legend{display:flex;gap:16px;flex-wrap:wrap;padding:0 0 12px;font-size:11px;color:var(--color-text-secondary)}
+.leg{display:flex;align-items:center;gap:5px}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+#erd{overflow-x:auto}
+#erd svg{min-width:700px}
+</style>
+<h2 class="sr-only">Grads Paths updated MySQL database schema — 24 tables across auth, bookings, payments, content, and admin modules.</h2>
+<div id="wrap">
+  <div id="tabs">
+    <button class="tab active" onclick="show('auth')">Auth & users</button>
+    <button class="tab" onclick="show('institutions')">Institutions</button>
+    <button class="tab" onclick="show('officehours')">Office hours</button>
+    <button class="tab" onclick="show('bookings')">Bookings & chat</button>
+    <button class="tab" onclick="show('finance')">Payments & credits</button>
+    <button class="tab" onclick="show('content')">Feedback & notes</button>
+    <button class="tab" onclick="show('admin')">Admin & support</button>
+  </div>
+  <div id="legend">
+    <span class="leg"><span class="leg-dot" style="background:#534AB7"></span>PK — primary key</span>
+    <span class="leg"><span class="leg-dot" style="background:#0F6E56"></span>FK — foreign key</span>
+    <span class="leg"><span class="leg-dot" style="background:#854F0B"></span>updated in this revision</span>
+  </div>
+  <div id="erd"></div>
+</div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad:false,
+  theme:'base',
+  fontFamily:'"Anthropic Sans",sans-serif',
+  themeVariables:{
+    darkMode:dark,
+    fontSize:'12px',
+    fontFamily:'"Anthropic Sans",sans-serif',
+    lineColor:dark?'#9c9a92':'#73726c',
+    textColor:dark?'#c2c0b6':'#3d3d3a',
+    primaryColor:dark?'#3C3489':'#EEEDFE',
+    primaryBorderColor:dark?'#7F77DD':'#534AB7',
+    primaryTextColor:dark?'#CECBF6':'#26215C',
+    secondaryColor:dark?'#085041':'#E1F5EE',
+    secondaryBorderColor:dark?'#1D9E75':'#0F6E56',
+    secondaryTextColor:dark?'#9FE1CB':'#04342C',
+    tertiaryColor:dark?'#3d3d3a':'#F1EFE8',
+    tertiaryBorderColor:dark?'#888780':'#5F5E5A',
+    tertiaryTextColor:dark?'#D3D1C7':'#2C2C2A',
+  },
+  er:{diagramPadding:24,layoutDirection:'TB',minEntityWidth:120,minEntityHeight:60,entityPadding:15,useMaxWidth:false}
+});
+
+const D = {
+
+auth:`erDiagram
+  USERS {
+    bigint id PK
+    string name
+    string email
+    string password_hash
+    string google_id
+    string avatar_url
+    boolean is_active
+    timestamp email_verified_at
+    timestamp created_at
+  }
+  OAUTH_TOKENS {
+    bigint id PK
+    bigint user_id FK
+    string provider
+    string provider_user_id
+    text access_token
+    text refresh_token
+    timestamp token_expires_at
+  }
+  PASSWORD_RESETS {
+    string email
+    string token
+    timestamp expires_at
+    timestamp created_at
+  }
+  USER_SETTINGS {
+    bigint id PK
+    bigint user_id FK
+    enum theme
+    boolean email_notifications
+    boolean sms_notifications
+    timestamp updated_at
+  }
+  MENTORS {
+    bigint id PK
+    bigint user_id FK
+    bigint university_id FK
+    string title
+    string grad_school_display
+    enum mentor_type
+    enum program_type
+    text bio
+    text description
+    string office_hours_schedule
+    string avatar_url
+    decimal avatar_crop_zoom
+    decimal avatar_crop_x
+    decimal avatar_crop_y
+    string edu_email
+    string calendly_link
+    string slack_link
+    decimal avg_rating
+    int total_sessions
+    boolean is_featured
+    string stripe_account_id
+    boolean payouts_enabled
+    boolean stripe_onboarding_complete
+    enum status
+    timestamp approved_at
+    bigint approved_by FK
+    timestamp created_at
+  }
+  USERS ||--o{ OAUTH_TOKENS : "oauth provider"
+  USERS ||--o| USER_SETTINGS : "preferences"
+  USERS ||--o| MENTORS : "mentor profile"
+`,
+
+institutions:`erDiagram
+  UNIVERSITIES {
+    bigint id PK
+    string name
+    string display_name
+    string country
+    string logo_url
+    enum tier
+    boolean is_active
+    timestamp created_at
+  }
+  UNIVERSITY_PROGRAMS {
+    bigint id PK
+    bigint university_id FK
+    string program_name
+    enum program_type
+    string description
+    int duration_months
+    boolean is_active
+    timestamp created_at
+  }
+  MENTORS {
+    bigint id PK
+    bigint user_id FK
+    bigint university_id FK
+    string grad_school_display
+    enum mentor_type
+    enum program_type
+    enum status
+    boolean is_featured
+    decimal avg_rating
+  }
+  UNIVERSITIES ||--o{ UNIVERSITY_PROGRAMS : "offers programs"
+  UNIVERSITIES ||--o{ MENTORS : "associated mentors"
+`,
+
+officehours:`erDiagram
+  OFFICE_HOUR_SCHEDULES {
+    bigint id PK
+    bigint mentor_id FK
+    enum day_of_week
+    time start_time
+    string timezone
+    enum frequency
+    int max_spots
+    boolean is_active
+    timestamp created_at
+  }
+  OFFICE_HOUR_SESSIONS {
+    bigint id PK
+    bigint schedule_id FK
+    bigint current_service_id FK
+    date session_date
+    time start_time
+    string timezone
+    int current_occupancy
+    int max_spots
+    boolean is_full
+    boolean service_locked
+    bigint first_booker_id FK
+    timestamp first_booked_at
+    timestamp service_choice_cutoff_at
+    enum status
+    timestamp created_at
+  }
+  SERVICES_CONFIG {
+    bigint id PK
+    string service_name
+    string service_slug
+    int duration_minutes
+    boolean is_active
+    decimal price_1on1
+    decimal price_1on3_per_person
+    decimal price_1on3_total
+    decimal price_1on5_per_person
+    decimal price_1on5_total
+    boolean is_office_hours
+    decimal office_hours_subscription_price
+    int credit_cost_1on1
+    int sort_order
+    timestamp updated_at
+  }
+  MENTOR_SERVICES {
+    bigint id PK
+    bigint mentor_id FK
+    bigint service_config_id FK
+    boolean is_active
+    int sort_order
+    timestamp created_at
+  }
+  OFFICE_HOUR_SCHEDULES ||--o{ OFFICE_HOUR_SESSIONS : "generates sessions"
+  OFFICE_HOUR_SESSIONS }o--|| SERVICES_CONFIG : "current rotation"
+  MENTOR_SERVICES }o--|| SERVICES_CONFIG : "references"
+`,
+
+bookings:`erDiagram
+  BOOKINGS {
+    bigint id PK
+    bigint student_id FK
+    bigint mentor_id FK
+    bigint service_config_id FK
+    bigint office_hour_session_id FK
+    enum meeting_size
+    timestamp session_at
+    int duration_minutes
+    string meeting_link
+    enum meeting_type
+    int credits_charged
+    enum status
+    timestamp cancelled_at
+    string cancel_reason
+    bigint cancelled_by FK
+    timestamp feedback_due_at
+    boolean student_feedback_done
+    boolean mentor_feedback_done
+    boolean is_group_payer
+    bigint group_payer_id FK
+    timestamp created_at
+  }
+  CHATS {
+    bigint id PK
+    bigint booking_id FK
+    bigint sender_id FK
+    bigint receiver_id FK
+    text message_text
+    boolean is_read
+    timestamp sent_at
+  }
+  OFFICE_HOUR_SESSIONS {
+    bigint id PK
+    bigint schedule_id FK
+    int current_occupancy
+    int max_spots
+    boolean is_full
+    boolean service_locked
+    bigint first_booker_id FK
+    timestamp service_choice_cutoff_at
+    enum status
+  }
+  SERVICES_CONFIG {
+    bigint id PK
+    string service_name
+    enum meeting_size
+    int duration_minutes
+    decimal price_1on1
+    boolean is_office_hours
+  }
+  OFFICE_HOUR_SESSIONS ||--o{ BOOKINGS : "spots filled by"
+  SERVICES_CONFIG ||--o{ BOOKINGS : "booked service"
+  BOOKINGS ||--o{ CHATS : "chat thread"
+`,
+
+finance:`erDiagram
+  USER_CREDITS {
+    bigint id PK
+    bigint user_id FK
+    int balance
+    timestamp updated_at
+  }
+  CREDIT_TRANSACTIONS {
+    bigint id PK
+    bigint user_id FK
+    bigint booking_id FK
+    bigint subscription_id FK
+    enum type
+    int amount
+    int balance_after
+    string stripe_payment_id
+    string stripe_event_id
+    string stripe_subscription_id
+    enum office_hours_program
+    string description
+    bigint performed_by FK
+    timestamp created_at
+  }
+  OFFICE_HOURS_SUBSCRIPTIONS {
+    bigint id PK
+    bigint user_id FK
+    enum program
+    string stripe_subscription_id
+    string stripe_customer_id
+    int credits_per_cycle
+    timestamp current_period_start
+    timestamp current_period_end
+    enum status
+    timestamp cancelled_at
+    timestamp created_at
+  }
+  STRIPE_WEBHOOKS {
+    bigint id PK
+    string event_id
+    string event_type
+    json payload
+    boolean processed
+    string error_message
+    timestamp received_at
+    timestamp processed_at
+  }
+  MENTOR_PAYOUTS {
+    bigint id PK
+    bigint mentor_id FK
+    decimal amount
+    string stripe_transfer_id
+    enum status
+    string failure_reason
+    timestamp payout_date
+    timestamp created_at
+  }
+  USER_CREDITS ||--o{ CREDIT_TRANSACTIONS : "ledger entries"
+  OFFICE_HOURS_SUBSCRIPTIONS ||--o{ CREDIT_TRANSACTIONS : "monthly credits"
+  STRIPE_WEBHOOKS ||--o{ CREDIT_TRANSACTIONS : "triggers"
+`,
+
+content:`erDiagram
+  FEEDBACK {
+    bigint id PK
+    bigint booking_id FK
+    bigint student_id FK
+    bigint mentor_id FK
+    tinyint stars
+    tinyint preparedness_rating
+    text comment
+    text original_comment
+    boolean recommend
+    string service_type
+    boolean is_verified
+    boolean is_visible
+    text admin_note
+    bigint amended_by FK
+    timestamp amended_at
+    text mentor_reply
+    timestamp replied_at
+    timestamp created_at
+  }
+  MENTOR_FEEDBACK {
+    bigint id PK
+    bigint booking_id FK
+    bigint mentor_id FK
+    bigint student_id FK
+    tinyint engagement_score
+    text notes
+    timestamp created_at
+  }
+  MENTOR_NOTES {
+    bigint id PK
+    bigint mentor_id FK
+    bigint student_id FK
+    bigint booking_id FK
+    date session_date
+    string service_type
+    text worked_on
+    text next_steps
+    text session_result
+    text strengths_challenges
+    text other_notes
+    boolean is_deleted
+    bigint deleted_by FK
+    timestamp deleted_at
+    timestamp created_at
+  }
+  MENTOR_RATINGS {
+    bigint id PK
+    bigint mentor_id FK
+    decimal avg_stars
+    decimal recommend_rate
+    int total_reviews
+    int total_sessions
+    string top_tag
+    json top_tags_json
+    timestamp recalculated_at
+    timestamp updated_at
+  }
+  FEEDBACK ||--o| MENTOR_RATINGS : "aggregates into"
+  FEEDBACK ||--o| MENTOR_FEEDBACK : "session pair"
+`,
+
+admin:`erDiagram
+  SUPPORT_TICKETS {
+    bigint id PK
+    bigint user_id FK
+    string ticket_ref
+    string subject
+    text message
+    text message_raw
+    enum status
+    text admin_reply
+    bigint handled_by FK
+    timestamp replied_at
+    timestamp created_at
+    timestamp updated_at
+  }
+  ADMIN_LOGS {
+    bigint id PK
+    bigint admin_id FK
+    string action
+    string target_table
+    bigint target_id
+    json before_state
+    json after_state
+    string ip_address
+    string user_agent
+    text notes
+    timestamp created_at
+  }
+  USERS {
+    bigint id PK
+    string name
+    string email
+    enum role
+    boolean is_active
+  }
+  USERS ||--o{ SUPPORT_TICKETS : "raises ticket"
+  USERS ||--o{ ADMIN_LOGS : "admin actions"
+`
+};
+
+async function render(key){
+  const el=document.getElementById('erd');
+  el.innerHTML='<div style="padding:20px;color:var(--color-text-secondary);font-size:13px">Rendering…</div>';
+  try{
+    const id='erd-'+key+'-'+Date.now();
+    const {svg}=await mermaid.render(id,D[key]);
+    el.innerHTML=svg;
+    styleEntities(el);
+  }catch(e){
+    el.innerHTML='<div style="padding:16px;color:var(--color-text-danger);font-size:12px">'+e.message+'</div>';
+  }
+}
+
+function styleEntities(container){
+  container.querySelectorAll('svg .node').forEach(node=>{
+    const fp=node.querySelector('path[d]');
+    if(!fp)return;
+    const nums=(fp.getAttribute('d').match(/-?[\d.]+/g)||[]).map(Number);
+    if(nums.length<4)return;
+    const xs=nums.filter((_,i)=>i%2===0),ys=nums.filter((_,i)=>i%2===1);
+    const x=Math.min(...xs),y=Math.min(...ys),w=Math.max(...xs)-x,h=Math.max(...ys)-y;
+    const r=document.createElementNS('http://www.w3.org/2000/svg','rect');
+    r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',w);r.setAttribute('height',h);r.setAttribute('rx','8');
+    ['fill','stroke','stroke-width','class','style'].forEach(a=>{if(fp.hasAttribute(a))r.setAttribute(a,fp.getAttribute(a));});
+    fp.replaceWith(r);
+  });
+  container.querySelectorAll('svg .row-rect-odd path,svg .row-rect-even path').forEach(p=>p.setAttribute('stroke','none'));
+}
+
+window.show=function(key){
+  document.querySelectorAll('.tab').forEach(t=>{
+    const map={auth:'auth',institutions:'inst',officehours:'office',bookings:'book',finance:'pay',content:'content',admin:'admin'};
+    const labels={auth:'Auth',institutions:'Inst',officehours:'Office',bookings:'Book',finance:'Pay',content:'Content',admin:'Admin'};
+    t.classList.toggle('active',t.textContent.toLowerCase().includes(labels[key]?.toLowerCase()||key));
+  });
+  render(key);
+};
+
+render('auth');
+</script>
