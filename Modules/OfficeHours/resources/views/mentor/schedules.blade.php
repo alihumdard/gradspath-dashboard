@@ -26,7 +26,7 @@
             </div>
           </div>
 
-          <a href="https://grads-path.vercel.app/" class="back-link">
+          <a href="{{ url('/') }}" class="back-link">
             <span class="back-link-arrow">←</span>
             <span>Back to the Website</span>
           </a>
