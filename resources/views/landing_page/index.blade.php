@@ -1,0 +1,4321 @@
+@php
+  $authModal = $authModal ?? null;
+  $registerOldInput = old('role') || old('program_level') || old('institution') || old('name');
+  $activeAuthModal = $authModal ?: ($errors->any() ? ($registerOldInput ? 'signup' : 'login') : null);
+@endphp
+<!doctype html>
+<html lang="en" class="scroll-smooth dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Grads Paths - Find Your Mentor</title>
+    <!-- Font Awesome Link -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+    />
+    <link rel="stylesheet" href="{{ asset('assets_landingPage/css/style.css') }}" />
+
+    <script>
+      if (localStorage.getItem("theme") === "light") {
+        document.documentElement.classList.remove("dark");
+      } else {
+        document.documentElement.classList.add("dark");
+      }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "var(--bg)",
+              surface: "var(--surface)",
+              primary: "var(--primary)",
+              secondary: "var(--secondary)",
+              accent: "var(--accent)",
+              border: "var(--border)",
+              text: { main: "var(--text-main)", muted: "var(--text-muted)" },
+            },
+            fontFamily: {
+              sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+              display: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+
+  <body class="antialiased overflow-x-hidden">
+    <svg
+      style="width: 0; height: 0; position: absolute"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <defs>
+        <linearGradient id="gpClockGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#5B30E5" class="gp-stop-1" />
+          <stop offset="50%" stop-color="#8C5FE2" class="gp-stop-2" />
+          <stop offset="100%" stop-color="#E57CE1" class="gp-stop-3" />
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <header
+      class="fixed inset-x-0 top-0 z-50 glass h-16 flex items-center transition-all duration-300"
+      aria-label="Main navigation"
+    >
+      <div
+        class="w-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between relative h-full"
+      >
+        <a
+          href="index.html"
+          class="flex items-center gap-2 shrink-0 z-10"
+          aria-label="Home - Grads Paths"
+        >
+          <i
+            class="fa-solid fa-graduation-cap text-black dark:text-white text-2xl"
+          ></i>
+          <span
+            class="font-display font-bold text-base tracking-wide text-black dark:text-white whitespace-nowrap"
+            >Grads Paths</span
+          >
+        </a>
+
+        <nav
+          class="hidden md:flex items-center gap-6 sm:gap-8 font-bold text-sm absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2"
+          aria-label="Primary"
+        >
+          <a
+            href="index.html"
+            class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
+            >Home</a
+          >
+          <a
+            href="https://gradspath-dashboard.vercel.app"
+            class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
+            >Find Mentors</a
+          >
+          <a
+            href="#how"
+            class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
+            >How it Works</a
+          >
+          <a
+            href="#why-us"
+            class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
+            >Why Us</a
+          >
+        </nav>
+
+        <div class="flex items-center gap-3 shrink-0 z-10">
+          <button
+            id="theme-toggle"
+            class="w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-surface flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-[var(--primary)] hover:border-[var(--primary)]/40 transition-all"
+            aria-label="Toggle theme"
+          >
+            <svg
+              class="w-5 h-5 dark:hidden"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+              />
+            </svg>
+            <svg
+              class="w-5 h-5 hidden dark:block"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+              />
+            </svg>
+          </button>
+          <!-- <button
+            id="btn-dashboard"
+            class="hidden sm:inline-flex items-center justify-center gap-2 px-5 py-2 rounded-full min-w-[112px] text-sm font-bold text-white bg-[#4F46E5]/[0.95] hover:opacity-90 transition-all"
+          >
+            Dashboard
+          </button> -->
+          <!-- <button
+            id="btn-logout"
+            class="hidden sm:inline-flex items-center justify-center gap-2 px-5 py-2 rounded-full min-w-[112px] text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
+          >
+            Logout
+          </button> -->
+          <button
+            id="btn-login"
+            class="hidden sm:inline-flex items-center justify-center gap-2 px-[30px] py-[10px] rounded-full min-w-[112px] text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
+          >
+            Login
+          </button>
+          <button
+            id="btn-signup"
+            class="hidden sm:inline-flex items-center justify-center gap-2 px-7 py-2 rounded-full min-w-[124px] text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
+          >
+            Sign Up
+          </button>
+          <button
+            id="menu-toggle"
+            class="md:hidden w-10 h-10 flex items-center justify-center rounded-full border border-slate-300 dark:border-slate-600 text-black dark:text-white"
+          >
+            <i id="menu-icon" class="fa-solid fa-bars text-lg"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="mobile-menu" class="md:hidden fixed top-16 inset-x-0 z-40 hidden">
+      <div
+        class="bg-white dark:bg-surface border-b border-slate-200 dark:border-slate-700 shadow-lg"
+      >
+        <nav class="flex flex-col py-2 font-semibold text-sm">
+          <a
+            href="index.html"
+            class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
+            >Home</a
+          >
+          <a
+            href="https://gradspath-dashboard.vercel.app"
+            class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
+            >Find Mentors</a
+          >
+          <a
+            href="#how"
+            class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
+            >How it Works</a
+          >
+          <a
+            href="#why-us"
+            class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
+            >Why Us</a
+          >
+        </nav>
+        <div
+          class="flex gap-3 p-4 border-t border-slate-200 dark:border-slate-700"
+        >
+          <button
+            id="btn-dashboard-mob"
+            class="hidden flex-1 py-[12px] rounded-full text-sm font-bold text-white bg-[#4F46E5]/[0.95] hover:opacity-90 transition-all"
+          >
+            Dashboard
+          </button>
+          <button
+            id="btn-logout-mob"
+            class="hidden flex-1 py-2.5 rounded-full text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
+          >
+            Logout
+          </button>
+          <button
+            id="btn-login-mob"
+            class="flex-1 py-[12px] rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
+          >
+            Login
+          </button>
+          <button
+            id="btn-signup-mob"
+            class="flex-1 py-2.5 rounded-full text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
+          >
+            Sign Up
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <section
+      id="hero"
+      class="relative flex flex-col justify-center min-h-screen xl:pt-20 pt-20 pb-0 sm:pb-2 overflow-hidden hero-section-bg font-sans antialiased"
+    >
+      <div class="container mx-auto px-4 sm:px-6 text-center relative z-10">
+        <div
+          class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-8 shadow-inner shadow-white/5"
+        >
+          <span class="flex h-2 w-2 relative">
+            <span
+              class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#8C5FE2] opacity-75"
+            ></span>
+            <span
+              class="relative inline-flex rounded-full h-2 w-2 bg-[#8C5FE2]"
+            ></span>
+          </span>
+          <span
+            class="text-sm font-bold tracking-wide text-[var(--primary)] uppercase"
+            >Next Gen Mentorship</span
+          >
+        </div>
+
+        <h1
+          class="font-black text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-[6rem] leading-[1.15] mb-4 sm:mb-6"
+          style="font-weight: 950"
+        >
+          <span
+            class="block text-transparent bg-clip-text pb-3 bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)]"
+          >
+            Graduate Guidance<br class="sm:block" />
+            <span class="mt-2 block">Done Right</span>
+          </span>
+        </h1>
+
+        <div class="max-w-2xl mx-auto mb-6">
+          <p
+            class="text-base lg:text-lg leading-relaxed tracking-wide text-[var(--text-main)] font-medium"
+          >
+            Meet graduate mentors and professionals who have already gone
+            through the path you are considering, and get guidance that is
+            clear, practical, and personal.
+          </p>
+        </div>
+        <div class="flex flex-wrap justify-center gap-4 w-full sm:w-auto">
+          <a
+            href="https://gradspath-dashboard.vercel.app"
+            class="hero-btn-pink group relative inline-flex items-center justify-center min-w-[240px] h-[54px] px-[28px] rounded-full bg-transparent outline-none select-none cursor-pointer decoration-0 transition-transform duration-200 ease-out hover:-translate-y-px focus-visible:ring-4 focus-visible:ring-[#E47AB4]/25 w-full sm:w-auto"
+          >
+            <span
+              class="absolute inset-0 rounded-full bg-black/35 translate-x-[3px] translate-y-[3px] opacity-25 blur-[10px] transition-all duration-250 ease-in-out group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-35 z-0"
+            ></span>
+
+            <span
+              class="absolute inset-0 rounded-full border-[2px] border-[#E47AB4] pointer-events-none z-20"
+            ></span>
+
+            <span
+              class="relative z-30 font-sans font-semibold tracking-[0.02em] text-black dark:text-white transition-colors duration-250 ease-out group-hover:text-white"
+            >
+              Browse Graduates
+            </span>
+
+            <span
+              class="absolute inset-0 rounded-full overflow-hidden bg-white/[0.06] z-10"
+            >
+              <span class="absolute inset-0 w-full h-full">
+                <span
+                  class="absolute top-[-60%] left-[-30%] w-[60%] h-[220%] bg-[#E47AB4] rounded-full transform translate-y-[160%] scale-125 transition-transform duration-[480ms] ease-out will-change-transform delay-0 group-hover:translate-y-0 group-hover:scale-105"
+                ></span>
+                <span
+                  class="absolute top-[-60%] left-[0%] w-[60%] h-[220%] bg-[#E47AB4] rounded-full transform translate-y-[160%] scale-125 transition-transform duration-[480ms] ease-out will-change-transform delay-[60ms] group-hover:translate-y-0 group-hover:scale-105"
+                ></span>
+                <span
+                  class="absolute top-[-60%] left-[30%] w-[60%] h-[220%] bg-[#E47AB4] rounded-full transform translate-y-[160%] scale-125 transition-transform duration-[480ms] ease-out will-change-transform delay-[120ms] group-hover:translate-y-0 group-hover:scale-105"
+                ></span>
+                <span
+                  class="absolute top-[-60%] left-[60%] w-[60%] h-[220%] bg-[#E47AB4] rounded-full transform translate-y-[160%] scale-125 transition-transform duration-[480ms] ease-out will-change-transform delay-[180ms] group-hover:translate-y-0 group-hover:scale-105"
+                ></span>
+              </span>
+            </span>
+          </a>
+
+          <a
+            href="https://gradspath-dashboard.vercel.app"
+            class="hero-btn-blue group relative inline-flex items-center justify-center min-w-[240px] h-[54px] px-[28px] rounded-full bg-transparent outline-none select-none cursor-pointer decoration-0 transition-transform duration-200 ease-out hover:-translate-y-px focus-visible:ring-4 focus-visible:ring-[#71A4F4]/25 w-full sm:w-auto"
+          >
+            <span
+              class="absolute inset-0 rounded-full bg-black/35 translate-x-[3px] translate-y-[3px] opacity-25 blur-[10px] transition-all duration-250 ease-in-out group-hover:translate-x-0 group-hover:translate-y-0 group-hover:opacity-35 z-0"
+            ></span>
+
+            <span
+              class="absolute inset-0 rounded-full border-2 border-[#71A4F4] pointer-events-none z-20"
+            ></span>
+
+            <span
+              class="relative z-30 font-sans font-semibold tracking-[0.02em] text-black dark:text-white transition-colors duration-250 ease-out group-hover:text-white"
+            >
+              Browse Professionals
+            </span>
+            <span
+              class="absolute inset-0 rounded-full overflow-hidden bg-white/[0.06] z-10"
+            >
+              <span class="absolute inset-0 w-full h-full">
+                <span
+                  class="absolute top-[-60%] left-[-30%] w-[60%] h-[220%] bg-[#71A4F4] rounded-full transform translate-y-[160%] scale-125 transition-transform duration-[480ms] ease-out will-change-transform delay-0 group-hover:translate-y-0 group-hover:scale-105"
+                ></span>
+                <span
+                  class="absolute top-[-60%] left-[0%] w-[60%] h-[220%] bg-[#71A4F4] rounded-full transform translate-y-[160%] scale-125 transition-transform duration-[480ms] ease-out will-change-transform delay-[60ms] group-hover:translate-y-0 group-hover:scale-105"
+                ></span>
+                <span
+                  class="absolute top-[-60%] left-[30%] w-[60%] h-[220%] bg-[#71A4F4] rounded-full transform translate-y-[160%] scale-125 transition-transform duration-[480ms] ease-out will-change-transform delay-[120ms] group-hover:translate-y-0 group-hover:scale-105"
+                ></span>
+                <span
+                  class="absolute top-[-60%] left-[60%] w-[60%] h-[220%] bg-[#71A4F4] rounded-full transform translate-y-[160%] scale-125 transition-transform duration-[480ms] ease-out will-change-transform delay-[180ms] group-hover:translate-y-0 group-hover:scale-105"
+                ></span>
+              </span>
+            </span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="w-full flex flex-col py-8 sm:py-12 page-section-2 text-[var(--text-main)] transition-colors duration-300 overflow-hidden"
+      id="programs"
+    >
+      <div
+        class="w-full max-w-[1100px] mx-auto px-4 sm:px-6 flex flex-col flex-1"
+      >
+        <header class="text-center mb-6">
+          <h2
+            class="mb-3 text-2xl sm:text-3xl md:text-4xl font-bold text-black dark:text-white"
+          >
+            Where Our Mentors Come From
+          </h2>
+          <p
+            class="text-base lg:text-lg leading-relaxed text-black dark:text-white max-w-2xl mx-auto font-medium"
+          >
+            Whether it’s MBA, Law, or Therapy Pathways, you’ll connect directly
+            with students who are already inside the programs you want to join
+          </p>
+        </header>
+
+        <!-- Single logo belt: same for all tabs, no duplicates, correct names -->
+        <div
+          class="hover-pause relative w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg)] dark:bg-[var(--surface)] px-3 sm:px-4 py-3 sm:py-4 mb-4 sm:mb-6"
+        >
+          <div class="flex w-max animate-scroll">
+            <div
+              class="flex items-center gap-8 sm:gap-10 md:gap-12 pr-8 sm:pr-10 md:pr-12"
+            >
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/penn.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="UPenn Wharton"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >UPenn Wharton</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/stanford.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="Stanford GSB"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >Stanford GSB</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/harvard.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="Harvard HBS"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >Harvard HBS</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/mit.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="MIT Sloan"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >MIT Sloan</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/columbia.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="Columbia"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >Columbia</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/yale.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="Yale"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >Yale</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/nyu.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="NYU"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >NYU</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/ucla.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="UCLA"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >UCLA</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/berkeley.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="Berkeley"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >Berkeley</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/michigan.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="Michigan"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >Michigan</span
+                >
+              </div>
+            </div>
+            <div
+              class="flex items-center gap-8 sm:gap-10 md:gap-12 pr-8 sm:pr-10 md:pr-12"
+              aria-hidden="true"
+            >
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/penn.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="UPenn Wharton"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >UPenn Wharton</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/stanford.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="Stanford GSB"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >Stanford GSB</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/harvard.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="Harvard HBS"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >Harvard HBS</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/mit.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="MIT Sloan"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >MIT Sloan</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/columbia.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="Columbia"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >Columbia</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/yale.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="Yale"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >Yale</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/nyu.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="NYU"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >NYU</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/ucla.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="UCLA"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >UCLA</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/berkeley.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="Berkeley"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >Berkeley</span
+                >
+              </div>
+              <div
+                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
+              >
+                <img
+                  src="{{ asset('assets_landingPage/img/logos/michigan.png') }}"
+                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                  alt="Michigan"
+                />
+                <span
+                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
+                  >Michigan</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="w-full flex justify-center mb-4 sm:mb-6 px-1 sm:px-0">
+          <div
+            class="flex flex-wrap items-center justify-center gap-2 p-1.5 rounded-3xl bg-[var(--bg)] dark:bg-[var(--surface)] border border-[var(--border)]"
+            role="tablist"
+          >
+            <button
+              onclick="switchTab('mba')"
+              id="tab-mba"
+              aria-selected="true"
+              class="tab-btn px-4 py-2.5 rounded-full text-[11px] sm:text-[12px] leading-none whitespace-nowrap font-bold tracking-widest uppercase transition-all duration-200 bg-[var(--primary)] text-white shadow-sm hover:opacity-90 focus:outline-none"
+            >
+              MBA Programs
+            </button>
+            <button
+              onclick="switchTab('law')"
+              id="tab-law"
+              aria-selected="false"
+              class="tab-btn px-4 py-2.5 rounded-full text-[11px] sm:text-[12px] leading-none whitespace-nowrap font-bold tracking-widest uppercase transition-all duration-200 bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] focus:outline-none"
+            >
+              Law Programs
+            </button>
+            <button
+              onclick="switchTab('psych')"
+              id="tab-psych"
+              aria-selected="false"
+              class="tab-btn px-4 py-2.5 rounded-full text-[11px] sm:text-[12px] leading-none whitespace-nowrap font-bold tracking-widest uppercase transition-all duration-200 bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] focus:outline-none"
+            >
+              Therapy Pathways Programs
+            </button>
+          </div>
+        </div>
+
+        <div class="flex-1 min-h-0">
+                              <div
+            id="panel-mba"
+            class="program-panel flex flex-col items-center gap-4 sm:gap-6 w-full"
+          >
+            <div class="max-w-6xl mx-auto w-full px-0 sm:px-4">
+              <div class="mb-4 sm:mb-6 text-center">
+                <h3 class="text-xl sm:text-2xl font-bold tracking-wide text-black dark:text-white mb-2">
+                  MBA Programs
+                </h3>
+                <p class="text-base text-black dark:text-white max-w-xl mx-auto leading-relaxed">
+                  A curated selection of globally recognized institutions, categorized by prestige and placement power
+                </p>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full">
+                <!-- MBA Elite -->
+                <div class="group relative rounded-2xl border-2 border-blue-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
+                  <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
+                    <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
+                      <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">MBA Elite</h4>
+                      <p class="text-[10px] font-bold text-[var(--primary)] tracking-widest uppercase mt-0.5">Top Tier</p>
+                      <div class="w-8 h-8 rounded-full bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] border border-[var(--primary)]/20 mt-1.5">
+                        <i class="fa-solid fa-trophy text-[10px]"></i>
+                      </div>
+                    </div>
+                    <ul class="space-y-1.5">
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UPENN</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Wharton School</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-flask text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">MIT</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Sloan School</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-graduation-cap text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">STANFORD</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Stanford GSB</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-building-columns text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">HARVARD</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Harvard Business</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-scale-balanced text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">NORTHWESTERN</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Kellogg School</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">CHICAGO</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Booth School</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- MBA Top 25 -->
+                <div class="group relative rounded-2xl border-2 border-red-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-red-500/10">
+                  <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
+                    <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
+                      <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">MBA Top 25</h4>
+                      <p class="text-[10px] font-bold text-[var(--secondary)] tracking-widest uppercase mt-0.5">Highly Ranked</p>
+                      <div class="w-8 h-8 rounded-full bg-[var(--secondary)]/10 flex items-center justify-center text-[var(--secondary)] border border-[var(--secondary)]/20 mt-1.5">
+                        <i class="fa-solid fa-star text-[10px]"></i>
+                      </div>
+                    </div>
+                    <ul class="space-y-1.5">
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UNC</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UNC-Chapel Hill</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-flask text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">RICE</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Rice University</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-graduation-cap text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">GEORGIA</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">U of Georgia</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-building-columns text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UTD</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UT-Dallas</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-scale-balanced text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">NOTRE DAME</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Notre Dame</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">ROCHESTER</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">U of Rochester</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- MBA Regional -->
+                <div class="group relative rounded-2xl border-2 border-purple-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10">
+                  <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
+                    <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
+                      <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">MBA Regional</h4>
+                      <p class="text-[10px] font-bold text-[var(--accent)] tracking-widest uppercase mt-0.5">Regional Impact</p>
+                      <div class="w-8 h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/20 mt-1.5">
+                        <i class="fa-solid fa-map-location-dot text-[10px]"></i>
+                      </div>
+                    </div>
+                    <ul class="space-y-1.5">
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">TAMU</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Texas A&M</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-flask text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UCI</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UC Irvine</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-graduation-cap text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">BC</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Boston College</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-building-columns text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">BU</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Boston U</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-scale-balanced text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">RUTGERS</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Rutgers Univ</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">SYRACUSE</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Syracuse U</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div
+            id="panel-law"
+            class="program-panel hidden flex flex-col items-center gap-4 sm:gap-6 w-full"
+          >
+            <div class="max-w-6xl mx-auto w-full px-0 sm:px-4">
+              <div class="mb-4 sm:mb-6 text-center">
+                <h3 class="text-xl sm:text-2xl font-bold tracking-wide text-black dark:text-white mb-2">
+                  Law Programs
+                </h3>
+                <p class="text-base text-black dark:text-white max-w-xl mx-auto leading-relaxed">
+                  A curated selection of globally recognized institutions, categorized by prestige and placement power
+                </p>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full">
+                <!-- Law Elite -->
+                <div class="group relative rounded-2xl border-2 border-blue-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
+                  <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
+                    <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
+                      <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">Law Elite</h4>
+                      <p class="text-[10px] font-bold text-[var(--primary)] tracking-widest uppercase mt-0.5">Top Tier</p>
+                      <div class="w-8 h-8 rounded-full bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] border border-[var(--primary)]/20 mt-1.5">
+                        <i class="fa-solid fa-scale-balanced text-[10px]"></i>
+                      </div>
+                    </div>
+                    <ul class="space-y-1.5">
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">STANFORD</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Stanford Univ</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-flask text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">YALE</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Yale Univ</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-graduation-cap text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">CHICAGO</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">U of Chicago</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-building-columns text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UVA</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">U of Virginia</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-scale-balanced text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UPENN</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">U of Pennsylvania</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">HARVARD</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Harvard Univ</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Law Top 25 -->
+                <div class="group relative rounded-2xl border-2 border-red-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-red-500/10">
+                  <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
+                    <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
+                      <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">Law Top 25</h4>
+                      <p class="text-[10px] font-bold text-[var(--secondary)] tracking-widest uppercase mt-0.5">Highly Ranked</p>
+                      <div class="w-8 h-8 rounded-full bg-[var(--secondary)]/10 flex items-center justify-center text-[var(--secondary)] border border-[var(--secondary)]/20 mt-1.5">
+                        <i class="fa-solid fa-gavel text-[10px]"></i>
+                      </div>
+                    </div>
+                    <ul class="space-y-1.5">
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">USC</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">USC (Gould)</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-flask text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">WAKE FOREST</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Wake Forest U</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-graduation-cap text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">BYU</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">BYU (Clark)</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-building-columns text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">OHIO STATE</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Ohio State U</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-scale-balanced text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">WISCONSIN</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">U of Wisconsin</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <!-- Law Regional -->
+                <div class="group relative rounded-2xl border-2 border-purple-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10">
+                  <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
+                    <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
+                      <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">Law Regional</h4>
+                      <p class="text-[10px] font-bold text-[var(--accent)] tracking-widest uppercase mt-0.5">Regional Impact</p>
+                      <div class="w-8 h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/20 mt-1.5">
+                        <i class="fa-solid fa-map-location-dot text-[10px]"></i>
+                      </div>
+                    </div>
+                    <ul class="space-y-1.5">
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">TAMU</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Texas A&M</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-flask text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UCI</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UC Irvine</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-graduation-cap text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">BC</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Boston College</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-building-columns text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">BU</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Boston U</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-scale-balanced text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">RUTGERS</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Rutgers Univ</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">SYRACUSE</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Syracuse U</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<div
+            id="panel-psych"
+            class="program-panel hidden flex flex-col items-center gap-4 sm:gap-6"
+          >
+            <div class="max-w-6xl mx-auto w-full px-0">
+              <div class="mb-4 sm:mb-6 text-center">
+                <h3
+                  class="text-xl sm:text-2xl font-bold tracking-wide text-black dark:text-white mb-2"
+                >
+                  Therapy Pathways Programs
+                </h3>
+                <p
+                  class="text-base text-black dark:text-white max-w-xl mx-auto leading-relaxed"
+                >
+                  A curated selection of globally recognized institutions,
+                  categorized by prestige and placement power
+                </p>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div
+                  class="group relative rounded-2xl border-2 border-blue-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+                >
+                  <div
+                    class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4"
+                  >
+                    <div
+                      class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3"
+                    >
+                      <h4
+                        class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]"
+                      >
+                        CMHC
+                      </h4>
+                      <p
+                        class="text-[10px] font-bold text-[var(--primary)] tracking-widest uppercase mt-0.5"
+                      >
+                        Clinical Mental Health
+                      </p>
+                      <div
+                        class="w-8 h-8 rounded-full bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] border border-[var(--primary)]/20 mt-1.5"
+                      >
+                        <i class="fa-solid fa-heart-pulse text-[10px]"></i>
+                      </div>
+                    </div>
+                    <ul class="space-y-1.5">
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">JOHNS HOPKINS</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Johns Hopkins University</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-flask text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UF</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">University of Florida</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-graduation-cap text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">SYRACUSE</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Syracuse University</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-building-columns text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UNCG</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UNC Greensboro</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-scale-balanced text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">JMU</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">James Madison University</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">CU DENVER</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">University of Colorado Denver</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div
+                  class="group relative rounded-2xl border-2 border-red-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-red-500/10"
+                >
+                  <div
+                    class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4"
+                  >
+                    <div
+                      class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3"
+                    >
+                      <h4
+                        class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]"
+                      >
+                        MSW
+                      </h4>
+                      <p
+                        class="text-[10px] font-bold text-[var(--secondary)] tracking-widest uppercase mt-0.5"
+                      >
+                        Social Work
+                      </p>
+                      <div
+                        class="w-8 h-8 rounded-full bg-[var(--secondary)]/10 flex items-center justify-center text-[var(--secondary)] border border-[var(--secondary)]/20 mt-1.5"
+                      >
+                        <i class="fa-solid fa-people-group text-[10px]"></i>
+                      </div>
+                    </div>
+                    <ul class="space-y-1.5">
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">MICHIGAN</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">University of Michigan</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-flask text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">WASHU</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Washington U (Brown School)</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-graduation-cap text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">CHICAGO</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UChicago (Crown Family)</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-building-columns text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">BERKELEY</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UC Berkeley</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-scale-balanced text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">COLUMBIA</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Columbia University</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UNC</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UNC Chapel Hill</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div
+                  class="group relative rounded-2xl border-2 border-purple-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10"
+                >
+                  <div
+                    class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4"
+                  >
+                    <div
+                      class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3"
+                    >
+                      <h4
+                        class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]"
+                      >
+                        MFT
+                      </h4>
+                      <p
+                        class="text-[10px] font-bold text-[var(--accent)] tracking-widest uppercase mt-0.5"
+                      >
+                        Marriage & Family
+                      </p>
+                      <div
+                        class="w-8 h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/20 mt-1.5"
+                      >
+                        <i class="fa-solid fa-people-roof text-[10px]"></i>
+                      </div>
+                    </div>
+                    <ul class="space-y-1.5">
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">NORTHWESTERN</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Northwestern University</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-flask text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">SYRACUSE</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Syracuse University</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-graduation-cap text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">USD</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">University of San Diego</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-building-columns text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">SDSU</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">San Diego State University</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-scale-balanced text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">ALLIANT</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Alliant International (MFT)</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">LOMA LINDA</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Loma Linda University</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div
+                  class="group relative rounded-2xl border-2 border-blue-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+                >
+                  <div
+                    class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4"
+                  >
+                    <div
+                      class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3"
+                    >
+                      <h4
+                        class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]"
+                      >
+                        Clinical PsyD
+                      </h4>
+                      <p
+                        class="text-[10px] font-bold text-[var(--primary)] tracking-widest uppercase mt-0.5"
+                      >
+                        Psychology
+                      </p>
+                      <div
+                        class="w-8 h-8 rounded-full bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] border border-[var(--primary)]/20 mt-1.5"
+                      >
+                        <i class="fa-solid fa-brain text-[10px]"></i>
+                      </div>
+                    </div>
+                    <ul class="space-y-1.5">
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">PAU-STANFORD</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">PAU–Stanford PsyD Consortium</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-flask text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">YESHIVA</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Yeshiva (Ferkauf) PsyD</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-graduation-cap text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">WRIGHT</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">The Wright Institute PsyD</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-building-columns text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">FULLER</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Fuller PsyD Clinical Psychology</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-scale-balanced text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">WRIGHT STATE</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Wright State University PsyD</span>
+                        </div>
+                      </li>
+                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                        <div class="flex flex-col text-left">
+                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">AZUSA PACIFIC</span>
+                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Azusa Pacific University PsyD</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+  class="w-full py-10 sm:py-14 page-section-3 text-[var(--text-main)] transition-colors duration-300"
+  id="how"
+>
+  <div class="max-w-[1300px] mx-auto px-4 sm:px-6 text-center">
+    <h2 class="mb-4 text-2xl sm:text-3xl md:text-4xl font-bold">
+      How It Works
+    </h2>
+
+    <p class="max-w-2xl mx-auto mb-10 text-base lg:text-lg leading-relaxed font-medium">
+      Six simple steps to bridge the gap between curiosity and your dream grad school
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+
+      <!-- STEP 1 -->
+      <article class="flex flex-col h-full group">
+        <div class="relative flex flex-col h-full bg-[var(--surface)] rounded-2xl border-2 border-blue-500 p-6 lg:p-8 transition-all duration-300 hover:shadow-xl">
+
+          <!-- Step Number -->
+          <div class="absolute top-4 left-4 w-10 h-10 rounded-full bg-[var(--primary)] flex items-center justify-center text-white font-bold text-sm">
+            01
+          </div>
+
+          <!-- Icon -->
+          <div class="mx-auto mt-6 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center bg-[var(--primary)]/10 transition-transform duration-300 group-hover:-translate-y-1">
+            <i class="fa-solid fa-user-plus text-2xl sm:text-3xl text-[var(--primary)]"></i>
+          </div>
+
+          <h3 class="mt-4 mb-3 text-xl sm:text-2xl font-bold text-center group-hover:text-[var(--primary)]">
+            Create your account
+          </h3>
+
+          <p class="mb-6 text-base text-center">
+            Get started by creating your Grads Paths account. Sign up, verify your information, and join a trusted community built on privacy, accuracy, and real mentor connections.
+          </p>
+
+          <ul class="space-y-3 mt-auto text-sm">
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--primary)]"></i><span>Sign up with ease</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--primary)]"></i><span>Secure platform</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--primary)]"></i><span>Connect with real mentors</span></li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- STEP 2 -->
+      <article class="flex flex-col h-full group">
+        <div class="relative flex flex-col h-full bg-[var(--surface)] rounded-2xl border-2 border-red-500 p-6 lg:p-8 transition-all duration-300 hover:shadow-xl">
+
+          <div class="absolute top-4 left-4 w-10 h-10 rounded-full bg-[var(--secondary)] flex items-center justify-center text-white font-bold text-sm">
+            02
+          </div>
+
+          <div class="mx-auto mt-6 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center bg-[var(--secondary)]/10 group-hover:-translate-y-1 transition">
+            <i class="fa-solid fa-users-viewfinder text-2xl sm:text-3xl text-[var(--secondary)]"></i>
+          </div>
+
+          <h3 class="mt-4 mb-3 text-xl sm:text-2xl font-bold text-center group-hover:text-[var(--secondary)]">
+            Find the Right Mentor
+          </h3>
+
+          <p class="mb-6 text-base text-center">
+            Meet with graduate mentors or professionals from a wide range of disciplines and backgrounds. Every time you connect with a new mentor, you'll begin with a free 15-minute consultation to explore different perspectives and ensure the right fit for your goals and academic path.
+          </p>
+
+          <ul class="space-y-3 mt-auto text-sm">
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--secondary)]"></i><span>Free 15-minute consultation with every new mentor</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--secondary)]"></i><span>Diverse academic backgrounds</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--secondary)]"></i><span>Mentors from top universities</span></li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- STEP 3 -->
+      <article class="flex flex-col h-full group">
+        <div class="relative flex flex-col h-full bg-[var(--surface)] rounded-2xl border-2 border-purple-500 p-6 lg:p-8 transition-all duration-300 hover:shadow-xl">
+
+          <div class="absolute top-4 left-4 w-10 h-10 rounded-full bg-[var(--accent)] flex items-center justify-center text-white font-bold text-sm">
+            03
+          </div>
+
+          <div class="mx-auto mt-6 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center bg-[var(--accent)]/10 group-hover:-translate-y-1 transition">
+            <i class="fa-regular fa-calendar-check text-2xl sm:text-3xl text-[var(--accent)]"></i>
+          </div>
+
+          <h3 class="mt-4 mb-3 text-xl sm:text-2xl font-bold text-center group-hover:text-[var(--accent)]">
+            Book Your Session
+          </h3>
+
+          <p class="mb-6 text-base text-center">
+            Once you find the right mentor and have chosen the service you want, book your session at a time that works best for you. With flexible scheduling and easy booking, you can get started on the right path with confidence.
+          </p>
+
+          <ul class="space-y-3 mt-auto text-sm">
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--accent)]"></i><span>Ease of scheduling</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--accent)]"></i><span>Automated reminders</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--accent)]"></i><span>Direct calendar sync</span></li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- STEP 4 -->
+      <article class="flex flex-col h-full group">
+        <div class="relative flex flex-col h-full bg-[var(--surface)] rounded-2xl border-2 border-blue-500 p-6 lg:p-8 transition-all duration-300 hover:shadow-xl">
+
+          <div class="absolute top-4 left-4 w-10 h-10 rounded-full bg-[var(--primary)] flex items-center justify-center text-white font-bold text-sm">
+            04
+          </div>
+
+          <div class="mx-auto mt-6 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center bg-[var(--primary)]/10 group-hover:-translate-y-1 transition">
+            <i class="fa-solid fa-credit-card text-2xl sm:text-3xl text-[var(--primary)]"></i>
+          </div>
+
+          <h3 class="mt-4 mb-3 text-xl sm:text-2xl font-bold text-center group-hover:text-[var(--primary)]">
+            Secure Payment
+          </h3>
+
+          <p class="mb-6 text-base text-center">
+            Complete your payment to confirm your session. Once payment is processed, your meeting is created and you'll be ready to meet with your mentor.
+          </p>
+
+          <ul class="space-y-3 mt-auto text-sm">
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--primary)]"></i><span>Encrypted transactions</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--primary)]"></i><span>No hidden fees</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--primary)]"></i><span>Satisfaction guarantee</span></li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- STEP 5 -->
+      <article class="flex flex-col h-full group">
+        <div class="relative flex flex-col h-full bg-[var(--surface)] rounded-2xl border-2 border-red-500 p-6 lg:p-8 transition-all duration-300 hover:shadow-xl">
+
+          <div class="absolute top-4 left-4 w-10 h-10 rounded-full bg-[var(--secondary)] flex items-center justify-center text-white font-bold text-sm">
+            05
+          </div>
+
+          <div class="mx-auto mt-6 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center bg-[var(--secondary)]/10 group-hover:-translate-y-1 transition">
+            <i class="fa-solid fa-video text-2xl sm:text-3xl text-[var(--secondary)]"></i>
+          </div>
+
+          <h3 class="mt-4 mb-3 text-xl sm:text-2xl font-bold text-center group-hover:text-[var(--secondary)]">
+            Attend the Session
+          </h3>
+
+          <p class="mb-6 text-base text-center">
+            Meet with your mentor on Zoom and focus on what matters most. Your session can be recorded so you can revisit key advice and insights anytime.
+          </p>
+
+          <ul class="space-y-3 mt-auto text-sm">
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--secondary)]"></i><span>Video call link provided</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--secondary)]"></i><span>Structured session format</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--secondary)]"></i><span>Actionable takeaways</span></li>
+          </ul>
+        </div>
+      </article>
+
+      <!-- STEP 6 -->
+      <article class="flex flex-col h-full group">
+        <div class="relative flex flex-col h-full bg-[var(--surface)] rounded-2xl border-2 border-purple-500 p-6 lg:p-8 transition-all duration-300 hover:shadow-xl">
+
+          <div class="absolute top-4 left-4 w-10 h-10 rounded-full bg-[var(--accent)] flex items-center justify-center text-white font-bold text-sm">
+            06
+          </div>
+
+          <div class="mx-auto mt-6 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center bg-[var(--accent)]/10 group-hover:-translate-y-1 transition">
+            <i class="fa-solid fa-star text-2xl sm:text-3xl text-[var(--accent)]"></i>
+          </div>
+
+          <h3 class="mt-4 mb-3 text-xl sm:text-2xl font-bold text-center group-hover:text-[var(--accent)]">
+            Rate and Review
+          </h3>
+
+          <p class="mb-6 text-base text-center">
+            After your session, share a review of your mentor. Your feedback is taken into account to help mentors refine their approach and gives future students helpful insight. Reviews are visible in the feedback section of mentor's dashboard.
+          </p>
+
+          <ul class="space-y-3 mt-auto text-sm">
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--accent)]"></i><span>Share your experience</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--accent)]"></i><span>Help future students</span></li>
+            <li class="flex gap-3"><i class="fa-solid fa-check text-[var(--accent)]"></i><span>Build the community</span></li>
+          </ul>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+    <section
+      class="w-full py-8 sm:py-10 page-section-4 text-[var(--text-main)] transition-colors duration-300"
+      id="services"
+    >
+      <div class="max-w-[1300px] mx-auto px-4 sm:px-6">
+        <div class="text-center mb-6 sm:mb-8">
+          <h2
+            class="text-2xl sm:text-3xl font-bold text-black dark:text-white mb-4"
+          >
+            Our Services
+          </h2>
+          <p
+            class="max-w-2xl mx-auto text-sm text-black dark:text-white font-normal"
+          >
+            Pick a meeting type, choose your program, then book with a mentor
+            who fits your goals
+          </p>
+        </div>
+
+        <div class="w-full max-w-2xl mx-auto mb-8 text-center">
+          <p class="text-sm font-bold text-black dark:text-white mb-3">
+            First time? Start with a
+            <span class="text-[var(--secondary)] font-bold">free</span>
+            15-minute consultation.
+          </p>
+          <button
+            onclick="window.gradpathsHandleSelectMentor(event)"
+            class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--primary)] text-white text-sm font-bold shadow-md hover:-translate-y-1 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer border-none"
+          >
+            Select Your Mentor <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+        </div>
+
+        <div
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8"
+        >
+          <div class="group relative h-full">
+            <div
+              class="relative h-full rounded-2xl border-2 border-[var(--primary)] bg-white dark:bg-[var(--surface)] p-5 sm:p-6 lg:p-8 flex flex-col overflow-hidden shadow-md hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300"
+            >
+              <div
+                class="relative w-16 h-16 mx-auto mb-6 rounded-2xl bg-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center"
+              >
+                <i
+                  class="fa-solid fa-handshake text-2xl text-[var(--primary)]"
+                ></i>
+              </div>
+
+              <div class="text-center mb-8 relative z-10">
+                <h3
+                  class="text-xl font-bold text-black dark:text-white mb-3 tracking-wide"
+                >
+                  Free Consultation
+                </h3>
+                <p
+                  class="text-sm text-black dark:text-white font-normal leading-relaxed"
+                >
+                  Meet a mentor of your choosing, assess the fit, and align your
+                  goals. A focused 15-minute session to get started.
+                </p>
+              </div>
+
+              <div
+                class="mt-auto pt-6 border-t border-[var(--border)] relative z-10"
+              >
+                <div
+                  class="flex items-center justify-between items-baseline gap-4 mb-5"
+                >
+                  <span
+                    class="inline-flex items-center gap-2 text-lg sm:text-xl font-bold text-[var(--text-main)] tracking-wide"
+                  >
+                    <i
+                      class="fa-regular fa-clock text-[var(--primary)] text-base"
+                    ></i>
+                    15 min
+                  </span>
+                  <span
+                    class="text-lg sm:text-xl font-bold text-[var(--primary)] shrink-0"
+                    >Free</span
+                  >
+                </div>
+
+                <button
+                  onclick="window.gradpathsHandleSelectMentor(event)"
+                  class="block w-full rounded-xl border-2 border-[var(--primary)] py-3.5 text-center text-sm font-bold text-[var(--primary)] hover:bg-[var(--primary)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent"
+                >
+                  Select Your Mentor
+                  <i class="fa-solid fa-arrow-right text-xs ml-1"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="group relative h-full">
+            <div
+              class="relative h-full rounded-2xl border-2 border-[var(--secondary)] bg-white dark:bg-[var(--surface)] p-5 sm:p-6 lg:p-8 flex flex-col overflow-hidden shadow-md hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300"
+            >
+              <div
+                class="relative w-16 h-16 mx-auto mb-6 rounded-2xl bg-[var(--secondary)]/10 border border-[var(--secondary)]/20 flex items-center justify-center"
+              >
+                <i
+                  class="fa-solid fa-chalkboard-user text-2xl text-[var(--secondary)]"
+                ></i>
+              </div>
+
+              <div class="text-center mb-8 relative z-10">
+                <h3
+                  class="text-xl font-bold text-black dark:text-white mb-3 tracking-wide"
+                >
+                  Tutoring
+                </h3>
+                <p
+                  class="text-sm text-black dark:text-white font-normal leading-relaxed"
+                >
+                  High-performance preparation for the GMAT, GRE, LSAT, and
+                  therapy licensing exams. Work one-on-one or in small groups
+                  with mentors who scored in the 90th percentile or higher.
+                </p>
+              </div>
+
+              <div
+                class="mt-auto pt-6 border-t border-[var(--border)] relative z-10"
+              >
+                <div
+                  class="flex items-center justify-between items-baseline gap-4 mb-5"
+                >
+                  <span
+                    class="inline-flex items-center gap-2 text-lg sm:text-xl font-bold text-[var(--text-main)] tracking-wide"
+                  >
+                    <i
+                      class="fa-regular fa-clock text-[var(--secondary)] text-base"
+                    ></i>
+                    60 min
+                  </span>
+                  <span
+                    class="text-lg sm:text-xl font-bold text-[var(--text-main)] shrink-0"
+                    >$70</span
+                  >
+                </div>
+
+                <button
+                  onclick="window.gradpathsHandleSelectMentor(event)"
+                  class="block w-full rounded-xl border-2 border-[var(--secondary)] py-3.5 text-center text-sm font-bold text-[var(--secondary)] hover:bg-[var(--secondary)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent"
+                >
+                  Select Your Mentor
+                  <i class="fa-solid fa-arrow-right text-xs ml-1"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="group relative h-full">
+            <div
+              class="relative h-full rounded-2xl border-2 border-[var(--accent)] bg-white dark:bg-[var(--surface)] p-5 sm:p-6 lg:p-8 flex flex-col overflow-hidden shadow-md hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300"
+            >
+              <div
+                class="relative w-16 h-16 mx-auto mb-6 rounded-2xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center"
+              >
+                <i
+                  class="fa-solid fa-graduation-cap text-2xl text-[var(--accent)]"
+                ></i>
+              </div>
+
+              <div class="text-center mb-8 relative z-10">
+                <h3
+                  class="text-xl font-bold text-black dark:text-white mb-3 tracking-wide"
+                >
+                  Program Insights
+                </h3>
+                <p
+                  class="text-sm text-black dark:text-white font-normal leading-relaxed"
+                >
+                  Learn about the institutions you're aiming for directly from
+                  current graduate students. Get firsthand insight into program
+                  culture, academics, opportunities, and what it's really like
+                  to be a student there.
+                </p>
+              </div>
+
+              <div
+                class="mt-auto pt-6 border-t border-[var(--border)] relative z-10"
+              >
+                <div
+                  class="flex items-center justify-between items-baseline gap-4 mb-5"
+                >
+                  <span
+                    class="inline-flex items-center gap-2 text-lg sm:text-xl font-bold text-[var(--text-main)] tracking-wide"
+                  >
+                    <i
+                      class="fa-regular fa-clock text-[var(--accent)] text-base"
+                    ></i>
+                    60 min
+                  </span>
+                  <span
+                    class="text-lg sm:text-xl font-bold text-[var(--text-main)] shrink-0"
+                    >$55</span
+                  >
+                </div>
+
+                <button
+                  onclick="window.gradpathsHandleSelectMentor(event)"
+                  class="block w-full rounded-xl border-2 border-[var(--accent)] py-3.5 text-center text-sm font-bold text-[var(--accent)] hover:bg-[var(--accent)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent"
+                >
+                  Select Your Mentor
+                  <i class="fa-solid fa-arrow-right text-xs ml-1"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="group relative h-full">
+            <div
+              class="relative h-full rounded-2xl border-2 border-[var(--primary)] bg-white dark:bg-[var(--surface)] p-5 sm:p-6 lg:p-8 flex flex-col overflow-hidden shadow-md hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300"
+            >
+              <div
+                class="relative w-16 h-16 mx-auto mb-6 rounded-2xl bg-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center"
+              >
+                <i
+                  class="fa-solid fa-briefcase text-2xl text-[var(--primary)]"
+                ></i>
+              </div>
+
+              <div class="text-center mb-8 relative z-10">
+                <h3
+                  class="text-xl font-bold text-black dark:text-white mb-3 tracking-wide"
+                >
+                  Interview Prep
+                </h3>
+                <p
+                  class="text-sm text-black dark:text-white font-normal leading-relaxed"
+                >
+                  Prepare for both graduate school and career interviews with
+                  mentors who have firsthand experience in the programs and
+                  roles you're targeting. Through mock interviews, structured
+                  feedback, and strategic guidance, mentors help you strengthen
+                  your performance and optimize your chances.
+                </p>
+              </div>
+
+              <div
+                class="mt-auto pt-6 border-t border-[var(--border)] relative z-10"
+              >
+                <div
+                  class="flex items-center justify-between items-baseline gap-4 mb-5"
+                >
+                  <span
+                    class="inline-flex items-center gap-2 text-lg sm:text-xl font-bold text-[var(--text-main)] tracking-wide"
+                  >
+                    <i
+                      class="fa-regular fa-clock text-[var(--primary)] text-base"
+                    ></i>
+                    60 min
+                  </span>
+                  <span
+                    class="text-lg sm:text-xl font-bold text-[var(--text-main)] shrink-0"
+                    >$50</span
+                  >
+                </div>
+
+                <button
+                  onclick="window.gradpathsHandleSelectMentor(event)"
+                  class="block w-full rounded-xl border-2 border-[var(--primary)] py-3.5 text-center text-sm font-bold text-[var(--primary)] hover:bg-[var(--primary)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent"
+                >
+                  Select Your Mentor
+                  <i class="fa-solid fa-arrow-right text-xs ml-1"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="group relative h-full">
+            <div
+              class="relative h-full rounded-2xl border-2 border-[var(--secondary)] bg-white dark:bg-[var(--surface)] p-5 sm:p-6 lg:p-8 flex flex-col overflow-hidden shadow-md hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300"
+            >
+              <div
+                class="relative w-16 h-16 mx-auto mb-6 rounded-2xl bg-[var(--secondary)]/10 border border-[var(--secondary)]/20 flex items-center justify-center"
+              >
+                <i
+                  class="fa-solid fa-file-pen text-2xl text-[var(--secondary)]"
+                ></i>
+              </div>
+
+              <div class="text-center mb-8 relative z-10">
+                <h3
+                  class="text-xl font-bold text-black dark:text-white mb-3 tracking-wide"
+                >
+                  Application Review
+                </h3>
+                <p
+                  class="text-sm text-black dark:text-white font-normal leading-relaxed"
+                >
+                  Work with current graduate students who have successfully
+                  navigated the same application process. Receive detailed
+                  feedback on essays, resumes, and application materials.
+                  Mentors provide guidance shaped by the latest admissions
+                  insights shared by program counselors.
+                </p>
+              </div>
+
+              <div
+                class="mt-auto pt-6 border-t border-[var(--border)] relative z-10"
+              >
+                <div
+                  class="flex items-center justify-between items-baseline gap-4 mb-5"
+                >
+                  <span
+                    class="inline-flex items-center gap-2 text-lg sm:text-xl font-bold text-[var(--text-main)] tracking-wide"
+                  >
+                    <i
+                      class="fa-regular fa-clock text-[var(--secondary)] text-base"
+                    ></i>
+                    60 min
+                  </span>
+                  <span
+                    class="text-lg sm:text-xl font-bold text-[var(--text-main)] shrink-0"
+                    >$60</span
+                  >
+                </div>
+
+                <button
+                  onclick="window.gradpathsHandleSelectMentor(event)"
+                  class="block w-full rounded-xl border-2 border-[var(--secondary)] py-3.5 text-center text-sm font-bold text-[var(--secondary)] hover:bg-[var(--secondary)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent"
+                >
+                  Select Your Mentor
+                  <i class="fa-solid fa-arrow-right text-xs ml-1"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="group relative h-full">
+            <div
+              class="relative h-full rounded-2xl border-2 border-[var(--accent)] bg-white dark:bg-[var(--surface)] p-5 sm:p-6 lg:p-8 flex flex-col overflow-hidden shadow-md hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300"
+            >
+              <div
+                class="relative w-16 h-16 mx-auto mb-6 rounded-2xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center"
+              >
+                <i
+                  class="fa-solid fa-earth-americas text-2xl text-[var(--accent)]"
+                ></i>
+              </div>
+
+              <div class="text-center mb-8 relative z-10">
+                <h3
+                  class="text-xl font-bold text-black dark:text-white mb-3 tracking-wide"
+                >
+                  Gap Year Planning
+                </h3>
+                <p
+                  class="text-sm text-black dark:text-white font-normal leading-relaxed"
+                >
+                  Design a purposeful year focused on research, service, or
+                  professional experience. Get strategic guidance to strengthen
+                  your profile and prepare for your next application cycle.
+                </p>
+              </div>
+
+              <div
+                class="mt-auto pt-6 border-t border-[var(--border)] relative z-10"
+              >
+                <div
+                  class="flex items-center justify-between items-baseline gap-4 mb-5"
+                >
+                  <span
+                    class="inline-flex items-center gap-2 text-lg sm:text-xl font-bold text-[var(--text-main)] tracking-wide"
+                  >
+                    <i
+                      class="fa-regular fa-clock text-[var(--accent)] text-base"
+                    ></i>
+                    60 min
+                  </span>
+                  <span
+                    class="text-lg sm:text-xl font-bold text-[var(--text-main)] shrink-0"
+                    >$40</span
+                  >
+                </div>
+
+                <button
+                  onclick="window.gradpathsHandleSelectMentor(event)"
+                  class="block w-full rounded-xl border-2 border-[var(--accent)] py-3.5 text-center text-sm font-bold text-[var(--accent)] hover:bg-[var(--accent)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent"
+                >
+                  Select Your Mentor
+                  <i class="fa-solid fa-arrow-right text-xs ml-1"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="w-full py-8 sm:py-10 bg-white dark:bg-[var(--bg)] relative overflow-hidden"
+      id="meeting-types"
+    >
+      <div class="max-w-[1100px] mx-auto px-4 sm:px-6">
+        <div class="text-center mb-6 sm:mb-8">
+          <h2
+            class="text-2xl sm:text-3xl font-bold text-black dark:text-white mb-3"
+          >
+            Meeting Types &amp; Group Sizes
+          </h2>
+          <p
+            class="text-sm text-black dark:text-white font-normal leading-relaxed max-w-2xl mx-auto"
+          >
+            Grads Paths offers flexible meeting options designed to match your
+            goals, budget, and learning style. Choose between one-on-one
+            sessions or discounted small-group meetings, all led by verified
+            graduate mentors
+          </p>
+        </div>
+
+        <div
+          class="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 max-w-5xl mx-auto mb-8"
+        >
+          <div
+            class="rounded-2xl bg-[#f5efff] dark:bg-[var(--surface)] p-5 sm:p-6 flex flex-col shadow-md hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300 border-2 border-blue-500"
+          >
+            <h4 class="text-lg font-bold text-black dark:text-white mb-2">
+              1 on 1 — Private Sessions
+            </h4>
+            <p
+              class="text-sm text-gray-700 dark:text-white/90 font-normal leading-relaxed mb-4"
+            >
+              Best for personalized, in-depth support. Includes all services:
+            </p>
+            <ul
+              class="space-y-1.5 mb-4 text-sm text-black dark:text-white font-normal"
+            >
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Free Consultation
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Tutoring
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Program Insights
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Interview Prep
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Application Review
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Gap Year Planning
+              </li>
+            </ul>
+            <p class="text-sm text-gray-600 dark:text-white/80 mb-4 flex-1">
+              Meet one-on-one with a current graduate student or professional
+              mentor for any service on the platform. Standard pricing applies
+              (no group discount).
+            </p>
+            <a
+              href="https://gradspath-dashboard.vercel.app"
+              class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
+            >
+              Book Today
+            </a>
+          </div>
+
+          <div
+            class="rounded-2xl bg-[#f5efff] dark:bg-[var(--surface)] p-5 sm:p-6 flex flex-col shadow-md hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300 border-2 border-red-500"
+          >
+            <h4 class="text-lg font-bold text-black dark:text-white mb-2">
+              1 on 3 — Small Group Sessions
+            </h4>
+            <p
+              class="text-sm text-gray-700 dark:text-white/90 font-normal leading-relaxed mb-3"
+            >
+              A collaborative option at a discounted rate. Available by special
+              request only. Available services:
+            </p>
+            <ul
+              class="space-y-1.5 mb-3 text-sm text-black dark:text-white font-normal"
+            >
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Tutoring
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Program Insights
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Interview Prep
+              </li>
+            </ul>
+            <p class="text-sm font-bold text-black dark:text-white mb-1">
+              Per-person pricing:
+            </p>
+            <ul
+              class="space-y-0.5 text-sm text-black dark:text-white font-normal mb-4"
+            >
+              <li class="flex justify-between gap-4">
+                <span>Tutoring</span
+                ><span class="font-bold shrink-0 text-black dark:text-white"
+                  >$62.99</span
+                >
+              </li>
+              <li
+                class="flex justify-between gap-4 text-gray-500 dark:text-white/70 text-xs"
+              >
+                <span class="line-through">was $70.00</span><span></span>
+              </li>
+              <li class="flex justify-between gap-4 mt-1">
+                <span>Program Insights</span
+                ><span class="font-bold shrink-0 text-black dark:text-white"
+                  >$49.49</span
+                >
+              </li>
+              <li
+                class="flex justify-between gap-4 text-gray-500 dark:text-white/70 text-xs"
+              >
+                <span class="line-through">was $55.00</span><span></span>
+              </li>
+              <li class="flex justify-between gap-4 mt-1">
+                <span>Interview Prep</span
+                ><span class="font-bold shrink-0 text-black dark:text-white"
+                  >$44.99</span
+                >
+              </li>
+              <li
+                class="flex justify-between gap-4 text-gray-500 dark:text-white/70 text-xs"
+              >
+                <span class="line-through">was $50.00</span><span></span>
+              </li>
+            </ul>
+            <p class="text-xs font-semibold text-black dark:text-white mb-1">
+              Additional notes:
+            </p>
+            <ul
+              class="space-y-0.5 text-xs text-gray-600 dark:text-white/80 font-normal mb-4"
+            >
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-circle-info text-[var(--primary)] dark:text-white mt-0.5 shrink-0"
+                ></i>
+                1:3 sessions are available by special request only
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-circle-info text-[var(--primary)] dark:text-white mt-0.5 shrink-0"
+                ></i>
+                Sessions run only when all spots are confirmed in advance
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-circle-info text-[var(--primary)] dark:text-white mt-0.5 shrink-0"
+                ></i>
+                Designed for structured group learning and shared discussion
+              </li>
+            </ul>
+            <a
+              href="https://gradspath-dashboard.vercel.app#get-in-touch"
+              class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
+            >
+              Special Request Meeting
+            </a>
+          </div>
+
+          <div
+            class="rounded-2xl bg-[#f5efff] dark:bg-[var(--surface)] p-5 sm:p-6 flex flex-col shadow-md hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300 border-2 border-purple-500"
+          >
+            <h4 class="text-lg font-bold text-black dark:text-white mb-2">
+              1 on 5 — Group Sessions
+            </h4>
+            <p
+              class="text-sm text-gray-700 dark:text-white/90 font-normal leading-relaxed mb-3"
+            >
+              The best value, offered in limited and special cases. Available by
+              special request only. Available services:
+            </p>
+            <ul
+              class="space-y-1.5 mb-3 text-sm text-black dark:text-white font-normal"
+            >
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Tutoring
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Program Insights
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Interview Prep
+              </li>
+            </ul>
+            <p class="text-sm font-bold text-black dark:text-white mb-1">
+              Per-person pricing:
+            </p>
+            <ul
+              class="space-y-0.5 text-sm text-black dark:text-white font-normal mb-4"
+            >
+              <li class="flex justify-between gap-4">
+                <span>Tutoring</span
+                ><span class="font-bold text-black dark:text-white"
+                  >$55.99</span
+                >
+              </li>
+              <li class="flex justify-between gap-4 mt-1">
+                <span>Program Insights</span
+                ><span class="font-bold text-black dark:text-white"
+                  >$43.99</span
+                >
+              </li>
+              <li class="flex justify-between gap-4 mt-1">
+                <span>Interview Prep</span
+                ><span class="font-bold text-black dark:text-white"
+                  >$39.99</span
+                >
+              </li>
+            </ul>
+            <p class="text-xs font-semibold text-black dark:text-white mb-1">
+              Additional notes:
+            </p>
+            <ul
+              class="space-y-0.5 text-xs text-gray-600 dark:text-white/80 font-normal mb-4"
+            >
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-circle-info text-[var(--primary)] dark:text-white mt-0.5 shrink-0"
+                ></i>
+                1:5 sessions are available by special request only
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-circle-info text-[var(--primary)] dark:text-white mt-0.5 shrink-0"
+                ></i>
+                Sessions run only when all spots are confirmed in advance
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-circle-info text-[var(--primary)] dark:text-white mt-0.5 shrink-0"
+                ></i>
+                Designed for structured group learning and shared discussion
+              </li>
+            </ul>
+            <a
+              href="https://gradspath-dashboard.vercel.app#get-in-touch"
+              class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
+            >
+              Special Request Meeting
+            </a>
+          </div>
+        </div>
+
+        <div
+          class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 lg:gap-8 w-full max-w-6xl mx-auto"
+        >
+          <div
+            class="rounded-2xl bg-[#f5efff] dark:bg-[var(--surface)] p-5 sm:p-6 flex flex-col shadow-md hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300 border-2 border-blue-500"
+          >
+            <h4 class="text-lg font-bold text-black dark:text-white mb-2">
+              Office Hours — $200 / month
+            </h4>
+            <p
+              class="text-sm text-gray-700 dark:text-white/90 font-normal leading-relaxed mb-4"
+            >
+              Office Hours is a monthly subscription that gives you a lower-cost
+              option designed to complement your 1-on-1 sessions and give you
+              more ways to stay supported. It's built for follow-ups, extra
+              guidance, and exploring different mentors and services across
+              Grads Paths.
+            </p>
+            <p class="text-xs font-semibold text-black dark:text-white mb-1">
+              What you get
+            </p>
+            <ul
+              class="space-y-0.5 text-sm text-gray-700 dark:text-white font-normal mb-3"
+            >
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                5 credits per month = 5 meetings (each meeting is 45 minutes)
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Discuss any service — Tutoring, Program Insights, Interview
+                Prep, Application Review, Gap Year Planning
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Meet different mentors during scheduled office hours
+              </li>
+            </ul>
+            <p class="text-xs font-semibold text-black dark:text-white mb-1">
+              How Office Hours work
+            </p>
+            <ul
+              class="space-y-0.5 text-xs text-gray-600 dark:text-white/80 font-normal mb-3"
+            >
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-circle-info text-[var(--primary)] dark:text-white mt-0.5 shrink-0"
+                ></i>
+                Mentors host office hours every other week at set times
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-circle-info text-[var(--primary)] dark:text-white mt-0.5 shrink-0"
+                ></i>
+                Sessions are limited to 5 students to maintain a focused,
+                high-quality discussion where everyone has space to engage.
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-circle-info text-[var(--primary)] dark:text-white mt-0.5 shrink-0"
+                ></i>
+                Designed as a small-group experience — sessions may sometimes
+                feel one-on-one, but remain open to Office Hours members.
+              </li>
+            </ul>
+            <p class="text-xs font-semibold text-black dark:text-white mb-1">
+              Why students use Office Hours
+            </p>
+            <ul
+              class="space-y-0.5 text-xs text-gray-600 dark:text-white/80 font-normal mb-4"
+            >
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-0.5 shrink-0"
+                ></i>
+                Lower-cost support between private sessions
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-0.5 shrink-0"
+                ></i>
+                Ask questions across multiple services
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-0.5 shrink-0"
+                ></i>
+                Experience more mentors with diverse backgrounds and explore
+                different pathways.
+              </li>
+            </ul>
+            <a
+              href="https://gradspath-dashboard.vercel.app#get-in-touch"
+              class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
+            >
+              Subscribe Today
+            </a>
+          </div>
+
+          <div
+            class="rounded-2xl bg-[#f5efff] dark:bg-[var(--surface)] p-5 sm:p-6 flex flex-col shadow-md hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300 border-2 border-purple-500"
+            id="how-group-sessions-work"
+          >
+            <h3
+              class="text-lg sm:text-xl font-bold text-black dark:text-white mb-3 text-center"
+            >
+              How Our Sessions &amp; Subscriptions Work — and Why We Offer Them
+            </h3>
+            <p
+              class="text-sm text-gray-700 dark:text-white/90 font-normal leading-relaxed mb-3 text-center"
+            >
+              To create a flexible and reliable experience:
+            </p>
+            <ul
+              class="space-y-1.5 mb-4 text-sm text-black dark:text-white font-normal"
+            >
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                1-on-1 sessions provide personalized, focused support when you
+                need direct guidance
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Small group sessions offer collaborative learning at a more
+                accessible price
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Special-request groups help match students with shared goals and
+                schedules
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-1 shrink-0"
+                ></i>
+                Office Hours - A once a month subscription that gives consistent
+                access without needing to book individual sessions
+              </li>
+            </ul>
+            <p
+              class="text-sm text-gray-600 dark:text-white/80 leading-relaxed font-normal"
+            >
+              We offer multiple meeting styles so students can choose the level
+              of support, flexibility, and pricing that fits their goals. Some
+              learners benefit from private mentorship, while others prefer
+              structured group environments or ongoing Office Hours access. By
+              offering different formats, Grads Paths helps maintain reliable
+              scheduling for mentors while giving students meaningful options
+              based on availability, learning style, and budget. As the platform
+              grows, we continue refining our systems to keep booking simple,
+              sessions consistent, and support accessible.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="w-full py-8 sm:py-10 bg-[#f5efff] dark:bg-[var(--bg)] relative overflow-hidden"
+      id="future-modules"
+    >
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
+        <div class="text-center mb-6 sm:mb-8">
+          <h2
+            class="text-2xl sm:text-3xl md:text-4xl font-bold text-black dark:text-white mb-3"
+          >
+            COMING SOON
+          </h2>
+          <p
+            class="text-sm text-[var(--text-muted)] dark:text-white/90 max-w-xl mx-auto font-normal"
+          >
+            See what is coming next and be prepared for great new services to
+            experience
+          </p>
+        </div>
+
+        <div
+          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8 max-w-4xl mx-auto"
+        >
+          <div
+            class="rounded-2xl bg-white dark:bg-[var(--surface)] p-8 flex flex-col items-center text-center shadow-md border-2 border-blue-500 dark:border-blue-400"
+          >
+            <div
+              class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-blue-500/10 border border-blue-500/20 dark:border-blue-400/30 flex items-center justify-center shrink-0"
+            >
+              <i
+                class="fa-solid fa-arrow-trend-up text-3xl text-blue-600 dark:text-blue-300"
+                aria-hidden="true"
+              ></i>
+            </div>
+            <h3 class="text-xl font-bold text-black dark:text-white mb-3">
+              Growth &amp; Skills
+            </h3>
+            <p
+              class="text-sm text-[var(--text-muted)] leading-relaxed font-normal flex-1 min-h-[3.5rem]"
+            >
+              Develop presentation, communication, and critical-thinking skills
+              through structured academic and professional mentorship.
+            </p>
+            <p
+              class="text-xs font-bold text-blue-600 dark:text-blue-300 uppercase mt-4"
+            >
+              COMING SOON
+            </p>
+          </div>
+
+          <div
+            class="rounded-2xl bg-white dark:bg-[var(--surface)] p-8 flex flex-col items-center text-center shadow-md border-2 border-red-500 dark:border-red-400"
+          >
+            <div
+              class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-red-500/10 border border-red-500/20 dark:border-red-400/30 flex items-center justify-center shrink-0"
+            >
+              <i
+                class="fa-solid fa-brain text-3xl text-red-600 dark:text-red-300"
+                aria-hidden="true"
+              ></i>
+            </div>
+            <h3 class="text-xl font-bold text-black dark:text-white mb-3">
+              Talk It Through
+            </h3>
+            <p
+              class="text-sm text-[var(--text-muted)] leading-relaxed font-normal flex-1 min-h-[3.5rem]"
+            >
+              Talk things through with therapy pathways mentors who have been in
+              your position and are just a step ahead.
+            </p>
+            <p
+              class="text-xs font-bold text-red-600 dark:text-red-300 uppercase mt-4"
+            >
+              COMING SOON
+            </p>
+          </div>
+
+          <div
+            class="rounded-2xl bg-white dark:bg-[var(--surface)] p-8 flex flex-col items-center text-center shadow-md border-2 border-purple-500 dark:border-purple-400"
+          >
+            <div
+              class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-purple-500/10 border border-purple-500/20 dark:border-purple-400/30 flex items-center justify-center shrink-0"
+            >
+              <i
+                class="fa-solid fa-layer-group text-3xl text-purple-600 dark:text-purple-300"
+                aria-hidden="true"
+              ></i>
+            </div>
+            <h3 class="text-xl font-bold text-black dark:text-white mb-3">
+              Subject Prep
+            </h3>
+            <p
+              class="text-sm text-[var(--text-muted)] leading-relaxed font-normal flex-1 min-h-[3.5rem]"
+            >
+              Prepare for and improve your performance in specific courses by
+              building subject-specific study strategies and long-term academic
+              skills.
+            </p>
+            <p
+              class="text-xs font-bold text-purple-600 dark:text-purple-300 uppercase mt-4"
+            >
+              COMING SOON
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="w-full py-10 sm:py-12 programs-chart-section text-[var(--text-main)] transition-colors duration-300"
+      id="programs-disciplines"
+    >
+      <div class="max-w-5xl mx-auto px-4 sm:px-6">
+        <div class="text-center mb-6">
+          <h2
+            class="text-2xl sm:text-3xl font-bold text-black dark:text-white mb-2"
+          >
+            Programs on Grads Paths
+          </h2>
+          <p
+            class="text-sm text-[var(--text-main)] dark:text-[var(--text-muted)] max-w-xl mx-auto"
+          >
+            What we offer today — with room to grow. Browse by program or by
+            professional discipline
+          </p>
+        </div>
+
+        <div
+          class="flex flex-wrap items-center justify-center gap-2 mb-4 overflow-visible"
+          role="tablist"
+        >
+          <button
+            type="button"
+            onclick="switchProgramsChart('general')"
+            id="chart-tab-general"
+            aria-selected="true"
+            class="programs-chart-tab inline-flex items-center justify-center px-4 py-3 min-h-[44px] leading-none rounded-full text-xs font-bold tracking-wider uppercase bg-white dark:bg-white/10 text-[var(--primary)] dark:text-white border-b-2 border-[var(--primary)] focus:outline-none"
+          >
+            General
+          </button>
+          <button
+            type="button"
+            onclick="switchProgramsChart('graduate')"
+            id="chart-tab-graduate"
+            aria-selected="false"
+            class="programs-chart-tab inline-flex items-center justify-center px-4 py-3 min-h-[44px] leading-none rounded-full text-xs font-bold tracking-wider uppercase bg-transparent text-[var(--text-main)] dark:text-[var(--text-muted)] hover:text-[var(--primary)] focus:outline-none"
+          >
+            Graduate Programs
+          </button>
+          <button
+            type="button"
+            onclick="switchProgramsChart('professionals')"
+            id="chart-tab-professionals"
+            aria-selected="false"
+            class="programs-chart-tab inline-flex items-center justify-center px-4 py-3 min-h-[44px] leading-none rounded-full text-xs font-bold tracking-wider uppercase bg-transparent text-[var(--text-main)] dark:text-[var(--text-muted)] hover:text-[var(--primary)] focus:outline-none"
+          >
+            Professionals
+          </button>
+        </div>
+
+        <div
+          class="rounded-2xl bg-[var(--primary)]/10 dark:bg-[var(--primary)]/20 shadow-lg border-2 border-[var(--primary)] p-4 sm:p-6 mb-8"
+        >
+          <div
+            class="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-2 mb-4"
+          >
+            <h3
+              id="programs-chart-subtitle"
+              class="text-base sm:text-lg font-bold text-black dark:text-[var(--text-main)]"
+            >
+              All Programs + Professional Tracks
+            </h3>
+            <span
+              class="text-xs sm:text-sm text-gray-500 dark:text-[var(--text-muted)]"
+              >Amount of Mentors (scale 0–150)</span
+            >
+          </div>
+
+          <div
+            id="chart-view-general"
+            class="programs-chart-view overflow-x-auto pb-4"
+          >
+            <div
+              class="programs-bar-chart min-w-[500px]"
+              aria-label="Bar chart: all programs"
+            >
+              <div class="chart-y-axis">
+                <span class="y-axis-label">Amount of Mentors</span>
+                <div class="y-ticks">
+                  <span>150</span><span>100</span><span>50</span><span>0</span>
+                </div>
+              </div>
+              <div class="chart-bars-wrap">
+                <div class="chart-grid"></div>
+                <div class="chart-bars">
+                  <div class="bar-col">
+                    <span class="bar-value">150</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-outline bar-blue"
+                        style="height: 100%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">MBA</span>
+                  </div>
+                  <div class="bar-col">
+                    <span class="bar-value">150</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-outline bar-pink"
+                        style="height: 100%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">Law</span>
+                  </div>
+                  <div class="bar-col">
+                    <span class="bar-value">150</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-outline bar-purple"
+                        style="height: 100%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">Therapy Pathway</span>
+                  </div>
+                  <div class="bar-col">
+                    <span class="bar-value">3</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-outline bar-therapy"
+                        style="height: 2%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">Therapy</span>
+                  </div>
+                  <div class="bar-col">
+                    <span class="bar-value">2</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-outline bar-nursing"
+                        style="height: 1.33%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">Nursing</span>
+                  </div>
+                  <div class="bar-col">
+                    <span class="bar-value">5</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-outline bar-accounting"
+                        style="height: 3.33%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">Accounting</span>
+                  </div>
+                  <div class="bar-col">
+                    <span class="bar-value bar-value-dash">—</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-coming-soon"
+                        style="height: 45%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">COMING SOON</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p
+              class="chart-x-label text-center text-sm text-gray-500 dark:text-[var(--text-muted)] mt-3"
+            >
+              Programs / Fields
+            </p>
+          </div>
+
+          <div
+            id="chart-view-graduate"
+            class="programs-chart-view hidden overflow-x-auto pb-4"
+          >
+            <div
+              class="programs-bar-chart min-w-[500px]"
+              aria-label="Bar chart: graduate programs"
+            >
+              <div class="chart-y-axis">
+                <span class="y-axis-label">Amount of Mentors</span>
+                <div class="y-ticks">
+                  <span>150</span><span>100</span><span>50</span><span>0</span>
+                </div>
+              </div>
+              <div class="chart-bars-wrap">
+                <div class="chart-grid"></div>
+                <div class="chart-bars">
+                  <div class="bar-col">
+                    <span class="bar-value">150</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-outline bar-blue"
+                        style="height: 100%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">MBA</span>
+                  </div>
+                  <div class="bar-col">
+                    <span class="bar-value">150</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-outline bar-pink"
+                        style="height: 100%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">Law</span>
+                  </div>
+                  <div class="bar-col">
+                    <span class="bar-value">150</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-outline bar-purple"
+                        style="height: 100%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">Therapy Pathway</span>
+                  </div>
+                  <div class="bar-col">
+                    <span class="bar-value bar-value-dash">—</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-coming-soon"
+                        style="height: 45%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">COMING SOON</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p
+              class="chart-x-label text-center text-sm text-gray-500 dark:text-[var(--text-muted)] mt-3"
+            >
+              Programs
+            </p>
+          </div>
+
+          <div
+            id="chart-view-professionals"
+            class="programs-chart-view hidden overflow-x-auto pb-4"
+          >
+            <div
+              class="programs-bar-chart min-w-[500px]"
+              aria-label="Bar chart: professionals"
+            >
+              <div class="chart-y-axis">
+                <span class="y-axis-label">Amount of Mentors</span>
+                <div class="y-ticks">
+                  <span>150</span><span>100</span><span>50</span><span>0</span>
+                </div>
+              </div>
+              <div class="chart-bars-wrap">
+                <div class="chart-grid"></div>
+                <div class="chart-bars">
+                  <div class="bar-col">
+                    <span class="bar-value">3</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-outline bar-therapy"
+                        style="height: 2%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">Therapy</span>
+                  </div>
+                  <div class="bar-col">
+                    <span class="bar-value">2</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-outline bar-nursing"
+                        style="height: 1.33%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">Nursing</span>
+                  </div>
+                  <div class="bar-col">
+                    <span class="bar-value">5</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-outline bar-accounting"
+                        style="height: 3.33%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">Accounting</span>
+                  </div>
+                  <div class="bar-col">
+                    <span class="bar-value bar-value-dash">—</span>
+                    <div class="bar-area">
+                      <div
+                        class="bar bar-coming-soon"
+                        style="height: 45%"
+                      ></div>
+                    </div>
+                    <span class="bar-label">COMING SOON</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p
+              class="chart-x-label text-center text-sm text-gray-500 dark:text-[var(--text-muted)] mt-3"
+            >
+              Fields
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          <div
+            class="rounded-2xl bg-white dark:bg-[var(--surface)] border-2 border-blue-500 dark:border-blue-400 shadow p-5 sm:p-6"
+          >
+            <h3
+              class="text-base font-bold text-black dark:text-[var(--text-main)] mb-3"
+            >
+              Graduate Programs
+            </h3>
+            <ul class="space-y-2 text-sm text-[var(--text-main)]">
+              <li class="flex items-start gap-2">
+                <span class="text-[var(--primary)] mt-0.5">•</span> MBA
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-[var(--primary)] mt-0.5">•</span> Law
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-[var(--primary)] mt-0.5">•</span> Therapy
+                Pathways: CMHC, MSW, MFT, Clinical Psych
+              </li>
+            </ul>
+          </div>
+          <div
+            class="rounded-2xl bg-white dark:bg-[var(--surface)] border-2 border-red-500 dark:border-red-400 shadow p-5 sm:p-6"
+          >
+            <h3
+              class="text-base font-bold text-black dark:text-[var(--text-main)] mb-3"
+            >
+              Professionals
+            </h3>
+            <ul class="space-y-2 text-sm text-[var(--text-main)]">
+              <li class="flex items-start gap-2">
+                <span class="text-[var(--primary)] mt-0.5">•</span> Therapy:
+                real world guidance, licensure pathway planning, application
+                support
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-[var(--primary)] mt-0.5">•</span> Nursing: RN
+                and NP pathway mentorship, graduate school planning
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-[var(--primary)] mt-0.5">•</span> Accounting:
+                CPA pathway guidance, recruiting preparation, resume strategy
+              </li>
+            </ul>
+          </div>
+          <div
+            class="rounded-2xl bg-white dark:bg-[var(--surface)] border-2 border-purple-500 dark:border-purple-400 shadow p-5 sm:p-6"
+          >
+            <h3
+              class="text-base font-bold text-black dark:text-[var(--text-main)] mb-3"
+            >
+              General
+            </h3>
+            <ul class="space-y-2 text-sm text-[var(--text-main)]">
+              <li class="flex items-start gap-2">
+                <span class="text-[var(--primary)] mt-0.5">•</span> All
+                categories in one view
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-[var(--primary)] mt-0.5">•</span> Clear labels
+                and structured layout
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-[var(--primary)] mt-0.5">•</span> Built to
+                expand as Grads Paths grows
+              </li>
+              <li class="flex items-start gap-2">
+                <span class="text-[var(--primary)] mt-0.5">•</span> COMING SOON
+                placeholders included
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="relative w-full py-10 sm:py-12 bg-[#f5efff] dark:bg-[var(--bg)] overflow-hidden font-sans text-[var(--text-main)]"
+      id="community-feed"
+    >
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
+        <div class="text-center mb-6 sm:mb-8">
+          <h2
+            class="text-2xl sm:text-3xl md:text-4xl font-bold text-black dark:text-white mb-3"
+          >
+            Results from Our Community
+          </h2>
+          <p
+            class="text-sm text-[var(--text-muted)] dark:text-white/90 max-w-2xl mx-auto font-normal"
+          >
+            Real feedback from mentors and from students and grads who use our
+            services
+          </p>
+        </div>
+
+        <!-- What Our Mentors Say -->
+        <div class="mb-10">
+          <h3
+            class="text-2xl font-bold text-black dark:text-white mb-2 text-center"
+          >
+            What Our Mentors Say
+          </h3>
+          <p
+            class="text-sm text-[var(--text-muted)] dark:text-white/90 text-center max-w-2xl mx-auto mb-6 font-normal"
+          >
+            Hear from our top mentors who help students like you achieve their
+            graduate and professional goals
+          </p>
+          <div
+            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8"
+          >
+            <article
+              class="relative h-full rounded-2xl p-5 sm:p-6 lg:p-8 border-2 border-blue-500 dark:border-blue-400 bg-white dark:bg-[var(--surface)] flex flex-col"
+            >
+              <span
+                class="absolute top-4 right-4 text-4xl font-sans text-blue-500/20 dark:text-blue-300/20 leading-none"
+                aria-hidden="true"
+                >"</span
+              >
+              <div class="flex items-start gap-4 mb-4">
+                <div
+                  class="w-12 h-12 rounded-full border-2 border-[var(--border)] bg-[var(--border)]/30 shrink-0"
+                  aria-hidden="true"
+                ></div>
+                <div class="min-w-0">
+                  <h4 class="text-base font-bold text-black dark:text-white">
+                    &nbsp;
+                  </h4>
+                  <p class="text-xs text-[var(--primary)] font-medium mt-0.5">
+                    &nbsp;
+                  </p>
+                </div>
+              </div>
+              <blockquote class="flex-grow mt-2">
+                <p
+                  class="text-sm text-[var(--text-muted)] leading-relaxed font-normal"
+                >
+                  &nbsp;
+                </p>
+              </blockquote>
+            </article>
+
+            <article
+              class="relative h-full rounded-2xl p-5 sm:p-6 lg:p-8 border-2 border-red-500 dark:border-red-400 bg-white dark:bg-[var(--surface)] flex flex-col"
+            >
+              <span
+                class="absolute top-4 right-4 text-4xl font-sans text-red-500/20 dark:text-red-300/20 leading-none"
+                aria-hidden="true"
+                >"</span
+              >
+              <div class="flex items-start gap-4 mb-4">
+                <div
+                  class="w-12 h-12 rounded-full border-2 border-[var(--border)] bg-[var(--border)]/30 shrink-0"
+                  aria-hidden="true"
+                ></div>
+                <div class="min-w-0">
+                  <h4 class="text-base font-bold text-black dark:text-white">
+                    &nbsp;
+                  </h4>
+                  <p class="text-xs text-[var(--primary)] font-medium mt-0.5">
+                    &nbsp;
+                  </p>
+                </div>
+              </div>
+              <blockquote class="flex-grow mt-2">
+                <p
+                  class="text-sm text-[var(--text-muted)] leading-relaxed font-normal"
+                >
+                  &nbsp;
+                </p>
+              </blockquote>
+            </article>
+
+            <article
+              class="relative h-full rounded-2xl p-5 sm:p-6 lg:p-8 border-2 border-purple-500 dark:border-purple-400 bg-white dark:bg-[var(--surface)] flex flex-col"
+            >
+              <span
+                class="absolute top-4 right-4 text-4xl font-sans text-purple-500/20 dark:text-purple-300/20 leading-none"
+                aria-hidden="true"
+                >"</span
+              >
+              <div class="flex items-start gap-4 mb-4">
+                <div
+                  class="w-12 h-12 rounded-full border-2 border-[var(--border)] bg-[var(--border)]/30 shrink-0"
+                  aria-hidden="true"
+                ></div>
+                <div class="min-w-0">
+                  <h4 class="text-base font-bold text-black dark:text-white">
+                    &nbsp;
+                  </h4>
+                  <p class="text-xs text-[var(--primary)] font-medium mt-0.5">
+                    &nbsp;
+                  </p>
+                </div>
+              </div>
+              <blockquote class="flex-grow mt-2">
+                <p
+                  class="text-sm text-[var(--text-muted)] leading-relaxed font-normal"
+                >
+                  &nbsp;
+                </p>
+              </blockquote>
+            </article>
+          </div>
+        </div>
+
+        <!-- Results from Our Community -->
+        <div>
+          <h3
+            class="text-2xl font-bold text-black dark:text-white mb-2 text-center"
+          >
+            Results from Our Community
+          </h3>
+          <p
+            class="text-sm text-[var(--text-muted)] dark:text-white/90 text-center max-w-2xl mx-auto mb-6 font-normal"
+          >
+            Discover how Grads Paths has helped undergrads, grads, and
+            professionals reach their next step—from admissions to licensing and
+            career guidance
+          </p>
+          <div
+            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8"
+          >
+            <article
+              class="relative h-full rounded-2xl p-5 sm:p-6 lg:p-8 border-2 border-blue-500 dark:border-blue-400 bg-white dark:bg-[var(--surface)] flex flex-col"
+            >
+              <span
+                class="absolute top-4 right-4 text-4xl font-sans text-blue-500/20 dark:text-blue-300/20 leading-none"
+                aria-hidden="true"
+                >"</span
+              >
+              <div class="flex items-start gap-4 mb-4">
+                <div
+                  class="w-12 h-12 rounded-full border-2 border-[var(--border)] bg-[var(--border)]/30 shrink-0"
+                  aria-hidden="true"
+                ></div>
+                <div class="min-w-0">
+                  <h4 class="text-base font-bold text-black dark:text-white">
+                    &nbsp;
+                  </h4>
+                  <p
+                    class="text-xs text-[var(--text-muted)] font-normal mt-0.5"
+                  >
+                    &nbsp;
+                  </p>
+                  <p class="text-xs text-[var(--primary)] font-semibold mt-1">
+                    &nbsp;
+                  </p>
+                </div>
+              </div>
+              <blockquote class="flex-grow mt-2">
+                <p
+                  class="text-sm text-[var(--text-muted)] leading-relaxed font-normal"
+                >
+                  &nbsp;
+                </p>
+              </blockquote>
+            </article>
+
+            <article
+              class="relative h-full rounded-2xl p-5 sm:p-6 lg:p-8 border-2 border-red-500 dark:border-red-400 bg-white dark:bg-[var(--surface)] flex flex-col"
+            >
+              <span
+                class="absolute top-4 right-4 text-4xl font-sans text-red-500/20 dark:text-red-300/20 leading-none"
+                aria-hidden="true"
+                >"</span
+              >
+              <div class="flex items-start gap-4 mb-4">
+                <div
+                  class="w-12 h-12 rounded-full border-2 border-[var(--border)] bg-[var(--border)]/30 shrink-0"
+                  aria-hidden="true"
+                ></div>
+                <div class="min-w-0">
+                  <h4 class="text-base font-bold text-black dark:text-white">
+                    &nbsp;
+                  </h4>
+                  <p
+                    class="text-xs text-[var(--text-muted)] font-normal mt-0.5"
+                  >
+                    &nbsp;
+                  </p>
+                  <p class="text-xs text-[var(--primary)] font-semibold mt-1">
+                    &nbsp;
+                  </p>
+                </div>
+              </div>
+              <blockquote class="flex-grow mt-2">
+                <p
+                  class="text-sm text-[var(--text-muted)] leading-relaxed font-normal"
+                >
+                  &nbsp;
+                </p>
+              </blockquote>
+            </article>
+
+            <article
+              class="relative h-full rounded-2xl p-5 sm:p-6 lg:p-8 border-2 border-purple-500 dark:border-purple-400 bg-white dark:bg-[var(--surface)] flex flex-col"
+            >
+              <span
+                class="absolute top-4 right-4 text-4xl font-sans text-purple-500/20 dark:text-purple-300/20 leading-none"
+                aria-hidden="true"
+                >"</span
+              >
+              <div class="flex items-start gap-4 mb-4">
+                <div
+                  class="w-12 h-12 rounded-full border-2 border-[var(--border)] bg-[var(--border)]/30 shrink-0"
+                  aria-hidden="true"
+                ></div>
+                <div class="min-w-0">
+                  <h4 class="text-base font-bold text-black dark:text-white">
+                    &nbsp;
+                  </h4>
+                  <p
+                    class="text-xs text-[var(--text-muted)] font-normal mt-0.5"
+                  >
+                    &nbsp;
+                  </p>
+                  <p class="text-xs text-[var(--primary)] font-semibold mt-1">
+                    &nbsp;
+                  </p>
+                </div>
+              </div>
+              <blockquote class="flex-grow mt-2">
+                <p
+                  class="text-sm text-[var(--text-muted)] leading-relaxed font-normal"
+                >
+                  &nbsp;
+                </p>
+              </blockquote>
+            </article>
+          </div>
+          <div class="text-center mt-8">
+            <a
+              href="https://gradspath-dashboard.vercel.app#feedback"
+              id="btn-see-feedback"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--primary)] text-white text-sm font-bold hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 no-underline"
+            >
+              See Feedback and Reviews
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Book with Confidence -->
+    <section
+      class="relative w-full py-10 sm:py-12 bg-white dark:bg-[var(--bg)] overflow-hidden font-sans text-[var(--text-main)]"
+      id="satisfaction"
+    >
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
+        <div class="text-center mb-8">
+          <h2
+            class="text-2xl sm:text-3xl font-bold text-black dark:text-white mb-2"
+          >
+            Book with Confidence
+          </h2>
+          <p class="text-sm text-[var(--text-muted)] max-w-2xl mx-auto">
+            Clear standards, verified mentors, and support that responds within
+            24 hours.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 mb-8">
+          <article
+            class="rounded-2xl bg-[#f5efff] dark:bg-[var(--surface)] p-5 sm:p-6 shadow-md flex flex-col items-center text-center border-2 border-blue-500 dark:border-blue-400"
+          >
+            <div
+              class="w-12 h-12 rounded-full bg-[var(--primary)]/10 dark:bg-white/20 border-2 border-[var(--primary)]/20 dark:border-white/40 flex items-center justify-center mb-4"
+            >
+              <i
+                class="fa-solid fa-comments text-[var(--primary)] dark:text-white text-xl"
+                aria-hidden="true"
+              ></i>
+            </div>
+            <h3
+              class="text-lg font-bold text-black dark:text-white mb-3 w-full"
+            >
+              Free Consultation
+            </h3>
+            <p
+              class="text-sm text-[var(--text-muted)] dark:text-white/90 mb-4 text-left w-full"
+            >
+              Start with a free consult so you know exactly what to expect
+              before you book.
+            </p>
+            <ul
+              class="space-y-2 text-sm text-[var(--text-muted)] dark:text-white/90 text-left w-full"
+            >
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-0.5 text-xs"
+                ></i
+                ><span>Confirm goals + session type</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-0.5 text-xs"
+                ></i
+                ><span>Set expectations upfront</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-0.5 text-xs"
+                ></i
+                ><span>Get matched confidently</span>
+              </li>
+            </ul>
+          </article>
+
+          <article
+            class="rounded-2xl bg-[#f5efff] dark:bg-[var(--surface)] p-5 sm:p-6 shadow-md flex flex-col items-center text-center border-2 border-red-500 dark:border-red-400"
+          >
+            <div
+              class="w-12 h-12 rounded-full bg-[var(--primary)]/10 dark:bg-white/20 border-2 border-[var(--primary)]/20 dark:border-white/40 flex items-center justify-center mb-4"
+            >
+              <i
+                class="fa-solid fa-user-check text-[var(--primary)] dark:text-white text-xl"
+                aria-hidden="true"
+              ></i>
+            </div>
+            <h3
+              class="text-lg font-bold text-black dark:text-white mb-3 w-full"
+            >
+              Top-Quality Mentors
+            </h3>
+            <p
+              class="text-sm text-[var(--text-muted)] dark:text-white/90 mb-4 text-left w-full"
+            >
+              Mentors are interviewed rigorously before they can be verified to
+              ensure strong candidates.
+            </p>
+            <ul
+              class="space-y-2 text-sm text-[var(--text-muted)] dark:text-white/90 text-left w-full"
+            >
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-0.5 text-xs"
+                ></i
+                ><span>High standard for expertise</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-0.5 text-xs"
+                ></i
+                ><span>Real experience, real outcomes</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-0.5 text-xs"
+                ></i
+                ><span>Prep built around your goals</span>
+              </li>
+            </ul>
+          </article>
+
+          <article
+            class="rounded-2xl bg-[#f5efff] dark:bg-[var(--surface)] p-5 sm:p-6 shadow-md flex flex-col items-center text-center border-2 border-purple-500 dark:border-purple-400"
+          >
+            <div
+              class="w-12 h-12 rounded-full bg-[var(--primary)]/10 dark:bg-white/20 border-2 border-[var(--primary)]/20 dark:border-white/40 flex items-center justify-center mb-4"
+            >
+              <i
+                class="fa-solid fa-credit-card text-[var(--primary)] dark:text-white text-xl"
+                aria-hidden="true"
+              ></i>
+            </div>
+            <h3
+              class="text-lg font-bold text-black dark:text-white mb-3 w-full"
+            >
+              Stripe + Support
+            </h3>
+            <p
+              class="text-sm text-[var(--text-muted)] dark:text-white/90 mb-4 text-left w-full"
+            >
+              We use Stripe for secure payments. Our support team responds
+              quickly when you need help.
+            </p>
+            <ul
+              class="space-y-2 text-sm text-[var(--text-muted)] dark:text-white/90 text-left w-full"
+            >
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-0.5 text-xs"
+                ></i
+                ><span>Secure payments via Stripe</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-0.5 text-xs"
+                ></i
+                ><span>Response within 24 hours</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i
+                  class="fa-solid fa-check text-[var(--primary)] dark:text-white mt-0.5 text-xs"
+                ></i
+                ><span>Clear next steps every time</span>
+              </li>
+            </ul>
+          </article>
+        </div>
+
+        <div
+          class="rounded-2xl bg-[#f5efff] dark:bg-[var(--surface)] p-5 sm:p-6 shadow-md border-2 border-purple-500/60 dark:border-purple-400/60"
+        >
+          <h3
+            class="text-xl sm:text-2xl font-bold text-black dark:text-white mb-2 text-center"
+          >
+            Guarantee + No-Show Refund Protection
+          </h3>
+          <p
+            class="text-sm text-[var(--text-muted)] dark:text-white/90 mb-5 text-center max-w-2xl mx-auto"
+          >
+            We keep policies simple. Refunds apply if a mentor does not attend
+            the scheduled session.
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div
+              class="rounded-xl border-2 border-[var(--primary)]/20 dark:border-white/40 bg-[var(--bg)] dark:bg-white/10 p-4"
+            >
+              <h4
+                class="text-base font-bold text-black dark:text-white mb-2 text-center"
+              >
+                What&apos;s Covered
+              </h4>
+              <ul
+                class="space-y-2 text-sm text-[var(--text-muted)] dark:text-white/90"
+              >
+                <li class="flex items-start gap-2">
+                  <i
+                    class="fa-solid fa-circle-check text-[var(--primary)] dark:text-white mt-0.5"
+                  ></i
+                  ><span>Mentor no-shows (mentor fails to attend)</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <i
+                    class="fa-solid fa-circle-check text-[var(--primary)] dark:text-white mt-0.5"
+                  ></i
+                  ><span>Clear confirmation + fast resolution</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <i
+                    class="fa-solid fa-circle-check text-[var(--primary)] dark:text-white mt-0.5"
+                  ></i
+                  ><span>Support responds within 24 hours</span>
+                </li>
+              </ul>
+              <div
+                class="mt-4 rounded-xl border border-[var(--primary)]/20 dark:border-white/30 bg-[var(--bg)] dark:bg-white/10 px-3 py-2 text-sm text-[var(--text-muted)] dark:text-white/90"
+              >
+                <span class="font-bold text-black dark:text-white">Note</span>
+                Refund protection is for mentor no-shows. The free consultation
+                helps prevent mismatches before booking.
+              </div>
+            </div>
+
+            <div
+              class="rounded-xl border-2 border-[var(--primary)]/20 dark:border-white/40 bg-[var(--bg)] dark:bg-white/10 p-4"
+            >
+              <h4
+                class="text-base font-bold text-black dark:text-white mb-2 text-center"
+              >
+                How to Request a Refund (No-Show)
+              </h4>
+              <ol
+                class="space-y-1.5 text-sm text-[var(--text-muted)] dark:text-white/90"
+              >
+                <li>
+                  1. Email
+                  <a
+                    href="mailto:support@gradspaths.com"
+                    class="text-[var(--primary)] dark:text-white font-semibold hover:underline"
+                    >support@gradspaths.com</a
+                  >
+                </li>
+                <li>2. Include your name + booking time + mentor name</li>
+                <li>3. Write “No-Show Refund Request” in the subject line</li>
+                <li>
+                  4. We confirm eligibility and process the refund to the
+                  original payment method
+                </li>
+              </ol>
+              <div
+                class="mt-3 rounded-xl border border-[var(--primary)]/20 dark:border-white/30 bg-[var(--bg)] dark:bg-white/10 p-3"
+              >
+                <p class="text-sm text-[var(--text-muted)] dark:text-white/90">
+                  <span class="font-bold text-black dark:text-white"
+                    >Typical timing</span
+                  ><br />
+                  Confirmation within 24 hours. Refund processing time depends
+                  on your bank/payment method.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="relative w-full py-10 bg-[#f5efff] dark:bg-[var(--bg)] overflow-hidden text-[var(--text-main)]"
+      id="why-us"
+      aria-label="Why Us"
+    >
+      <div class="max-w-5xl mx-auto px-6 relative z-10 text-center">
+        <div class="mb-4">
+          <h2
+            class="font-display text-4xl md:text-5xl font-bold leading-tight mb-4 xl:mb-1 text-black dark:text-white"
+          >
+            Why Us?
+          </h2>
+          <p
+            class="text-sm text-[var(--text-muted)] dark:text-white/90 max-w-2xl mx-auto font-normal"
+          >
+            Your journey to a top-tier graduate program starts here. We don't
+            just review applications; we build futures through mentorship.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <div
+            class="flex flex-col items-center bg-white dark:bg-[var(--surface)] rounded-2xl border-2 border-[#3E80EE] p-6"
+          >
+            <div
+              class="w-16 h-16 rounded-full bg-[#3E80EE]/10 text-[#3E80EE] border border-[#3E80EE]/20 flex items-center justify-center mb-4 text-2xl"
+            >
+              <i class="fa-solid fa-users"></i>
+            </div>
+            <h3
+              class="text-xl font-bold mb-2 text-black dark:text-[var(--text-main)]"
+            >
+              Meet
+            </h3>
+            <p
+              class="text-[var(--text-muted)] text-sm leading-relaxed max-w-xs mx-auto"
+            >
+              Connect directly with verified mentors from your dream schools who
+              have walked the path before you.
+            </p>
+          </div>
+
+          <div
+            class="flex flex-col items-center bg-white dark:bg-[var(--surface)] rounded-2xl border-2 border-[#FE5673] p-6"
+          >
+            <div
+              class="w-16 h-16 rounded-full bg-[#FE5673]/10 text-[#FE5673] border border-[#FE5673]/20 flex items-center justify-center mb-4 text-2xl"
+            >
+              <i class="fa-solid fa-lightbulb"></i>
+            </div>
+            <h3
+              class="text-xl font-bold mb-2 text-black dark:text-[var(--text-main)]"
+            >
+              Learn
+            </h3>
+            <p
+              class="text-[var(--text-muted)] text-sm leading-relaxed max-w-xs mx-auto"
+            >
+              Gain insider strategies, tailored application advice, and clarity
+              on complex admissions processes.
+            </p>
+          </div>
+
+          <div
+            class="flex flex-col items-center bg-white dark:bg-[var(--surface)] rounded-2xl border-2 border-[#9A6FFF] p-6"
+          >
+            <div
+              class="w-16 h-16 rounded-full bg-[#9A6FFF]/10 text-[#9A6FFF] border border-[#9A6FFF]/20 flex items-center justify-center mb-4 text-2xl"
+            >
+              <i class="fa-solid fa-arrow-trend-up"></i>
+            </div>
+            <h3
+              class="text-xl font-bold mb-2 text-black dark:text-[var(--text-main)]"
+            >
+              Grow
+            </h3>
+            <p
+              class="text-[var(--text-muted)] text-sm leading-relaxed max-w-xs mx-auto"
+            >
+              Develop the confidence, professional profile, and long-term skills
+              to succeed beyond just acceptance.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex justify-center">
+          <a
+            href="why-us.html"
+            class="inline-flex items-center justify-center px-6 py-3.5 rounded-full font-semibold border-2 border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)]/15 active:bg-[var(--primary)]/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent dark:bg-[var(--primary)]/20 dark:text-[var(--text-main)] dark:hover:bg-[var(--primary)]/25 transition-all"
+          >
+            Learn more about our approach
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="relative py-12 lg:py-16 overflow-hidden page-section-9 transition-colors duration-300"
+      id="get-in-touch"
+      aria-label="Get in Touch"
+    >
+      <div
+        class="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none"
+      ></div>
+
+      <div class="relative max-w-xl mx-auto px-4 sm:px-6 text-center">
+        <h2
+          class="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--text-main)] mb-3"
+        >
+          Get in Touch
+        </h2>
+        <p class="text-[var(--text-muted)] text-base max-w-lg mx-auto mb-8">
+          Have a question or feedback? You must be signed in to submit a ticket.
+        </p>
+
+        <div id="contact-signin-required" class="flex justify-center">
+          <div
+            class="w-full max-w-md bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-5 sm:p-6 lg:p-8 shadow-sm text-center"
+          >
+            <div
+              class="w-14 h-14 mx-auto mb-4 rounded-full bg-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center"
+            >
+              <i
+                class="fa-solid fa-lock text-2xl text-[var(--primary)]"
+                aria-hidden="true"
+              ></i>
+            </div>
+            <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">
+              Sign in to submit feedback
+            </h3>
+            <p class="text-[var(--text-muted)] text-sm mb-6">
+              You need an account and must be signed in to create a support
+              ticket.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                type="button"
+                id="contact-open-login"
+                class="px-6 py-3 rounded-xl bg-[var(--primary)] text-white text-sm font-bold hover:opacity-90 transition-all"
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                id="contact-open-signup"
+                class="px-6 py-3 rounded-xl border-2 border-[var(--border)] text-[var(--text-main)] text-sm font-bold hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all"
+              >
+                Signup
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="contact-form-wrapper" class="flex justify-center hidden">
+          <div
+            class="relative w-full max-w-md bg-[var(--surface)] border-2 border-[var(--primary)]/30 rounded-2xl p-5 sm:p-6 lg:p-8 shadow-md overflow-hidden"
+          >
+            <div
+              class="absolute top-0 left-0 w-full h-1 bg-[var(--primary)]"
+            ></div>
+
+            <div class="mb-6 text-left">
+              <h3 class="text-xl font-bold text-[var(--text-main)]">
+                Submit Feedback
+              </h3>
+              <p class="text-[var(--text-muted)] text-sm mt-1">
+                Create a support ticket or give us feedback about how we can
+                make your experience even better!
+              </p>
+            </div>
+
+            <form
+              id="contact-form"
+              class="space-y-4 text-left"
+              action="#"
+              method="post"
+              data-ticket="true"
+            >
+              <div class="space-y-1">
+                <label
+                  for="contact-name"
+                  class="block text-xs font-semibold text-[var(--text-main)] uppercase"
+                  >Name</label
+                >
+                <input
+                  type="text"
+                  name="name"
+                  id="contact-name"
+                  placeholder="e.g. Mike Ross"
+                  class="w-full bg-white border border-[#6D28D9] rounded-xl px-4 py-3 text-sm text-[#6D28D9] placeholder:text-[#6D28D9]/70 outline-none focus:border-[#6D28D9] focus:ring-1 focus:ring-[#6D28D9] transition-all"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <label
+                  for="contact-email"
+                  class="block text-xs font-semibold text-[var(--text-main)] uppercase"
+                  >Email</label
+                >
+                <input
+                  type="email"
+                  name="email"
+                  id="contact-email"
+                  placeholder="you@university.edu"
+                  class="w-full bg-white border border-[#6D28D9] rounded-xl px-4 py-3 text-sm text-[#6D28D9] placeholder:text-[#6D28D9]/70 outline-none focus:border-[#6D28D9] focus:ring-1 focus:ring-[#6D28D9] transition-all"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <label
+                  for="contact-subject"
+                  class="block text-xs font-semibold text-[var(--text-main)] uppercase"
+                  >Subject</label
+                >
+                <input
+                  type="text"
+                  name="subject"
+                  id="contact-subject"
+                  placeholder="e.g. Issue with… / create a new service… / make blank better…"
+                  class="w-full bg-white border border-[#6D28D9] rounded-xl px-4 py-3 text-sm text-[#6D28D9] placeholder:text-[#6D28D9]/70 outline-none focus:border-[#6D28D9] focus:ring-1 focus:ring-[#6D28D9] transition-all"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <label
+                  for="contact-message"
+                  class="block text-xs font-semibold text-[var(--text-main)] uppercase"
+                  >Message</label
+                >
+                <textarea
+                  name="message"
+                  id="contact-message"
+                  rows="4"
+                  placeholder="…"
+                  class="w-full bg-white border border-[#6D28D9] rounded-xl px-4 py-3 text-sm text-[#6D28D9] placeholder:text-[#6D28D9]/70 outline-none focus:border-[#6D28D9] focus:ring-1 focus:ring-[#6D28D9] transition-all resize-none"
+                ></textarea>
+              </div>
+
+              <button
+                type="submit"
+                class="w-full py-3 mt-2 rounded-xl bg-[var(--primary)] text-white text-sm font-bold hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 focus:ring-offset-[var(--bg)]"
+              >
+                Send message
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dream University banner (before footer) -->
+    <div class="w-full px-4 sm:px-6 md:px-8 mb-12 sm:mb-16">
+      <section
+        class="relative w-full overflow-hidden rounded-2xl min-h-[340px] sm:min-h-[380px] md:min-h-[400px] flex items-center"
+        aria-label="Your dream university"
+      >
+        <div
+          class="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style="
+            background-image: url(&quot;https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2671&auto=format&fit=crop&quot;);
+          "
+        ></div>
+        <div class="absolute inset-0 bg-black/55" aria-hidden="true"></div>
+        <div
+          class="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-10 sm:py-14 md:py-16 flex flex-col md:flex-row md:items-center md:justify-between md:gap-10 lg:gap-14 text-center md:text-left items-center"
+        >
+          <div class="max-w-xl w-full mb-6 sm:mb-8 md:mb-0">
+            <span
+              class="inline-flex items-center justify-center md:justify-start gap-2 px-3 py-1.5 rounded-full border border-white/25 bg-white/10 text-white text-xs font-semibold tracking-wider uppercase mb-4 sm:mb-5"
+            >
+              <span
+                class="w-1.5 h-1.5 rounded-full bg-[#2dd4bf]"
+                aria-hidden="true"
+              ></span>
+              ACCEPTING NEW STUDENTS
+            </span>
+            <h2
+              class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight mb-3"
+            >
+              Your Dream University<br />
+              <span class="text-[#2dd4bf]">Is Waiting!</span>
+            </h2>
+            <p class="text-base sm:text-lg text-white/95 mb-1">
+              Connect with mentors from Harvard, Stanford, and UPenn.
+            </p>
+            <p class="text-base sm:text-lg text-white/95">
+              Get the roadmap that actually works.
+            </p>
+          </div>
+          <div
+            class="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto justify-center"
+          >
+            <a
+              href="https://gradspath-dashboard.vercel.app"
+              class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white text-black text-sm font-bold uppercase tracking-wide hover:bg-gray-100 transition-colors shadow-lg no-underline"
+            >
+              BOOK FREE CONSULTATION
+              <span
+                class="w-8 h-8 rounded-full bg-black flex items-center justify-center shrink-0"
+              >
+                <i
+                  class="fa-solid fa-arrow-right text-white text-xs"
+                  aria-hidden="true"
+                ></i>
+              </span>
+            </a>
+            <a
+              href="index.html#how"
+              class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-[#2dd4bf] text-black text-sm font-bold uppercase tracking-wide hover:opacity-95 transition-opacity shadow-lg no-underline"
+            >
+              HOW IT WORKS
+              <span
+                class="w-2 h-2 rounded-full bg-black shrink-0"
+                aria-hidden="true"
+              ></span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="site-footer pt-16 pb-10 font-sans" aria-label="Footer">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6">
+        <!-- Brand and tagline -->
+        <div class="flex flex-col gap-4 mb-12">
+          <a
+            href="index.html"
+            class="inline-flex items-center gap-2 no-underline"
+          >
+            <i
+              class="fa-solid fa-graduation-cap text-[#71a4f4] text-2xl"
+              aria-hidden="true"
+            ></i>
+            <span class="footer-brand">Grads Paths</span>
+          </a>
+          <p class="footer-tagline">
+            Grads Paths is an education technology company dedicated to making
+            high-quality mentorship and career planning accessible and
+            affordable for college students. Our platform connects students with
+            trusted graduate mentors and professionals from top programs.
+          </p>
+          <div class="footer-socials" aria-label="Social links">
+            <a href="#" aria-label="LinkedIn"
+              ><i class="fa-brands fa-linkedin-in"></i
+            ></a>
+            <a href="#" aria-label="Facebook"
+              ><i class="fa-brands fa-facebook-f"></i
+            ></a>
+            <a href="#" aria-label="Instagram"
+              ><i class="fa-brands fa-instagram"></i
+            ></a>
+            <a href="#" aria-label="YouTube"
+              ><i class="fa-brands fa-youtube"></i
+            ></a>
+            <a href="#" aria-label="TikTok"
+              ><i class="fa-brands fa-tiktok"></i
+            ></a>
+          </div>
+        </div>
+
+        <!-- Columns: Explore, Services, Connect -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8 mb-12">
+          <div class="footer-col">
+            <h3 class="footer-col-title">Explore</h3>
+            <a href="index.html">Home</a>
+            <a href="#how">How It Works</a>
+            <a href="index.html#services">Our Services</a>
+            <a href="#why-us">Why Grads Paths</a>
+          </div>
+          <div class="footer-col">
+            <h3 class="footer-col-title">Services</h3>
+            <a href="https://gradspath-dashboard.vercel.app"  >Find Mentors</a>
+            <a href="index.html#meeting-types">Meeting Types</a>
+            <a href="#programs-disciplines">Programs Offered</a>
+            <a href="#programs-disciplines">Professional Disciplines</a>
+            <a href="index.html#signup" >Sign Up</a>
+            <a href="index.html#login" >Log In</a>
+          </div>
+          <div class="footer-col">
+            <h3 class="footer-col-title">Connect</h3>
+            <a href="index.html#get-in-touch"
+              ><i
+                class="fa-solid fa-envelope mr-1.5 text-sm opacity-90"
+                aria-hidden="true"
+              ></i>
+              Contact Us</a
+            >
+          </div>
+        </div>
+
+        <!-- Bottom bar -->
+        <div
+          class="footer-bottom pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-[#3b4656]"
+        >
+          <nav
+            class="flex flex-wrap items-center gap-x-5 gap-y-1"
+            aria-label="Footer legal and contact"
+          >
+            <a href="index.html#get-in-touch"
+              ><i
+                class="fa-solid fa-envelope mr-1 text-sm opacity-90"
+                aria-hidden="true"
+              ></i>
+              Contact Us</a
+            >
+            <a href="privacy-policy.html">Privacy Policy</a>
+            <a href="terms-of-service.html">Terms of Service</a>
+          </nav>
+          <div class="text-left sm:text-right">
+            <p>
+              © <span id="copyright-year">2026</span> Grads Paths. All rights
+              reserved.
+            </p>
+            <p class="footer-credit mt-0.5">
+              Created by students who've been on this path
+            </p>
+          </div>
+        </div>
+      </div>
+      <script>
+        document.getElementById("copyright-year").textContent =
+          new Date().getFullYear();
+      </script>
+    </footer>
+
+    <!-- Login Modal -->
+    <div
+      id="login-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop"
+    >
+      <div
+        class="relative w-full max-w-md rounded-2xl shadow-xl bg-white border-2 border-[#6D28D9] login-modal-panel"
+      >
+        <button
+          type="button"
+          id="login-close"
+          class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full transition-colors text-[#3730A3] hover:bg-black/5"
+          aria-label="Close"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+        <div class="p-8 relative">
+          <h2 id="dialog-title" class="text-2xl font-bold text-[#3730A3] mb-1">
+            Welcome back
+          </h2>
+          <p class="text-sm text-[#6D28D9] mb-6">
+            Sign in to continue with Grads Paths.
+          </p>
+          @if (session('status'))
+            <div class="mb-4 rounded-xl border border-[#D8B4FE] bg-[#F5F3FF] px-4 py-3 text-sm text-[#3730A3]">
+              {{ session('status') }}
+            </div>
+          @endif
+          @if (session('success'))
+            <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {{ session('success') }}
+            </div>
+          @endif
+          <form id="login-form" method="POST" action="{{ route('auth.login.post') }}" class="space-y-4">
+            @csrf
+            <div>
+              <label
+                for="login-email"
+                class="block text-sm font-semibold text-[#3730A3] mb-1.5"
+                >Email</label
+              >
+              <div class="relative flex items-center">
+                <input
+                  type="email"
+                  name="email"
+                  id="login-email"
+                  placeholder="you@university.edu"
+                  value="{{ old('email') }}"
+                  class="w-full rounded-xl border border-[#6D28D9] bg-white px-4 py-3 pl-4 pr-10 text-[#6D28D9] placeholder:text-[#6D28D9]/70 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm"
+                />
+                <i
+                  class="fa-solid fa-envelope absolute right-3 text-[#6D28D9]"
+                  aria-hidden="true"
+                ></i>
+              </div>
+              @error('email')
+                <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+              @enderror
+            </div>
+            <div>
+              <label
+                for="login-password"
+                class="block text-sm font-semibold text-[#3730A3] mb-1.5"
+                >Password</label
+              >
+              <div class="relative flex items-center">
+                <input
+                  type="password"
+                  name="password"
+                  id="login-password"
+                  placeholder="Your password"
+                  class="w-full rounded-xl border border-[#6D28D9] bg-white px-4 py-3 pl-4 pr-16 text-[#6D28D9] placeholder:text-[#6D28D9]/70 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm"
+                />
+                <i
+                  class="fa-solid fa-lock absolute right-9 text-[#6D28D9]"
+                  aria-hidden="true"
+                ></i>
+                <button
+                  type="button"
+                  class="password-toggle absolute right-3 text-[#6D28D9] hover:opacity-75"
+                  aria-label="Toggle password"
+                  data-target="login-password"
+                >
+                  <i class="fa-solid fa-eye-slash text-sm toggle-icon"></i>
+                </button>
+              </div>
+              @error('password')
+                <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+              @enderror
+            </div>
+            <div class="flex items-center justify-between">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="login-remember"
+                  name="remember"
+                  value="1"
+                  @checked(old('remember'))
+                  class="h-4 w-4 rounded border-[#6D28D9] text-[#E92E88] focus:ring-[#E92E88]"
+                />
+                <span class="text-sm font-medium text-[#3730A3]"
+                  >Remember me</span
+                >
+              </label>
+              <a
+                href="{{ route('auth.password.request') }}"
+                class="text-sm font-medium text-[#E92E88] hover:underline"
+              >
+                Forgot password?
+              </a>
+            </div>
+            <button
+              type="submit"
+              class="w-full rounded-xl py-3 text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all mt-6"
+            >
+              Continue
+            </button>
+          </form>
+          <p class="mt-5 text-center text-sm text-[#6D28D9]">
+            Don't have an account?
+            <button
+              type="button"
+              id="login-to-signup"
+              class="font-semibold text-[#3730A3] hover:underline"
+            >
+              Create account
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div
+      id="signup-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop overflow-y-auto"
+    >
+      <div
+        class="relative w-full max-w-[28rem] my-auto max-h-[calc(100vh-1.5rem)] rounded-2xl bg-white border-2 border-[#6D28D9] shadow-xl flex flex-col"
+      >
+        <button
+          type="button"
+          id="signup-close"
+          class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full transition-colors text-[#3730A3] hover:bg-black/5"
+          aria-label="Close"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2.5"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+        <div class="px-6 py-8 pb-6 overflow-y-auto flex-1 min-h-0">
+          <h2 class="text-2xl font-bold text-[#3730A3] mb-2">
+            Create Your Account
+          </h2>
+          <p
+            id="signup-subtitle"
+            class="text-[13px] leading-snug text-[#6D28D9] mb-5"
+          >
+            Tell us who you are so we can verify your school and keep this
+            community secure.
+          </p>
+
+          <form id="signup-form" method="POST" action="{{ route('auth.register.post') }}" class="space-y-4">
+            @csrf
+            <input type="hidden" name="role" id="signup-role-input" value="{{ old('role', 'student') }}" />
+            <input type="hidden" name="program_level" id="signup-program-level-input" value="{{ old('program_level', 'undergrad') }}" />
+            <!-- Program Level -->
+            <div>
+              <label class="block text-sm font-bold text-[#1D1440] mb-2"
+                >Program level</label
+              >
+              <div class="grid grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  data-value="Undergrad"
+                  class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#6D28D9] bg-[#EBE0F8] text-[#6D28D9]"
+                >
+                  <i class="fa-solid fa-graduation-cap"></i> Undergrad
+                </button>
+                <button
+                  type="button"
+                  data-value="Grad"
+                  class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
+                >
+                  <i class="fa-solid fa-graduation-cap"></i> Grad
+                </button>
+                <button
+                  type="button"
+                  data-value="Professional"
+                  class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
+                >
+                  <i class="fa-solid fa-briefcase"></i> Professional
+                </button>
+              </div>
+              @error('program_level')
+                <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+              @enderror
+            </div>
+            <!-- Role -->
+            <div>
+              <label class="block text-sm font-bold text-[#1D1440] mb-2"
+                >I am a:</label
+              >
+              <div class="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  data-value="Student"
+                  class="signup-role flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold border border-[#6D28D9] bg-[#EBE0F8] text-[#6D28D9]"
+                >
+                  <i class="fa-solid fa-book-open"></i> Student
+                </button>
+                <button
+                  type="button"
+                  data-value="Mentor"
+                  class="signup-role flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
+                >
+                  <i class="fa-solid fa-building-columns"></i> Mentor
+                </button>
+              </div>
+              @error('role')
+                <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+              @enderror
+            </div>
+
+            <!-- Full Name -->
+            <div>
+              <label class="block text-xs font-bold text-[#1D1440] mb-1.5"
+                >Full name <span class="text-red-500">*</span></label
+              >
+              <div class="relative flex items-center">
+                <input
+                  type="text"
+                  name="name"
+                  id="signup-fullname"
+                  placeholder="Your name"
+                  value="{{ old('name') }}"
+                  class="w-full rounded-xl border border-[#6D28D9] bg-white px-3 py-2.5 pl-3 pr-10 text-[#6D28D9] placeholder:text-[#6D28D9]/60 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm"
+                />
+                <i
+                  class="fa-solid fa-user absolute right-3 text-[#6D28D9]"
+                  aria-hidden="true"
+                ></i>
+              </div>
+              @error('name')
+                <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+              @enderror
+            </div>
+            <!-- Email -->
+            <div>
+              <label class="block text-xs font-bold text-[#1D1440] mb-1.5"
+                >Email <span class="text-red-500">*</span></label
+              >
+              <div class="relative flex items-center">
+                <input
+                  type="email"
+                  name="email"
+                  id="signup-email"
+                  placeholder="you@university.edu"
+                  value="{{ old('email') }}"
+                  class="w-full rounded-xl border border-[#6D28D9] bg-white px-3 py-2.5 pl-3 pr-10 text-[#6D28D9] placeholder:text-[#6D28D9]/60 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm"
+                />
+                <i
+                  class="fa-solid fa-envelope absolute right-3 text-[#6D28D9]"
+                  aria-hidden="true"
+                ></i>
+              </div>
+              @error('email')
+                <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+              @enderror
+            </div>
+            <!-- Institution -->
+            <div>
+              <label class="block text-xs font-bold text-[#1D1440] mb-1.5"
+                >Institution <span class="text-red-500">*</span></label
+              >
+              <div class="relative flex items-center">
+                <input
+                  type="text"
+                  name="institution"
+                  id="signup-institution"
+                  placeholder="Start typing to search..."
+                  value="{{ old('institution') }}"
+                  class="w-full rounded-xl border border-[#6D28D9] bg-white px-3 py-2.5 pl-3 pr-10 text-[#6D28D9] placeholder:text-[#6D28D9]/60 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm"
+                  autocomplete="off"
+                />
+                <i
+                  class="fa-solid fa-school absolute right-3 text-[#6D28D9]"
+                  aria-hidden="true"
+                ></i>
+                <!-- Institution suggestions dropdown -->
+                <div
+                  id="institution-suggestions"
+                  class="absolute top-full left-0 right-0 mt-1 bg-white border border-[#D8B4FE] rounded-xl shadow-lg max-h-64 overflow-y-auto hidden z-50"
+                ></div>
+              </div>
+              @error('institution')
+                <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+              @enderror
+            </div>
+            <!-- Password -->
+            <div>
+              <label class="block text-xs font-bold text-[#1D1440] mb-1.5"
+                >Password <span class="text-red-500">*</span></label
+              >
+              <div class="relative flex items-center">
+                <input
+                  type="password"
+                  name="password"
+                  id="signup-password"
+                  placeholder="Create a password"
+                  class="w-full rounded-xl border border-[#6D28D9] bg-white px-3 py-2.5 pl-3 pr-16 text-[#6D28D9] placeholder:text-[#6D28D9]/60 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm"
+                />
+                <i
+                  class="fa-solid fa-lock absolute right-9 text-[#6D28D9]"
+                  aria-hidden="true"
+                ></i>
+                <button
+                  type="button"
+                  class="password-toggle absolute right-3 text-[#6D28D9] hover:opacity-75"
+                  aria-label="Toggle password"
+                  data-target="signup-password"
+                >
+                  <i class="fa-solid fa-eye-slash text-xs toggle-icon"></i>
+                </button>
+              </div>
+              @error('password')
+                <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+              @enderror
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-[#1D1440] mb-1.5"
+                >Confirm password <span class="text-red-500">*</span></label
+              >
+              <div class="relative flex items-center">
+                <input
+                  type="password"
+                  name="password_confirmation"
+                  id="signup-password-confirmation"
+                  placeholder="Confirm your password"
+                  class="w-full rounded-xl border border-[#6D28D9] bg-white px-3 py-2.5 pl-3 pr-16 text-[#6D28D9] placeholder:text-[#6D28D9]/60 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm"
+                />
+                <i
+                  class="fa-solid fa-lock absolute right-9 text-[#6D28D9]"
+                  aria-hidden="true"
+                ></i>
+                <button
+                  type="button"
+                  class="password-toggle absolute right-3 text-[#6D28D9] hover:opacity-75"
+                  aria-label="Toggle password"
+                  data-target="signup-password-confirmation"
+                >
+                  <i class="fa-solid fa-eye-slash text-xs toggle-icon"></i>
+                </button>
+              </div>
+            </div>
+
+            <p class="text-[11px] leading-tight text-[#6D28D9]">
+              We may re-verify your email periodically to keep mentors and
+              students real and current.
+            </p>
+            <button
+              type="submit"
+              class="w-full rounded-xl py-3 text-[15px] font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all mt-4"
+            >
+              Continue
+            </button>
+          </form>
+          <p class="mt-4 text-center text-sm text-[#6D28D9]">
+            Already have an account?
+            <button
+              type="button"
+              id="signup-to-login"
+              class="font-semibold text-[#1D1440] hover:underline"
+            >
+              Log in
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script src="{{ asset('assets_landingPage/js/app.js') }}"></script>
+    <script src="{{ asset('assets_landingPage/js/script.js') }}"></script>
+    <script>
+      (function () {
+        const activeModal = @json($activeAuthModal);
+        const roleInput = document.getElementById("signup-role-input");
+        const levelInput = document.getElementById("signup-program-level-input");
+        const roleMap = { Student: "student", Mentor: "mentor" };
+        const levelMap = {
+          Undergrad: "undergrad",
+          Grad: "grad",
+          Professional: "professional",
+        };
+
+        function syncSelected(selector, activeValue) {
+          document.querySelectorAll(selector).forEach(function (btn) {
+            const isActive = btn.getAttribute("data-value") === activeValue;
+            btn.classList.toggle("border-[#6D28D9]", isActive);
+            btn.classList.toggle("bg-[#EBE0F8]", isActive);
+            btn.classList.toggle("border-[#D8B4FE]", !isActive);
+            btn.classList.toggle("bg-white", !isActive);
+            btn.classList.toggle("hover:border-[#6D28D9]", !isActive);
+          });
+        }
+
+        document.querySelectorAll(".signup-role").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            if (roleInput) {
+              roleInput.value = roleMap[btn.getAttribute("data-value")] || "student";
+            }
+          });
+        });
+
+        document.querySelectorAll(".signup-level").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            if (levelInput) {
+              levelInput.value = levelMap[btn.getAttribute("data-value")] || "undergrad";
+            }
+          });
+        });
+
+        const oldRole = @json(old('role', 'student'));
+        const oldLevel = @json(old('program_level', 'undergrad'));
+        const activeRoleLabel = Object.keys(roleMap).find(function (label) {
+          return roleMap[label] === oldRole;
+        }) || "Student";
+        const activeLevelLabel = Object.keys(levelMap).find(function (label) {
+          return levelMap[label] === oldLevel;
+        }) || "Undergrad";
+
+        if (roleInput) {
+          roleInput.value = oldRole;
+        }
+
+        if (levelInput) {
+          levelInput.value = oldLevel;
+        }
+
+        syncSelected(".signup-role", activeRoleLabel);
+        syncSelected(".signup-level", activeLevelLabel);
+
+        if (activeModal === "login") {
+          document.getElementById("login-modal")?.classList.remove("hidden");
+          document.getElementById("signup-modal")?.classList.add("hidden");
+        } else if (activeModal === "signup") {
+          document.getElementById("signup-modal")?.classList.remove("hidden");
+          document.getElementById("login-modal")?.classList.add("hidden");
+        }
+      })();
+    </script>
+  </body>
+</html>

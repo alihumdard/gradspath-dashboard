@@ -1,0 +1,11 @@
+{
+    "name": "MentorNotes",
+    "alias": "mentornotes",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\MentorNotes\\app\\Providers\\MentorNotesServiceProvider"
+    ],
+    "files": []
+}

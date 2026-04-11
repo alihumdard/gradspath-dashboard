@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Terms of Service - Grads Paths</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    if (localStorage.getItem("theme") === "light") document.documentElement.classList.remove("dark");
+    else document.documentElement.classList.add("dark");
+  </script>
+  <script>
+    tailwind.config = { darkMode: "class", theme: { extend: { fontFamily: { sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"] } } } };
+  </script>
+</head>
+<body class="antialiased bg-[var(--bg)] text-[var(--text-main)] overflow-x-hidden">
+  <header class="fixed inset-x-0 top-0 z-50 glass h-16 flex items-center">
+    <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between relative h-full">
+      <a href="index.html" class="flex items-center gap-2 shrink-0 z-10">
+        <i class="fa-solid fa-graduation-cap text-black dark:text-white text-2xl"></i>
+        <span class="font-bold text-base text-black dark:text-white">Grads Paths</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-8 font-bold text-sm" aria-label="Primary">
+        <a href="index.html" class="text-[var(--text-main)] hover:text-[var(--primary)]">Home</a>
+        <a href="how-it-works.html" class="text-[var(--text-main)] hover:text-[var(--primary)]">How It Works</a>
+        <a href="why-us.html" class="text-[var(--text-main)] hover:text-[var(--primary)]">Why Us</a>
+        <a href="https://gradspath-dashboard.vercel.app" class="text-[var(--text-main)] hover:text-[var(--primary)]">Find Mentors</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <button type="button" id="btn-login" class="rounded-xl px-4 py-2 text-sm font-bold text-[var(--text-main)] hover:bg-[var(--surface)]">Log In</button>
+        <button type="button" id="btn-signup" class="rounded-xl px-4 py-2 text-sm font-bold text-white bg-[var(--primary)] hover:opacity-90">Sign Up</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="pt-24 pb-16 px-4 sm:px-6 max-w-3xl mx-auto font-sans">
+
+
+    <h1 class="text-2xl sm:text-3xl font-bold text-[var(--text-main)] mb-6">Terms of Service</h1>
+
+    <div class="prose prose-invert max-w-none text-[var(--text-main)] space-y-6 text-sm leading-relaxed">
+      <p>Effective Date: February 10, 2026. These Terms of Service govern your use of the Grads Paths platform. By accessing or using our services, you agree to these terms.</p>
+
+      <h2 class="text-lg font-bold mt-8 mb-2">1. Agreement to Terms</h2>
+      <p>By creating an account or using Grads Paths, you acknowledge that you have read, understood, and agreed to these Terms. If you do not agree, you may not use the platform.</p>
+
+      <h2 class="text-lg font-bold mt-8 mb-2">2. What Grads Paths Provides</h2>
+      <p>Grads Paths is an online platform that connects students and applicants with mentors for:</p>
+      <ul class="list-disc pl-6 space-y-1">
+        <li>Academic tutoring</li>
+        <li>Program and career insights</li>
+        <li>Interview preparation</li>
+        <li>Graduate and professional school guidance</li>
+      </ul>
+      <p>Grads Paths does not guarantee admission outcomes, academic results, or licensure eligibility.</p>
+
+      <h2 class="text-lg font-bold mt-8 mb-2">3. Accounts &amp; Eligibility</h2>
+      <ul class="list-disc pl-6 space-y-1">
+        <li>Users must provide accurate and complete information</li>
+        <li>You are responsible for all activity under your account</li>
+        <li>You must be at least 13 years old to use the platform</li>
+        <li>Mentors must represent their qualifications truthfully</li>
+      </ul>
+
+      <h2 class="text-lg font-bold mt-8 mb-2">4. Mentor Responsibilities</h2>
+      <p>Mentors agree to:</p>
+      <ul class="list-disc pl-6 space-y-1">
+        <li>Provide accurate information about experience and background</li>
+        <li>Conduct sessions professionally and respectfully</li>
+        <li>Comply with all applicable laws and ethical standards</li>
+        <li>Avoid misrepresentation or guarantees of outcomes</li>
+      </ul>
+      <p>Grads Paths may review, restrict, or remove mentor accounts at its discretion.</p>
+
+      <h2 class="text-lg font-bold mt-8 mb-2">5. Payments, Pricing, and Refunds</h2>
+      <ul class="list-disc pl-6 space-y-1">
+        <li>Payments are processed through third-party payment providers</li>
+        <li>Prices and offerings may change with notice</li>
+        <li>Refunds, if available, are governed by the applicable refund policy at time of booking</li>
+        <li>Grads Paths is not responsible for payment processor errors outside its control</li>
+      </ul>
+
+      <h2 class="text-lg font-bold mt-8 mb-2">6. Acceptable Use</h2>
+      <p>Users may not:</p>
+      <ul class="list-disc pl-6 space-y-1">
+        <li>Misuse the platform or attempt unauthorized access</li>
+        <li>Harass, exploit, or harm other users</li>
+        <li>Circumvent platform fees or scheduling tools</li>
+        <li>Upload false, misleading, or unlawful content</li>
+      </ul>
+      <p>Violations may result in suspension or termination.</p>
+
+      <h2 class="text-lg font-bold mt-8 mb-2">7. Intellectual Property</h2>
+      <p>All platform content, branding, and software are owned by Grads Paths or its licensors.</p>
+      <p>Users retain ownership of their own content but grant Grads Paths a limited license to display it for platform operation.</p>
+
+      <h2 class="text-lg font-bold mt-8 mb-2">8. Termination</h2>
+      <p>We may suspend or terminate access:</p>
+      <ul class="list-disc pl-6 space-y-1">
+        <li>For violations of these Terms</li>
+        <li>For safety, legal, or operational reasons</li>
+        <li>At our discretion, with or without notice</li>
+      </ul>
+      <p>Users may terminate their accounts at any time.</p>
+
+      <h2 class="text-lg font-bold mt-8 mb-2">9. Disclaimer &amp; Limitation of Liability</h2>
+      <p>Grads Paths provides services “as is.”</p>
+      <p>We are not liable for:</p>
+      <ul class="list-disc pl-6 space-y-1">
+        <li>Academic, admissions, or career outcomes</li>
+        <li>Actions taken based on mentor guidance</li>
+        <li>Technical interruptions beyond reasonable control</li>
+      </ul>
+
+      <h2 class="text-lg font-bold mt-8 mb-2">10. Changes to Terms</h2>
+      <p>We may update these Terms periodically. Continued use of the platform after updates constitutes acceptance.</p>
+
+      <h2 class="text-lg font-bold mt-8 mb-2">11. Contact Information</h2>
+      <p>For questions regarding these Terms:</p>
+      <p>Email: <a href="mailto:support@gradspaths.com" class="text-[var(--primary)] hover:underline">support@gradspaths.com</a></p>
+
+      <p class="mt-8 pt-4 border-t border-[var(--border)]">
+        Last updated: <span id="terms-last-updated"></span>
+      </p>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var el = document.getElementById("terms-last-updated");
+      if (el) {
+        var d = new Date();
+        el.textContent = (d.getMonth() + 1) + "/" + d.getDate() + "/" + d.getFullYear();
+      }
+    })();
+  </script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/script.js"></script>
+</body>
+</html>

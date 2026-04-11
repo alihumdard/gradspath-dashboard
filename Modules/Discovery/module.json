@@ -1,0 +1,11 @@
+{
+    "name": "Discovery",
+    "alias": "discovery",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Discovery\\app\\Providers\\DiscoveryServiceProvider"
+    ],
+    "files": []
+}
