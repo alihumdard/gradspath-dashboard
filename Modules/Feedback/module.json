@@ -4,8 +4,6 @@
     "description": "",
     "keywords": [],
     "priority": 0,
-    "providers": [
-        "Modules\\Feedback\\app\\Providers\\FeedbackServiceProvider"
-    ],
+    "providers": ["Modules\\Feedback\\app\\Providers\\FeedbackServiceProvider"],
     "files": []
 }

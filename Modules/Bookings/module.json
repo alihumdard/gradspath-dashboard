@@ -4,8 +4,6 @@
     "description": "",
     "keywords": [],
     "priority": 0,
-    "providers": [
-        "Modules\\Bookings\\app\\Providers\\BookingsServiceProvider"
-    ],
+    "providers": ["Modules\\Bookings\\app\\Providers\\BookingsServiceProvider"],
     "files": []
 }

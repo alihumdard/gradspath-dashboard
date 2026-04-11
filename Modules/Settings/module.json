@@ -4,8 +4,6 @@
     "description": "",
     "keywords": [],
     "priority": 0,
-    "providers": [
-        "Modules\\Settings\\app\\Providers\\SettingsServiceProvider"
-    ],
+    "providers": ["Modules\\Settings\\app\\Providers\\SettingsServiceProvider"],
     "files": []
 }
