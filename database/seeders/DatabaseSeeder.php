@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Modules\Auth\app\Models\User;
+use Modules\Auth\database\seeders\RolePermissionSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,17 +17,27 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call(RolePermissionSeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $this->call(InstitutionsSeeder::class);
+        $this->call(ProgramsSeeder::class);
+        $this->call(ServiceConfigSeeder::class);
+        $this->call(StudentsSeeder::class);
+        $this->call(MentorsSeeder::class);
+        $this->call(OfficeHoursSeeder::class);
+        $this->call(BookingsSeeder::class);
+        $this->call(MentorNotesSeeder::class);
+        $this->call(FeedbackSeeder::class);
 
-        User::factory()->create([
-            'name' => 'Admin User',
-            'email' => 'admin@admin.com',
-            'password' => bcrypt('password'),
-        ]);
+        $admin = User::query()->updateOrCreate(
+            ['email' => 'admin@admin.com'],
+            [
+                'name' => 'Admin User',
+                'password' => Hash::make('password'),
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        );
+        $admin->assignRole('admin');
     }
 }

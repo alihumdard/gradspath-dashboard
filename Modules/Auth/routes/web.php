@@ -2,19 +2,18 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\Auth\app\Http\Controllers\AuthController;
-use Modules\Auth\app\Http\Controllers\SocialAuthController;
 use Modules\Auth\app\Http\Controllers\Admin\AdminUserController;
 
 /*
 |--------------------------------------------------------------------------
 | Auth Module — Web Routes
 |--------------------------------------------------------------------------
-| Guest routes: login, register, password reset, Google OAuth
+| Guest routes: login, register, password reset
 | Authenticated routes: logout
 | Admin routes: user management, mentor approval, admin logs
 */
 
-Route::middleware('web')->group(function () {
+Route::middleware(['web', 'guest'])->group(function () {
 
     // Login routes
     Route::get('/login',    [AuthController::class, 'showLogin'])->name('login');
@@ -25,21 +24,23 @@ Route::middleware('web')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('auth.register.post');
 
     // Password reset routes
-    Route::get('/forgot-password',  [AuthController::class, 'showForgotPassword'])->name('auth.password.request');
-    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('auth.password.email');
+    Route::get('/forgot-password',  [AuthController::class, 'showForgotPassword'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
+    Route::post('/reset-password',        [AuthController::class, 'resetPassword'])->name('password.update');
+});
 
-    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('auth.password.reset');
-    Route::post('/reset-password',        [AuthController::class, 'resetPassword'])->name('auth.password.update');
+Route::middleware(['web'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [AuthController::class, 'showAdminLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'adminLogin'])->name('login.post');
+});
 
-    // Google OAuth routes
-    Route::get('/auth/google',          [SocialAuthController::class, 'redirect'])->name('auth.google');
-    Route::get('/auth/google/callback', [SocialAuthController::class, 'callback'])->name('auth.google.callback');
-
+Route::middleware(['web', 'auth', 'active'])->group(function () {
     // Logout route
     Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
     // Admin routes
-    Route::prefix('admin')->name('admin.')->group(function () {
+    Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
         Route::get('/users',                         [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/{id}',                    [AdminUserController::class, 'show'])->name('users.show');
         Route::delete('/users/{id}',                 [AdminUserController::class, 'destroy'])->name('users.destroy');
@@ -54,5 +55,4 @@ Route::middleware('web')->group(function () {
         // Admin audit logs
         Route::get('/logs', [AdminUserController::class, 'logs'])->name('logs');
     });
-
 });

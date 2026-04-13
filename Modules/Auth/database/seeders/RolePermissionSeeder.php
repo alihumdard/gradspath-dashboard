@@ -114,14 +114,16 @@ class RolePermissionSeeder extends Seeder
         $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $admin->syncPermissions(Permission::all());
 
-        $this->command->info('✅ Roles and permissions seeded successfully.');
-        $this->command->table(
-            ['Role', 'Permissions'],
-            [
-                ['student', $student->permissions->count()],
-                ['mentor',  $mentor->permissions->count()],
-                ['admin',   $admin->permissions->count()],
-            ]
-        );
+        if ($this->command) {
+            $this->command->info('Roles and permissions seeded successfully.');
+            $this->command->table(
+                ['Role', 'Permissions'],
+                [
+                    ['student', $student->permissions->count()],
+                    ['mentor',  $mentor->permissions->count()],
+                    ['admin',   $admin->permissions->count()],
+                ]
+            );
+        }
     }
 }

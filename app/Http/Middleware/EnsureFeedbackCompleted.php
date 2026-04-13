@@ -29,7 +29,7 @@ class EnsureFeedbackCompleted
 
             if ($hasOverdueFeedback) {
                 return redirect()
-                    ->route('feedback.index')
+                    ->route('student.feedback.index')
                     ->with('warning', 'Please complete your pending session feedback before booking a new session.');
             }
         }

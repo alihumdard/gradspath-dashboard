@@ -273,12 +273,10 @@ document.addEventListener("DOMContentLoaded", () => {
         "institution-suggestions",
     );
 
-    // Fetch universities from GitHub
+    // Fetch universities from the local JSON dataset
     async function fetchUniversities() {
         try {
-            const response = await fetch(
-                "https://raw.githubusercontent.com/Hipo/university-domains-list/refs/heads/master/world_universities_and_domains.json",
-            );
+            const response = await fetch("/university.json");
             if (response.ok) {
                 universitiesData = await response.json();
             }

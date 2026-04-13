@@ -13,12 +13,14 @@ return new class extends Migration
             $table->foreignId('university_id')->constrained()->cascadeOnDelete();
             $table->string('program_name');
             $table->enum('program_type', ['mba', 'law', 'therapy', 'cmhc', 'mft', 'msw', 'clinical_psy', 'other']);
+            $table->enum('tier', ['elite', 'top', 'regional']);
             $table->string('description')->nullable();
             $table->integer('duration_months')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
             $table->index(['university_id', 'program_type']);
+            $table->index('tier');
             $table->index('is_active');
         });
     }

@@ -3,11 +3,12 @@
 namespace Modules\Auth\app\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Modules\Auth\app\Models\User;
 
 class AdminUserController extends Controller
 {
@@ -22,13 +23,13 @@ class AdminUserController extends Controller
             ->latest()
             ->paginate(20);
 
-        return view('auth::admin.users', compact('users'));
+        return view('discovery::admin.admin', compact('users'));
     }
 
     public function show(int $id): View
     {
         $user = User::with(['roles', 'mentor'])->findOrFail($id);
-        return view('auth::admin.user-show', compact('user'));
+        return view('discovery::admin.admin', compact('user'));
     }
 
     public function destroy(int $id): RedirectResponse
@@ -65,7 +66,7 @@ class AdminUserController extends Controller
             ->select('mentors.*', 'users.name', 'users.email')
             ->paginate(20);
 
-        return view('auth::admin.mentors-pending', compact('mentors'));
+        return view('discovery::admin.admin', compact('mentors'));
     }
 
     public function approveMentor(int $id): RedirectResponse
@@ -75,12 +76,17 @@ class AdminUserController extends Controller
         DB::table('mentors')->where('id', $id)->update([
             'status'      => 'active',
             'approved_at' => now(),
-            'approved_by' => auth()->id(),
+            'approved_by' => Auth::id(),
             'updated_at'  => now(),
         ]);
 
-        $this->logAction('approve_mentor', 'mentors', $id,
-            ['status' => $before->status], ['status' => 'active']);
+        $this->logAction(
+            'approve_mentor',
+            'mentors',
+            $id,
+            ['status' => $before->status],
+            ['status' => 'active']
+        );
 
         return back()->with('success', 'Mentor approved successfully.');
     }
@@ -90,8 +96,13 @@ class AdminUserController extends Controller
         $before = DB::table('mentors')->where('id', $id)->first();
         DB::table('mentors')->where('id', $id)->update(['status' => 'rejected', 'updated_at' => now()]);
 
-        $this->logAction('reject_mentor', 'mentors', $id,
-            ['status' => $before->status], ['status' => 'rejected']);
+        $this->logAction(
+            'reject_mentor',
+            'mentors',
+            $id,
+            ['status' => $before->status],
+            ['status' => 'rejected']
+        );
 
         return back()->with('success', 'Mentor application rejected.');
     }
@@ -101,8 +112,13 @@ class AdminUserController extends Controller
         $before = DB::table('mentors')->where('id', $id)->first();
         DB::table('mentors')->where('id', $id)->update(['status' => 'paused', 'updated_at' => now()]);
 
-        $this->logAction('pause_mentor', 'mentors', $id,
-            ['status' => $before->status], ['status' => 'paused']);
+        $this->logAction(
+            'pause_mentor',
+            'mentors',
+            $id,
+            ['status' => $before->status],
+            ['status' => 'paused']
+        );
 
         return back()->with('success', 'Mentor paused.');
     }
@@ -118,7 +134,7 @@ class AdminUserController extends Controller
             ->orderByDesc('admin_logs.created_at')
             ->paginate(30);
 
-        return view('auth::admin.logs', compact('logs'));
+        return view('discovery::admin.admin', compact('logs'));
     }
 
     // ── Private Helper ────────────────────────────────────────────────────────
@@ -126,7 +142,7 @@ class AdminUserController extends Controller
     private function logAction(string $action, string $table, int $targetId, mixed $before, mixed $after): void
     {
         DB::table('admin_logs')->insert([
-            'admin_id'     => auth()->id(),
+            'admin_id'     => Auth::id(),
             'action'       => $action,
             'target_table' => $table,
             'target_id'    => $targetId,

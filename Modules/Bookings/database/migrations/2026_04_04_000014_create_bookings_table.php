@@ -15,12 +15,13 @@ return new class extends Migration
             $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('mentor_id')->constrained('mentors')->cascadeOnDelete();
             $table->foreignId('service_config_id')->constrained('services_config');
+            $table->foreignId('mentor_availability_slot_id')->nullable()->constrained('mentor_availability_slots')->nullOnDelete();
 
             // Office Hours sessions get linked here; null for 1:1 / group bookings
             $table->foreignId('office_hour_session_id')->nullable()->constrained('office_hour_sessions')->nullOnDelete();
 
             // Session details
-            $table->enum('meeting_size', ['1on1', '1on3', '1on5', 'office_hours'])->default('1on1');
+            $table->enum('session_type', ['1on1', '1on3', '1on5', 'office_hours'])->default('1on1');
             $table->timestamp('session_at');
             $table->string('session_timezone')->nullable(); // mentor/session timezone for UI rendering
             $table->integer('duration_minutes')->default(60);

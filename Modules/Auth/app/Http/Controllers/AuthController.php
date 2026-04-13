@@ -3,27 +3,61 @@
 namespace Modules\Auth\app\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Throwable;
 use Illuminate\View\View;
+use Modules\Auth\app\Http\Requests\ForgotPasswordRequest;
 use Modules\Auth\app\Http\Requests\LoginRequest;
 use Modules\Auth\app\Http\Requests\RegisterRequest;
-use Modules\Auth\app\Http\Requests\ForgotPasswordRequest;
 use Modules\Auth\app\Http\Requests\ResetPasswordRequest;
+use Modules\Auth\app\Models\User;
+use Modules\Auth\app\Services\AuthService;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly AuthService $authService) {}
+
     // ── Guest: Show Pages ────────────────────────────────────────────────────
 
     public function showLogin(): View
     {
         return $this->renderLandingAuth('login');
+    }
+
+    public function showAdminLogin(): View|RedirectResponse
+    {
+        if (Auth::check() && Auth::user()?->hasRole('admin')) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        return view('auth::admin.login');
+    }
+
+    public function adminLogin(LoginRequest $request): RedirectResponse
+    {
+        $user = $this->authService->login(
+            $request->only('email', 'password'),
+            $request->boolean('remember')
+        );
+
+        if (!$user || !$user->hasRole('admin')) {
+            Auth::logout();
+
+            return back()
+                ->withErrors(['email' => 'These credentials do not match our admin records.'])
+                ->withInput($request->only('email'));
+        }
+
+        $request->session()->regenerate();
+
+        return redirect()->route('admin.dashboard');
     }
 
     public function showRegister(): View
@@ -45,9 +79,12 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): RedirectResponse
     {
-        $credentials = $request->only('email', 'password');
+        $user = $this->authService->login(
+            $request->only('email', 'password'),
+            $request->boolean('remember')
+        );
 
-        if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (!$user) {
             return back()
                 ->withErrors(['email' => 'These credentials do not match our records.'])
                 ->withInput($request->only('email'));
@@ -55,20 +92,7 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        // Redirect based on role
-        $user = Auth::user();
-
-        if (!$user->is_active) {
-            Auth::logout();
-            return redirect()->route('login')
-                ->withErrors(['email' => 'Your account has been suspended. Please contact support.']);
-        }
-
-        return match (true) {
-            $user->hasRole('admin')  => redirect()->route('admin.dashboard'),
-            $user->hasRole('mentor') => redirect()->route('mentor.dashboard'),
-            default                  => redirect()->route('student.dashboard'),
-        };
+        return $this->redirectAfterAuth($user);
     }
 
     public function logout(Request $request): RedirectResponse
@@ -90,116 +114,103 @@ class AuthController extends Controller
 
     public function register(RegisterRequest $request): RedirectResponse
     {
-        DB::transaction(function () use ($request) {
-            $user = User::create([
-                'name'     => $request->name,
-                'email'    => $request->email,
-                'password' => Hash::make($request->password),
+        $validated = $request->validated();
+
+        Log::info('Registration request received.', [
+            'email' => $validated['email'] ?? null,
+            'role' => $validated['role'] ?? null,
+            'program_level' => $validated['program_level'] ?? null,
+            'institution' => $validated['institution'] ?? null,
+            'session_id_before_login' => $request->session()->getId(),
+        ]);
+
+        try {
+            $user = $this->authService->register($validated);
+
+            Log::info('Registration user created.', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'is_active' => $user->is_active,
+                'roles' => $user->getRoleNames()->values()->all(),
             ]);
-
-            // Assign Spatie role from form selection (student or mentor)
-            $role = in_array($request->role, ['student', 'mentor']) ? $request->role : 'student';
-            $user->assignRole($role);
-
-            // Create credit wallet for all users
-            DB::table('user_credits')->insert([
-                'user_id'    => $user->id,
-                'balance'    => 0,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // Create user settings with defaults
-            DB::table('user_settings')->insert([
-                'user_id'             => $user->id,
-                'theme'               => 'light',
-                'email_notifications' => true,
-                'sms_notifications'   => false,
-                'created_at'          => now(),
-                'updated_at'          => now(),
-            ]);
-
-            // If registering as mentor, create pending mentor profile
-            if ($role === 'mentor') {
-                $mentorType = match ($request->program_level) {
-                    'undergrad', 'grad' => 'graduate',
-                    default             => 'professional',
-                };
-
-                DB::table('mentors')->insert([
-                    'user_id'              => $user->id,
-                    'mentor_type'          => $mentorType,
-                    'grad_school_display'  => $request->institution,
-                    'status'               => 'pending',   // admin must approve
-                    'created_at'           => now(),
-                    'updated_at'           => now(),
-                ]);
-            }
 
             Auth::login($user);
-        });
 
-        // Route based on role
-        $user = Auth::user();
+            Log::info('Registration user logged in.', [
+                'user_id' => $user->id,
+                'auth_check' => Auth::check(),
+                'auth_user_id' => Auth::id(),
+            ]);
 
-        if ($user->hasRole('mentor')) {
-            return redirect()->route('login')
-                ->with('success', 'Mentor application submitted! You will be notified once approved.');
+            $request->session()->regenerate();
+
+            Log::info('Registration session regenerated.', [
+                'user_id' => $user->id,
+                'session_id_after_login' => $request->session()->getId(),
+            ]);
+
+            $redirect = $this->redirectAfterAuth($user);
+
+            Log::info('Registration redirect resolved.', [
+                'user_id' => $user->id,
+                'target_url' => $redirect->getTargetUrl(),
+            ]);
+
+            return $redirect->with('success', 'Welcome to Grads Path!');
+        } catch (Throwable $exception) {
+            Log::error('Registration failed.', [
+                'email' => $validated['email'] ?? null,
+                'role' => $validated['role'] ?? null,
+                'message' => $exception->getMessage(),
+                'exception' => get_class($exception),
+            ]);
+
+            throw $exception;
         }
-
-        return redirect()->route('discovery.dashboard')
-            ->with('success', 'Welcome to Grads Path!');
     }
 
     // ── Password Reset ───────────────────────────────────────────────────────
 
     public function sendResetLink(ForgotPasswordRequest $request): RedirectResponse
     {
-        // Generate a token and store it in our custom password_resets table
-        $token = Str::random(64);
+        $status = Password::sendResetLink($request->only('email'));
 
-        DB::table('password_resets')->updateOrInsert(
-            ['email' => $request->email],
-            [
-                'token'      => Hash::make($token),
-                'expires_at' => now()->addHours(24),
-                'created_at' => now(),
-            ]
-        );
+        if ($status !== Password::RESET_LINK_SENT) {
+            return back()->withErrors(['email' => __($status)]);
+        }
 
-        // TODO: Dispatch SendPasswordResetEmailJob with $token
-        // Mail::to($request->email)->queue(new PasswordResetMail($token));
-
-        return back()->with('status', 'If that email exists, a reset link has been sent.');
+        return back()->with('status', __($status));
     }
 
     public function resetPassword(ResetPasswordRequest $request): RedirectResponse
     {
-        $record = DB::table('password_resets')
-            ->where('email', $request->email)
-            ->first();
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function (User $user, string $password): void {
+                $user->forceFill([
+                    'password' => Hash::make($password),
+                ])->setRememberToken(Str::random(60));
 
-        if (!$record) {
-            return back()->withErrors(['token' => 'Invalid or expired reset link.']);
+                $user->save();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            return back()->withErrors(['email' => __($status)]);
         }
-
-        if (!Hash::check($request->token, $record->token)) {
-            return back()->withErrors(['token' => 'Invalid reset token.']);
-        }
-
-        if (now()->isAfter($record->expires_at)) {
-            DB::table('password_resets')->where('email', $request->email)->delete();
-            return back()->withErrors(['token' => 'This reset link has expired. Please request a new one.']);
-        }
-
-        // Update password
-        User::where('email', $request->email)
-            ->update(['password' => Hash::make($request->password)]);
-
-        // Delete used token
-        DB::table('password_resets')->where('email', $request->email)->delete();
 
         return redirect()->route('login')
             ->with('success', 'Password reset successfully. Please sign in.');
+    }
+
+    private function redirectAfterAuth(User $user): RedirectResponse
+    {
+        return match (true) {
+            $user->hasRole('admin') => redirect()->route('admin.dashboard'),
+            $user->hasRole('mentor') => redirect()->route('mentor.dashboard'),
+            default => redirect()->route('student.dashboard'),
+        };
     }
 }

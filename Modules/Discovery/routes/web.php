@@ -1,17 +1,22 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Discovery\app\Http\Controllers\Student\DashboardController;
+use Modules\Discovery\app\Http\Controllers\Student\MentorSearchController;
 
-// Mentor Dashboard
-Route::get('/mentor/dashboard', function () {
-    return view('discovery::mentor.dashboard');
-})->name('mentor.dashboard')->middleware('auth');
+Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
+    Route::get('/mentor/dashboard', function () {
+        return view('discovery::mentor.dashboard');
+    })->name('mentor.dashboard');
+});
 
-// Student pages
-Route::get('/student/dashboard', function () {
-    return view('discovery::student.dashboard');
-})->name('student.dashboard');
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::view('/dashboard', 'discovery::admin.admin')->name('dashboard');
+});
 
-Route::get('/student/explore', function () {
-    return view('discovery::student.explore');
-})->name('student.explore')->middleware('auth');
+Route::middleware(['web', 'auth', 'active', 'role:student|mentor|admin'])->group(function () {
+    Route::get('/student/dashboard', [DashboardController::class, 'index'])->name('student.dashboard');
+    Route::get('/student/explore', [MentorSearchController::class, 'index'])->name('student.explore');
+    Route::get('/student/mentors', [MentorSearchController::class, 'index'])->name('student.mentors.index');
+    Route::get('/student/mentors/{id}', [MentorSearchController::class, 'show'])->name('student.mentors.show');
+});

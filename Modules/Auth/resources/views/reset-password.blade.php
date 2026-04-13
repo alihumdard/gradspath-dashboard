@@ -13,7 +13,7 @@
           <h1>Reset Password</h1>
           <p>Enter your new password</p>
 
-          <form method="POST" action="{{ route('auth.password.update') }}" class="login-form">
+          <form method="POST" action="{{ route('password.update') }}" class="login-form">
             @csrf
             <input type="hidden" name="token" value="{{ $token }}">
             

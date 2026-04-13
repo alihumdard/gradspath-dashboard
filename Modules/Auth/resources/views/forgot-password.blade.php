@@ -13,7 +13,7 @@
           <h1>Forgot Password?</h1>
           <p>Enter your email to receive a password reset link</p>
 
-          <form method="POST" action="{{ route('auth.password.email') }}" class="login-form">
+          <form method="POST" action="{{ route('password.email') }}" class="login-form">
             @csrf
             
             <div class="form-group">

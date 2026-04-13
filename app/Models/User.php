@@ -14,6 +14,8 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasRoles;
 
+    protected string $guard_name = 'web';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -48,5 +50,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    protected function getDefaultGuardName(): string
+    {
+        return $this->guard_name;
     }
 }

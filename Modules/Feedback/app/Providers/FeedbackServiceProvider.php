@@ -2,7 +2,10 @@
 
 namespace Modules\Feedback\app\Providers;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Modules\Feedback\app\Events\FeedbackSubmitted;
+use Modules\Feedback\app\Listeners\UpdateMentorRatingListener;
 
 class FeedbackServiceProvider extends ServiceProvider
 {
@@ -14,6 +17,8 @@ class FeedbackServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__ . '/../../resources/views', $this->moduleNameLower);
         $this->loadRoutesFrom(__DIR__ . '/../../routes/web.php');
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
+
+        Event::listen(FeedbackSubmitted::class, UpdateMentorRatingListener::class);
     }
 
     public function register(): void

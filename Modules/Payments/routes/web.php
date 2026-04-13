@@ -1,11 +1,24 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Payments\app\Http\Controllers\Admin\ManualActionsController;
+use Modules\Payments\app\Http\Controllers\Admin\ServicesController;
+use Modules\Payments\app\Http\Controllers\Payments\StripeWebhookController;
+use Modules\Payments\app\Http\Controllers\Student\CreditsController;
 
-/*
-|--------------------------------------------------------------------------
-| Payments Module — Web Routes
-|--------------------------------------------------------------------------
-*/
+Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
+	Route::get('/student/store', [CreditsController::class, 'index'])->name('student.store');
+	Route::get('/student/credits/balance', [CreditsController::class, 'balance'])->name('student.credits.balance');
+	Route::post('/student/store/purchase', [CreditsController::class, 'purchase'])->name('student.store.purchase');
+});
 
-// Add payment routes here
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');
+
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+	Route::get('/services', [ServicesController::class, 'index'])->name('services.index');
+	Route::post('/services', [ServicesController::class, 'store'])->name('services.store');
+	Route::patch('/services/{id}', [ServicesController::class, 'update'])->name('services.update');
+
+	Route::post('/manual/credits/adjust', [ManualActionsController::class, 'adjustCredits'])->name('manual.credits.adjust');
+	Route::post('/manual/mentors/amend', [ManualActionsController::class, 'amendMentor'])->name('manual.mentors.amend');
+});
