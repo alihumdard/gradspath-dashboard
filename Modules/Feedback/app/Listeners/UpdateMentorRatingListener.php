@@ -7,9 +7,7 @@ use Modules\Feedback\app\Services\RatingAggregationService;
 
 class UpdateMentorRatingListener
 {
-    public function __construct(private readonly RatingAggregationService $ratings)
-    {
-    }
+    public function __construct(private readonly RatingAggregationService $ratings) {}
 
     public function handle(FeedbackSubmitted $event): void
     {

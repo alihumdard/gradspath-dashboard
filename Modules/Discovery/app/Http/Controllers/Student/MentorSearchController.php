@@ -10,9 +10,7 @@ use Modules\Settings\app\Models\Mentor;
 
 class MentorSearchController extends Controller
 {
-    public function __construct(private readonly MentorDiscoveryService $discovery)
-    {
-    }
+    public function __construct(private readonly MentorDiscoveryService $discovery) {}
 
     public function index(SearchMentorsRequest $request): View
     {

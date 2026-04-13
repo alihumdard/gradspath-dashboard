@@ -13,8 +13,7 @@ class DashboardController extends Controller
     public function __construct(
         private readonly MentorDiscoveryService $discovery,
         private readonly CreditService $credits
-    ) {
-    }
+    ) {}
 
     public function index(): View
     {

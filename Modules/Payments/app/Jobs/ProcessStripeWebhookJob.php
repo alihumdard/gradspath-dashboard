@@ -10,9 +10,7 @@ class ProcessStripeWebhookJob implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public array $payload)
-    {
-    }
+    public function __construct(public array $payload) {}
 
     public function handle(StripeWebhookService $webhooks): void
     {

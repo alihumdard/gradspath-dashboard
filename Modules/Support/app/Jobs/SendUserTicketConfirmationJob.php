@@ -10,9 +10,7 @@ class SendUserTicketConfirmationJob implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public int $ticketId)
-    {
-    }
+    public function __construct(public int $ticketId) {}
 
     public function handle(): void
     {

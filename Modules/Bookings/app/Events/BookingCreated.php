@@ -13,7 +13,5 @@ class BookingCreated
     use InteractsWithSockets;
     use SerializesModels;
 
-    public function __construct(public Booking $booking)
-    {
-    }
+    public function __construct(public Booking $booking) {}
 }

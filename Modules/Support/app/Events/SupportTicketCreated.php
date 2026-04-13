@@ -13,7 +13,5 @@ class SupportTicketCreated
     use InteractsWithSockets;
     use SerializesModels;
 
-    public function __construct(public SupportTicket $ticket)
-    {
-    }
+    public function __construct(public SupportTicket $ticket) {}
 }

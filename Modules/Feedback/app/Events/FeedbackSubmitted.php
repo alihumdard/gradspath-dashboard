@@ -13,7 +13,5 @@ class FeedbackSubmitted
     use InteractsWithSockets;
     use SerializesModels;
 
-    public function __construct(public Feedback $feedback)
-    {
-    }
+    public function __construct(public Feedback $feedback) {}
 }

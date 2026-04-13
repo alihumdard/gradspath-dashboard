@@ -13,9 +13,7 @@ use Modules\Support\app\Services\SupportTicketService;
 
 class TicketsController extends Controller
 {
-    public function __construct(private readonly SupportTicketService $tickets)
-    {
-    }
+    public function __construct(private readonly SupportTicketService $tickets) {}
 
     public function index(Request $request): View
     {

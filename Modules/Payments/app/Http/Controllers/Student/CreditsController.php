@@ -11,9 +11,7 @@ use Modules\Payments\app\Services\CreditService;
 
 class CreditsController extends Controller
 {
-    public function __construct(private readonly CreditService $credits)
-    {
-    }
+    public function __construct(private readonly CreditService $credits) {}
 
     public function index(): View
     {

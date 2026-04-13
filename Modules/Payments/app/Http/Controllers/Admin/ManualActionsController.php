@@ -16,8 +16,7 @@ class ManualActionsController extends Controller
     public function __construct(
         private readonly CreditService $credits,
         private readonly AdminAuditService $audit
-    ) {
-    }
+    ) {}
 
     public function adjustCredits(Request $request): RedirectResponse
     {

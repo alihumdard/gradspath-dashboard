@@ -11,9 +11,7 @@ class SendBookingConfirmationJob implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public int $bookingId)
-    {
-    }
+    public function __construct(public int $bookingId) {}
 
     public function handle(): void
     {

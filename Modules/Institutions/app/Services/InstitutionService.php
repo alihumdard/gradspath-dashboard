@@ -13,9 +13,9 @@ class InstitutionService
             ->where('is_active', true)
             ->when(
                 $filters['tier'] ?? null,
-                fn ($q, $tier) => $q->whereHas(
+                fn($q, $tier) => $q->whereHas(
                     'programs',
-                    fn ($programs) => $programs
+                    fn($programs) => $programs
                         ->where('is_active', true)
                         ->where('tier', $tier)
                 )

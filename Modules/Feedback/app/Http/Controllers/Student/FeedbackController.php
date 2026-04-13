@@ -13,9 +13,7 @@ use Modules\Feedback\app\Services\FeedbackService;
 
 class FeedbackController extends Controller
 {
-    public function __construct(private readonly FeedbackService $feedback)
-    {
-    }
+    public function __construct(private readonly FeedbackService $feedback) {}
 
     public function index(Request $request): View
     {

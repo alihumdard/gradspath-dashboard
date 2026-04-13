@@ -1452,7 +1452,8 @@ if (
     });
 
     newInstitutionBtn.addEventListener("click", () => {
-        const newId = Math.max(...demo14Institutions.map((item) => item.id), 0) + 1;
+        const newId =
+            Math.max(...demo14Institutions.map((item) => item.id), 0) + 1;
         const newInstitution = {
             id: newId,
             name: `New Institution ${newId}`,
@@ -1501,7 +1502,12 @@ function renderProgramFilterPreview() {
 }
 
 function renderProgramForm() {
-    if (!programName || !programCategory || !programDescription || !programSummary) {
+    if (
+        !programName ||
+        !programCategory ||
+        !programDescription ||
+        !programSummary
+    ) {
         return;
     }
 
@@ -1535,51 +1541,51 @@ if (programSelect) {
 
 if (saveProgramBtn) {
     saveProgramBtn.addEventListener("click", () => {
-    const program = getSelectedProgram();
-    if (!program) return;
+        const program = getSelectedProgram();
+        if (!program) return;
 
-    program.name = programName.value.trim();
-    program.category = programCategory.value.trim();
-    program.description = programDescription.value.trim();
+        program.name = programName.value.trim();
+        program.category = programCategory.value.trim();
+        program.description = programDescription.value.trim();
 
-    refreshFeedbackFromMentors();
+        refreshFeedbackFromMentors();
 
-    populateProgramSelect();
-    renderProgramFilterPreview();
-    renderProgramForm();
-    renderMentorForm();
-    renderInstitutionForm(
-        institutionMentorSearch ? institutionMentorSearch.value : "",
-    );
-    populateMentorSelect();
-    populateFeedbackSelect();
+        populateProgramSelect();
+        renderProgramFilterPreview();
+        renderProgramForm();
+        renderMentorForm();
+        renderInstitutionForm(
+            institutionMentorSearch ? institutionMentorSearch.value : "",
+        );
+        populateMentorSelect();
+        populateFeedbackSelect();
 
-    demo14Log(
-        `Saved program <strong>${program.name}</strong>. It now appears in filters across Grads Paths.`,
-    );
+        demo14Log(
+            `Saved program <strong>${program.name}</strong>. It now appears in filters across Grads Paths.`,
+        );
     });
 }
 
 if (newProgramBtn) {
     newProgramBtn.addEventListener("click", () => {
-    const newId = Math.max(...demo14Programs.map((item) => item.id), 0) + 1;
-    const newProgram = {
-        id: newId,
-        name: `New Program ${newId}`,
-        category: "General",
-        description: "New program description",
-    };
+        const newId = Math.max(...demo14Programs.map((item) => item.id), 0) + 1;
+        const newProgram = {
+            id: newId,
+            name: `New Program ${newId}`,
+            category: "General",
+            description: "New program description",
+        };
 
-    demo14Programs.push(newProgram);
-    populateProgramSelect();
-    programSelect.value = String(newId);
-    renderProgramFilterPreview();
-    renderProgramForm();
-    renderMentorProgramPicker([]);
-    renderInstitutionForm(
-        institutionMentorSearch ? institutionMentorSearch.value : "",
-    );
-    demo14Log(`Created <strong>${newProgram.name}</strong>.`);
+        demo14Programs.push(newProgram);
+        populateProgramSelect();
+        programSelect.value = String(newId);
+        renderProgramFilterPreview();
+        renderProgramForm();
+        renderMentorProgramPicker([]);
+        renderInstitutionForm(
+            institutionMentorSearch ? institutionMentorSearch.value : "",
+        );
+        demo14Log(`Created <strong>${newProgram.name}</strong>.`);
     });
 }
 
@@ -1645,95 +1651,95 @@ if (serviceSelect) {
 
 if (saveServiceBtn) {
     saveServiceBtn.addEventListener("click", () => {
-    const selectedService = getSelectedServiceName();
-    const newName = serviceNameInput.value.trim();
-    const newPrice = Math.max(0, Number(servicePriceInput.value || 0));
+        const selectedService = getSelectedServiceName();
+        const newName = serviceNameInput.value.trim();
+        const newPrice = Math.max(0, Number(servicePriceInput.value || 0));
 
-    if (!selectedService || !demo14ServiceMeta[selectedService]) return;
-    if (!newName) {
-        alert("Please enter a service name.");
-        return;
-    }
-
-    const oldMeta = demo14ServiceMeta[selectedService];
-    const existingServices = Object.keys(demo14ServiceMeta);
-
-    if (newName !== selectedService && existingServices.includes(newName)) {
-        alert("A service with that name already exists.");
-        return;
-    }
-
-    if (newName !== selectedService) {
-        demo14ServiceMeta[newName] = {
-            ...oldMeta,
-            label: newName,
-            previewLabel: newName,
-            originalPrice: newPrice,
-            currentPrice: newPrice,
-        };
-
-        delete demo14ServiceMeta[selectedService];
-
-        demo14Mentors.forEach((mentor) => {
-            mentor.services = mentor.services.map((service) =>
-                service === selectedService ? newName : service,
-            );
-        });
-
-        demo14Feedback.forEach((item) => {
-            if (item.serviceUsed === selectedService) {
-                item.serviceUsed = newName;
-            }
-        });
-    } else {
-        demo14ServiceMeta[selectedService].label = newName;
-        demo14ServiceMeta[selectedService].previewLabel = newName;
-        demo14ServiceMeta[selectedService].originalPrice = newPrice;
-
-        if (demo14ServiceMeta[selectedService].currentPrice > newPrice) {
-            demo14ServiceMeta[selectedService].currentPrice = newPrice;
+        if (!selectedService || !demo14ServiceMeta[selectedService]) return;
+        if (!newName) {
+            alert("Please enter a service name.");
+            return;
         }
-    }
 
-    ensureMentorServiceIntegrity();
-    refreshAllServiceUIs();
-    populateServiceSelect();
-    serviceSelect.value = newName;
-    renderServiceForm();
+        const oldMeta = demo14ServiceMeta[selectedService];
+        const existingServices = Object.keys(demo14ServiceMeta);
 
-    demo14Log(`Saved service <strong>${newName}</strong>.`);
+        if (newName !== selectedService && existingServices.includes(newName)) {
+            alert("A service with that name already exists.");
+            return;
+        }
+
+        if (newName !== selectedService) {
+            demo14ServiceMeta[newName] = {
+                ...oldMeta,
+                label: newName,
+                previewLabel: newName,
+                originalPrice: newPrice,
+                currentPrice: newPrice,
+            };
+
+            delete demo14ServiceMeta[selectedService];
+
+            demo14Mentors.forEach((mentor) => {
+                mentor.services = mentor.services.map((service) =>
+                    service === selectedService ? newName : service,
+                );
+            });
+
+            demo14Feedback.forEach((item) => {
+                if (item.serviceUsed === selectedService) {
+                    item.serviceUsed = newName;
+                }
+            });
+        } else {
+            demo14ServiceMeta[selectedService].label = newName;
+            demo14ServiceMeta[selectedService].previewLabel = newName;
+            demo14ServiceMeta[selectedService].originalPrice = newPrice;
+
+            if (demo14ServiceMeta[selectedService].currentPrice > newPrice) {
+                demo14ServiceMeta[selectedService].currentPrice = newPrice;
+            }
+        }
+
+        ensureMentorServiceIntegrity();
+        refreshAllServiceUIs();
+        populateServiceSelect();
+        serviceSelect.value = newName;
+        renderServiceForm();
+
+        demo14Log(`Saved service <strong>${newName}</strong>.`);
     });
 }
 
 if (newServiceBtn) {
     newServiceBtn.addEventListener("click", () => {
-    const baseName = "New Service";
-    let counter = 1;
-    let newName = `${baseName} ${counter}`;
+        const baseName = "New Service";
+        let counter = 1;
+        let newName = `${baseName} ${counter}`;
 
-    while (demo14ServiceMeta[newName]) {
-        counter += 1;
-        newName = `${baseName} ${counter}`;
-    }
+        while (demo14ServiceMeta[newName]) {
+            counter += 1;
+            newName = `${baseName} ${counter}`;
+        }
 
-    demo14ServiceMeta[newName] = {
-        label: newName,
-        previewLabel: newName,
-        originalPrice: 100,
-        currentPrice: 100,
-        icon: `
+        demo14ServiceMeta[newName] = {
+            label: newName,
+            previewLabel: newName,
+            originalPrice: 100,
+            currentPrice: 100,
+            icon: `
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M12 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1Z"/>
       </svg>
     `,
-    };
+        };
 
-    refreshAllServiceUIs();
-    populateServiceSelect();
-    serviceSelect.value = newName;
-    renderServiceForm();
+        refreshAllServiceUIs();
+        populateServiceSelect();
+        serviceSelect.value = newName;
+        renderServiceForm();
 
-    demo14Log(`Created <strong>${newName}</strong>.`);
+        demo14Log(`Created <strong>${newName}</strong>.`);
     });
 }
 

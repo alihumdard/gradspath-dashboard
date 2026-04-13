@@ -42,11 +42,13 @@ class StoreServiceRequest extends FormRequest
                 $validator->errors()->add('available_session_types', 'Select at least one session type or enable Office Hours.');
             }
 
-            foreach ([
-                '1on1' => ['price' => 'price_1on1', 'credit' => 'credit_cost_1on1'],
-                '1on3' => ['price' => 'price_1on3_per_person', 'credit' => 'credit_cost_1on3'],
-                '1on5' => ['price' => 'price_1on5_per_person', 'credit' => 'credit_cost_1on5'],
-            ] as $sessionType => $fields) {
+            foreach (
+                [
+                    '1on1' => ['price' => 'price_1on1', 'credit' => 'credit_cost_1on1'],
+                    '1on3' => ['price' => 'price_1on3_per_person', 'credit' => 'credit_cost_1on3'],
+                    '1on5' => ['price' => 'price_1on5_per_person', 'credit' => 'credit_cost_1on5'],
+                ] as $sessionType => $fields
+            ) {
                 if (! $sessionTypes->contains($sessionType)) {
                     continue;
                 }

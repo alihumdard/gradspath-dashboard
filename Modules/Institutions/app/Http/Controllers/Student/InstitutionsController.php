@@ -10,9 +10,7 @@ use Modules\Institutions\app\Services\InstitutionService;
 
 class InstitutionsController extends Controller
 {
-    public function __construct(private readonly InstitutionService $institutions)
-    {
-    }
+    public function __construct(private readonly InstitutionService $institutions) {}
 
     public function index(FilterUniversitiesRequest $request): View
     {

@@ -8,9 +8,7 @@ use Modules\Payments\app\Models\StripeWebhook;
 
 class StripeWebhookService
 {
-    public function __construct(private readonly CreditService $creditService)
-    {
-    }
+    public function __construct(private readonly CreditService $creditService) {}
 
     public function process(array $payload): StripeWebhook
     {
