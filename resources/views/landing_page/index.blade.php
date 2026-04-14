@@ -1,7 +1,8 @@
 @php
   $authModal = $authModal ?? null;
+  $submittedAuthContext = old('auth_context');
   $registerOldInput = old('role') || old('program_level') || old('institution') || old('name');
-  $activeAuthModal = $authModal ?: ($errors->any() ? ($registerOldInput ? 'signup' : 'login') : null);
+  $activeAuthModal = $authModal ?: ($errors->any() ? ($submittedAuthContext === 'signup' || $registerOldInput ? 'signup' : 'login') : null);
 @endphp
 <!doctype html>
 <html lang="en" class="scroll-smooth dark">

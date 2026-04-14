@@ -1,5 +1,16 @@
-@extends('layouts.app')
+@extends('layouts.portal-student')
+
 @section('title', 'Institution - Grads Paths')
-@section('css')<link rel="stylesheet" href="{{ asset('assets/css/demo3a.css') }}" />@endsection
-@section('content')<div class="app-shell"><main class="main-content"><h1>{{ $institution['name'] ?? 'Institution' }}</h1><p>Mentors from this institution</p></main></div>@endsection
-@section('js')<script src="{{ asset('assets/js/demo3a.js') }}"></script>@endsection
+@section('portal_css_asset', 'assets/css/demo3a.css')
+@section('portal_js_asset', 'assets/js/demo3a.js')
+@section('portal_active_nav', 'institutions')
+
+@section('portal_content')
+  <div class="page-wrap">
+    <div class="top-bar">
+      <h1>{{ $institution['name'] ?? 'Institution' }}</h1>
+    </div>
+
+    <p class="intro-text">Mentors from this institution</p>
+  </div>
+@endsection

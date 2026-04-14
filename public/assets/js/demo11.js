@@ -1,8 +1,11 @@
-const body = document.body;
+﻿const body = document.body;
 const themeToggle = document.getElementById("themeToggle");
 const userHasOfficeHoursCredits = false;
+const bookingPageDataEl = document.getElementById("bookingPageData");
+const bookingPageData = bookingPageDataEl
+  ? JSON.parse(bookingPageDataEl.textContent)
+  : null;
 
-// Theme logic (consistent with demo1)
 (function initTheme() {
   const savedTheme = localStorage.getItem("theme") || "light";
   body.setAttribute("data-theme", savedTheme);
@@ -11,13 +14,13 @@ const userHasOfficeHoursCredits = false;
 if (themeToggle) {
   themeToggle.addEventListener("click", () => {
     const currentTheme = body.getAttribute("data-theme") || "light";
-    const newTheme = currentTheme === "light" ? "dark" : "light";
-    body.setAttribute("data-theme", newTheme);
-    localStorage.setItem("theme", newTheme);
+    const nextTheme = currentTheme === "light" ? "dark" : "light";
+    body.setAttribute("data-theme", nextTheme);
+    localStorage.setItem("theme", nextTheme);
   });
 }
 
-const services = [
+const fallbackServices = [
   {
     id: "free-consultation",
     name: "Free Consultation",
@@ -37,62 +40,10 @@ const services = [
     desc: "High-performance preparation for the GMAT, GRE, LSAT, and therapy licensing exams with current graduate mentors.",
     prices: {
       1: { label: "$70.00", total: "$70.00" },
-      3: { label: "$188.98 total · $62.99 each", total: "$188.98 total" },
-      5: { label: "$279.97 total · $55.99 each", total: "$279.97 total" },
+      3: { label: "$188.98 total - $62.99 each", total: "$188.98 total" },
+      5: { label: "$279.97 total - $55.99 each", total: "$279.97 total" },
     },
     allowedSizes: [1, 3, 5],
-    defaultSize: 1,
-    isOfficeHours: false,
-  },
-  {
-    id: "program-insights",
-    name: "Program Insights",
-    duration: "60 min",
-    desc: "Learn what programs are really like from current graduate students and get firsthand insight into culture, academics, and opportunities.",
-    prices: {
-      1: { label: "$65.00", total: "$65.00" },
-      3: { label: "$175.48 total · $58.49 each", total: "$175.48 total" },
-      5: { label: "$259.97 total · $51.99 each", total: "$259.97 total" },
-    },
-    allowedSizes: [1, 3, 5],
-    defaultSize: 1,
-    isOfficeHours: false,
-  },
-  {
-    id: "interview-prep",
-    name: "Interview Prep",
-    duration: "60 min",
-    desc: "Prepare for graduate school and career interviews through mock practice, structured feedback, and strategy.",
-    prices: {
-      1: { label: "$65.00", total: "$65.00" },
-      3: { label: "$175.48 total · $58.49 each", total: "$175.48 total" },
-      5: { label: "$259.97 total · $51.99 each", total: "$259.97 total" },
-    },
-    allowedSizes: [1, 3, 5],
-    defaultSize: 1,
-    isOfficeHours: false,
-  },
-  {
-    id: "application-review",
-    name: "Application Review",
-    duration: "60 min",
-    desc: "Receive detailed feedback on essays, resumes, and application materials from current graduate students.",
-    prices: {
-      1: { label: "$60.00", total: "$60.00" },
-    },
-    allowedSizes: [1],
-    defaultSize: 1,
-    isOfficeHours: false,
-  },
-  {
-    id: "gap-year-planning",
-    name: "Gap Year Planning",
-    duration: "60 min",
-    desc: "Design a purposeful year focused on research, service, or professional experience to strengthen your next application cycle.",
-    prices: {
-      1: { label: "$50.00", total: "$50.00" },
-    },
-    allowedSizes: [1],
     defaultSize: 1,
     isOfficeHours: false,
   },
@@ -110,17 +61,33 @@ const services = [
   },
 ];
 
-const selectedMentorOfficeHours = {
+const fallbackOfficeHours = {
   mentorName: "Daniel Ross",
-  mentorMeta: "Law • Yale Law School",
+  mentorMeta: "Law / Yale Law School",
   weeklyService: "Program Insights",
-  recurringDay: "Wednesday",
-  recurringTime: "7:00 PM",
+  recurringTime: "Wednesdays at 7:00 PM",
   spotsFilled: 2,
   maxSpots: 3,
   meetingType: "Small Group Office Hours",
   soloFallbackAllowed: true,
 };
+
+const mentorData = bookingPageData?.mentor || {
+  name: "Daniel Ross",
+  initials: "DR",
+  meta: "Law / Yale Law School",
+  description:
+    "I help with law school applications, personal statements, and 1L transition advice.",
+  rating: "5.0",
+};
+
+const services =
+  Array.isArray(bookingPageData?.services) && bookingPageData.services.length > 0
+    ? bookingPageData.services
+    : fallbackServices;
+
+const selectedMentorOfficeHours =
+  bookingPageData?.officeHours || fallbackOfficeHours;
 
 const schedule = {
   "2026-03-11": ["10:00 AM", "11:30 AM", "1:00 PM", "4:30 PM"],
@@ -133,7 +100,8 @@ const schedule = {
 };
 
 const state = {
-  selectedServiceId: "tutoring",
+  selectedServiceId:
+    bookingPageData?.selectedServiceId || services[0]?.id || "tutoring",
   meetingSize: 1,
   selectedDate: null,
   selectedTime: null,
@@ -151,21 +119,11 @@ const creditNote = document.getElementById("creditNote");
 const officeHoursPanel = document.getElementById("officeHoursPanel");
 const officeHoursMentorName = document.getElementById("officeHoursMentorName");
 const officeHoursMentorMeta = document.getElementById("officeHoursMentorMeta");
-const officeHoursCapacityPill = document.getElementById(
-  "officeHoursCapacityPill",
-);
-const officeHoursWeeklyService = document.getElementById(
-  "officeHoursWeeklyService",
-);
-const officeHoursRecurringTime = document.getElementById(
-  "officeHoursRecurringTime",
-);
-const officeHoursMeetingType = document.getElementById(
-  "officeHoursMeetingType",
-);
-const officeHoursAvailability = document.getElementById(
-  "officeHoursAvailability",
-);
+const officeHoursCapacityPill = document.getElementById("officeHoursCapacityPill");
+const officeHoursWeeklyService = document.getElementById("officeHoursWeeklyService");
+const officeHoursRecurringTime = document.getElementById("officeHoursRecurringTime");
+const officeHoursMeetingType = document.getElementById("officeHoursMeetingType");
+const officeHoursAvailability = document.getElementById("officeHoursAvailability");
 const officeHoursNote = document.getElementById("officeHoursNote");
 const selectionCard = document.getElementById("selectionCard");
 
@@ -173,6 +131,12 @@ const calendarGrid = document.getElementById("calendarGrid");
 const timeGrid = document.getElementById("timeGrid");
 const selectedDateLabel = document.getElementById("selectedDateLabel");
 
+const mentorInitials = document.getElementById("mentorInitials");
+const mentorDisplayName = document.getElementById("mentorDisplayName");
+const mentorDisplayMeta = document.getElementById("mentorDisplayMeta");
+const mentorDisplayRating = document.getElementById("mentorDisplayRating");
+const mentorDescription = document.getElementById("mentorDescription");
+const summaryMentor = document.getElementById("summaryMentor");
 const summaryService = document.getElementById("summaryService");
 const summaryDuration = document.getElementById("summaryDuration");
 const summaryMeetingSize = document.getElementById("summaryMeetingSize");
@@ -183,17 +147,29 @@ const continueBtn = document.getElementById("continueBtn");
 
 const creditModal = document.getElementById("creditModal");
 const closeCreditModal = document.getElementById("closeCreditModal");
-const officeHoursModalPanel = creditModal.querySelector(
+const officeHoursModalPanel = creditModal?.querySelector(
   ".office-hours-modal-panel",
 );
 
 const storeModal = document.getElementById("storeModal");
 const openStoreBtn = document.getElementById("openStoreBtn");
 const closeStoreModal = document.getElementById("closeStoreModal");
-const storeModalPanel = storeModal.querySelector(".store-modal-panel-inner");
+const storeModalPanel = storeModal?.querySelector(".store-modal-panel-inner");
 
 function getServiceById(id) {
   return services.find((service) => service.id === id);
+}
+
+function hydrateMentorDetails() {
+  if (mentorInitials) mentorInitials.textContent = mentorData.initials || "M";
+  if (mentorDisplayName) mentorDisplayName.textContent = mentorData.name || "Mentor";
+  if (mentorDisplayMeta) mentorDisplayMeta.textContent = mentorData.meta || "Mentor";
+  if (mentorDisplayRating) mentorDisplayRating.textContent = mentorData.rating || "New";
+  if (mentorDescription) {
+    mentorDescription.textContent =
+      mentorData.description || "Mentor description coming soon.";
+  }
+  if (summaryMentor) summaryMentor.textContent = mentorData.name || "Mentor";
 }
 
 function getAccentClass(index) {
@@ -252,12 +228,40 @@ function getServiceIcon(serviceId) {
   return icons[serviceId] || icons.tutoring;
 }
 
+function ensureSelectedMeetingSize(service) {
+  if (!service) {
+    state.meetingSize = 1;
+    return;
+  }
+
+  if (service.isOfficeHours) {
+    state.meetingSize = 1;
+    return;
+  }
+
+  if (!service.allowedSizes.includes(state.meetingSize)) {
+    state.meetingSize = service.defaultSize || service.allowedSizes[0] || 1;
+  }
+}
+
 function renderServices() {
   serviceGrid.innerHTML = "";
 
+  if (!services.length) {
+    serviceGrid.innerHTML = `
+      <div class="service-card active">
+        <div class="service-heading">
+          <h4>No services available yet</h4>
+        </div>
+        <p class="service-desc">This mentor has not published booking services yet.</p>
+      </div>
+    `;
+    return;
+  }
+
   services.forEach((service, index) => {
     const isActive = service.id === state.selectedServiceId;
-    const defaultPrice = service.prices[service.defaultSize]?.label || "";
+    const defaultPrice = service.prices?.[service.defaultSize]?.label || "";
     const accentClass = getAccentClass(index);
 
     const card = document.createElement("button");
@@ -285,7 +289,7 @@ function renderServices() {
 
     card.addEventListener("click", () => {
       state.selectedServiceId = service.id;
-      state.meetingSize = service.defaultSize;
+      state.meetingSize = service.defaultSize || 1;
       renderServices();
       renderMeetingSizes();
       renderGroupFields();
@@ -301,6 +305,18 @@ function renderServices() {
 function renderMeetingSizes() {
   const service = getServiceById(state.selectedServiceId);
   meetingSizeGrid.innerHTML = "";
+
+  if (!service) {
+    meetingSection.hidden = true;
+    creditNote.hidden = true;
+    specialRequestNote.hidden = true;
+    groupFields.hidden = true;
+    officeHoursPanel.hidden = true;
+    selectionCard.classList.remove("office-hours-active");
+    return;
+  }
+
+  ensureSelectedMeetingSize(service);
 
   if (service.isOfficeHours) {
     meetingSection.hidden = true;
@@ -331,11 +347,10 @@ function renderMeetingSizes() {
     card.className = `meeting-size-card ${state.meetingSize === size ? "active" : ""}`;
 
     let subtext = "Standard booking";
-    if (size === 3 || size === 5) {
-      subtext = `Special request · ${priceInfo.label}`;
-    }
     if (size === 1) {
       subtext = priceInfo.label;
+    } else if (size === 3 || size === 5) {
+      subtext = `Special request - ${priceInfo.label}`;
     }
 
     card.innerHTML = `
@@ -363,7 +378,7 @@ function renderGroupFields() {
   const service = getServiceById(state.selectedServiceId);
   groupFormGrid.innerHTML = "";
 
-  if (service.isOfficeHours || state.meetingSize === 1) {
+  if (!service || service.isOfficeHours || state.meetingSize === 1) {
     groupFields.hidden = true;
     return;
   }
@@ -381,7 +396,7 @@ function renderGroupFields() {
 
   groupFormGrid.appendChild(payerField);
 
-  for (let i = 1; i <= state.meetingSize; i++) {
+  for (let i = 1; i <= state.meetingSize; i += 1) {
     const row = document.createElement("div");
     row.className = "applicant-row";
 
@@ -404,7 +419,7 @@ function renderGroupFields() {
 function renderOfficeHoursPanel() {
   const service = getServiceById(state.selectedServiceId);
 
-  if (!service.isOfficeHours) {
+  if (!service || !service.isOfficeHours) {
     officeHoursPanel.hidden = true;
     selectionCard.classList.remove("office-hours-active");
     return;
@@ -413,16 +428,16 @@ function renderOfficeHoursPanel() {
   officeHoursPanel.hidden = false;
   selectionCard.classList.add("office-hours-active");
 
-  const remaining =
-    selectedMentorOfficeHours.maxSpots - selectedMentorOfficeHours.spotsFilled;
+  const filled = Number(selectedMentorOfficeHours.spotsFilled || 0);
+  const maxSpots = Number(selectedMentorOfficeHours.maxSpots || 3);
+  const remaining = Math.max(maxSpots - filled, 0);
 
   officeHoursMentorName.textContent = selectedMentorOfficeHours.mentorName;
   officeHoursMentorMeta.textContent = selectedMentorOfficeHours.mentorMeta;
-  officeHoursWeeklyService.textContent =
-    selectedMentorOfficeHours.weeklyService;
-  officeHoursRecurringTime.textContent = `${selectedMentorOfficeHours.recurringDay}s at ${selectedMentorOfficeHours.recurringTime}`;
+  officeHoursWeeklyService.textContent = selectedMentorOfficeHours.weeklyService;
+  officeHoursRecurringTime.textContent = selectedMentorOfficeHours.recurringTime;
   officeHoursMeetingType.textContent = selectedMentorOfficeHours.meetingType;
-  officeHoursCapacityPill.textContent = `${selectedMentorOfficeHours.spotsFilled}/${selectedMentorOfficeHours.maxSpots} spots filled`;
+  officeHoursCapacityPill.textContent = `${filled}/${maxSpots} spots filled`;
 
   if (remaining <= 0) {
     officeHoursAvailability.textContent = "Currently full";
@@ -432,17 +447,14 @@ function renderOfficeHoursPanel() {
     officeHoursAvailability.textContent = `${remaining} spots remaining`;
   }
 
-  if (
-    selectedMentorOfficeHours.spotsFilled === 1 &&
-    selectedMentorOfficeHours.soloFallbackAllowed
-  ) {
+  if (filled === 1 && selectedMentorOfficeHours.soloFallbackAllowed) {
     officeHoursNote.innerHTML = `
-      This week’s office hours for this mentor are currently set as <strong>${selectedMentorOfficeHours.weeklyService}</strong>.
+      This week's office hours for this mentor are currently set as <strong>${selectedMentorOfficeHours.weeklyService}</strong>.
       Right now only one student is booked. If no one else joins by the cutoff, the student may request another eligible service this mentor offers.
     `;
   } else {
     officeHoursNote.innerHTML = `
-      This week’s office hours for this mentor are currently set as <strong>${selectedMentorOfficeHours.weeklyService}</strong>.
+      This week's office hours for this mentor are currently set as <strong>${selectedMentorOfficeHours.weeklyService}</strong>.
       If other students join, this is the meeting focus you are agreeing to.
       If you are the only student booked by the cutoff, you may request another eligible service this mentor offers.
     `;
@@ -454,7 +466,6 @@ function renderCalendar() {
 
   Object.keys(schedule).forEach((dateString) => {
     const date = new Date(`${dateString}T12:00:00`);
-
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = `date-card ${state.selectedDate === dateString ? "active" : ""}`;
@@ -513,6 +524,19 @@ function renderTimes() {
 
 function updateSummary() {
   const service = getServiceById(state.selectedServiceId);
+
+  if (!service) {
+    summaryService.textContent = "Not available";
+    summaryDuration.textContent = "Not available";
+    summaryMeetingSize.textContent = "Not available";
+    summaryPrice.textContent = "Not available";
+    summaryDate.textContent = state.selectedDate
+      ? formatLongDate(state.selectedDate)
+      : "Not selected";
+    summaryTime.textContent = state.selectedTime || "Not selected";
+    return;
+  }
+
   const priceInfo = service.prices[state.meetingSize] || service.prices[1];
 
   summaryService.textContent = service.name;
@@ -523,7 +547,7 @@ function updateSummary() {
     summaryPrice.textContent = "1 credit";
   } else {
     summaryMeetingSize.textContent = `1 on ${state.meetingSize}`;
-    summaryPrice.textContent = priceInfo.total;
+    summaryPrice.textContent = priceInfo?.total || priceInfo?.label || "Not available";
   }
 
   summaryDate.textContent = state.selectedDate
@@ -537,12 +561,14 @@ function updateContinue() {
 }
 
 function openModal(modal) {
+  if (!modal) return;
   modal.hidden = false;
   modal.classList.add("open");
   document.body.classList.add("modal-open");
 }
 
 function closeModal(modal) {
+  if (!modal) return;
   modal.classList.remove("open");
   modal.hidden = true;
 
@@ -552,68 +578,52 @@ function closeModal(modal) {
   }
 }
 
-// document.querySelector(".back-arrow-btn").addEventListener("click", () => {
-//   alert("Go back to previous step.");
-// });
-
-// document.querySelector(".small-back-arrow").addEventListener("click", () => {
-//   alert("Go back to mentor selection.");
-// });
-
-// document.querySelector(".back-dashboard-btn").addEventListener("click", () => {
-//   alert("Go back to dashboard.");
-// });
-
-// document.querySelector(".secondary-btn").addEventListener("click", () => {
-//   alert("Go back.");
-// });
-
-continueBtn.addEventListener("click", () => {
+continueBtn?.addEventListener("click", () => {
   const service = getServiceById(state.selectedServiceId);
+  if (!service) return;
 
   if (service.isOfficeHours && !userHasOfficeHoursCredits) {
     openModal(creditModal);
     return;
   }
 
-  // alert("Booking confirmed!");
   window.location.href = "/student/bookings";
 });
 
-closeCreditModal.addEventListener("click", (event) => {
+closeCreditModal?.addEventListener("click", (event) => {
   event.preventDefault();
   event.stopPropagation();
   closeModal(creditModal);
 });
 
-creditModal.addEventListener("click", (event) => {
-  if (!officeHoursModalPanel.contains(event.target)) {
+creditModal?.addEventListener("click", (event) => {
+  if (officeHoursModalPanel && !officeHoursModalPanel.contains(event.target)) {
     closeModal(creditModal);
   }
 });
 
-openStoreBtn.addEventListener("click", () => {
+openStoreBtn?.addEventListener("click", () => {
   openModal(storeModal);
 });
 
-closeStoreModal.addEventListener("click", (event) => {
+closeStoreModal?.addEventListener("click", (event) => {
   event.preventDefault();
   event.stopPropagation();
   closeModal(storeModal);
 });
 
-storeModal.addEventListener("click", (event) => {
-  if (!storeModalPanel.contains(event.target)) {
+storeModal?.addEventListener("click", (event) => {
+  if (storeModalPanel && !storeModalPanel.contains(event.target)) {
     closeModal(storeModal);
   }
 });
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
-    if (creditModal.classList.contains("open")) {
+    if (creditModal?.classList.contains("open")) {
       closeModal(creditModal);
     }
-    if (storeModal.classList.contains("open")) {
+    if (storeModal?.classList.contains("open")) {
       closeModal(storeModal);
     }
   }
@@ -623,26 +633,16 @@ document.querySelectorAll(".program-card").forEach((card) => {
   card.addEventListener("click", () => {
     document
       .querySelectorAll(".program-card")
-      .forEach((c) => c.classList.remove("active"));
+      .forEach((item) => item.classList.remove("active"));
     card.classList.add("active");
   });
 });
 
-// document
-//   .querySelector(".office-hours-subscribe-btn")
-//   .addEventListener("click", () => {
-//     alert("Go to Office Hours subscription checkout.");
-//   });
-
-// document.querySelectorAll(".store-option-btn").forEach((button) => {
-//   button.addEventListener("click", () => {
-//     alert(`${button.textContent} clicked.`);
-//   });
-// });
-
 closeModal(creditModal);
 closeModal(storeModal);
 
+ensureSelectedMeetingSize(getServiceById(state.selectedServiceId));
+hydrateMentorDetails();
 renderServices();
 renderMeetingSizes();
 renderGroupFields();
@@ -651,7 +651,7 @@ renderCalendar();
 renderTimes();
 updateSummary();
 updateContinue();
-// Mobile sidebar toggle
+
 const menuBtn = document.getElementById("mobileMenuToggle");
 const overlay = document.getElementById("sidebarOverlay");
 const shell = document.querySelector(".app-shell");
@@ -663,15 +663,14 @@ if (overlay && shell) {
   overlay.onclick = () => shell.classList.remove("sidebar-active");
 }
 
-// Sidebar navigation logic
 const navItems = document.querySelectorAll(".nav-item");
 
 function setActiveNav() {
-  const currentPath = window.location.pathname.split("/").pop() || "demo1.html";
+  const currentPath = window.location.pathname;
 
   navItems.forEach((item) => {
     const href = item.getAttribute("href");
-    if (href === currentPath) {
+    if (href && currentPath.startsWith(href)) {
       item.classList.add("active");
     } else {
       item.classList.remove("active");

@@ -11,13 +11,17 @@ use Illuminate\View\View;
 use Modules\Bookings\app\Http\Requests\CancelBookingRequest;
 use Modules\Bookings\app\Http\Requests\CreateBookingRequest;
 use Modules\Bookings\app\Models\Booking;
+use Modules\Bookings\app\Services\BookingPageService;
 use Modules\Bookings\app\Services\BookingService;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
 
 class BookingController extends Controller
 {
-    public function __construct(private readonly BookingService $bookings) {}
+    public function __construct(
+        private readonly BookingService $bookings,
+        private readonly BookingPageService $bookingPage
+    ) {}
 
     public function index(Request $request): View
     {
@@ -34,10 +38,13 @@ class BookingController extends Controller
 
     public function create(Request $request, ?int $id = null): View
     {
-        $mentorId = $id ?? $request->integer('mentor_id');
+        $mentorId = (int) ($id ?? $request->integer('mentor_id'));
+        $selectedMentor = $this->bookingPage->getSelectedMentor($mentorId);
 
         return view('bookings::student.create', [
             'mentorId' => $mentorId,
+            'selectedMentor' => $selectedMentor,
+            'bookingPageData' => $this->bookingPage->buildBookingPageData($selectedMentor),
             'mentors' => Mentor::query()
                 ->with('user:id,name')
                 ->where('status', 'active')
@@ -90,6 +97,8 @@ class BookingController extends Controller
             return back()->withErrors(['booking' => $exception->getMessage()]);
         }
 
-        return back()->with('success', 'Booking cancelled and marked for refund review.');
+        return redirect()
+            ->route('student.bookings.index')
+            ->with('success', 'Booking cancelled.');
     }
 }

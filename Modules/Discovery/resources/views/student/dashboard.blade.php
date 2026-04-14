@@ -1,304 +1,24 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dashboard</title>
-    <link rel="stylesheet" href="{{ asset('assets/css/demo1.css') }}" />
-    <script>
-      (function () {
-        const savedTheme = localStorage.getItem("theme") || "light";
-        document.documentElement.setAttribute("data-theme", savedTheme);
-      })();
-    </script>
-  </head>
-  <body>
-    <div class="app-shell">
-      <div class="sidebar-overlay" id="sidebarOverlay"></div>
-      <aside class="sidebar" id="sidebar">
-        <div class="sidebar-top">
-          <div class="brand">
-            <div class="brand-icon">GP</div>
-            <div class="brand-copy">
-              <div class="brand-title">Grads Paths</div>
-              <div class="brand-subtitle">STUDENT PORTAL</div>
-            </div>
-          </div>
+@extends('layouts.portal-student')
 
-          <a href="{{ url('/') }}" class="back-link">
-            <span class="back-link-arrow">←</span>
-            <span>Back to the Website</span>
-          </a>
-        </div>
+@section('title', 'Dashboard - Grads Paths')
+@section('portal_css_asset', 'assets/css/demo1.css')
+@section('portal_js_asset', 'assets/js/demo1.js')
+@section('portal_active_nav', 'dashboard')
 
-        <nav class="sidebar-nav">
-          <div class="nav-group">
-            <a href="/student/dashboard" class="nav-item single-link active">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9.5" cy="7" r="3"></circle>
-                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a3 3 0 0 1 0 5.74"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Dashboard</span>
-              </span>
-            </a>
-          </div>
+@php
+  $institutionsUrl = route('student.institutions.index');
+@endphp
 
-          <div class="nav-group">
-            <a href="/student/institutions" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M3 21h18"></path>
-                    <path d="M5 21V7l7-4 7 4v14"></path>
-                    <path d="M9 9h.01"></path>
-                    <path d="M9 13h.01"></path>
-                    <path d="M9 17h.01"></path>
-                    <path d="M15 9h.01"></path>
-                    <path d="M15 13h.01"></path>
-                    <path d="M15 17h.01"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Institutions</span>
-              </span>
-            </a>
-          </div>
-
-          <div class="nav-group">
-            <a href="/student/mentors" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M4 6.5h16"></path>
-                    <path d="M4 12h16"></path>
-                    <path d="M4 17.5h16"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Find Mentors</span>
-              </span>
-            </a>
-          </div>
-
-          <div class="nav-group">
-            <a href="/student/office-hours" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <rect x="3" y="5" width="18" height="16" rx="2"></rect>
-                    <path d="M16 3v4"></path>
-                    <path d="M8 3v4"></path>
-                    <path d="M3 11h18"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Office Hours</span>
-              </span>
-            </a>
-          </div>
-
-          <div class="nav-group">
-            <a href="/student/feedback" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path
-                      d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"
-                    ></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Feedback</span>
-              </span>
-            </a>
-          </div>
-
-          <div class="nav-group mentor-only">
-            <a href="/student/mentor-notes" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M12 20h9"></path>
-                    <path
-                      d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"
-                    ></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Mentor Notes on Users</span>
-              </span>
-            </a>
-            <div class="helper-note">Only visible to verified mentors</div>
-          </div>
-
-          <div class="nav-group">
-            <a href="/student/bookings" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-                    <path d="M16 2v4"></path>
-                    <path d="M8 2v4"></path>
-                    <path d="M3 10h18"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Bookings</span>
-              </span>
-            </a>
-          </div>
-
-          <!-- Fixed Support Section -->
-          <div class="nav-group">
-            <a href="/student/support" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="9"></circle>
-                    <path d="M9.09 9a3 3 0 1 1 5.82 1c0 2-3 3-3 3"></path>
-                    <path d="M12 17h.01"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Support</span>
-              </span>
-            </a>
-            <div class="helper-note">Create a support ticket</div>
-          </div>
-
-          <div class="nav-section-label">Settings</div>
-
-          <div class="nav-group">
-            <a href="/student/settings" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path
-                      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-                    ></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Settings</span>
-              </span>
-            </a>
-            <div class="helper-note">
-              Users and mentors can update profile details and displayed
-              information
-            </div>
-          </div>
-        </nav>
-      </aside>
-
-      <main class="main-content">
-        <header class="topbar">
-          <div class="topbar-left">
-            <button
-              class="mobile-menu-toggle"
-              id="mobileMenuToggle"
-              type="button"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-              </svg>
-            </button>
-            <!-- <div class="search-wrap">
-              <input
-                type="text"
-                class="search-input"
-                placeholder="Search mentors, universities..."
-              />
-            </div> -->
-          </div>
-
-          <div class="topbar-right">
-            <button class="theme-toggle" id="themeToggle" type="button">
-              Light / Dark
-            </button>
-            <div class="credits-box">Credits: <strong>16</strong></div>
-            <a href="/student/store" class="store-btn">Store</a>
-          </div>
-        </header>
-
-        <section class="mentor-hero">
+@section('portal_content')
+  <section class="mentor-hero">
           <div class="mentor-hero-left">
             <h1>Find Mentors</h1>
             <p>Connect with alumni from top global institutions.</p>
           </div>
 
           <div class="mentor-hero-links">
-            <a href="/student/mentors">See all graduate mentors</a>
-            <a href="/student/mentors">See all professional mentors</a>
+            <a href="{{ route('student.mentors.index') }}">See all graduate mentors</a>
+            <a href="{{ route('student.mentors.index') }}">See all professional mentors</a>
           </div>
         </section>
 
@@ -308,431 +28,99 @@
           </div>
 
           <div class="mentor-grid">
-            <article class="mentor-card">
-              <div class="mentor-card-header">
-                <div class="mentor-card-identity">
-                  <div class="mentor-avatar">SJ</div>
-                  <div>
-                    <div class="mentor-name">Dr. Sarah Jenkin</div>
-                    <div class="mentor-role">PhD Person • Harvard</div>
+            @forelse ($featuredMentors as $mentor)
+              @php
+                $mentorActionUrl = route('student.mentor.book', $mentor['id']);
+                $mentorActionLabel = 'Book Now';
+              @endphp
+              <article class="mentor-card">
+                <div class="mentor-card-header">
+                  <div class="mentor-card-identity">
+                    <div class="mentor-avatar">{{ $mentor['initials'] }}</div>
+                    <div>
+                      <div class="mentor-name">{{ $mentor['name'] }}</div>
+                      <div class="mentor-role">{{ $mentor['role'] }}</div>
+                    </div>
                   </div>
+                  <div class="mentor-rating">&#9733; {{ $mentor['rating'] }}</div>
                 </div>
-                <div class="mentor-rating">★ 5.0</div>
-              </div>
 
-              <div class="mentor-office-hours">
-                <span class="mentor-office-hours-title">Office Hours:</span>
-                <span class="mentor-office-hours-time"
-                  >Every Tuesday at 5 PM EST</span
-                >
-              </div>
-
-              <div class="read-more-block">
-                <div class="mentor-note-box read-more-text">
-                  Expert in grad school applications for STEM fields. I help
-                  with statement of purpose review.
+                <div class="mentor-office-hours">
+                  <span class="mentor-office-hours-title">Office Hours:</span>
+                  <span class="mentor-office-hours-time">{{ $mentor['officeHours'] }}</span>
                 </div>
-                <button class="read-more-btn" type="button">
-                  <span class="read-more-label">Read More</span>
-                  <span class="read-more-chevron">⌄</span>
-                </button>
-              </div>
 
-              <div class="services-accordion">
-                <button class="services-toggle" type="button">
-                  <span class="services-toggle-text">SERVICES OFFERED</span>
-                  <span class="services-toggle-icon">⌄</span>
-                </button>
-
-                <div class="services-dropdown">
-                  <div class="service-grid">
-                    <div class="service-pill">Free Consultation</div>
-                    <div class="service-pill">Office Hours</div>
-                    <div class="service-pill">Tutoring</div>
-                    <div class="service-pill">Program Insights</div>
-                    <div class="service-pill">Interview Prep</div>
-                    <div class="service-pill">Application Review</div>
+                <div class="read-more-block">
+                  <div class="mentor-note-box read-more-text">
+                    {{ $mentor['bio'] }}
                   </div>
-                </div>
-              </div>
-
-              <div class="student-note-box">
-                <div class="feedback-header">
-                  <div class="student-note-title">Recent Feedback</div>
-                  <button class="see-more-feedback" type="button">
-                    See more Feedback
-                  </button>
-                </div>
-
-                <div class="read-more-block feedback-read-more">
-                  <p class="read-more-text">
-                    “Very clear, practical advice that helped me improve my
-                    essays in one session.”
-                  </p>
                   <button class="read-more-btn" type="button">
                     <span class="read-more-label">Read More</span>
-                    <span class="read-more-chevron">⌄</span>
+                    <span class="read-more-chevron">&#8964;</span>
                   </button>
                 </div>
-              </div>
 
-              <a href="/student/mentor/1/book" class="book-now-btn">Book Now</a>
-            </article>
+                <div class="services-accordion">
+                  <button class="services-toggle" type="button">
+                    <span class="services-toggle-text">SERVICES OFFERED</span>
+                    <span class="services-toggle-icon">&#8964;</span>
+                  </button>
 
-            <article class="mentor-card">
-              <div class="mentor-card-header">
-                <div class="mentor-card-identity">
-                  <div class="mentor-avatar">MK</div>
-                  <div>
-                    <div class="mentor-name">Michael Kim</div>
-                    <div class="mentor-role">MBA • Wharton</div>
+                  <div class="services-dropdown">
+                    <div class="service-grid">
+                      @foreach ($mentor['services'] as $service)
+                        <div class="service-pill">{{ $service }}</div>
+                      @endforeach
+                    </div>
                   </div>
                 </div>
-                <div class="mentor-rating">★ 4.9</div>
-              </div>
 
-              <div class="mentor-office-hours">
-                <span class="mentor-office-hours-title">Office Hours:</span>
-                <span class="mentor-office-hours-time"
-                  >Every Wednesday at 7 PM EST</span
-                >
-              </div>
+                <div class="student-note-box">
+                  <div class="feedback-header">
+                    <div class="student-note-title">Recent Feedback</div>
+                    <button class="see-more-feedback" type="button">
+                      See more Feedback
+                    </button>
+                  </div>
 
-              <div class="read-more-block">
-                <div class="mentor-note-box read-more-text">
-                  Former McKinsey consultant. I can help with case prep and
-                  business school interviews.
-                </div>
-                <button class="read-more-btn" type="button">
-                  <span class="read-more-label">Read More</span>
-                  <span class="read-more-chevron">⌄</span>
-                </button>
-              </div>
-
-              <div class="services-accordion">
-                <button class="services-toggle" type="button">
-                  <span class="services-toggle-text">SERVICES OFFERED</span>
-                  <span class="services-toggle-icon">⌄</span>
-                </button>
-
-                <div class="services-dropdown">
-                  <div class="service-grid">
-                    <div class="service-pill">Free Consultation</div>
-                    <div class="service-pill">Office Hours</div>
-                    <div class="service-pill">Mock Interviews</div>
-                    <div class="service-pill">Program Insights</div>
-                    <div class="service-pill">Resume Review</div>
-                    <div class="service-pill">Application Review</div>
+                  <div class="read-more-block feedback-read-more">
+                    <p class="read-more-text">
+                      &ldquo;{{ $mentor['review'] }}&rdquo;
+                    </p>
+                    <button class="read-more-btn" type="button">
+                      <span class="read-more-label">Read More</span>
+                      <span class="read-more-chevron">&#8964;</span>
+                    </button>
                   </div>
                 </div>
-              </div>
 
-              <div class="student-note-box">
-                <div class="feedback-header">
-                  <div class="student-note-title">Recent Feedback</div>
-                  <button class="see-more-feedback" type="button">
-                    See more Feedback
-                  </button>
+                <a href="{{ $mentorActionUrl }}" class="book-now-btn">{{ $mentorActionLabel }}</a>
+              </article>
+            @empty
+              <article class="mentor-card">
+                <div class="mentor-card-header">
+                  <div class="mentor-card-identity">
+                    <div class="mentor-avatar">GP</div>
+                    <div>
+                      <div class="mentor-name">Featured mentors coming soon</div>
+                      <div class="mentor-role">We&apos;re preparing the next set of mentor highlights.</div>
+                    </div>
+                  </div>
+                  <div class="mentor-rating">New</div>
                 </div>
 
-                <div class="read-more-block feedback-read-more">
-                  <p class="read-more-text">
-                    “Excellent mock interview and specific tips I could apply
-                    immediately.”
-                  </p>
-                  <button class="read-more-btn" type="button">
-                    <span class="read-more-label">Read More</span>
-                    <span class="read-more-chevron">⌄</span>
-                  </button>
+                <div class="mentor-office-hours">
+                  <span class="mentor-office-hours-title">Office Hours:</span>
+                  <span class="mentor-office-hours-time">Schedule updates soon</span>
                 </div>
-              </div>
 
-              <a href="/student/mentor/1/book" class="book-now-btn">Book Now</a>
-            </article>
-
-            <article class="mentor-card">
-              <div class="mentor-card-header">
-                <div class="mentor-card-identity">
-                  <div class="mentor-avatar">AL</div>
-                  <div>
-                    <div class="mentor-name">Anita Lopez</div>
-                    <div class="mentor-role">JD • Yale Law</div>
+                <div class="read-more-block">
+                  <div class="mentor-note-box read-more-text">
+                    Check back shortly to see active featured mentors on the dashboard.
                   </div>
                 </div>
-                <div class="mentor-rating">★ 4.8</div>
-              </div>
-
-              <div class="mentor-office-hours">
-                <span class="mentor-office-hours-title">Office Hours:</span>
-                <span class="mentor-office-hours-time"
-                  >Every Monday at 6 PM EST</span
-                >
-              </div>
-
-              <div class="read-more-block">
-                <div class="mentor-note-box read-more-text">
-                  Specializing in public interest law applications and LSAT
-                  strategy.
-                </div>
-                <button class="read-more-btn" type="button">
-                  <span class="read-more-label">Read More</span>
-                  <span class="read-more-chevron">⌄</span>
-                </button>
-              </div>
-
-              <div class="services-accordion">
-                <button class="services-toggle" type="button">
-                  <span class="services-toggle-text">SERVICES OFFERED</span>
-                  <span class="services-toggle-icon">⌄</span>
-                </button>
-
-                <div class="services-dropdown">
-                  <div class="service-grid">
-                    <div class="service-pill">Free Consultation</div>
-                    <div class="service-pill">Office Hours</div>
-                    <div class="service-pill">LSAT Strategy</div>
-                    <div class="service-pill">School List Help</div>
-                    <div class="service-pill">Interview Prep</div>
-                    <div class="service-pill">Application Review</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="student-note-box">
-                <div class="feedback-header">
-                  <div class="student-note-title">Recent Feedback</div>
-                  <button class="see-more-feedback" type="button">
-                    See more Feedback
-                  </button>
-                </div>
-
-                <div class="read-more-block feedback-read-more">
-                  <p class="read-more-text">
-                    “Great breakdown of my school list and stronger essay
-                    structure.”
-                  </p>
-                  <button class="read-more-btn" type="button">
-                    <span class="read-more-label">Read More</span>
-                    <span class="read-more-chevron">⌄</span>
-                  </button>
-                </div>
-              </div>
-
-              <a href="/student/mentor/1/book" class="book-now-btn">Book Now</a>
-            </article>
-
-            <article class="mentor-card">
-              <div class="mentor-card-header">
-                <div class="mentor-card-identity">
-                  <div class="mentor-avatar">DR</div>
-                  <div>
-                    <div class="mentor-name">David Ross</div>
-                    <div class="mentor-role">MSc CS • Stanford</div>
-                  </div>
-                </div>
-                <div class="mentor-rating">★ 5.0</div>
-              </div>
-
-              <div class="mentor-office-hours">
-                <span class="mentor-office-hours-title">Office Hours:</span>
-                <span class="mentor-office-hours-time"
-                  >Every Thursday at 8 PM EST</span
-                >
-              </div>
-
-              <div class="read-more-block">
-                <div class="mentor-note-box read-more-text">
-                  Tech industry veteran. Helping you bridge the gap between
-                  academia and Silicon Valley.
-                </div>
-                <button class="read-more-btn" type="button">
-                  <span class="read-more-label">Read More</span>
-                  <span class="read-more-chevron">⌄</span>
-                </button>
-              </div>
-
-              <div class="services-accordion">
-                <button class="services-toggle" type="button">
-                  <span class="services-toggle-text">SERVICES OFFERED</span>
-                  <span class="services-toggle-icon">⌄</span>
-                </button>
-
-                <div class="services-dropdown">
-                  <div class="service-grid">
-                    <div class="service-pill">Free Consultation</div>
-                    <div class="service-pill">Office Hours</div>
-                    <div class="service-pill">Career Advice</div>
-                    <div class="service-pill">Resume Review</div>
-                    <div class="service-pill">Interview Prep</div>
-                    <div class="service-pill">Program Insights</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="student-note-box">
-                <div class="feedback-header">
-                  <div class="student-note-title">Recent Feedback</div>
-                  <button class="see-more-feedback" type="button">
-                    See more Feedback
-                  </button>
-                </div>
-
-                <div class="read-more-block feedback-read-more">
-                  <p class="read-more-text">
-                    “Really useful perspective on both technical careers and
-                    graduate positioning.”
-                  </p>
-                  <button class="read-more-btn" type="button">
-                    <span class="read-more-label">Read More</span>
-                    <span class="read-more-chevron">⌄</span>
-                  </button>
-                </div>
-              </div>
-
-              <a href="/student/mentor/1/book" class="book-now-btn">Book Now</a>
-            </article>
-
-            <article class="mentor-card">
-              <div class="mentor-card-header">
-                <div class="mentor-card-identity">
-                  <div class="mentor-avatar">EP</div>
-                  <div>
-                    <div class="mentor-name">Elena Petrova</div>
-                    <div class="mentor-role">PhD Economics • LSE</div>
-                  </div>
-                </div>
-                <div class="mentor-rating">★ 4.9</div>
-              </div>
-
-              <div class="mentor-office-hours">
-                <span class="mentor-office-hours-title">Office Hours:</span>
-                <span class="mentor-office-hours-time"
-                  >Every Friday at 4 PM EST</span
-                >
-              </div>
-
-              <div class="read-more-block">
-                <div class="mentor-note-box read-more-text">
-                  Guidance on research proposals and funding applications for
-                  UK/EU universities.
-                </div>
-                <button class="read-more-btn" type="button">
-                  <span class="read-more-label">Read More</span>
-                  <span class="read-more-chevron">⌄</span>
-                </button>
-              </div>
-
-              <div class="services-accordion">
-                <button class="services-toggle" type="button">
-                  <span class="services-toggle-text">SERVICES OFFERED</span>
-                  <span class="services-toggle-icon">⌄</span>
-                </button>
-
-                <div class="services-dropdown">
-                  <div class="service-grid">
-                    <div class="service-pill">Free Consultation</div>
-                    <div class="service-pill">Office Hours</div>
-                    <div class="service-pill">Research Strategy</div>
-                    <div class="service-pill">Proposal Review</div>
-                    <div class="service-pill">Funding Advice</div>
-                    <div class="service-pill">Application Review</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="student-note-box">
-                <div class="feedback-header">
-                  <div class="student-note-title">Recent Feedback</div>
-                  <button class="see-more-feedback" type="button">
-                    See more Feedback
-                  </button>
-                </div>
-
-                <div class="read-more-block feedback-read-more">
-                  <p class="read-more-text">
-                    “Very thoughtful advice and strong direction on research
-                    positioning.”
-                  </p>
-                  <button class="read-more-btn" type="button">
-                    <span class="read-more-label">Read More</span>
-                    <span class="read-more-chevron">⌄</span>
-                  </button>
-                </div>
-              </div>
-
-              <a href="/student/mentor/1/book" class="book-now-btn">Book Now</a>
-            </article>
-
-            <article class="mentor-card">
-              <div class="mentor-card-header">
-                <div class="mentor-card-identity">
-                  <div class="mentor-avatar">JW</div>
-                  <div>
-                    <div class="mentor-name">James Wu</div>
-                    <div class="mentor-role">MD • Johns Hopkins</div>
-                  </div>
-                </div>
-                <div class="mentor-rating">★ 4.7</div>
-              </div>
-
-              <div class="mentor-office-hours">
-                <span class="mentor-office-hours-title">Office Hours:</span>
-                <span class="mentor-office-hours-time"
-                  >Every Sunday at 3 PM EST</span
-                >
-              </div>
-
-              <div class="read-more-block">
-                <div class="mentor-note-box read-more-text">
-                  Navigating the pre-med track and medical school interviews
-                  effectively.
-                </div>
-                <button class="read-more-btn" type="button">
-                  <span class="read-more-label">Read More</span>
-                  <span class="read-more-chevron">⌄</span>
-                </button>
-              </div>
-
-              <div class="services-accordion">
-                <button class="services-toggle" type="button">
-                  <span class="services-toggle-text">SERVICES OFFERED</span>
-                  <span class="services-toggle-icon">⌄</span>
-                </button>
-
-                <div class="services-dropdown">
-                  <div class="service-grid">
-                    <div class="service-pill">Free Consultation</div>
-                    <div class="service-pill">Office Hours</div>
-                    <div class="service-pill">School Strategy</div>
-                    <div class="service-pill">Interview Prep</div>
-                    <div class="service-pill">Application Review</div>
-                    <div class="service-pill">Program Insights</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="student-note-box">
-                <div class="feedback-header">
-                  <div class="student-note-title">Recent Feedback</div>
-                  <button class="see-more-feedback" type="button">
-                    See more Feedback
-                  </button>
-                </div>
-
-                <div class="read-more-block feedback-read-more">
-                  <p class="read-more-text">
-                    “Helpful breakdown of next steps and what to prioritize for
-                    interviews.”
-                  </p>
-                  <button class="read-more-btn" type="button">
-                    <span class="read-more-label">Read More</span>
-                    <span class="read-more-chevron">⌄</span>
-                  </button>
-                </div>
-              </div>
-
-              <a href="/student/mentor/1/book" class="book-now-btn">Book Now</a>
-            </article>
+              </article>
+            @endforelse
           </div>
         </section>
 
@@ -742,26 +130,27 @@
               <h2>Explore by University</h2>
             </div>
 
-            <a href="/student/institutions" class="view-all-institutions-btn"
+            <a href="{{ $institutionsUrl }}" class="view-all-institutions-btn"
               >View all institutions</a
             >
           </div>
 
           <div class="school-grid">
-            <div class="school-card">Harvard</div>
-            <div class="school-card">Stanford</div>
-            <div class="school-card">MIT</div>
-            <div class="school-card">Oxford</div>
-            <div class="school-card">Yale</div>
-            <div class="school-card">Berkeley</div>
+            @forelse ($institutions as $institution)
+              <a href="{{ $institutionsUrl }}" class="school-card">
+                {{ $institution->display_name ?: $institution->name }}
+              </a>
+            @empty
+              <div class="school-card">Universities coming soon</div>
+            @endforelse
           </div>
-        </section>
-      </main>
-    </div>
+  </section>
+@endsection
 
-    <div class="store-modal-overlay" id="storeModal">
+@section('portal_after_shell')
+  <div class="store-modal-overlay" id="storeModal">
       <div class="store-modal">
-        <button class="modal-close" id="closeStoreBtn" type="button">✕</button>
+        <button class="modal-close" id="closeStoreBtn" type="button">&times;</button>
 
         <div class="store-modal-inner">
           <h2>Store</h2>
@@ -936,8 +325,5 @@
           </section>
         </div>
       </div>
-    </div>
-
-    <script src="{{ asset('assets/js/demo1.js') }}"></script>
-  </body>
-</html>
+  </div>
+@endsection

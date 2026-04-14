@@ -15,10 +15,10 @@ class MentorSearchController extends Controller
     public function index(SearchMentorsRequest $request): View
     {
         $filters = $request->validated();
-        $mentors = $this->discovery->search($filters);
-
+        
         return view('discovery::student.explore', [
-            'mentors' => $mentors,
+            'mentors' => $this->discovery->search($filters),
+            'mentorsData' => $this->discovery->browseData(),
             'filters' => $filters,
         ]);
     }

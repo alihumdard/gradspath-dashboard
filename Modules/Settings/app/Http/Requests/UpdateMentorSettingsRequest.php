@@ -1,0 +1,45 @@
+<?php
+
+namespace Modules\Settings\app\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class UpdateMentorSettingsRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'mentor_type' => ['required', Rule::in(['graduate', 'professional'])],
+            'title' => ['nullable', 'string', 'max:255'],
+            'program_type' => ['nullable', Rule::in(['mba', 'law', 'therapy', 'cmhc', 'mft', 'msw', 'clinical_psy', 'other'])],
+            'grad_school_display' => ['nullable', 'string', 'max:255'],
+            'bio' => ['nullable', 'string', 'max:1000'],
+            'description' => ['nullable', 'string', 'max:5000'],
+            'office_hours_schedule' => ['nullable', 'string', 'max:255'],
+            'edu_email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::requiredIf(fn () => $this->input('mentor_type') === 'graduate'),
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if ($this->input('mentor_type') === 'graduate' && is_string($value) && ! str_ends_with(strtolower($value), '.edu')) {
+                        $fail('Graduate mentors must use a .edu email address.');
+                    }
+                },
+            ],
+            'calendly_link' => ['nullable', 'url:http,https', 'max:255'],
+            'service_config_ids' => ['nullable', 'array'],
+            'service_config_ids.*' => [
+                'integer',
+                Rule::exists('services_config', 'id')->where(fn ($query) => $query->where('is_active', true)),
+            ],
+        ];
+    }
+}

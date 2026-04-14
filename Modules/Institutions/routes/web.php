@@ -3,11 +3,17 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Institutions\app\Http\Controllers\Admin\InstitutionsController as AdminInstitutionsController;
 use Modules\Institutions\app\Http\Controllers\Admin\UniversityProgramsController as AdminUniversityProgramsController;
-use Modules\Institutions\app\Http\Controllers\Student\InstitutionsController;
+use Modules\Institutions\app\Http\Controllers\Mentor\InstitutionsController as MentorInstitutionsController;
+use Modules\Institutions\app\Http\Controllers\Student\InstitutionsController as StudentInstitutionsController;
 
-Route::middleware(['web', 'auth', 'active', 'role:student|mentor|admin'])->group(function () {
-	Route::get('/student/institutions', [InstitutionsController::class, 'index'])->name('student.institutions.index');
-	Route::get('/student/institutions/{id}', [InstitutionsController::class, 'show'])->name('student.institutions.show');
+Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
+	Route::get('/student/institutions', [StudentInstitutionsController::class, 'index'])->name('student.institutions.index');
+	Route::get('/student/institutions/{id}', [StudentInstitutionsController::class, 'show'])->name('student.institutions.show');
+});
+
+Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
+	Route::get('/mentor/institutions', [MentorInstitutionsController::class, 'index'])->name('mentor.institutions.index');
+	Route::get('/mentor/institutions/{id}', [MentorInstitutionsController::class, 'show'])->name('mentor.institutions.show');
 });
 
 Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->name('admin.institutions.')->group(function () {

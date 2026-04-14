@@ -19,6 +19,7 @@ class InstitutionsController extends Controller
 
         return view('institutions::student.index', [
             'institutions' => $result,
+            'institutionsData' => $this->institutions->browseData(),
             'filters' => $filters,
         ]);
     }

@@ -1,629 +1,330 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dashboard - Mentor Session Notes</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="{{ asset('assets/css/demo7.css') }}" />
-  </head>
-  <body data-theme="light">
-    <div class="app-shell">
-      <div class="sidebar-overlay" id="sidebarOverlay"></div>
-      <aside class="sidebar">
-        <div class="sidebar-top">
-          <div class="brand">
-            <div class="brand-icon">GP</div>
-            <div class="brand-copy">
-              <div class="brand-title">Grads Paths</div>
-              <div class="brand-subtitle">STUDENT PORTAL</div>
-            </div>
+@extends('layouts.portal-mentor')
+
+@section('title', 'Mentor Dashboard - Grads Paths')
+@section('portal_css_asset', 'assets/css/demo1.css')
+@section('portal_js_asset', 'assets/js/demo1.js')
+@section('portal_active_nav', 'dashboard')
+
+@php
+  $institutionsUrl = route('mentor.institutions.index');
+  $mentorsUrl = route('mentor.mentors.index');
+@endphp
+
+@section('portal_content')
+  <section class="mentor-hero">
+          <div class="mentor-hero-left">
+            <h1>Find Mentors</h1>
+            <p>Connect with alumni from top global institutions.</p>
           </div>
 
-          <a href="{{ url('/') }}" class="back-link">
-            <span class="back-link-arrow">←</span>
-            <span>Back to the Website</span>
-          </a>
-        </div>
+          <div class="mentor-hero-links">
+            <a href="{{ $mentorsUrl }}">See all graduate mentors</a>
+            <a href="{{ $mentorsUrl }}">See all professional mentors</a>
+          </div>
+        </section>
 
-        <nav class="sidebar-nav">
-          <div class="nav-group">
-            <a href="/student/dashboard" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9.5" cy="7" r="3"></circle>
-                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a3 3 0 0 1 0 5.74"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Dashboard</span>
-              </span>
-            </a>
+        <section class="content-section">
+          <div class="section-head">
+            <h2>Mentors of the Week</h2>
           </div>
 
-          <div class="nav-group">
-            <a href="/student/institutions" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M3 21h18"></path>
-                    <path d="M5 21V7l7-4 7 4v14"></path>
-                    <path d="M9 9h.01"></path>
-                    <path d="M9 13h.01"></path>
-                    <path d="M9 17h.01"></path>
-                    <path d="M15 9h.01"></path>
-                    <path d="M15 13h.01"></path>
-                    <path d="M15 17h.01"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Institutions</span>
-              </span>
-            </a>
-          </div>
-
-          <div class="nav-group">
-            <a href="/student/mentors" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M4 6.5h16"></path>
-                    <path d="M4 12h16"></path>
-                    <path d="M4 17.5h16"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Find Mentors</span>
-              </span>
-            </a>
-          </div>
-
-          <div class="nav-group">
-            <a href="/student/office-hours" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <rect x="3" y="5" width="18" height="16" rx="2"></rect>
-                    <path d="M16 3v4"></path>
-                    <path d="M8 3v4"></path>
-                    <path d="M3 11h18"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Office Hours</span>
-              </span>
-            </a>
-          </div>
-
-          <div class="nav-group">
-            <a href="/student/feedback" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path
-                      d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"
-                    ></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Feedback</span>
-              </span>
-            </a>
-          </div>
-
-          <div class="nav-group mentor-only">
-            <a href="/student/mentor-notes" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M12 20h9"></path>
-                    <path
-                      d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"
-                    ></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Mentor Notes on Users</span>
-              </span>
-            </a>
-            <div class="helper-note">Only visible to verified mentors</div>
-          </div>
-
-          <div class="nav-group">
-            <a href="/student/bookings" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <rect x="3" y="4" width="18" height="18" rx="2"></rect>
-                    <path d="M16 2v4"></path>
-                    <path d="M8 2v4"></path>
-                    <path d="M3 10h18"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Bookings</span>
-              </span>
-            </a>
-          </div>
-
-          <div class="nav-group">
-            <a href="/student/support" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="9"></circle>
-                    <path d="M9.09 9a3 3 0 1 1 5.82 1c0 2-3 3-3 3"></path>
-                    <path d="M12 17h.01"></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Support</span>
-              </span>
-            </a>
-            <div class="helper-note">Create a support ticket</div>
-          </div>
-
-          <div class="nav-section-label">Settings</div>
-
-          <div class="nav-group">
-            <a href="/student/settings" class="nav-item single-link">
-              <span class="nav-left">
-                <span class="nav-icon" aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path
-                      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
-                    ></path>
-                  </svg>
-                </span>
-                <span class="nav-text">Settings</span>
-              </span>
-            </a>
-            <div class="helper-note">
-              Users and mentors can update profile details and displayed
-              information
-            </div>
-          </div>
-        </nav>
-      </aside>
-
-      <main class="main-content">
-        <header class="topbar">
-          <div class="topbar-left">
-            <button
-              class="mobile-menu-toggle"
-              id="mobileMenuToggle"
-              type="button"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-              </svg>
-            </button>
-            <div class="search-wrap">
-              <input
-                type="text"
-                class="search-input"
-                placeholder="Search mentors, universities..."
-              />
-            </div>
-          </div>
-          <div class="topbar-right">
-            <button class="theme-toggle" id="themeToggle" type="button">
-              Light / Dark
-            </button>
-            <div class="credits-box">Credits: <strong>16</strong></div>
-            <a href="/student/store" class="store-btn">Store</a>
-            <!-- <a
-              href="/student/dashboard"
-              class="recommended-badge"
-              style="position: static"
-              >← Back to Dashboard</a
-            > -->
-          </div>
-        </header>
-        <div class="page-shell">
-          <main class="notes-wrapper">
-            <section class="notes-card">
-              <div class="card-top">
-                <span class="eyebrow">Internal Mentor Notes</span>
-                <h1>Mentor Notes After Session</h1>
-                <p class="intro-text">
-                  These notes are for internal mentor use only. Students cannot
-                  view this information.
-                </p>
-                <p class="intro-text secondary">
-                  Use this form to record what was covered, what the student
-                  still needs help with, and any useful context for future
-                  mentors.
-                </p>
-              </div>
-
-              <form id="mentorNotesForm" novalidate>
-                <div class="form-section compact-section">
-                  <div class="session-info-card">
-                    <div class="session-info-header">
-                      <span class="session-badge">Session Details</span>
-                      <p>
-                        This information is automatically filled in from the
-                        scheduled session, and attached to the mentor notes.
-                      </p>
-                    </div>
-
-                    <div class="session-info-grid">
-                      <div class="info-field">
-                        <label for="fullName">Full Name of User</label>
-                        <input
-                          type="text"
-                          id="fullName"
-                          name="fullName"
-                          readonly
-                        />
-                      </div>
-
-                      <div class="info-field">
-                        <label for="userEmail">Email of User</label>
-                        <input
-                          type="email"
-                          id="userEmail"
-                          name="userEmail"
-                          readonly
-                        />
-                      </div>
-
-                      <div class="info-field">
-                        <label for="sessionDate">Date of Session</label>
-                        <input
-                          type="text"
-                          id="sessionDate"
-                          name="sessionDate"
-                          readonly
-                        />
-                      </div>
-
-                      <div class="info-field">
-                        <label for="mentorName">Full Name of Mentor</label>
-                        <input
-                          type="text"
-                          id="mentorName"
-                          name="mentorName"
-                          readonly
-                        />
-                      </div>
-
-                      <div class="info-field">
-                        <label for="mentorEmail">Email of Mentor</label>
-                        <input
-                          type="email"
-                          id="mentorEmail"
-                          name="mentorEmail"
-                          readonly
-                        />
-                      </div>
-
-                      <div class="info-field full-width">
-                        <label>Type of Session</label>
-
-                        <div
-                          class="service-display-grid"
-                          id="sessionTypeDisplay"
-                        >
-                          <div
-                            class="service-view-card"
-                            data-service="Tutoring"
-                          >
-                            <div class="service-view-icon">
-                              <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path
-                                  d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm8-1h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v1.2A4.9 4.9 0 0 1 11 9.5V10h2.5l2.2 2.2A1 1 0 0 0 17.4 12V11.4A2 2 0 0 0 16 10Zm-8 3c-3.2 0-6 1.6-6 3.6 0 .8.7 1.4 1.5 1.4h9c.8 0 1.5-.6 1.5-1.4C14 14.6 11.2 13 8 13Z"
-                                />
-                              </svg>
-                            </div>
-                            <span>Tutoring</span>
-                          </div>
-
-                          <div
-                            class="service-view-card"
-                            data-service="Program Insights"
-                          >
-                            <div class="service-view-icon">
-                              <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path
-                                  d="M12 3 2 8l10 5 8.2-4.1V15H22V8L12 3Zm-6.8 8.8V15c0 1.9 3.1 3.5 6.8 3.5s6.8-1.6 6.8-3.5v-3.2L12 15.2l-6.8-3.4Z"
-                                />
-                              </svg>
-                            </div>
-                            <span>Program Insights</span>
-                          </div>
-
-                          <div
-                            class="service-view-card"
-                            data-service="Interview Prep"
-                          >
-                            <div class="service-view-icon">
-                              <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path
-                                  d="M9 7V5a3 3 0 0 1 6 0v2h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2Zm2 0h2V5a1 1 0 1 0-2 0v2Z"
-                                />
-                              </svg>
-                            </div>
-                            <span>Interview Prep</span>
-                          </div>
-
-                          <div
-                            class="service-view-card"
-                            data-service="Application Review"
-                          >
-                            <div class="service-view-icon">
-                              <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path
-                                  d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm6 1.5V9h4.5M9 16.2l5.9-5.9 1.8 1.8-5.9 5.9H9v-1.8Z"
-                                />
-                              </svg>
-                            </div>
-                            <span>Application Review</span>
-                          </div>
-
-                          <div
-                            class="service-view-card"
-                            data-service="Gap Year Planning"
-                          >
-                            <div class="service-view-icon">
-                              <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path
-                                  d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.9 9h-3.1a15.7 15.7 0 0 0-1.2-4A8.1 8.1 0 0 1 18.9 11ZM12 4.1c1 1.1 2 3.4 2.4 6H9.6c.4-2.6 1.4-4.9 2.4-6ZM5.1 13h3.1c.2 1.4.6 2.8 1.2 4a8.1 8.1 0 0 1-4.3-4Zm3.1-2H5.1a8.1 8.1 0 0 1 4.3-4c-.6 1.2-1 2.6-1.2 4Zm3.8 8c-1-1.1-2-3.4-2.4-6h4.8c-.4 2.6-1.4 4.9-2.4 6Zm2.6-2c.6-1.2 1-2.6 1.2-4h3.1a8.1 8.1 0 0 1-4.3 4Z"
-                                />
-                              </svg>
-                            </div>
-                            <span>Gap Year Planning</span>
-                          </div>
-
-                          <div
-                            class="service-view-card"
-                            data-service="Office Hours"
-                          >
-                            <div class="service-view-icon">
-                              <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path
-                                  d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 5v4.4l3 1.8-.8 1.4L11 12V7Z"
-                                />
-                              </svg>
-                            </div>
-                            <span>Office Hours</span>
-                          </div>
-                        </div>
-
-                        <input
-                          type="hidden"
-                          id="sessionType"
-                          name="sessionType"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="form-section">
-                  <div class="question-title-row">
-                    <span class="question-number">01</span>
+          <div class="mentor-grid">
+            @forelse ($featuredMentors as $mentor)
+              @php
+                $mentorActionUrl = route('mentor.mentors.show', $mentor['id']);
+                $mentorActionLabel = 'View Mentor';
+              @endphp
+              <article class="mentor-card">
+                <div class="mentor-card-header">
+                  <div class="mentor-card-identity">
+                    <div class="mentor-avatar">{{ $mentor['initials'] }}</div>
                     <div>
-                      <h2>
-                        What did you work on during this session?
-                        <span class="required">*</span>
-                      </h2>
-                      <p>
-                        Briefly describe the main topics, tasks, or materials
-                        covered.
-                      </p>
+                      <div class="mentor-name">{{ $mentor['name'] }}</div>
+                      <div class="mentor-role">{{ $mentor['role'] }}</div>
                     </div>
                   </div>
-
-                  <div class="notes-text-wrap">
-                    <textarea
-                      id="sessionWork"
-                      name="sessionWork"
-                      rows="5"
-                      placeholder="Example: We reviewed the personal statement, discussed structure, and revised the introduction..."
-                    ></textarea>
-                  </div>
+                  <div class="mentor-rating">&#9733; {{ $mentor['rating'] }}</div>
                 </div>
 
-                <div class="form-section">
-                  <div class="question-title-row">
-                    <span class="question-number">02</span>
-                    <div>
-                      <h2>
-                        What should happen next, and what does the user need
-                        most?
-                        <span class="required">*</span>
-                      </h2>
-                      <p>
-                        Describe the next steps, priorities, or areas where
-                        support is still needed.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="notes-text-wrap">
-                    <textarea
-                      id="nextSteps"
-                      name="nextSteps"
-                      rows="5"
-                      placeholder="Example: The user needs help narrowing school choices and strengthening interview responses..."
-                    ></textarea>
-                  </div>
+                <div class="mentor-office-hours">
+                  <span class="mentor-office-hours-title">Office Hours:</span>
+                  <span class="mentor-office-hours-time">{{ $mentor['officeHours'] }}</span>
                 </div>
 
-                <div class="form-section">
-                  <div class="question-title-row">
-                    <span class="question-number">03</span>
-                    <div>
-                      <h2>
-                        What was the result of the session?
-                        <span class="required">*</span>
-                      </h2>
-                      <p>
-                        Summarize what was accomplished or what progress was
-                        made.
-                      </p>
-                    </div>
+                <div class="read-more-block">
+                  <div class="mentor-note-box read-more-text">
+                    {{ $mentor['bio'] }}
                   </div>
-
-                  <div class="notes-text-wrap">
-                    <textarea
-                      id="sessionOutcome"
-                      name="sessionOutcome"
-                      rows="5"
-                      placeholder="Example: The user left with a clearer application strategy and a revised draft to build from..."
-                    ></textarea>
-                  </div>
-                </div>
-
-                <div class="form-section">
-                  <div class="question-title-row">
-                    <span class="question-number">04</span>
-                    <div>
-                      <h2>
-                        What was one strength and one challenge from the
-                        session?
-                        <span class="required">*</span>
-                      </h2>
-                      <p>
-                        Include one positive takeaway and one issue, limitation,
-                        or area for improvement.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="notes-text-wrap">
-                    <textarea
-                      id="sessionReflection"
-                      name="sessionReflection"
-                      rows="5"
-                      placeholder="Example: Pro: The user was engaged and prepared. Con: Time was limited, so we could not finish mock interview practice..."
-                    ></textarea>
-                  </div>
-                </div>
-
-                <div class="form-section">
-                  <div class="question-title-row">
-                    <span class="question-number">05</span>
-                    <div>
-                      <h2>
-                        Any other notes to share?
-                        <span class="required">*</span>
-                      </h2>
-                      <p>
-                        Add any extra context that could help future mentors
-                        before the next session.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="notes-text-wrap">
-                    <textarea
-                      id="otherNotes"
-                      name="otherNotes"
-                      rows="5"
-                      placeholder="Example: The user responds well to direct feedback and would benefit from another session next week..."
-                    ></textarea>
-                    <div class="char-count">
-                      <span id="charCount">0</span> characters
-                    </div>
-                  </div>
-                </div>
-
-                <div class="form-footer">
-                  <button type="submit" class="submit-btn">
-                    Submit Mentors Notes
+                  <button class="read-more-btn" type="button">
+                    <span class="read-more-label">Read More</span>
+                    <span class="read-more-chevron">&#8964;</span>
                   </button>
                 </div>
 
-                <div
-                  id="successMessage"
-                  class="success-message"
-                  aria-live="polite"
-                >
-                  Mentor notes saved successfully.
-                </div>
-              </form>
-            </section>
-          </main>
-        </div>
-      </main>
-    </div>
+                <div class="services-accordion">
+                  <button class="services-toggle" type="button">
+                    <span class="services-toggle-text">SERVICES OFFERED</span>
+                    <span class="services-toggle-icon">&#8964;</span>
+                  </button>
 
-    <script src="{{ asset('assets/js/demo7.js') }}"></script>
-  </body>
-</html>
+                  <div class="services-dropdown">
+                    <div class="service-grid">
+                      @foreach ($mentor['services'] as $service)
+                        <div class="service-pill">{{ $service }}</div>
+                      @endforeach
+                    </div>
+                  </div>
+                </div>
+
+                <div class="student-note-box">
+                  <div class="feedback-header">
+                    <div class="student-note-title">Recent Feedback</div>
+                    <button class="see-more-feedback" type="button">
+                      See more Feedback
+                    </button>
+                  </div>
+
+                  <div class="read-more-block feedback-read-more">
+                    <p class="read-more-text">
+                      &ldquo;{{ $mentor['review'] }}&rdquo;
+                    </p>
+                    <button class="read-more-btn" type="button">
+                      <span class="read-more-label">Read More</span>
+                      <span class="read-more-chevron">&#8964;</span>
+                    </button>
+                  </div>
+                </div>
+
+                <a href="{{ $mentorActionUrl }}" class="book-now-btn">{{ $mentorActionLabel }}</a>
+              </article>
+            @empty
+              <article class="mentor-card">
+                <div class="mentor-card-header">
+                  <div class="mentor-card-identity">
+                    <div class="mentor-avatar">GP</div>
+                    <div>
+                      <div class="mentor-name">Featured mentors coming soon</div>
+                      <div class="mentor-role">We&apos;re preparing the next set of mentor highlights.</div>
+                    </div>
+                  </div>
+                  <div class="mentor-rating">New</div>
+                </div>
+
+                <div class="mentor-office-hours">
+                  <span class="mentor-office-hours-title">Office Hours:</span>
+                  <span class="mentor-office-hours-time">Schedule updates soon</span>
+                </div>
+
+                <div class="read-more-block">
+                  <div class="mentor-note-box read-more-text">
+                    Check back shortly to see active featured mentors on the dashboard.
+                  </div>
+                </div>
+              </article>
+            @endforelse
+          </div>
+        </section>
+
+        <section class="content-section institutions-section">
+          <div class="section-head institution-head">
+            <div>
+              <h2>Explore by University</h2>
+            </div>
+
+            <a href="{{ $institutionsUrl }}" class="view-all-institutions-btn"
+              >View all institutions</a
+            >
+          </div>
+
+          <div class="school-grid">
+            @forelse ($institutions as $institution)
+              <a href="{{ $institutionsUrl }}" class="school-card">
+                {{ $institution->display_name ?: $institution->name }}
+              </a>
+            @empty
+              <div class="school-card">Universities coming soon</div>
+            @endforelse
+          </div>
+  </section>
+@endsection
+
+@section('portal_after_shell')
+  <div class="store-modal-overlay" id="storeModal">
+      <div class="store-modal">
+        <button class="modal-close" id="closeStoreBtn" type="button">&times;</button>
+
+        <div class="store-modal-inner">
+          <h2>Store</h2>
+          <p>Select a service to continue.</p>
+
+          <div class="store-option-row">
+            <button
+              class="store-option active-store-option"
+              data-service="office-hours"
+              type="button"
+            >
+              Office Hours
+            </button>
+            <button
+              class="store-option"
+              data-service="one-on-three"
+              type="button"
+            >
+              1 on 3 Meeting
+            </button>
+            <button
+              class="store-option"
+              data-service="one-on-five"
+              type="button"
+            >
+              1 on 5 Meeting
+            </button>
+          </div>
+
+          <section class="service-panel" id="officeHoursPanel">
+            <div class="service-card">
+              <h3>Office Hours Subscription</h3>
+              <p>Choose your program to continue.</p>
+
+              <div class="pathway-row">
+                <button
+                  class="pathway-btn active-pathway"
+                  data-pathway="MBA"
+                  type="button"
+                >
+                  MBA
+                </button>
+                <button class="pathway-btn" data-pathway="Law" type="button">
+                  Law
+                </button>
+                <button
+                  class="pathway-btn"
+                  data-pathway="Therapy"
+                  type="button"
+                >
+                  Therapy
+                </button>
+              </div>
+
+              <div class="credit-assignment-note" id="creditAssignmentNote">
+                Credits will be applied to MBA office hours.
+              </div>
+
+              <div class="rules-box">
+                <div class="rules-title">Membership rules</div>
+                <ul>
+                  <li>5 credits per month = 5 meetings</li>
+                  <li>45 minutes per meeting</li>
+                  <li>Small-group sessions with up to 5 students</li>
+                  <li>Credits reset each month</li>
+                </ul>
+              </div>
+
+              <div class="pricing-row">
+                <div id="officeHoursProgramLabel">MBA</div>
+                <div id="officeHoursPriceLabel">$200/month</div>
+              </div>
+
+              <div class="payment-row">
+                <input type="text" placeholder="8448 8444 8888 8888" />
+                <input type="text" placeholder="08 / 27" />
+                <input type="text" placeholder="277" />
+              </div>
+
+              <button class="primary-btn full-btn" type="button">
+                Subscribe
+              </button>
+            </div>
+          </section>
+
+          <section class="service-panel hidden-panel" id="oneOnThreePanel">
+            <div class="service-card">
+              <h3>1 on 3 Meeting</h3>
+              <p>
+                Choose how payment will be handled, then complete the meeting
+                details.
+              </p>
+
+              <div class="payment-type-row">
+                <button class="pay-type-btn active-pay-type" type="button">
+                  Paying for the group
+                </button>
+                <button class="pay-type-btn" type="button">
+                  Paying individually
+                </button>
+              </div>
+
+              <div class="meeting-form-grid">
+                <input type="text" placeholder="Applicant name 1" />
+                <input type="text" placeholder="Applicant name 2" />
+                <input type="text" placeholder="Applicant name 3" />
+                <select>
+                  <option>Select mentor</option>
+                </select>
+                <input type="date" />
+                <input type="time" />
+                <select class="full">
+                  <option>Service</option>
+                </select>
+              </div>
+
+              <div class="payment-row">
+                <input type="text" placeholder="8448 8444 8888 8888" />
+                <input type="text" placeholder="08 / 27" />
+                <input type="text" placeholder="277" />
+              </div>
+
+              <button class="primary-btn full-btn" type="button">
+                Pay and Book Meeting
+              </button>
+            </div>
+          </section>
+
+          <section class="service-panel hidden-panel" id="oneOnFivePanel">
+            <div class="service-card">
+              <h3>1 on 5 Meeting</h3>
+              <p>
+                Choose how payment will be handled, then complete the meeting
+                details.
+              </p>
+
+              <div class="payment-type-row">
+                <button class="pay-type-btn active-pay-type" type="button">
+                  Paying for the group
+                </button>
+                <button class="pay-type-btn" type="button">
+                  Paying individually
+                </button>
+              </div>
+
+              <div class="meeting-form-grid">
+                <input type="text" placeholder="Applicant name 1" />
+                <input type="text" placeholder="Applicant name 2" />
+                <input type="text" placeholder="Applicant name 3" />
+                <input type="text" placeholder="Applicant name 4" />
+                <input type="text" placeholder="Applicant name 5" />
+                <select>
+                  <option>Select mentor</option>
+                </select>
+                <input type="date" />
+                <input type="time" />
+                <select class="full">
+                  <option>Service</option>
+                </select>
+              </div>
+
+              <div class="payment-row">
+                <input type="text" placeholder="8448 8444 8888 8888" />
+                <input type="text" placeholder="08 / 27" />
+                <input type="text" placeholder="277" />
+              </div>
+
+              <button class="primary-btn full-btn" type="button">
+                Pay and Book Meeting
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+  </div>
+@endsection

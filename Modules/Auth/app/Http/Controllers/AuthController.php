@@ -42,14 +42,12 @@ class AuthController extends Controller
 
     public function adminLogin(LoginRequest $request): RedirectResponse
     {
-        $user = $this->authService->login(
+        $user = $this->authService->loginAdminPortal(
             $request->only('email', 'password'),
             $request->boolean('remember')
         );
 
-        if (!$user || !$user->hasRole('admin')) {
-            Auth::logout();
-
+        if (!$user) {
             return back()
                 ->withErrors(['email' => 'These credentials do not match our admin records.'])
                 ->withInput($request->only('email'));
@@ -79,14 +77,14 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): RedirectResponse
     {
-        $user = $this->authService->login(
+        $user = $this->authService->loginUserPortal(
             $request->only('email', 'password'),
             $request->boolean('remember')
         );
 
         if (!$user) {
             return back()
-                ->withErrors(['email' => 'These credentials do not match our records.'])
+                ->withErrors(['email' => 'These credentials do not match our user portal records.'])
                 ->withInput($request->only('email'));
         }
 
@@ -105,6 +103,14 @@ class AuthController extends Controller
 
     private function renderLandingAuth(string $modal): View
     {
+        $oldAuthContext = session()->getOldInput('auth_context');
+
+        if ($oldAuthContext === 'signup') {
+            $modal = 'signup';
+        } elseif ($oldAuthContext === 'login') {
+            $modal = 'login';
+        }
+
         return view('landing_page.index', [
             'authModal' => $modal,
         ]);

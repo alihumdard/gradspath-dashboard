@@ -203,28 +203,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Signup form: remember fullname, email, institution, program level, role (so users don't retype)
+    // Signup form: keep role and level selection only; text fields should not persist across refreshes
     const signupForm = document.getElementById("signup-form");
     const signupFullname = document.getElementById("signup-fullname");
     const signupEmail = document.getElementById("signup-email");
     const signupInstitution = document.getElementById("signup-institution");
-    if (signupFullname && localStorage.getItem("gradspaths_signup_fullname")) {
-        signupFullname.value = localStorage.getItem(
-            "gradspaths_signup_fullname",
-        );
-    }
-    if (signupEmail && localStorage.getItem("gradspaths_signup_email")) {
-        signupEmail.value = localStorage.getItem("gradspaths_signup_email");
-    }
-
-    if (
-        signupInstitution &&
-        localStorage.getItem("gradspaths_signup_institution")
-    ) {
-        signupInstitution.value = localStorage.getItem(
-            "gradspaths_signup_institution",
-        );
-    }
+    localStorage.removeItem("gradspaths_signup_fullname");
+    localStorage.removeItem("gradspaths_signup_email");
+    localStorage.removeItem("gradspaths_signup_institution");
 
     const savedLevel = localStorage.getItem("gradspaths_signup_level");
     const savedRole = localStorage.getItem("gradspaths_signup_role");
@@ -243,21 +229,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (signupForm) {
         signupForm.addEventListener("submit", () => {
-            if (signupFullname)
-                localStorage.setItem(
-                    "gradspaths_signup_fullname",
-                    signupFullname.value,
-                );
-            if (signupEmail)
-                localStorage.setItem(
-                    "gradspaths_signup_email",
-                    signupEmail.value,
-                );
-            if (signupInstitution)
-                localStorage.setItem(
-                    "gradspaths_signup_institution",
-                    signupInstitution.value,
-                );
             localStorage.setItem("gradpaths_signed_in", "1");
             if (signupEmail) {
                 document.cookie = `gradspaths_signed_in=1; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Strict`;

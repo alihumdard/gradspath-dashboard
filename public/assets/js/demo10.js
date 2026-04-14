@@ -1,170 +1,125 @@
-// Theme handling - moved to top for reliability
+// Theme handling
 (function initTheme() {
   const savedTheme = localStorage.getItem("theme") || "light";
   document.documentElement.setAttribute("data-theme", savedTheme);
 })();
 
 const mentorForm = document.getElementById("mentorForm");
+const themeToggle = document.getElementById("themeToggle");
+const menuBtn = document.getElementById("mobileMenuToggle");
+const overlay = document.getElementById("sidebarOverlay");
+const shell = document.querySelector(".app-shell");
 
-
-const mentorType = document.getElementById("mentorType");
 const fullName = document.getElementById("fullName");
-const email = document.getElementById("email");
-const officeHours = document.getElementById("officeHours");
-const calendlyLink = document.getElementById("calendlyLink");
+const mentorType = document.getElementById("mentorType");
+const eduEmail = document.getElementById("eduEmail");
 const program = document.getElementById("program");
 const school = document.getElementById("school");
+const officeHours = document.getElementById("officeHours");
+const calendlyLink = document.getElementById("calendlyLink");
+const bio = document.getElementById("bio");
 const description = document.getElementById("description");
 
-const nameError = document.getElementById("nameError");
-const emailError = document.getElementById("emailError");
-const officeHoursError = document.getElementById("officeHoursError");
-const calendlyError = document.getElementById("calendlyError");
-const programError = document.getElementById("programError");
-const schoolError = document.getElementById("schoolError");
-const descriptionError = document.getElementById("descriptionError");
-const imageError = document.getElementById("imageError");
-const payoutError = document.getElementById("payoutError");
-
-const profileImageInput = document.getElementById("profileImageInput");
-const uploadDropzone = document.getElementById("uploadDropzone");
-const removeImageBtn = document.getElementById("removeImageBtn");
-
-const cropSection = document.getElementById("cropSection");
-const cropBox = document.getElementById("cropBox");
-const cropImage = document.getElementById("cropImage");
-const zoomSlider = document.getElementById("zoomSlider");
-const resetCropBtn = document.getElementById("resetCropBtn");
-const applyCropBtn = document.getElementById("applyCropBtn");
-
-const enablePayoutsBtn = document.getElementById("enablePayoutsBtn");
-const payoutStatus = document.getElementById("payoutStatus");
-
-const avatar = document.getElementById("avatar");
-const avatarImage = document.getElementById("avatarImage");
 const avatarInitials = document.getElementById("avatarInitials");
-
 const cardName = document.getElementById("cardName");
 const cardSubtitle = document.getElementById("cardSubtitle");
 const officeHoursDisplay = document.getElementById("officeHoursDisplay");
 const officeHoursText = document.getElementById("officeHoursText");
 const cardDescription = document.getElementById("cardDescription");
-const readMoreBtn = document.getElementById("readMoreBtn");
 
-let rawImageSrc = "";
-let descriptionExpanded = false;
-let hasAppliedImage = false;
-let payoutsEnabled = false;
+const nameError = document.getElementById("nameError");
+const eduEmailError = document.getElementById("eduEmailError");
+const calendlyError = document.getElementById("calendlyError");
+const payoutError = document.getElementById("payoutError");
+const enablePayoutsBtn = document.getElementById("enablePayoutsBtn");
+const payoutStatus = document.getElementById("payoutStatus");
 
-let cropState = {
-  scale: 1,
-  x: 0,
-  y: 0,
-  minScale: 1,
-  naturalWidth: 0,
-  naturalHeight: 0,
-  dragging: false,
-  startX: 0,
-  startY: 0,
-  startOffsetX: 0,
-  startOffsetY: 0,
-};
+function updateTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("theme", theme);
+
+  if (themeToggle) {
+    themeToggle.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
+  }
+}
+
+if (themeToggle) {
+  const currentSavedTheme = localStorage.getItem("theme") || "light";
+  themeToggle.textContent = currentSavedTheme === "dark" ? "Light Mode" : "Dark Mode";
+
+  themeToggle.addEventListener("click", () => {
+    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+    updateTheme(currentTheme === "dark" ? "light" : "dark");
+  });
+}
+
+if (menuBtn && shell) {
+  menuBtn.addEventListener("click", () => shell.classList.add("sidebar-active"));
+}
+
+if (overlay && shell) {
+  overlay.addEventListener("click", () => shell.classList.remove("sidebar-active"));
+}
 
 function getInitials(name) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
+
   if (parts.length === 0) return "";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
+
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
-
-function updatePreview() {
-  const nameValue = fullName.value.trim();
-  const programValue = program.value.trim();
-  const schoolValue = school.value.trim();
-  const descriptionValue = description.value.trim();
-  const officeHoursValue = officeHours.value.trim();
-
-  cardName.textContent = nameValue;
-  avatarInitials.textContent = getInitials(nameValue);
-
-  if (programValue && schoolValue) {
-    cardSubtitle.textContent = `${programValue} • ${schoolValue}`;
-  } else if (programValue) {
-    cardSubtitle.textContent = programValue;
-  } else if (schoolValue) {
-    cardSubtitle.textContent = schoolValue;
-  } else {
-    cardSubtitle.textContent = "";
-  }
-
-  cardDescription.textContent = descriptionValue;
-
-  if (officeHoursValue) {
-    officeHoursText.textContent = officeHoursValue;
-    officeHoursDisplay.style.display = "block";
-  } else {
-    officeHoursText.textContent = "";
-    officeHoursDisplay.style.display = "none";
-  }
-
-  updateReadMoreVisibility();
-}
-
-function updateReadMoreVisibility() {
-  const textLength = cardDescription.textContent.trim().length;
-
-  if (descriptionExpanded) {
-    cardDescription.classList.remove("collapsed");
-    readMoreBtn.innerHTML = `Show Less <span class="read-more-arrow">⌃</span>`;
-  } else {
-    cardDescription.classList.add("collapsed");
-    readMoreBtn.innerHTML = `Read More <span class="read-more-arrow">⌄</span>`;
-  }
-
-  readMoreBtn.style.display = textLength > 110 ? "inline-flex" : "none";
-}
-
-function updatePayoutUI() {
-  if (payoutsEnabled) {
-    payoutStatus.textContent = "Enabled";
-    payoutStatus.classList.add("enabled");
-    enablePayoutsBtn.textContent = "Payouts Enabled";
-  } else {
-    payoutStatus.textContent = "Not enabled";
-    payoutStatus.classList.remove("enabled");
-    enablePayoutsBtn.textContent = "Enable Payouts";
-  }
-}
-
-readMoreBtn.addEventListener("click", () => {
-  descriptionExpanded = !descriptionExpanded;
-  updateReadMoreVisibility();
-});
 
 function showError(element, message) {
-  element.textContent = message;
+  if (element) {
+    element.textContent = message;
+  }
 }
 
 function clearError(element) {
-  element.textContent = "";
+  if (element) {
+    element.textContent = "";
+  }
+}
+
+function updatePreview() {
+  if (!cardName || !cardSubtitle || !cardDescription) {
+    return;
+  }
+
+  const nameValue = fullName?.value.trim() || "";
+  const titleValue = program?.value.trim() || "";
+  const schoolValue = school?.value.trim() || "";
+  const officeHoursValue = officeHours?.value.trim() || "";
+  const bioValue = bio?.value.trim() || "";
+
+  cardName.textContent = nameValue;
+
+  if (avatarInitials) {
+    avatarInitials.textContent = getInitials(nameValue);
+  }
+
+  const subtitleParts = [titleValue, schoolValue].filter(Boolean);
+  cardSubtitle.textContent = subtitleParts.join(" • ");
+
+  cardDescription.textContent = bioValue;
+
+  if (officeHoursDisplay && officeHoursText) {
+    officeHoursText.textContent = officeHoursValue;
+    officeHoursDisplay.style.display = officeHoursValue ? "block" : "none";
+  }
 }
 
 function validateName() {
-  const value = fullName.value.trim();
-  const parts = value.split(/\s+/).filter(Boolean);
+  const value = fullName?.value.trim() || "";
 
   if (!value) {
     showError(nameError, "Enter your full name.");
     return false;
   }
 
-  if (parts.length < 2) {
+  if (value.split(/\s+/).filter(Boolean).length < 2) {
     showError(nameError, "Enter at least a first and last name.");
-    return false;
-  }
-
-  if (parts.some((part) => part.length < 2)) {
-    showError(nameError, "Each part of the name should be at least 2 letters.");
     return false;
   }
 
@@ -172,62 +127,41 @@ function validateName() {
   return true;
 }
 
-function validateEmail() {
-  const value = email.value.trim();
-  const basicPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const isGrad = mentorType.value === "grad";
+function validateEduEmail() {
+  if (!mentorType || !eduEmail) {
+    return true;
+  }
 
-  if (!value) {
-    showError(emailError, "Enter an email.");
+  const typeValue = mentorType.value;
+  const emailValue = eduEmail.value.trim();
+
+  if (typeValue !== "graduate") {
+    clearError(eduEmailError);
+    return true;
+  }
+
+  if (!emailValue) {
+    showError(eduEmailError, "Graduate mentors must provide a .edu email.");
     return false;
   }
 
-  if (!value.includes("@")) {
-    showError(emailError, "Email must include @.");
+  if (!emailValue.toLowerCase().endsWith(".edu")) {
+    showError(eduEmailError, "Graduate mentors must use a .edu email address.");
     return false;
   }
 
-  if (!basicPattern.test(value)) {
-    showError(emailError, "Enter a valid email address.");
-    return false;
-  }
-
-  if (isGrad && !/@.+\.edu$/i.test(value)) {
-    showError(emailError, "Grad mentors must use an .edu email address.");
-    return false;
-  }
-
-  clearError(emailError);
-  return true;
-}
-
-function validateOfficeHours() {
-  const value = officeHours.value.trim();
-
-  if (!value) {
-    showError(officeHoursError, "Enter your office hours.");
-    return false;
-  }
-
-  if (value.length < 6) {
-    showError(officeHoursError, "Office hours are too short.");
-    return false;
-  }
-
-  clearError(officeHoursError);
+  clearError(eduEmailError);
   return true;
 }
 
 function validateCalendly() {
-  const value = calendlyLink.value.trim();
-
-  if (!value) {
-    showError(calendlyError, "Enter your Calendly link.");
-    return false;
+  if (!calendlyLink || !calendlyLink.value.trim()) {
+    clearError(calendlyError);
+    return true;
   }
 
   try {
-    const parsed = new URL(value);
+    const parsed = new URL(calendlyLink.value.trim());
 
     if (!parsed.hostname.includes("calendly.com")) {
       showError(calendlyError, "Enter a valid Calendly URL.");
@@ -242,502 +176,64 @@ function validateCalendly() {
   return true;
 }
 
-function validateProgram() {
-  const value = program.value.trim();
-
-  if (!value) {
-    showError(programError, "Enter your program.");
-    return false;
-  }
-
-  if (value.length < 2) {
-    showError(programError, "Program is too short.");
-    return false;
-  }
-
-  clearError(programError);
-  return true;
+if (mentorType) {
+  mentorType.addEventListener("change", validateEduEmail);
 }
 
-function validateSchool() {
-  const value = school.value.trim();
-
-  if (!value) {
-    showError(schoolError, "Enter your grad school.");
-    return false;
-  }
-
-  if (value.length < 2) {
-    showError(schoolError, "Grad school is too short.");
-    return false;
-  }
-
-  clearError(schoolError);
-  return true;
-}
-
-function validateDescription() {
-  const value = description.value.trim();
-
-  if (!value) {
-    showError(descriptionError, "Enter a description.");
-    return false;
-  }
-
-  if (value.length < 40) {
-    showError(
-      descriptionError,
-      "Description should be at least 40 characters.",
-    );
-    return false;
-  }
-
-  clearError(descriptionError);
-  return true;
-}
-
-function validateImage() {
-  if (!hasAppliedImage) {
-    showError(imageError, "Upload and apply a profile image.");
-    return false;
-  }
-
-  clearError(imageError);
-  return true;
-}
-
-function validatePayouts() {
-  if (!payoutsEnabled) {
-    showError(payoutError, "Enable payouts before saving.");
-    return false;
-  }
-
-  clearError(payoutError);
-  return true;
-}
-
-function validateForm() {
-  return [
-    validateName(),
-    validateEmail(),
-    validateOfficeHours(),
-    validateCalendly(),
-    validateProgram(),
-    validateSchool(),
-    validateDescription(),
-    validateImage(),
-    validatePayouts(),
-  ].every(Boolean);
-}
-
-function openFilePicker() {
-  profileImageInput.click();
-}
-
-uploadDropzone.addEventListener("click", openFilePicker);
-uploadDropzone.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" || e.key === " ") {
-    e.preventDefault();
-    openFilePicker();
-  }
-});
-
-uploadDropzone.addEventListener("dragover", (e) => {
-  e.preventDefault();
-  uploadDropzone.classList.add("dragover");
-});
-
-uploadDropzone.addEventListener("dragleave", () => {
-  uploadDropzone.classList.remove("dragover");
-});
-
-uploadDropzone.addEventListener("drop", (e) => {
-  e.preventDefault();
-  uploadDropzone.classList.remove("dragover");
-
-  const file = e.dataTransfer.files[0];
-  if (!file || !file.type.startsWith("image/")) return;
-
-  handleSelectedFile(file);
-});
-
-profileImageInput.addEventListener("change", (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-  handleSelectedFile(file);
-});
-
-function handleSelectedFile(file) {
-  const reader = new FileReader();
-
-  reader.onload = (e) => {
-    rawImageSrc = e.target.result;
-
-    cropImage.onload = () => {
-      cropSection.classList.add("active");
-      setupCrop();
-
-      avatarImage.src = rawImageSrc;
-      avatar.classList.add("has-image");
-      hasAppliedImage = false;
-      clearError(imageError);
-    };
-
-    cropImage.src = rawImageSrc;
-  };
-
-  reader.readAsDataURL(file);
-}
-
-function clearCurrentImage() {
-  rawImageSrc = "";
-  hasAppliedImage = false;
-  profileImageInput.value = "";
-  cropImage.src = "";
-  avatarImage.src = "";
-  avatar.classList.remove("has-image");
-  cropSection.classList.remove("active");
-  clearError(imageError);
-  updatePreview();
-
-  const saved = JSON.parse(localStorage.getItem("demo10MentorSettings")) || {};
-  saved.image = "";
-  localStorage.setItem("demo10MentorSettings", JSON.stringify(saved));
-}
-
-removeImageBtn.addEventListener("click", clearCurrentImage);
-
-function setupCrop() {
-  const boxSize = cropBox.clientWidth;
-  cropState.naturalWidth = cropImage.naturalWidth;
-  cropState.naturalHeight = cropImage.naturalHeight;
-
-  cropState.minScale = Math.max(
-    boxSize / cropState.naturalWidth,
-    boxSize / cropState.naturalHeight,
-  );
-
-  cropState.scale = cropState.minScale;
-  zoomSlider.value = "1";
-
-  const displayWidth = cropState.naturalWidth * cropState.scale;
-  const displayHeight = cropState.naturalHeight * cropState.scale;
-
-  cropState.x = (boxSize - displayWidth) / 2;
-  cropState.y = (boxSize - displayHeight) / 2;
-
-  applyCropTransform();
-}
-
-function applyCropTransform() {
-  const width = cropState.naturalWidth * cropState.scale;
-  const height = cropState.naturalHeight * cropState.scale;
-
-  cropImage.style.width = `${width}px`;
-  cropImage.style.height = `${height}px`;
-  cropImage.style.left = `${cropState.x}px`;
-  cropImage.style.top = `${cropState.y}px`;
-}
-
-function clampCropPosition() {
-  const boxSize = cropBox.clientWidth;
-  const imageWidth = cropState.naturalWidth * cropState.scale;
-  const imageHeight = cropState.naturalHeight * cropState.scale;
-
-  const minX = boxSize - imageWidth;
-  const minY = boxSize - imageHeight;
-  const maxX = 0;
-  const maxY = 0;
-
-  cropState.x = Math.min(maxX, Math.max(minX, cropState.x));
-  cropState.y = Math.min(maxY, Math.max(minY, cropState.y));
-}
-
-zoomSlider.addEventListener("input", () => {
-  if (!cropState.naturalWidth || !cropState.naturalHeight) return;
-
-  const previousScale = cropState.scale;
-  const zoomMultiplier = parseFloat(zoomSlider.value);
-  cropState.scale = cropState.minScale * zoomMultiplier;
-
-  const boxSize = cropBox.clientWidth;
-  const centerX = boxSize / 2;
-  const centerY = boxSize / 2;
-
-  const imagePointX = (centerX - cropState.x) / previousScale;
-  const imagePointY = (centerY - cropState.y) / previousScale;
-
-  cropState.x = centerX - imagePointX * cropState.scale;
-  cropState.y = centerY - imagePointY * cropState.scale;
-
-  clampCropPosition();
-  applyCropTransform();
-});
-
-function startDrag(clientX, clientY) {
-  cropState.dragging = true;
-  cropBox.classList.add("dragging");
-  cropState.startX = clientX;
-  cropState.startY = clientY;
-  cropState.startOffsetX = cropState.x;
-  cropState.startOffsetY = cropState.y;
-}
-
-function duringDrag(clientX, clientY) {
-  if (!cropState.dragging) return;
-
-  const dx = clientX - cropState.startX;
-  const dy = clientY - cropState.startY;
-
-  cropState.x = cropState.startOffsetX + dx;
-  cropState.y = cropState.startOffsetY + dy;
-
-  clampCropPosition();
-  applyCropTransform();
-}
-
-function endDrag() {
-  cropState.dragging = false;
-  cropBox.classList.remove("dragging");
-}
-
-cropBox.addEventListener("mousedown", (e) => {
-  e.preventDefault();
-  startDrag(e.clientX, e.clientY);
-});
-
-window.addEventListener("mousemove", (e) => {
-  duringDrag(e.clientX, e.clientY);
-});
-
-window.addEventListener("mouseup", endDrag);
-
-cropBox.addEventListener(
-  "touchstart",
-  (e) => {
-    const touch = e.touches[0];
-    startDrag(touch.clientX, touch.clientY);
-  },
-  { passive: true },
-);
-
-window.addEventListener(
-  "touchmove",
-  (e) => {
-    if (!cropState.dragging) return;
-    const touch = e.touches[0];
-    duringDrag(touch.clientX, touch.clientY);
-  },
-  { passive: true },
-);
-
-window.addEventListener("touchend", endDrag);
-
-resetCropBtn.addEventListener("click", () => {
-  if (!rawImageSrc) return;
-  cropImage.onload = () => setupCrop();
-  cropImage.src = rawImageSrc;
-});
-
-applyCropBtn.addEventListener("click", () => {
-  const canvas = document.createElement("canvas");
-  const outputSize = 500;
-  const boxSize = cropBox.clientWidth;
-
-  canvas.width = outputSize;
-  canvas.height = outputSize;
-
-  const ctx = canvas.getContext("2d");
-
-  const sourceX = -cropState.x / cropState.scale;
-  const sourceY = -cropState.y / cropState.scale;
-  const sourceSize = boxSize / cropState.scale;
-
-  ctx.drawImage(
-    cropImage,
-    sourceX,
-    sourceY,
-    sourceSize,
-    sourceSize,
-    0,
-    0,
-    outputSize,
-    outputSize,
-  );
-
-  const croppedDataUrl = canvas.toDataURL("image/png");
-  avatarImage.src = croppedDataUrl;
-  avatar.classList.add("has-image");
-  hasAppliedImage = true;
-  clearError(imageError);
-  saveForm(croppedDataUrl);
-});
-
-enablePayoutsBtn.addEventListener("click", () => {
-  clearError(payoutError);
-
-  // Replace this with your real backend Stripe Connect onboarding route
-  // Example:
-  // window.location.href = "/api/stripe/connect/onboarding";
-
-  payoutsEnabled = true;
-  updatePayoutUI();
-  saveForm();
-});
-
-function saveForm(imageData = null) {
-  const existing =
-    JSON.parse(localStorage.getItem("demo10MentorSettings")) || {};
-  const finalImage = imageData !== null ? imageData : existing.image || "";
-
-  const data = {
-    mentorType: mentorType.value,
-    fullName: fullName.value.trim(),
-    email: email.value.trim(),
-    officeHours: officeHours.value.trim(),
-    calendlyLink: calendlyLink.value.trim(),
-    program: program.value.trim(),
-    school: school.value.trim(),
-    description: description.value.trim(),
-    payoutsEnabled,
-    image: finalImage,
-  };
-
-  localStorage.setItem("demo10MentorSettings", JSON.stringify(data));
-}
-
-function loadForm() {
-  const saved = localStorage.getItem("demo10MentorSettings");
-  if (!saved) {
+if (fullName) {
+  fullName.addEventListener("input", () => {
+    validateName();
     updatePreview();
-    updatePayoutUI();
-    return;
-  }
-
-  const data = JSON.parse(saved);
-
-  mentorType.value = data.mentorType || "grad";
-  fullName.value = data.fullName || "";
-  email.value = data.email || "";
-  officeHours.value = data.officeHours || "";
-  calendlyLink.value = data.calendlyLink || "";
-  program.value = data.program || "";
-  school.value = data.school || "";
-  description.value = data.description || "";
-  payoutsEnabled = Boolean(data.payoutsEnabled);
-
-  if (data.image) {
-    avatarImage.src = data.image;
-    avatar.classList.add("has-image");
-    hasAppliedImage = true;
-  } else {
-    avatar.classList.remove("has-image");
-    hasAppliedImage = false;
-  }
-
-  updatePreview();
-  updatePayoutUI();
-}
-
-mentorType.addEventListener("change", validateEmail);
-
-fullName.addEventListener("input", () => {
-  validateName();
-  updatePreview();
-});
-
-email.addEventListener("input", validateEmail);
-
-officeHours.addEventListener("input", () => {
-  validateOfficeHours();
-  updatePreview();
-});
-
-calendlyLink.addEventListener("input", validateCalendly);
-
-program.addEventListener("input", () => {
-  validateProgram();
-  updatePreview();
-});
-
-school.addEventListener("input", () => {
-  validateSchool();
-  updatePreview();
-});
-
-description.addEventListener("input", () => {
-  validateDescription();
-  updatePreview();
-});
-
-mentorForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-
-  if (!validateForm()) return;
-
-  saveForm();
-  alert("Settings saved successfully.");
-});
-
-loadForm();
-// Mobile sidebar toggle
-const menuBtn = document.getElementById("mobileMenuToggle");
-const overlay = document.getElementById("sidebarOverlay");
-const shell = document.querySelector(".app-shell");
-const themeToggle = document.getElementById("themeToggle");
-
-function updateTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  localStorage.setItem("theme", theme);
-  
-  if (themeToggle) {
-    themeToggle.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
-  }
-}
-
-// Initial sync of toggle button text
-const currentSavedTheme = localStorage.getItem("theme") || "light";
-if (themeToggle) {
-  themeToggle.textContent = currentSavedTheme === "dark" ? "Light Mode" : "Dark Mode";
-}
-
-if (themeToggle) {
-  themeToggle.addEventListener("click", () => {
-    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
-    const newTheme = currentTheme === "dark" ? "light" : "dark";
-    updateTheme(newTheme);
   });
 }
 
-if (menuBtn && shell) {
-  menuBtn.onclick = () => shell.classList.add("sidebar-active");
-}
-if (overlay && shell) {
-  overlay.onclick = () => shell.classList.remove("sidebar-active");
+if (eduEmail) {
+  eduEmail.addEventListener("input", validateEduEmail);
 }
 
-// Sidebar navigation logic
-const navItems = document.querySelectorAll(".nav-item");
+if (program) {
+  program.addEventListener("input", updatePreview);
+}
 
-function setActiveNav() {
-  const currentPath = window.location.pathname.split("/").pop() || "demo1.html";
+if (school) {
+  school.addEventListener("input", updatePreview);
+}
 
-  navItems.forEach((item) => {
-    const href = item.getAttribute("href");
-    if (href === currentPath) {
-      item.classList.add("active");
-    } else {
-      item.classList.remove("active");
+if (officeHours) {
+  officeHours.addEventListener("input", updatePreview);
+}
+
+if (bio) {
+  bio.addEventListener("input", updatePreview);
+}
+
+if (description) {
+  description.addEventListener("input", () => {
+    // Keep the field reactive for future enhancements without localStorage persistence.
+  });
+}
+
+if (enablePayoutsBtn) {
+  enablePayoutsBtn.addEventListener("click", () => {
+    showError(
+      payoutError,
+      "Payout onboarding is not connected on this page yet. Your profile can still be saved."
+    );
+
+    if (payoutStatus && !payoutStatus.classList.contains("enabled")) {
+      payoutStatus.textContent = "Not enabled";
     }
   });
 }
 
-setActiveNav();
+if (mentorForm) {
+  mentorForm.addEventListener("submit", (event) => {
+    const isValid = [validateName(), validateEduEmail(), validateCalendly()].every(Boolean);
 
-navItems.forEach((item) => {
-  item.addEventListener("click", () => {
-    navItems.forEach((nav) => nav.classList.remove("active"));
-    item.classList.add("active");
-    if (shell) shell.classList.remove("sidebar-active");
+    if (!isValid) {
+      event.preventDefault();
+    }
   });
-});
+}
+
+updatePreview();

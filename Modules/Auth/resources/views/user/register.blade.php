@@ -51,6 +51,7 @@
 
       <form id="signup-form" method="POST" action="{{ route('auth.register.post') }}" class="space-y-4" novalidate>
         @csrf
+        <input type="hidden" name="auth_context" value="signup" />
         <input type="hidden" name="role" id="signup-role-input" value="{{ old('role', 'student') }}" />
         <input type="hidden" name="program_level" id="signup-program-level-input" value="{{ old('program_level', 'undergrad') }}" />
         <div>

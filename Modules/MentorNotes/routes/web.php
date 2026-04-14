@@ -8,4 +8,6 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Add mentor notes routes here
+Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
+    Route::view('/mentor/notes', 'mentornotes::mentor.notes')->name('mentor.notes');
+});

@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Support\app\Http\Controllers\Support;
+namespace Modules\Support\app\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
@@ -17,13 +17,11 @@ class TicketsController extends Controller
 
     public function index(Request $request): View
     {
-        $items = SupportTicket::query()
-            ->where('user_id', Auth::id())
-            ->orderByDesc('created_at')
-            ->paginate((int) $request->integer('per_page', 20));
-
-        return view('support::shared.create', [
-            'tickets' => $items,
+        return view('support::student.create', [
+            'tickets' => SupportTicket::query()
+                ->where('user_id', Auth::id())
+                ->orderByDesc('created_at')
+                ->paginate((int) $request->integer('per_page', 20)),
         ]);
     }
 
@@ -38,7 +36,7 @@ class TicketsController extends Controller
             ->where('user_id', Auth::id())
             ->findOrFail($id);
 
-        return view('support::shared.create', [
+        return view('support::student.create', [
             'tickets' => SupportTicket::query()
                 ->where('user_id', Auth::id())
                 ->orderByDesc('created_at')

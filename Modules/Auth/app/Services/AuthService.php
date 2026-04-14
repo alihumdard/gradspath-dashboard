@@ -97,7 +97,7 @@ class AuthService
         return $normalized === '' ? null : $normalized;
     }
 
-    public function login(array $credentials, bool $remember = false): ?User
+    public function loginUserPortal(array $credentials, bool $remember = false): ?User
     {
         if (!Auth::attempt($credentials, $remember)) {
             return null;
@@ -105,6 +105,26 @@ class AuthService
 
         $user = Auth::user();
         if (!$user || !$user->is_active) {
+            Auth::logout();
+            return null;
+        }
+
+        if ($user->hasRole('admin')) {
+            Auth::logout();
+            return null;
+        }
+
+        return $user;
+    }
+
+    public function loginAdminPortal(array $credentials, bool $remember = false): ?User
+    {
+        if (!Auth::attempt($credentials, $remember)) {
+            return null;
+        }
+
+        $user = Auth::user();
+        if (!$user || !$user->is_active || !$user->hasRole('admin')) {
             Auth::logout();
             return null;
         }

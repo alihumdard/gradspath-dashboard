@@ -45,6 +45,7 @@
       @endif
       <form id="login-form" method="POST" action="{{ route('auth.login.post') }}" class="space-y-4">
         @csrf
+        <input type="hidden" name="auth_context" value="login" />
         <div>
           <label
             for="login-email"
@@ -65,9 +66,11 @@
               aria-hidden="true"
             ></i>
           </div>
-          @error('email')
-            <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
-          @enderror
+          @if ($activeAuthModal === 'login')
+            @error('email')
+              <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+            @enderror
+          @endif
         </div>
         <div>
           <label
@@ -96,9 +99,11 @@
               <i class="fa-solid fa-eye-slash text-sm toggle-icon"></i>
             </button>
           </div>
-          @error('password')
-            <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
-          @enderror
+          @if ($activeAuthModal === 'login')
+            @error('password')
+              <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+            @enderror
+          @endif
         </div>
         <div class="flex items-center justify-between">
           <label class="flex items-center gap-2 cursor-pointer">
