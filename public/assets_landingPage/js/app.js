@@ -240,6 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Institution autocomplete functionality
     let universitiesData = [];
     const institutionInput = document.getElementById("signup-institution");
+    const institutionIdInput = document.getElementById("signup-institution-id");
     const suggestionsContainer = document.getElementById(
         "institution-suggestions",
     );
@@ -282,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
         suggestionsContainer.innerHTML = filtered
             .map(
                 (uni) => `
-        <div class="p-3 cursor-pointer hover:bg-[#f5efff] border-b border-[#E9D5FF] last:border-b-0 text-sm text-[#6D28D9]">
+        <div class="p-3 cursor-pointer hover:bg-[#f5efff] border-b border-[#E9D5FF] last:border-b-0 text-sm text-[#6D28D9]" data-university-id="${uni.id ?? ""}">
           <div class="font-semibold">${uni.name}</div>
           <div class="text-xs text-[#9A7FD9]">${uni.country}${uni["state-province"] ? ", " + uni["state-province"] : ""}</div>
         </div>
@@ -298,6 +299,9 @@ document.addEventListener("DOMContentLoaded", () => {
             .forEach((el, index) => {
                 el.addEventListener("click", () => {
                     institutionInput.value = filtered[index].name;
+                    if (institutionIdInput) {
+                        institutionIdInput.value = filtered[index].id ?? "";
+                    }
                     suggestionsContainer.classList.add("hidden");
                 });
             });
@@ -306,6 +310,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Input event listener
     if (institutionInput) {
         institutionInput.addEventListener("input", (e) => {
+            if (institutionIdInput) {
+                institutionIdInput.value = "";
+            }
             showSuggestions(e.target.value);
         });
 

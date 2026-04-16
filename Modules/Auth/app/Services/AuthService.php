@@ -26,7 +26,7 @@ class AuthService
             $user->assignRole($role);
 
             $institutionText = $this->normalizeInstitution($data['institution'] ?? null);
-            $university = $this->resolveUniversity($institutionText);
+            $university = $this->resolveUniversity($data['institution_id'] ?? null, $institutionText);
 
             $user->credit()->firstOrCreate([], ['balance' => 0]);
 
@@ -59,7 +59,7 @@ class AuthService
                         'status' => 'active',
                         'approved_at' => now(),
                         'university_id' => $university?->id,
-                        'grad_school_display' => $data['institution'] ?? null,
+                        'grad_school_display' => $institutionText,
                     ]
                 );
             }
@@ -76,8 +76,14 @@ class AuthService
         return in_array($role, $allowedRoles, true) ? $role : $defaultRole;
     }
 
-    private function resolveUniversity(?string $institution): ?University
+    private function resolveUniversity(mixed $institutionId, ?string $institution): ?University
     {
+        if ($institutionId !== null && $institutionId !== '') {
+            return University::query()
+                ->where('is_active', true)
+                ->find((int) $institutionId);
+        }
+
         if ($institution === null) {
             return null;
         }

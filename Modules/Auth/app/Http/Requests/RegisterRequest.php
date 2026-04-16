@@ -36,6 +36,7 @@ class RegisterRequest extends FormRequest
             'password' => ['required', 'confirmed', Password::min(8)->letters()],
             'role' => ['required', Rule::in($this->allowedRoles())],
             'program_level' => ['required', 'in:undergrad,grad,professional'],
+            'institution_id' => ['nullable', 'integer', Rule::exists('universities', 'id')->where(fn ($query) => $query->where('is_active', true))],
             'institution' => ['required', 'string', 'max:255'],
         ];
     }

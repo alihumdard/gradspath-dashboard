@@ -54,6 +54,7 @@
         <input type="hidden" name="auth_context" value="signup" />
         <input type="hidden" name="role" id="signup-role-input" value="{{ old('role', 'student') }}" />
         <input type="hidden" name="program_level" id="signup-program-level-input" value="{{ old('program_level', 'undergrad') }}" />
+        <input type="hidden" name="institution_id" id="signup-institution-id" value="{{ old('institution_id') }}" />
         <div>
           <label class="block text-sm font-bold text-[#1D1440] mb-2"
             >Program level</label
@@ -181,6 +182,9 @@
             ></div>
           </div>
           @error('institution')
+            <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+          @enderror
+          @error('institution_id')
             <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
           @enderror
         </div>

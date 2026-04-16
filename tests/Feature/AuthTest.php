@@ -1,11 +1,15 @@
 <?php
 
-use App\Models\User;
+use App\Notifications\QueuedVerifyEmail;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Modules\Auth\app\Models\User;
+use Modules\Institutions\app\Models\University;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -39,6 +43,20 @@ it('renders auth pages', function () {
         ->assertViewHas('token', 'test-token');
 });
 
+it('renders the email verification notice for unverified users', function () {
+    $user = User::factory()->create([
+        'email' => 'verify-notice-' . Str::uuid() . '@example.edu',
+        'is_active' => true,
+        'email_verified_at' => null,
+    ]);
+    $user->assignRole('student');
+
+    $this->actingAs($user)
+        ->get(route('verification.notice'))
+        ->assertOk()
+        ->assertSee('Check your inbox');
+});
+
 it('renders the admin login page at /admin for guests', function () {
     $this->get('/admin')
         ->assertOk()
@@ -65,7 +83,7 @@ it('authenticates an admin from the admin login form', function () {
         'password' => 'Password123',
     ])->assertRedirect(route('admin.dashboard'));
 
-    $this->assertAuthenticatedAs($user);
+    expect(Auth::id())->toBe($user->id);
 });
 
 it('redirects authenticated admins from /admin to the admin dashboard', function () {
@@ -82,7 +100,9 @@ it('redirects authenticated admins from /admin to the admin dashboard', function
         ->assertRedirect(route('admin.dashboard'));
 });
 
-it('registers a student and creates defaults', function () {
+it('registers a student, creates defaults, and sends verification email', function () {
+    Notification::fake();
+
     $email = 'student-auth-' . Str::uuid() . '@college.edu';
 
     $payload = [
@@ -96,12 +116,13 @@ it('registers a student and creates defaults', function () {
     ];
 
     $this->post('/register', $payload)
-        ->assertRedirect(route('student.dashboard'));
+        ->assertRedirect(route('verification.notice'));
 
     $user = User::query()->where('email', $payload['email'])->first();
 
     expect($user)->not->toBeNull();
     expect($user->hasRole('student'))->toBeTrue();
+    expect($user->hasVerifiedEmail())->toBeFalse();
 
     $this->assertDatabaseHas('user_credits', [
         'user_id' => $user->id,
@@ -121,12 +142,54 @@ it('registers a student and creates defaults', function () {
         'program_level' => 'undergrad',
     ]);
 
+    Notification::assertSentTo($user, QueuedVerifyEmail::class);
+
     $this->assertAuthenticated();
     expect(Auth::id())->toBe($user->id);
 });
 
-it('registers a student from the landing page and reaches the dashboard after redirect', function () {
-    $email = 'student-landing-' . Str::uuid() . '@example.com';
+it('stores the selected institution id during student registration', function () {
+    Notification::fake();
+
+    $university = University::query()->create([
+        'name' => 'Boston College',
+        'display_name' => 'Boston College',
+        'country' => 'US',
+        'alpha_two_code' => 'US',
+        'city' => 'Boston',
+        'state_province' => 'Massachusetts',
+        'is_active' => true,
+    ]);
+
+    $email = 'student-with-school-' . Str::uuid() . '@college.edu';
+
+    $payload = [
+        'name' => 'Student With Institution',
+        'email' => $email,
+        'password' => 'Password123',
+        'password_confirmation' => 'Password123',
+        'role' => 'student',
+        'program_level' => 'undergrad',
+        'institution' => 'Boston College',
+        'institution_id' => $university->id,
+    ];
+
+    $this->post('/register', $payload)
+        ->assertRedirect(route('verification.notice'));
+
+    $user = User::query()->where('email', $email)->firstOrFail();
+
+    $this->assertDatabaseHas('student_profiles', [
+        'user_id' => $user->id,
+        'university_id' => $university->id,
+        'institution_text' => 'Boston College',
+    ]);
+});
+
+it('registers a student from the landing page and sends them to verification notice', function () {
+    Notification::fake();
+
+    $email = 'student-landing-' . Str::uuid() . '@example.edu';
 
     $payload = [
         'name' => 'Landing Student',
@@ -140,16 +203,18 @@ it('registers a student from the landing page and reaches the dashboard after re
 
     $this->from('/')
         ->post('/register', $payload)
-        ->assertRedirect(route('student.dashboard'));
+        ->assertRedirect(route('verification.notice'));
 
-    $this->get(route('student.dashboard'))
+    $this->get(route('verification.notice'))
         ->assertOk()
-        ->assertSee('STUDENT PORTAL', false);
+        ->assertSee('Check your inbox');
 
     $this->assertDatabaseHas('users', ['email' => $payload['email']]);
 });
 
 it('accepts registration with .edu country domains like .edu.pk', function () {
+    Notification::fake();
+
     $email = 'suny-' . Str::uuid() . '@student.edu.pk';
 
     $payload = [
@@ -163,12 +228,14 @@ it('accepts registration with .edu country domains like .edu.pk', function () {
     ];
 
     $this->post('/register', $payload)
-        ->assertRedirect(route('student.dashboard'));
+        ->assertRedirect(route('verification.notice'));
 
     $this->assertDatabaseHas('users', ['email' => $payload['email']]);
 });
 
-it('accepts registration when email is not .edu', function () {
+it('rejects registration when email is not .edu', function () {
+    Notification::fake();
+
     $email = 'student-invalid-' . Str::uuid() . '@example.com';
 
     $payload = [
@@ -181,13 +248,18 @@ it('accepts registration when email is not .edu', function () {
         'institution' => 'State University',
     ];
 
-    $this->post('/register', $payload)
-        ->assertRedirect(route('student.dashboard'));
+    $response = $this->from('/')
+        ->post('/register', $payload);
 
-    $this->assertDatabaseHas('users', ['email' => $payload['email']]);
+    $response->assertRedirect('/');
+    $response->assertSessionHasErrors('email');
+
+    $this->assertDatabaseMissing('users', ['email' => $payload['email']]);
 });
 
 it('registers even when selected role was missing before signup', function () {
+    Notification::fake();
+
     Role::query()
         ->where('name', 'student')
         ->where('guard_name', 'web')
@@ -205,7 +277,7 @@ it('registers even when selected role was missing before signup', function () {
     ];
 
     $this->post('/register', $payload)
-        ->assertRedirect(route('student.dashboard'));
+        ->assertRedirect(route('verification.notice'));
 
     expect(Role::query()->where('name', 'student')->where('guard_name', 'web')->exists())->toBeTrue();
 
@@ -214,7 +286,9 @@ it('registers even when selected role was missing before signup', function () {
     expect($user->hasRole('student'))->toBeTrue();
 });
 
-it('registers a mentor and redirects to mentor dashboard', function () {
+it('registers a mentor and redirects to verification notice', function () {
+    Notification::fake();
+
     $email = 'mentor-auth-' . Str::uuid() . '@gradschool.edu';
 
     $payload = [
@@ -228,7 +302,7 @@ it('registers a mentor and redirects to mentor dashboard', function () {
     ];
 
     $this->post('/register', $payload)
-        ->assertRedirect(route('mentor.dashboard'))
+        ->assertRedirect(route('verification.notice'))
         ->assertSessionHas('success');
 
     $user = User::query()->where('email', $payload['email'])->first();
@@ -247,17 +321,39 @@ it('registers a mentor and redirects to mentor dashboard', function () {
         'user_id' => $user->id,
     ]);
 
+    Notification::assertSentTo($user, QueuedVerifyEmail::class);
+
     $this->assertAuthenticated();
     expect(Auth::id())->toBe($user->id);
 });
 
-it('logs in a student and redirects to student dashboard', function () {
-    $email = 'login-student-' . Str::uuid() . '@example.com';
+it('logs in an unverified student and redirects to verification notice', function () {
+    $email = 'login-student-' . Str::uuid() . '@example.edu';
 
     $user = User::factory()->create([
         'email' => $email,
         'password' => Hash::make('Password123'),
         'is_active' => true,
+        'email_verified_at' => null,
+    ]);
+    $user->assignRole('student');
+
+    $this->post('/login', [
+        'email' => $email,
+        'password' => 'Password123',
+    ])->assertRedirect(route('verification.notice'));
+
+    expect(Auth::id())->toBe($user->id);
+});
+
+it('logs in a verified student and redirects to student dashboard', function () {
+    $email = 'login-student-verified-' . Str::uuid() . '@example.edu';
+
+    $user = User::factory()->create([
+        'email' => $email,
+        'password' => Hash::make('Password123'),
+        'is_active' => true,
+        'email_verified_at' => now(),
     ]);
     $user->assignRole('student');
 
@@ -266,16 +362,36 @@ it('logs in a student and redirects to student dashboard', function () {
         'password' => 'Password123',
     ])->assertRedirect(route('student.dashboard'));
 
-    $this->assertAuthenticatedAs($user);
+    expect(Auth::id())->toBe($user->id);
 });
 
-it('logs in a mentor and redirects to mentor dashboard', function () {
-    $email = 'login-mentor-' . Str::uuid() . '@example.com';
+it('logs in an unverified mentor and redirects to verification notice', function () {
+    $email = 'login-mentor-' . Str::uuid() . '@example.edu';
 
     $user = User::factory()->create([
         'email' => $email,
         'password' => Hash::make('Password123'),
         'is_active' => true,
+        'email_verified_at' => null,
+    ]);
+    $user->assignRole('mentor');
+
+    $this->post('/login', [
+        'email' => $email,
+        'password' => 'Password123',
+    ])->assertRedirect(route('verification.notice'));
+
+    expect(Auth::id())->toBe($user->id);
+});
+
+it('logs in a verified mentor and redirects to mentor dashboard', function () {
+    $email = 'login-mentor-verified-' . Str::uuid() . '@example.edu';
+
+    $user = User::factory()->create([
+        'email' => $email,
+        'password' => Hash::make('Password123'),
+        'is_active' => true,
+        'email_verified_at' => now(),
     ]);
     $user->assignRole('mentor');
 
@@ -284,10 +400,10 @@ it('logs in a mentor and redirects to mentor dashboard', function () {
         'password' => 'Password123',
     ])->assertRedirect(route('mentor.dashboard'));
 
-    $this->assertAuthenticatedAs($user);
+    expect(Auth::id())->toBe($user->id);
 });
 
-it('logs in an admin and redirects to admin dashboard', function () {
+it('rejects admin login from the shared user portal form', function () {
     $email = 'login-admin-' . Str::uuid() . '@example.com';
 
     $user = User::factory()->create([
@@ -300,12 +416,12 @@ it('logs in an admin and redirects to admin dashboard', function () {
     $this->post('/login', [
         'email' => $email,
         'password' => 'Password123',
-    ])->assertRedirect(route('admin.dashboard'));
+    ])->assertSessionHasErrors('email');
 
-    $this->assertAuthenticatedAs($user);
+    $this->assertGuest();
 });
 
-it('logs in an admin from the shared login flow', function () {
+it('rejects admin login from the shared login flow', function () {
     $email = 'admin-login-' . Str::uuid() . '@example.com';
 
     $user = User::factory()->create([
@@ -318,9 +434,63 @@ it('logs in an admin from the shared login flow', function () {
     $this->post('/login', [
         'email' => $email,
         'password' => 'Password123',
-    ])->assertRedirect(route('admin.dashboard'));
+    ])->assertSessionHasErrors('email');
 
-    $this->assertAuthenticatedAs($user);
+    $this->assertGuest();
+});
+
+it('resends the verification email for unverified users', function () {
+    Notification::fake();
+
+    $user = User::factory()->create([
+        'email' => 'resend-' . Str::uuid() . '@example.edu',
+        'is_active' => true,
+        'email_verified_at' => null,
+    ]);
+    $user->assignRole('student');
+
+    $this->actingAs($user)
+        ->post(route('verification.send'))
+        ->assertRedirect();
+
+    Notification::assertSentTo($user, QueuedVerifyEmail::class);
+});
+
+it('marks the user email as verified from the signed verification link', function () {
+    $user = User::factory()->create([
+        'email' => 'verify-' . Str::uuid() . '@example.edu',
+        'is_active' => true,
+        'email_verified_at' => null,
+    ]);
+    $user->assignRole('student');
+
+    $verificationUrl = URL::temporarySignedRoute(
+        'verification.verify',
+        now()->addMinutes(60),
+        [
+            'id' => $user->id,
+            'hash' => sha1($user->getEmailForVerification()),
+        ]
+    );
+
+    $this->actingAs($user)
+        ->get($verificationUrl)
+        ->assertRedirect(route('student.dashboard'));
+
+    expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
+});
+
+it('redirects verified users away from the verification notice', function () {
+    $user = User::factory()->create([
+        'email' => 'verified-notice-' . Str::uuid() . '@example.edu',
+        'is_active' => true,
+        'email_verified_at' => now(),
+    ]);
+    $user->assignRole('student');
+
+    $this->actingAs($user)
+        ->get(route('verification.notice'))
+        ->assertRedirect(route('student.dashboard'));
 });
 
 it('rejects invalid login credentials', function () {

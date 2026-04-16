@@ -42,6 +42,7 @@ class MentorSettingsController extends Controller
         DB::transaction(function () use ($user, $data): void {
             $user->forceFill([
                 'name' => $data['name'],
+                'email' => $data['email'],
             ])->save();
 
             $mentor = $user->mentor ?? new Mentor([
@@ -58,6 +59,7 @@ class MentorSettingsController extends Controller
                 'office_hours_schedule' => $data['office_hours_schedule'] ?? null,
                 'edu_email' => $data['edu_email'] ?? null,
                 'calendly_link' => $data['calendly_link'] ?? null,
+                'is_featured' => (bool) ($data['is_featured'] ?? false),
             ]);
             $mentor->save();
 

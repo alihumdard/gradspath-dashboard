@@ -72,6 +72,13 @@
           </div>
 
           <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" value="{{ old('email', $user->email ?? '') }}" placeholder="Enter your email address" />
+            <p class="helper-text">This is your main account email.</p>
+            <p class="error-text" id="emailError">{{ $viewErrors->first('email') }}</p>
+          </div>
+
+          <div class="field">
             <label for="mentorType">Mentor Type</label>
             <div class="select-wrap">
               <select id="mentorType" name="mentor_type">
@@ -135,6 +142,28 @@
           </div>
 
           <div class="field">
+            <label for="isFeatured">Featured Mentor</label>
+            <div class="slack-box" style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+              <div>
+                <p class="slack-text" style="margin-bottom: 4px;">Show this mentor in featured sections across discovery.</p>
+                <p class="helper-text" style="margin: 0;">Turn this on to mark the profile as featured.</p>
+              </div>
+              <label for="isFeatured" style="display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;">
+                <input type="hidden" name="is_featured" value="0" />
+                <input
+                  type="checkbox"
+                  id="isFeatured"
+                  name="is_featured"
+                  value="1"
+                  @checked((bool) old('is_featured', $mentor->is_featured))
+                />
+                <span>{{ old('is_featured', $mentor->is_featured) ? 'Enabled' : 'Disabled' }}</span>
+              </label>
+            </div>
+            <p class="error-text">{{ $viewErrors->first('is_featured') }}</p>
+          </div>
+
+          <div class="field">
             <label for="bio">Short Bio</label>
             <textarea id="bio" name="bio" rows="4" placeholder="Write a concise summary students will see first.">{{ old('bio', $mentor->bio ?? '') }}</textarea>
             <p class="helper-text">Used in mentor cards and booking previews.</p>
@@ -150,21 +179,25 @@
 
           <div class="field">
             <label>Services Offered</label>
-            <div class="slack-box">
-              <p class="slack-text">Select the active services students can book with you.</p>
-              <div class="service-options" style="display: grid; gap: 12px; margin-top: 16px;">
+            <div class="services-panel">
+              <div class="services-panel-head">
+                <p class="services-eyebrow">Booking visibility</p>
+                <p class="slack-text">Select the active services students can book with you.</p>
+              </div>
+              <div class="service-options">
                 @foreach ($services as $service)
-                  <label style="display: flex; align-items: flex-start; gap: 12px;">
+                  <label class="service-option">
                     <input
+                      class="service-option-input"
                       type="checkbox"
                       name="service_config_ids[]"
                       value="{{ $service->id }}"
                       @checked(in_array($service->id, $selectedIds, true))
-                      style="margin-top: 4px;"
                     />
-                    <span>
-                      <strong>{{ $service->service_name }}</strong><br />
-                      <span style="opacity: 0.75;">{{ $service->duration_minutes }} min</span>
+                    <span class="service-option-check" aria-hidden="true"></span>
+                    <span class="service-option-copy">
+                      <strong>{{ $service->service_name }}</strong>
+                      <span class="service-option-meta">{{ $service->duration_minutes }} min session</span>
                     </span>
                   </label>
                 @endforeach

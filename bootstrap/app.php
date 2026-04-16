@@ -21,11 +21,15 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($user?->hasRole('mentor')) {
-                return route('mentor.dashboard');
+                return $user->hasVerifiedEmail()
+                    ? route('mentor.dashboard')
+                    : route('verification.notice');
             }
 
             if ($user?->hasRole('student')) {
-                return route('student.dashboard');
+                return $user->hasVerifiedEmail()
+                    ? route('student.dashboard')
+                    : route('verification.notice');
             }
 
             return '/';
@@ -37,22 +41,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 : route('login');
         });
 
-        // Spatie role/permission middleware aliases
         $middleware->alias([
-            'role'               => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission'         => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
-
-            // Module-scoped middleware aliases
-            'active'           => \Modules\Auth\app\Http\Middleware\EnsureActiveAccount::class,
+            'active' => \Modules\Auth\app\Http\Middleware\EnsureActiveAccount::class,
             'booking.participant' => \Modules\Bookings\app\Http\Middleware\EnsureBookingParticipant::class,
-
-            // Legacy aliases still used in some routes/modules
-            'mentor.approved'  => \App\Http\Middleware\EnsureMentorApproved::class,
+            'mentor.approved' => \App\Http\Middleware\EnsureMentorApproved::class,
             'feedback.required' => \App\Http\Middleware\EnsureFeedbackCompleted::class,
         ]);
 
-        // Exclude Stripe webhook routes from CSRF — they are POST-ed by Stripe servers, not browsers
         $middleware->validateCsrfTokens(except: [
             'webhooks/stripe',
             'webhooks/stripe/connect',

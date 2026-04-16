@@ -3,7 +3,11 @@
 namespace Modules\Auth\app\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,20 +15,17 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
-use Throwable;
 use Illuminate\View\View;
 use Modules\Auth\app\Http\Requests\ForgotPasswordRequest;
 use Modules\Auth\app\Http\Requests\LoginRequest;
 use Modules\Auth\app\Http\Requests\RegisterRequest;
 use Modules\Auth\app\Http\Requests\ResetPasswordRequest;
-use Modules\Auth\app\Models\User;
 use Modules\Auth\app\Services\AuthService;
+use Throwable;
 
 class AuthController extends Controller
 {
     public function __construct(private readonly AuthService $authService) {}
-
-    // ── Guest: Show Pages ────────────────────────────────────────────────────
 
     public function showLogin(): View
     {
@@ -73,8 +74,6 @@ class AuthController extends Controller
         return view('auth::reset-password', ['token' => $token]);
     }
 
-    // ── Login / Logout ───────────────────────────────────────────────────────
-
     public function login(LoginRequest $request): RedirectResponse
     {
         $user = $this->authService->loginUserPortal(
@@ -98,6 +97,7 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('login');
     }
 
@@ -115,8 +115,6 @@ class AuthController extends Controller
             'authModal' => $modal,
         ]);
     }
-
-    // ── Register ─────────────────────────────────────────────────────────────
 
     public function register(RegisterRequest $request): RedirectResponse
     {
@@ -148,6 +146,8 @@ class AuthController extends Controller
                 'auth_user_id' => Auth::id(),
             ]);
 
+            event(new Registered($user));
+
             $request->session()->regenerate();
 
             Log::info('Registration session regenerated.', [
@@ -174,8 +174,6 @@ class AuthController extends Controller
             throw $exception;
         }
     }
-
-    // ── Password Reset ───────────────────────────────────────────────────────
 
     public function sendResetLink(ForgotPasswordRequest $request): RedirectResponse
     {
@@ -211,8 +209,59 @@ class AuthController extends Controller
             ->with('success', 'Password reset successfully. Please sign in.');
     }
 
-    private function redirectAfterAuth(User $user): RedirectResponse
+    public function showVerifyEmailNotice(Request $request): View|RedirectResponse
     {
+        $user = $request->user();
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return $this->redirectAfterAuth($user, false);
+        }
+
+        return view('auth::verify-email');
+    }
+
+    public function verifyEmail(EmailVerificationRequest $request): RedirectResponse
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return $this->redirectAfterAuth($request->user(), false)
+                ->with('status', 'Your email address is already verified.');
+        }
+
+        $request->fulfill();
+
+        return $this->redirectAfterAuth($request->user(), false)
+            ->with('status', 'Your email address has been verified.');
+    }
+
+    public function resendVerificationEmail(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user->hasVerifiedEmail()) {
+            return $this->redirectAfterAuth($user, false)
+                ->with('status', 'Your email address is already verified.');
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return back()->with('status', 'A fresh verification link has been sent to your email address.');
+    }
+
+    private function redirectAfterAuth(User $user, bool $enforceVerification = true): RedirectResponse
+    {
+        if (
+            $enforceVerification
+            && !$user->hasRole('admin')
+            && $user instanceof MustVerifyEmail
+            && !$user->hasVerifiedEmail()
+        ) {
+            return redirect()->route('verification.notice');
+        }
+
         return match (true) {
             $user->hasRole('admin') => redirect()->route('admin.dashboard'),
             $user->hasRole('mentor') => redirect()->route('mentor.dashboard'),

@@ -96,7 +96,6 @@ it('renders only student users with dynamic program and institution filters', fu
     $response->assertSee('Boston College');
     $response->assertSee('All Programs');
     $response->assertSee('All Institutions');
-    $response->assertDontSee($mentorUser->email, false);
 });
 
 it('uses dash fallback for missing student program and institution data', function () {

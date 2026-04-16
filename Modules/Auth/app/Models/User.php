@@ -3,6 +3,8 @@
 namespace Modules\Auth\app\Models;
 
 use App\Models\User as BaseUser;
+use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Bookings\app\Models\Booking;
@@ -16,6 +18,11 @@ use Modules\Support\app\Models\SupportTicket;
 class User extends BaseUser
 {
     protected string $guard_name = 'web';
+
+    protected static function newFactory(): Factory
+    {
+        return UserFactory::new();
+    }
 
     public function getMorphClass(): string
     {

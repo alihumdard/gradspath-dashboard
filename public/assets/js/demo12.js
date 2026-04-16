@@ -361,7 +361,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-const demo14ServiceMeta = {
+const adminManualData = window.adminManualData || {};
+const cloneAdminData = (value) => JSON.parse(JSON.stringify(value));
+
+const fallbackDemo14ServiceMeta = {
     "Free Consultation": {
         label: "Free Consultation",
         previewLabel: "Free Consultation",
@@ -441,11 +444,45 @@ const demo14ServiceMeta = {
     },
 };
 
+const knownServiceIcons = Object.fromEntries(
+    Object.entries(fallbackDemo14ServiceMeta).map(([name, meta]) => [
+        name,
+        meta.icon,
+    ]),
+);
+
+const genericServiceIcon = `
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 5a1 1 0 0 1 1 1v5h5a1 1 0 1 1 0 2h-5v5a1 1 0 1 1-2 0v-5H6a1 1 0 1 1 0-2h5V6a1 1 0 0 1 1-1Z"/>
+      </svg>
+    `;
+
+const demo14ServiceMeta =
+    adminManualData.serviceMeta &&
+    Object.keys(adminManualData.serviceMeta).length > 0
+        ? Object.fromEntries(
+              Object.entries(cloneAdminData(adminManualData.serviceMeta)).map(
+                  ([name, meta]) => [
+                      name,
+                      {
+                          label: meta.label || name,
+                          previewLabel: meta.previewLabel || name,
+                          originalPrice: Number(meta.originalPrice || 0),
+                          currentPrice: Number(
+                              meta.currentPrice ?? meta.originalPrice ?? 0,
+                          ),
+                          icon: knownServiceIcons[name] || genericServiceIcon,
+                      },
+                  ],
+              ),
+          )
+        : fallbackDemo14ServiceMeta;
+
 function getAllServices() {
     return Object.keys(demo14ServiceMeta);
 }
 
-const demo14Programs = [
+const fallbackDemo14Programs = [
     {
         id: 1,
         name: "MBA",
@@ -478,7 +515,12 @@ const demo14Programs = [
     },
 ];
 
-const demo14Institutions = [
+const demo14Programs =
+    adminManualData.programs && adminManualData.programs.length > 0
+        ? cloneAdminData(adminManualData.programs)
+        : fallbackDemo14Programs;
+
+const fallbackDemo14Institutions = [
     {
         id: 1,
         name: "Boston College",
@@ -495,7 +537,12 @@ const demo14Institutions = [
     },
 ];
 
-const demo14Mentors = [
+const demo14Institutions =
+    adminManualData.institutions && adminManualData.institutions.length > 0
+        ? cloneAdminData(adminManualData.institutions)
+        : fallbackDemo14Institutions;
+
+const fallbackDemo14Mentors = [
     {
         id: 1,
         type: "Graduate Mentor",
@@ -531,7 +578,12 @@ const demo14Mentors = [
     },
 ];
 
-const demo14Users = [
+const demo14Mentors =
+    adminManualData.mentors && adminManualData.mentors.length > 0
+        ? cloneAdminData(adminManualData.mentors)
+        : fallbackDemo14Mentors;
+
+const fallbackDemo14Users = [
     {
         id: 1,
         name: "Boston College Student",
@@ -550,7 +602,12 @@ const demo14Users = [
     },
 ];
 
-const demo14Feedback = [
+const demo14Users =
+    adminManualData.users && adminManualData.users.length > 0
+        ? cloneAdminData(adminManualData.users)
+        : fallbackDemo14Users;
+
+const fallbackDemo14Feedback = [
     {
         id: 1,
         mentorId: 2,
@@ -586,6 +643,11 @@ const demo14Feedback = [
         statusNote: "",
     },
 ];
+
+const demo14Feedback =
+    adminManualData.feedback && adminManualData.feedback.length > 0
+        ? cloneAdminData(adminManualData.feedback)
+        : fallbackDemo14Feedback;
 
 /* ---------- DOM ---------- */
 const manualActionsRoot = document.getElementById("manual");
@@ -2019,12 +2081,16 @@ function initializeDemo14() {
 
     populateMentorSelect();
     populateMentorInstitutionSelect();
-    mentorSelect.value = String(demo14Mentors[1].id);
-    renderMentorForm();
+    if (demo14Mentors.length > 0) {
+        mentorSelect.value = String(demo14Mentors[0].id);
+        renderMentorForm();
+    }
 
     populateRefundUsers();
-    refundUserSelect.value = String(demo14Users[0].id);
-    renderRefundUserSummary();
+    if (demo14Users.length > 0) {
+        refundUserSelect.value = String(demo14Users[0].id);
+        renderRefundUserSummary();
+    }
 
     populateFeedbackSelect();
     if (demo14Feedback.length > 0) {
@@ -2034,16 +2100,20 @@ function initializeDemo14() {
 
     if (institutionSelect && institutionMentorSearch) {
         populateInstitutionSelect();
-        institutionSelect.value = String(demo14Institutions[0].id);
-        institutionMentorSearch.value = "";
-        renderInstitutionForm();
+        if (demo14Institutions.length > 0) {
+            institutionSelect.value = String(demo14Institutions[0].id);
+            institutionMentorSearch.value = "";
+            renderInstitutionForm();
+        }
     }
 
     if (programSelect) {
         populateProgramSelect();
-        programSelect.value = String(demo14Programs[0].id);
         renderProgramFilterPreview();
-        renderProgramForm();
+        if (demo14Programs.length > 0) {
+            programSelect.value = String(demo14Programs[0].id);
+            renderProgramForm();
+        }
     }
 
     if (serviceSelect) {

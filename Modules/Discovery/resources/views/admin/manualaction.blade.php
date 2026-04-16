@@ -21,7 +21,238 @@
               'top' => 'Top',
               'regional' => 'Regional',
             ];
+
+            $manualInstitutionRecords = \Modules\Institutions\app\Models\University::query()
+              ->with([
+                'programs' => fn ($query) => $query
+                  ->where('is_active', true)
+                  ->orderBy('program_name')
+                  ->select(['id', 'university_id', 'program_name', 'program_type', 'description']),
+              ])
+              ->where('is_active', true)
+              ->orderByRaw('COALESCE(display_name, name)')
+              ->get(['id', 'name', 'display_name']);
+
+            $manualPrograms = $manualInstitutionRecords
+              ->flatMap(function ($institution) use ($programTypes) {
+                return $institution->programs->map(function ($program) use ($institution, $programTypes) {
+                  return [
+                    'id' => (int) $program->id,
+                    'name' => $program->program_name,
+                    'category' => $programTypes[$program->program_type] ?? 'General',
+                    'description' => $program->description ?: ('Program at ' . ($institution->display_name ?: $institution->name)),
+                    'institutionId' => (int) $institution->id,
+                    'programType' => $program->program_type,
+                  ];
+                });
+              })
+              ->values();
+
+            $manualServiceRecords = \Modules\Payments\app\Models\ServiceConfig::query()
+              ->where('is_active', true)
+              ->orderBy('sort_order')
+              ->orderBy('service_name')
+              ->get([
+                'id',
+                'service_name',
+                'duration_minutes',
+                'price_1on1',
+                'price_1on3_per_person',
+                'price_1on5_per_person',
+                'office_hours_subscription_price',
+                'is_office_hours',
+              ]);
+
+            $manualServiceMeta = $manualServiceRecords
+              ->mapWithKeys(function ($service) {
+                $basePrice = $service->is_office_hours
+                  ? $service->office_hours_subscription_price
+                  : $service->price_1on1;
+
+                $priceValue = $basePrice !== null ? (float) $basePrice : 0.0;
+
+                return [
+                  $service->service_name => [
+                    'label' => $service->service_name,
+                    'previewLabel' => $service->service_name,
+                    'originalPrice' => $priceValue,
+                    'currentPrice' => $priceValue,
+                    'durationMinutes' => $service->duration_minutes,
+                    'isOfficeHours' => (bool) $service->is_office_hours,
+                  ],
+                ];
+              })
+              ->all();
+
+            $manualMentorRecords = \Modules\Settings\app\Models\Mentor::query()
+              ->with([
+                'user:id,name,email',
+                'university:id,name,display_name',
+                'services:id,service_name',
+                'rating:id,mentor_id,avg_stars',
+              ])
+              ->orderBy('id')
+              ->get();
+
+            $manualMentors = $manualMentorRecords
+              ->map(function ($mentor) use ($manualPrograms) {
+                $programIds = $manualPrograms
+                  ->filter(function ($program) use ($mentor) {
+                    if ($mentor->university_id && $program['institutionId'] !== (int) $mentor->university_id) {
+                      return false;
+                    }
+
+                    if ($mentor->program_type) {
+                      return ($program['programType'] ?? null) === $mentor->program_type;
+                    }
+
+                    return true;
+                  })
+                  ->pluck('id')
+                  ->map(fn ($id) => (int) $id)
+                  ->values();
+
+                if ($programIds->isEmpty() && $mentor->program_type) {
+                  $programIds = $manualPrograms
+                    ->where('programType', $mentor->program_type)
+                    ->pluck('id')
+                    ->map(fn ($id) => (int) $id)
+                    ->values();
+                }
+
+                return [
+                  'id' => (int) $mentor->id,
+                  'type' => $mentor->title ?: ($mentor->mentor_type === 'professional' ? 'Professional Mentor' : 'Graduate Mentor'),
+                  'name' => $mentor->user?->name ?: 'Unknown Mentor',
+                  'email' => $mentor->user?->email ?: '',
+                  'officeHours' => $mentor->office_hours_schedule ?: 'Not set',
+                  'calendly' => $mentor->calendly_link ?: '',
+                  'institutionId' => $mentor->university_id ? (int) $mentor->university_id : null,
+                  'programIds' => $programIds->all(),
+                  'description' => $mentor->description ?: ($mentor->bio ?: 'No description added yet.'),
+                  'services' => $mentor->services->pluck('service_name')->values()->all(),
+                ];
+              })
+              ->values();
+
+            $manualInstitutions = $manualInstitutionRecords
+              ->map(function ($institution) use ($manualPrograms, $manualMentors) {
+                return [
+                  'id' => (int) $institution->id,
+                  'name' => $institution->display_name ?: $institution->name,
+                  'category' => 'University',
+                  'programIds' => $manualPrograms
+                    ->where('institutionId', (int) $institution->id)
+                    ->pluck('id')
+                    ->map(fn ($id) => (int) $id)
+                    ->values()
+                    ->all(),
+                  'mentorIds' => $manualMentors
+                    ->filter(fn ($mentor) => ($mentor['institutionId'] ?? null) === (int) $institution->id)
+                    ->pluck('id')
+                    ->map(fn ($id) => (int) $id)
+                    ->values()
+                    ->all(),
+                ];
+              })
+              ->values();
+
+            $manualUserRecords = \Modules\Auth\app\Models\User::query()
+              ->with([
+                'credit:id,user_id,balance',
+                'bookings.service:id,price_1on1,price_1on3_per_person,price_1on5_per_person,office_hours_subscription_price',
+              ])
+              ->whereDoesntHave('mentor')
+              ->whereDoesntHave('roles', fn ($query) => $query->where('name', 'admin'))
+              ->orderBy('name')
+              ->get(['id', 'name', 'email']);
+
+            $manualUsers = $manualUserRecords
+              ->map(function ($user) {
+                $totalSpent = $user->bookings->sum(function ($booking) {
+                  $service = $booking->service;
+
+                  if (! $service) {
+                    return 0;
+                  }
+
+                  return match ($booking->session_type) {
+                    '1on1' => (float) ($service->price_1on1 ?? 0),
+                    '1on3' => (float) ($service->price_1on3_per_person ?? 0),
+                    '1on5' => (float) ($service->price_1on5_per_person ?? 0),
+                    'office_hours' => (float) ($service->office_hours_subscription_price ?? 0),
+                    default => 0,
+                  };
+                });
+
+                return [
+                  'id' => (int) $user->id,
+                  'name' => $user->name,
+                  'email' => $user->email,
+                  'officeHoursCredits' => (int) ($user->credit?->balance ?? 0),
+                  'totalSpent' => (float) $totalSpent,
+                  'lastRefund' => 0,
+                ];
+              })
+              ->values();
+
+            $manualFeedbackRecords = \Modules\Feedback\app\Models\Feedback::query()
+              ->with([
+                'student:id,name,email',
+                'mentor.user:id,name,email',
+                'mentor.university:id,name,display_name',
+                'booking.service:id,service_name',
+              ])
+              ->latest('id')
+              ->get();
+
+            $manualFeedback = $manualFeedbackRecords
+              ->map(function ($feedback) use ($programTypes) {
+                $mentor = $feedback->mentor;
+                $programLabel = $mentor?->program_type
+                  ? ($programTypes[$mentor->program_type] ?? ucfirst(str_replace('_', ' ', $mentor->program_type)))
+                  : 'General';
+
+                return [
+                  'id' => (int) $feedback->id,
+                  'mentorId' => (int) ($feedback->mentor_id ?? 0),
+                  'mentorName' => $mentor?->user?->name ?: 'Unknown Mentor',
+                  'mentorType' => $mentor?->title ?: ($mentor?->mentor_type === 'professional' ? 'Professional Mentor' : 'Graduate Mentor'),
+                  'mentorSchool' => $mentor?->university?->display_name ?: $mentor?->university?->name ?: ($mentor?->grad_school_display ?: 'Not set'),
+                  'mentorProgram' => $programLabel,
+                  'degree' => $mentor?->title ?: $programLabel,
+                  'userName' => $feedback->student?->name ?: 'Unknown Student',
+                  'rating' => (int) ($feedback->stars ?? 0),
+                  'preparedness' => match ((int) ($feedback->preparedness_rating ?? 0)) {
+                    5 => 'Excellent',
+                    4 => 'Strong',
+                    3 => 'Good',
+                    2 => 'Needs improvement',
+                    1 => 'Poor',
+                    default => 'Not rated',
+                  },
+                  'recommend' => $feedback->recommend ? 'Yes' : 'No',
+                  'serviceUsed' => $feedback->booking?->service?->service_name ?: ($feedback->service_type ?: 'Unknown Service'),
+                  'dateOfSession' => optional($feedback->created_at)->format('F j, Y') ?: '',
+                  'text' => $feedback->comment ?: '',
+                  'statusNote' => $feedback->admin_note ?: '',
+                ];
+              })
+              ->values();
+
+            $manualData = [
+              'programs' => $manualPrograms,
+              'institutions' => $manualInstitutions,
+              'mentors' => $manualMentors,
+              'users' => $manualUsers,
+              'feedback' => $manualFeedback,
+              'serviceMeta' => $manualServiceMeta,
+            ];
           @endphp
+
+          <script>
+            window.adminManualData = @json($manualData);
+          </script>
 
           <section
             class="tab-panel"

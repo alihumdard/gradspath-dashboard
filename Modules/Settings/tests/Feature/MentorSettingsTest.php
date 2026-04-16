@@ -63,6 +63,7 @@ it('renders mentor settings with saved profile data', function () {
 
     $response->assertOk();
     $response->assertSee('Mentor Settings');
+    $response->assertSee($mentorUser->email);
     $response->assertSee('MBA Mentor');
     $response->assertSee('Wharton');
     $response->assertSee('Program Insights');
@@ -104,6 +105,7 @@ it('updates mentor settings and syncs active services', function () {
 
     $response = $this->withoutMiddleware()->actingAs($mentorUser)->patch(route('mentor.settings.update'), [
         'name' => 'Mentor Example',
+        'email' => 'mentor@example.com',
         'mentor_type' => 'graduate',
         'title' => 'Law Mentor',
         'program_type' => 'law',
@@ -113,12 +115,14 @@ it('updates mentor settings and syncs active services', function () {
         'office_hours_schedule' => 'Mondays at 7 PM EST',
         'edu_email' => 'mentor@yale.edu',
         'calendly_link' => 'https://calendly.com/mentor-example',
+        'is_featured' => '1',
         'service_config_ids' => [$serviceB->id, $serviceA->id],
     ]);
 
     $response->assertRedirect(route('mentor.settings.index'));
 
     expect($mentorUser->fresh()->name)->toBe('Mentor Example');
+    expect($mentorUser->fresh()->email)->toBe('mentor@example.com');
 
     $mentor->refresh();
 
@@ -128,6 +132,7 @@ it('updates mentor settings and syncs active services', function () {
     expect($mentor->bio)->toBe('Helping students sharpen essays and interviews.');
     expect($mentor->office_hours_schedule)->toBe('Mondays at 7 PM EST');
     expect($mentor->edu_email)->toBe('mentor@yale.edu');
+    expect($mentor->is_featured)->toBeTrue();
 
     $this->assertDatabaseHas('mentor_services', [
         'mentor_id' => $mentor->id,
@@ -147,6 +152,7 @@ it('requires a .edu email for graduate mentors', function () {
 
     $response = $this->actingAs($mentorUser)->from(route('mentor.settings.index'))->patch(route('mentor.settings.update'), [
         'name' => 'Mentor Example',
+        'email' => 'mentor@gmail.com',
         'mentor_type' => 'graduate',
         'edu_email' => 'mentor@gmail.com',
     ]);
