@@ -31,8 +31,15 @@ class BookingController extends Controller
             ->orderByDesc('session_at')
             ->paginate((int) $request->integer('per_page', 20));
 
+        $selectedBooking = $bookings->getCollection()
+            ->sortBy('session_at')
+            ->first(fn (Booking $booking) => $booking->session_at?->isFuture())
+            ?? $bookings->first();
+
         return view('bookings::student.index', [
             'bookings' => $bookings,
+            'selectedBooking' => $selectedBooking,
+            'bookingPageData' => $this->buildBookingDetailsPayload($bookings, $selectedBooking),
         ]);
     }
 
@@ -73,16 +80,21 @@ class BookingController extends Controller
 
     public function show(int $id): View
     {
-        $booking = Booking::query()->with(['mentor.user', 'service', 'student'])->findOrFail($id);
+        $booking = Booking::query()
+            ->with(['mentor.user', 'service', 'student'])
+            ->findOrFail($id);
         Gate::authorize('view', $booking);
 
+        $bookings = Booking::query()
+            ->with(['mentor.user:id,name,avatar_url', 'service'])
+            ->where('student_id', Auth::id())
+            ->orderByDesc('session_at')
+            ->paginate(20);
+
         return view('bookings::student.index', [
-            'bookings' => Booking::query()
-                ->with(['mentor.user:id,name,avatar_url', 'service'])
-                ->where('student_id', Auth::id())
-                ->orderByDesc('session_at')
-                ->paginate(20),
+            'bookings' => $bookings,
             'selectedBooking' => $booking,
+            'bookingPageData' => $this->buildBookingDetailsPayload($bookings, $booking),
         ]);
     }
 
@@ -100,5 +112,87 @@ class BookingController extends Controller
         return redirect()
             ->route('student.bookings.index')
             ->with('success', 'Booking cancelled.');
+    }
+
+    private function buildBookingDetailsPayload($bookings, ?Booking $selectedBooking): array
+    {
+        $serviceCatalog = [
+            ['name' => 'Tutoring', 'slug' => 'tutoring'],
+            ['name' => 'Program Insights', 'slug' => 'program_insights'],
+            ['name' => 'Interview Prep', 'slug' => 'interview_prep'],
+            ['name' => 'Application Review', 'slug' => 'application_review'],
+            ['name' => 'Gap Year Planning', 'slug' => 'gap_year_planning'],
+            ['name' => 'Office Hours', 'slug' => 'office_hours'],
+            ['name' => 'Free Consultation', 'slug' => 'free_consultation'],
+        ];
+
+        return [
+            'selectedBookingId' => $selectedBooking?->id,
+            'selectedBooking' => $selectedBooking ? $this->transformBooking($selectedBooking) : null,
+            'serviceCatalog' => $serviceCatalog,
+            'counterpartLabel' => 'Mentor',
+            'viewerRoleLabel' => 'You',
+            'upcomingBookings' => $bookings->getCollection()
+                ->sortBy('session_at')
+                ->map(fn (Booking $booking) => $this->transformBooking($booking))
+                ->values()
+                ->all(),
+            'supportUrl' => route('student.support.index'),
+        ];
+    }
+
+    private function transformBooking(Booking $booking): array
+    {
+        $sessionAt = $booking->session_at;
+        $mentorName = $booking->mentor?->user?->name ?? 'Mentor';
+        $mentorMeta = collect([
+            $booking->mentor?->title,
+            $this->programLabel($booking->mentor?->program_type),
+            $booking->mentor?->grad_school_display,
+        ])->filter()->implode(' • ');
+
+        return [
+            'id' => $booking->id,
+            'counterpartName' => $mentorName,
+            'mentorName' => $mentorName,
+            'mentorDisplay' => trim(implode(' • ', array_filter([$mentorName, $mentorMeta]))),
+            'serviceName' => $booking->service?->service_name ?? 'Service',
+            'serviceSlug' => $booking->service?->service_slug ?? null,
+            'meetingType' => $booking->meeting_type,
+            'meetingSize' => $this->meetingSizeLabel($booking->session_type),
+            'duration' => (int) $booking->duration_minutes,
+            'sessionDateKey' => $sessionAt?->toDateString(),
+            'sessionDateLabel' => $sessionAt?->format('l, F j, Y'),
+            'sessionTimeLabel' => $sessionAt?->format('g:i A'),
+            'sessionMonthLabel' => $sessionAt?->format('F Y'),
+            'zoomLink' => $booking->meeting_link,
+            'isUpcoming' => $sessionAt ? $sessionAt->isFuture() : false,
+            'isTodayOrFuture' => $sessionAt ? $sessionAt->greaterThanOrEqualTo(now()->startOfDay()) : false,
+        ];
+    }
+
+    private function meetingSizeLabel(?string $sessionType): string
+    {
+        return match ($sessionType) {
+            '1on3' => '1 on 3',
+            '1on5' => '1 on 5',
+            'office_hours' => 'Office Hours',
+            default => '1 on 1',
+        };
+    }
+
+    private function programLabel(?string $programType): ?string
+    {
+        return match ($programType) {
+            'mba' => 'MBA',
+            'law' => 'Law',
+            'cmhc' => 'Counseling',
+            'mft' => 'Marriage & Family Therapy',
+            'msw' => 'Social Work',
+            'clinical_psy' => 'Clinical Psychology',
+            'therapy' => 'Therapy',
+            'other', null, '' => null,
+            default => str_replace('_', ' ', ucfirst((string) $programType)),
+        };
     }
 }

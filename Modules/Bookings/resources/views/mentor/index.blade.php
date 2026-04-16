@@ -20,7 +20,7 @@
                 <div class="booking-header-row">
 <div class="booking-header-left">
                   <h1>Your Session Is Booked</h1>
-                  <p class="subtitle">Here is your meeting information with your mentor.</p>
+                  <p class="subtitle" id="bookingSubtitle">Here is your meeting information with your student.</p>
                 </div>
                 <div class="booking-header-right">
                   <p class="cancel-copy">Want to cancel your meeting?</p>
@@ -141,7 +141,7 @@
               </i>
             </div>
             <div class="info-content">
-              <span class="label">Mentor</span>
+              <span class="label" id="counterpartLabel">Student</span>
               <strong id="mentorName">Emily Carter &bull; Graduate Mentor &bull; MBA &bull; Harvard</strong>
             </div>
           </div>
@@ -246,15 +246,15 @@
             <div class="chat-message mentor">
               <div class="chat-avatar">EC</div>
               <div class="chat-bubble-wrap">
-                <div class="chat-meta">Emily Carter &bull; Graduate Mentor &bull; MBA &bull; Harvard</div>
-                <div class="chat-bubble">Hi! Looking forward to meeting with you. Feel free to
+                <div class="chat-meta" id="chatCounterpartMeta">Student</div>
+                <div class="chat-bubble" id="chatCounterpartBubble">Hi! Looking forward to meeting with you. Feel free to
                   send anything you want to review before the session.</div>
               </div>
             </div>
             <div class="chat-message user">
               <div class="chat-bubble-wrap">
-                <div class="chat-meta">You</div>
-                <div class="chat-bubble">Thank you. I may send a few questions ahead of time.</div>
+                <div class="chat-meta" id="chatViewerMeta">You</div>
+                <div class="chat-bubble" id="chatViewerBubble">Thanks, I will review everything before the session.</div>
               </div>
             </div>
           </div>
@@ -313,6 +313,7 @@
 @endsection
 
 @section('page_js')
+        <script id="bookingDetailsData" type="application/json">@json($bookingPageData ?? [])</script>
         <script src="https://unpkg.com/lucide@latest">
         </script>
         <script src="{{ asset('assets/js/demo9.js') }}">

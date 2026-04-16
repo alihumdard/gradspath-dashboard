@@ -78,11 +78,13 @@ class MentorAvailabilitySeeder extends Seeder
             'abdul.rauf@uol.edu.pk' => [
                 [
                     'service_slug' => 'program_insights',
-                    'session_type' => '1on1',
-                    'weekday' => Carbon::MONDAY,
-                    'time' => '18:00:00',
+                    'session_type' => '1on3',
+                    'weekday' => Carbon::TUESDAY,
+                    'time' => '18:30:00',
                     'duration' => 60,
-                    'max_participants' => 1,
+                    'max_participants' => 3,
+                    'timezone' => 'Asia/Karachi',
+                    'notes' => 'Seeded 1 on 3 strategy session with Abdul Rauf',
                 ],
                 [
                     'service_slug' => 'interview_prep',
@@ -91,6 +93,20 @@ class MentorAvailabilitySeeder extends Seeder
                     'time' => '20:00:00',
                     'duration' => 60,
                     'max_participants' => 3,
+                    'timezone' => 'Asia/Karachi',
+                    'notes' => 'Seeded 1 on 3 interview prep session with Abdul Rauf',
+                    'months' => ['2026-04', '2026-05'],
+                ],
+                [
+                    'service_slug' => 'program_insights',
+                    'session_type' => '1on3',
+                    'weekday' => Carbon::SATURDAY,
+                    'time' => '11:00:00',
+                    'duration' => 60,
+                    'max_participants' => 3,
+                    'timezone' => 'Asia/Karachi',
+                    'notes' => 'Seeded 1 on 3 weekend strategy session with Abdul Rauf',
+                    'months' => ['2026-04', '2026-05'],
                 ],
             ],
         ];
@@ -109,17 +125,17 @@ class MentorAvailabilitySeeder extends Seeder
                     continue;
                 }
 
-                for ($monthOffset = 0; $monthOffset < 3; $monthOffset += 1) {
-                    $monthBase = now()->copy()->startOfMonth()->addMonths($monthOffset);
+                foreach ($this->monthBases($slotDefinition) as $monthBase) {
+                    $timezone = $slotDefinition['timezone'] ?? 'America/New_York';
 
                     for ($weekIndex = 0; $weekIndex < 4; $weekIndex += 1) {
                         $slotDate = $monthBase->copy()->next($slotDefinition['weekday'])->addWeeks($weekIndex);
 
-                        if ($slotDate->lt(now()->startOfDay())) {
+                        if ($slotDate->month !== $monthBase->month || $slotDate->lt(now()->startOfDay())) {
                             continue;
                         }
 
-                        $start = Carbon::parse($slotDate->toDateString().' '.$slotDefinition['time'], 'America/New_York');
+                        $start = Carbon::parse($slotDate->toDateString().' '.$slotDefinition['time'], $timezone);
                         $end = $start->copy()->addMinutes($slotDefinition['duration']);
 
                         DB::table('mentor_availability_slots')->updateOrInsert(
@@ -133,13 +149,13 @@ class MentorAvailabilitySeeder extends Seeder
                                 'availability_rule_id' => null,
                                 'service_config_id' => $service->id,
                                 'end_time' => $end->format('H:i:s'),
-                                'timezone' => 'America/New_York',
+                                'timezone' => $timezone,
                                 'max_participants' => $slotDefinition['max_participants'],
                                 'booked_participants_count' => 0,
                                 'is_booked' => false,
                                 'is_blocked' => false,
                                 'is_active' => true,
-                                'notes' => 'Seeded dynamic booking slot',
+                                'notes' => $slotDefinition['notes'] ?? 'Seeded dynamic booking slot',
                                 'created_at' => now(),
                                 'updated_at' => now(),
                             ]
@@ -148,5 +164,24 @@ class MentorAvailabilitySeeder extends Seeder
                 }
             }
         }
+    }
+
+    private function monthBases(array $slotDefinition): array
+    {
+        if (!empty($slotDefinition['months']) && is_array($slotDefinition['months'])) {
+            return collect($slotDefinition['months'])
+                ->map(function (string $month) {
+                    return Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+                })
+                ->all();
+        }
+
+        $bases = [];
+
+        for ($monthOffset = 0; $monthOffset < 3; $monthOffset += 1) {
+            $bases[] = now()->copy()->startOfMonth()->addMonths($monthOffset);
+        }
+
+        return $bases;
     }
 }

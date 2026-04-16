@@ -22,6 +22,7 @@ return new class extends Migration
 
             // Session details
             $table->enum('session_type', ['1on1', '1on3', '1on5', 'office_hours'])->default('1on1');
+            $table->unsignedTinyInteger('requested_group_size')->nullable();
             $table->timestamp('session_at');
             $table->string('session_timezone')->nullable(); // mentor/session timezone for UI rendering
             $table->integer('duration_minutes')->default(60);
@@ -30,8 +31,11 @@ return new class extends Migration
             $table->string('meeting_link')->nullable();
             $table->enum('meeting_type', ['zoom', 'google_meet'])->default('zoom');
 
-            // Credits
+            // Credits and price snapshot
             $table->integer('credits_charged')->default(1);
+            $table->decimal('amount_charged', 8, 2)->default(0);
+            $table->string('currency', 3)->default('USD');
+            $table->json('pricing_snapshot')->nullable();
 
             // Status lifecycle
             // cancelled_pending_refund: cancelled but refund goes through support (as per template flow)
@@ -43,6 +47,7 @@ return new class extends Migration
                 'cancelled_pending_refund',
                 'no_show',
             ])->default('pending');
+            $table->enum('approval_status', ['not_required', 'pending', 'approved', 'rejected'])->default('not_required');
 
             // Cancellation tracking
             $table->timestamp('cancelled_at')->nullable();
@@ -65,6 +70,7 @@ return new class extends Migration
             $table->index(['student_id', 'status', 'session_at']);
             $table->index(['mentor_id', 'status', 'session_at']);
             $table->index(['status', 'session_at']);
+            $table->index(['approval_status', 'status']);
             $table->index('feedback_due_at');
             $table->index('session_at');
         });

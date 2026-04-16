@@ -2,8 +2,13 @@
 
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\User;
+use Modules\Bookings\app\Jobs\SendBookingConfirmationJob;
+use Modules\Bookings\app\Mail\MentorBookingNotificationMail;
+use Modules\Bookings\app\Mail\StudentBookingConfirmationMail;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Payments\app\Models\UserCredit;
@@ -61,6 +66,50 @@ function makeMentor(): Mentor
         'program_type' => 'mba',
         'grad_school_display' => 'Harvard',
         'status' => 'active',
+    ]);
+}
+
+function attachMentorService(Mentor $mentor, ServiceConfig $service): void
+{
+    DB::table('mentor_services')->insert([
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'is_active' => true,
+        'sort_order' => 0,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+}
+
+function createAvailabilitySlot(Mentor $mentor, ServiceConfig $service, string $sessionType, int $daysAhead = 6): int
+{
+    return DB::table('mentor_availability_slots')->insertGetId([
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'slot_date' => now()->addDays($daysAhead)->toDateString(),
+        'start_time' => '13:00:00',
+        'end_time' => '14:00:00',
+        'timezone' => 'America/New_York',
+        'session_type' => $sessionType,
+        'max_participants' => match ($sessionType) {
+            '1on3' => 3,
+            '1on5' => 5,
+            default => 1,
+        },
+        'booked_participants_count' => 0,
+        'is_booked' => false,
+        'is_blocked' => false,
+        'is_active' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+}
+
+function fundStudent(User $student, int $balance = 5): void
+{
+    UserCredit::query()->create([
+        'user_id' => $student->id,
+        'balance' => $balance,
     ]);
 }
 
@@ -231,6 +280,258 @@ it('creates a booking from a selected availability slot and reserves it', functi
         'is_booked' => true,
         'booked_participants_count' => 3,
     ]);
+});
+
+it('queues a confirmation job and sends booking emails for 1on1 to student and mentor', function () {
+    Queue::fake();
+
+    $student = makeUser('booking-student');
+    $student->assignRole('student');
+    fundStudent($student);
+
+    $mentor = makeMentor();
+    $service = makeService([
+        'service_name' => 'Application Review',
+        'service_slug' => 'application-review-'.Str::lower(Str::random(5)),
+        'price_1on1' => 60,
+    ]);
+
+    attachMentorService($mentor, $service);
+    $slotId = createAvailabilitySlot($mentor, $service, '1on1');
+
+    $this->actingAs($student)
+        ->post(route('student.bookings.store'), [
+            'mentor_id' => $mentor->id,
+            'service_config_id' => $service->id,
+            'session_type' => '1on1',
+            'mentor_availability_slot_id' => $slotId,
+        ])
+        ->assertRedirect();
+
+    $booking = Booking::query()
+        ->with(['mentor.user', 'student', 'service', 'participantRecords'])
+        ->latest('id')
+        ->firstOrFail();
+
+    expect($booking->meeting_link)->not->toBeNull();
+
+    Queue::assertPushed(SendBookingConfirmationJob::class, function (SendBookingConfirmationJob $job) use ($booking) {
+        return $job->bookingId === $booking->id;
+    });
+
+    Mail::fake();
+
+    (new SendBookingConfirmationJob($booking->id))->handle();
+
+    Mail::assertSent(StudentBookingConfirmationMail::class, function (StudentBookingConfirmationMail $mail) use ($student, $mentor, $booking) {
+        return $mail->hasTo($student->email)
+            && $mail->bookingDetails['counterpart_name'] === $mentor->user->name
+            && $mail->bookingDetails['mentor_name'] === $mentor->user->name
+            && !array_key_exists('mentor_email', $mail->bookingDetails)
+            && $mail->bookingDetails['meeting_link'] === $booking->meeting_link
+            && !str_contains($mail->render(), $mentor->user->email);
+    });
+
+    Mail::assertSent(MentorBookingNotificationMail::class, function (MentorBookingNotificationMail $mail) use ($mentor, $student, $booking) {
+        return $mail->hasTo($mentor->user->email)
+            && $mail->bookingDetails['counterpart_name'] === $student->name
+            && $mail->bookingDetails['student_email'] === $student->email
+            && $mail->bookingDetails['meeting_link'] === $booking->meeting_link
+            && str_contains($mail->render(), $student->email);
+    });
+});
+
+it('queues a confirmation job and sends booking emails for 1on3 to mentor and all participants without duplicates', function () {
+    Queue::fake();
+
+    $student = makeUser('booking-student');
+    $student->assignRole('student');
+    fundStudent($student);
+
+    $mentor = makeMentor();
+    $service = makeService([
+        'service_name' => 'Program Insights',
+        'service_slug' => 'program-insights-'.Str::lower(Str::random(5)),
+    ]);
+
+    attachMentorService($mentor, $service);
+    $slotId = createAvailabilitySlot($mentor, $service, '1on3');
+
+    $guestEmailOne = 'guestone@example.edu';
+    $guestEmailTwo = 'guesttwo@example.edu';
+
+    $this->actingAs($student)
+        ->post(route('student.bookings.store'), [
+            'mentor_id' => $mentor->id,
+            'service_config_id' => $service->id,
+            'session_type' => '1on3',
+            'mentor_availability_slot_id' => $slotId,
+            'guest_participants' => [
+                ['full_name' => 'Guest One', 'email' => $guestEmailOne],
+                ['full_name' => 'Guest Two', 'email' => $guestEmailTwo],
+            ],
+        ])
+        ->assertRedirect();
+
+    $booking = Booking::query()
+        ->with(['mentor.user', 'student', 'service', 'participantRecords'])
+        ->latest('id')
+        ->firstOrFail();
+
+    Queue::assertPushed(SendBookingConfirmationJob::class, fn (SendBookingConfirmationJob $job) => $job->bookingId === $booking->id);
+
+    Mail::fake();
+
+    (new SendBookingConfirmationJob($booking->id))->handle();
+
+    Mail::assertSent(MentorBookingNotificationMail::class, 1);
+    Mail::assertSent(StudentBookingConfirmationMail::class, 3);
+
+    Mail::assertSent(StudentBookingConfirmationMail::class, fn (StudentBookingConfirmationMail $mail) => $mail->hasTo($student->email));
+    Mail::assertSent(StudentBookingConfirmationMail::class, fn (StudentBookingConfirmationMail $mail) => $mail->hasTo($guestEmailOne));
+    Mail::assertSent(StudentBookingConfirmationMail::class, fn (StudentBookingConfirmationMail $mail) => $mail->hasTo($guestEmailTwo));
+});
+
+it('queues a confirmation job and sends booking emails for 1on5 to mentor and all participants', function () {
+    Queue::fake();
+
+    $student = makeUser('booking-student');
+    $student->assignRole('student');
+    fundStudent($student);
+
+    $mentor = makeMentor();
+    $service = makeService([
+        'service_name' => 'Interview Prep',
+        'service_slug' => 'interview-prep-'.Str::lower(Str::random(5)),
+    ]);
+
+    attachMentorService($mentor, $service);
+    $slotId = createAvailabilitySlot($mentor, $service, '1on5');
+
+    $guestParticipants = [
+        ['full_name' => 'Guest One', 'email' => 'guestone@example.edu'],
+        ['full_name' => 'Guest Two', 'email' => 'guesttwo@example.edu'],
+        ['full_name' => 'Guest Three', 'email' => 'guestthree@example.edu'],
+        ['full_name' => 'Guest Four', 'email' => 'guestfour@example.edu'],
+    ];
+
+    $this->actingAs($student)
+        ->post(route('student.bookings.store'), [
+            'mentor_id' => $mentor->id,
+            'service_config_id' => $service->id,
+            'session_type' => '1on5',
+            'mentor_availability_slot_id' => $slotId,
+            'guest_participants' => $guestParticipants,
+        ])
+        ->assertRedirect();
+
+    $booking = Booking::query()
+        ->with(['mentor.user', 'student', 'service', 'participantRecords'])
+        ->latest('id')
+        ->firstOrFail();
+
+    Queue::assertPushed(SendBookingConfirmationJob::class, fn (SendBookingConfirmationJob $job) => $job->bookingId === $booking->id);
+
+    Mail::fake();
+
+    (new SendBookingConfirmationJob($booking->id))->handle();
+
+    Mail::assertSent(MentorBookingNotificationMail::class, 1);
+    Mail::assertSent(StudentBookingConfirmationMail::class, 5);
+
+    foreach ($guestParticipants as $participant) {
+        Mail::assertSent(StudentBookingConfirmationMail::class, fn (StudentBookingConfirmationMail $mail) => $mail->hasTo($participant['email']));
+    }
+});
+
+it('does not send standard booking emails for office hours', function () {
+    Queue::fake();
+
+    $student = makeUser('office-hours-booking-student');
+    $student->assignRole('student');
+    fundStudent($student);
+
+    $mentor = makeMentor();
+    $officeHoursService = makeService([
+        'service_name' => 'Office Hours',
+        'service_slug' => 'office-hours-'.Str::lower(Str::random(5)),
+        'is_office_hours' => true,
+        'price_1on1' => null,
+        'price_1on3_per_person' => null,
+        'price_1on3_total' => null,
+        'price_1on5_per_person' => null,
+        'price_1on5_total' => null,
+        'office_hours_subscription_price' => 200,
+    ]);
+    $supportService = makeService([
+        'service_name' => 'Interview Prep',
+        'service_slug' => 'interview-prep-'.Str::lower(Str::random(5)),
+    ]);
+
+    DB::table('mentor_services')->insert([
+        [
+            'mentor_id' => $mentor->id,
+            'service_config_id' => $officeHoursService->id,
+            'is_active' => true,
+            'sort_order' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+        [
+            'mentor_id' => $mentor->id,
+            'service_config_id' => $supportService->id,
+            'is_active' => true,
+            'sort_order' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+    ]);
+
+    $scheduleId = DB::table('office_hour_schedules')->insertGetId([
+        'mentor_id' => $mentor->id,
+        'day_of_week' => 'tue',
+        'start_time' => '17:00:00',
+        'timezone' => 'America/New_York',
+        'frequency' => 'weekly',
+        'max_spots' => 3,
+        'is_active' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $sessionId = DB::table('office_hour_sessions')->insertGetId([
+        'schedule_id' => $scheduleId,
+        'current_service_id' => $supportService->id,
+        'session_date' => now()->addDays(7)->toDateString(),
+        'start_time' => '17:00:00',
+        'timezone' => 'America/New_York',
+        'current_occupancy' => 0,
+        'max_spots' => 3,
+        'is_full' => false,
+        'service_locked' => false,
+        'status' => 'upcoming',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $this->actingAs($student)
+        ->post(route('student.bookings.store'), [
+            'mentor_id' => $mentor->id,
+            'service_config_id' => $officeHoursService->id,
+            'session_type' => 'office_hours',
+            'office_hour_session_id' => $sessionId,
+        ])
+        ->assertRedirect();
+
+    $booking = Booking::query()->latest('id')->firstOrFail();
+
+    Queue::assertPushed(SendBookingConfirmationJob::class, fn (SendBookingConfirmationJob $job) => $job->bookingId === $booking->id);
+
+    Mail::fake();
+
+    (new SendBookingConfirmationJob($booking->id))->handle();
+
+    Mail::assertNothingSent();
 });
 
 it('renders dynamic office hours data from upcoming sessions', function () {

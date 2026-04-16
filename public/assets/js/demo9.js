@@ -1,15 +1,60 @@
-const meetingData = {
-  mentorName: "Emily Carter • Graduate Mentor • MBA • Harvard",
+const bookingDetailsDataEl = document.getElementById("bookingDetailsData");
+const bookingDetailsData = bookingDetailsDataEl
+  ? JSON.parse(bookingDetailsDataEl.textContent)
+  : {};
+
+const fallbackBooking = {
+  id: 1,
+  mentorDisplay: "Emily Carter • Graduate Mentor • MBA • Harvard",
+  mentorName: "Emily Carter",
+  serviceName: "Office Hours",
+  serviceSlug: "office_hours",
+  sessionDateKey: "2026-04-24",
+  sessionDateLabel: "Friday, April 24, 2026",
+  sessionTimeLabel: "2:30 PM",
   zoomLink: "https://zoom.us/j/9876543210",
-  selectedService: "Office Hours",
+  meetingSize: "Office Hours",
+  duration: 45,
 };
 
-const bookedDates = {
-  "2026-03-21": { time: "1:00 PM", service: "Office Hours" },
-  "2026-04-09": { time: "11:00 AM", service: "Office Hours" },
-  "2026-04-24": { time: "2:30 PM", service: "Office Hours" },
-  "2026-05-06": { time: "3:00 PM", service: "Office Hours" },
+const upcomingBookings =
+  Array.isArray(bookingDetailsData.upcomingBookings) &&
+  bookingDetailsData.upcomingBookings.length > 0
+    ? bookingDetailsData.upcomingBookings
+    : [fallbackBooking];
+
+const selectedBooking =
+  upcomingBookings.find((booking) => booking.id === bookingDetailsData.selectedBookingId) ||
+  bookingDetailsData.selectedBooking ||
+  upcomingBookings[0] ||
+  fallbackBooking;
+
+const meetingData = {
+  mentorName: selectedBooking.mentorDisplay || selectedBooking.mentorName || fallbackBooking.mentorDisplay,
+  zoomLink: selectedBooking.zoomLink || null,
+  selectedService: selectedBooking.serviceName || fallbackBooking.serviceName,
+  selectedServiceSlug: selectedBooking.serviceSlug || fallbackBooking.serviceSlug,
+  supportUrl: bookingDetailsData.supportUrl || "/student/support",
+  counterpartLabel: bookingDetailsData.counterpartLabel || "Mentor",
+  viewerRoleLabel: bookingDetailsData.viewerRoleLabel || "You",
 };
+
+const bookedDates = upcomingBookings.reduce((carry, booking) => {
+  if (!booking.sessionDateKey) return carry;
+
+  carry[booking.sessionDateKey] = {
+    id: booking.id,
+    time: booking.sessionTimeLabel || "Not set",
+    service: booking.serviceName || "Service",
+    serviceSlug: booking.serviceSlug || null,
+    mentorName: booking.mentorDisplay || booking.mentorName || "Mentor",
+    zoomLink: booking.zoomLink || null,
+    meetingSize: booking.meetingSize || "1 on 1",
+    duration: booking.duration || null,
+  };
+
+  return carry;
+}, {});
 
 const mentorNameEl = document.getElementById("mentorName");
 const meetingDateEl = document.getElementById("meetingDate");
@@ -23,6 +68,9 @@ const nextMonthBtn = document.getElementById("nextMonth");
 const todayBtn = document.getElementById("todayBtn");
 const calendarContentEl = document.getElementById("calendarContent");
 const upcomingListEl = document.getElementById("upcomingList");
+const serviceCards = document.querySelectorAll(".service-card.locked-card");
+const counterpartLabelEl = document.getElementById("counterpartLabel");
+const bookingSubtitleEl = document.getElementById("bookingSubtitle");
 
 const cancelMeetingBtn = document.getElementById("cancelMeetingBtn");
 const cancelModal = document.getElementById("cancelModal");
@@ -38,6 +86,11 @@ const supportLink = document.getElementById("supportLink");
 const chatForm = document.getElementById("chatForm");
 const chatInput = document.getElementById("chatInput");
 const chatWindow = document.getElementById("chatWindow");
+const chatCounterpartAvatar = chatWindow?.querySelector(".chat-message.mentor .chat-avatar");
+const chatCounterpartMeta = document.getElementById("chatCounterpartMeta");
+const chatCounterpartBubble = document.getElementById("chatCounterpartBubble");
+const chatViewerMeta = document.getElementById("chatViewerMeta");
+const chatViewerBubble = document.getElementById("chatViewerBubble");
 const viewButtons = document.querySelectorAll(".view-btn");
 const themeToggle = document.getElementById("themeToggle");
 const body = document.body;
@@ -100,10 +153,18 @@ const todayKey = formatDateKey(
 let currentDate = new Date(today.getFullYear(), today.getMonth(), 1);
 let currentView = "month";
 let selectedDateKey = getDefaultSelectedDateKey();
+if (selectedDateKey) {
+  const selectedDate = parseDateKey(selectedDateKey);
+  currentDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+}
 
 mentorNameEl.textContent = meetingData.mentorName;
-zoomLinkEl.href = meetingData.zoomLink;
-zoomLinkEl.textContent = "Join Zoom Meeting";
+if (counterpartLabelEl) {
+  counterpartLabelEl.textContent = meetingData.counterpartLabel;
+}
+if (bookingSubtitleEl) {
+  bookingSubtitleEl.textContent = `Here is your meeting information with your ${meetingData.counterpartLabel.toLowerCase()}.`;
+}
 
 function formatDateKey(year, monthIndex, day) {
   const month = String(monthIndex + 1).padStart(2, "0");
@@ -116,7 +177,48 @@ function parseDateKey(key) {
   return new Date(year, month - 1, day);
 }
 
+function normalizeServiceValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function getBookingByDateKey(key) {
+  return bookedDates[key] || null;
+}
+
+function updateZoomLink(booking) {
+  if (!zoomLinkEl) return;
+
+  if (booking?.zoomLink) {
+    zoomLinkEl.href = booking.zoomLink;
+    zoomLinkEl.textContent = "Join Zoom Meeting";
+    zoomLinkEl.removeAttribute("aria-disabled");
+  } else {
+    zoomLinkEl.href = "#";
+    zoomLinkEl.textContent = "Meeting link will be shared soon";
+    zoomLinkEl.setAttribute("aria-disabled", "true");
+  }
+}
+
+function getInitials(name) {
+  return String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("") || "GP";
+}
+
 function getDefaultSelectedDateKey() {
+  if (selectedBooking?.sessionDateKey && bookedDates[selectedBooking.sessionDateKey]) {
+    return selectedBooking.sessionDateKey;
+  }
+
   const keys = Object.keys(bookedDates).sort();
   const futureKey = keys.find((key) => {
     const compare = parseDateKey(key);
@@ -147,10 +249,53 @@ function formatFullDate(dateObj) {
 
 function updateMeetingInfoFromSelected() {
   const dateObj = parseDateKey(selectedDateKey);
-  const booking = bookedDates[selectedDateKey];
+  const booking = getBookingByDateKey(selectedDateKey);
 
   meetingDateEl.textContent = formatFullDate(dateObj);
   meetingTimeEl.textContent = booking ? booking.time : "Not set";
+  mentorNameEl.textContent = booking?.mentorName || meetingData.mentorName;
+  updateZoomLink(booking);
+  syncSelectedService(booking);
+  updateChatFromSelected(booking);
+}
+
+function syncSelectedService(booking) {
+  const selectedValue = normalizeServiceValue(
+    booking?.serviceSlug || booking?.service || meetingData.selectedServiceSlug || meetingData.selectedService,
+  );
+
+  serviceCards.forEach((card) => {
+    const serviceName = card.querySelector(".service-name")?.textContent || "";
+    const matches = normalizeServiceValue(serviceName) === selectedValue;
+    card.classList.toggle("selected", matches);
+  });
+}
+
+function updateChatFromSelected(booking) {
+  const counterpartName = booking?.mentorName || meetingData.mentorName;
+  const serviceName = booking?.service || meetingData.selectedService;
+  const dateText = meetingDateEl?.textContent || "your scheduled date";
+  const timeText = booking?.time || meetingTimeEl?.textContent || "the scheduled time";
+
+  if (chatCounterpartAvatar) {
+    chatCounterpartAvatar.textContent = getInitials(counterpartName);
+  }
+
+  if (chatCounterpartMeta) {
+    chatCounterpartMeta.textContent = counterpartName;
+  }
+
+  if (chatCounterpartBubble) {
+    chatCounterpartBubble.textContent = `Hi! Looking forward to our ${serviceName} session on ${dateText} at ${timeText}. Feel free to share anything you want reviewed before we meet.`;
+  }
+
+  if (chatViewerMeta) {
+    chatViewerMeta.textContent = meetingData.viewerRoleLabel;
+  }
+
+  if (chatViewerBubble) {
+    chatViewerBubble.textContent = "Thanks. I will use this thread for anything I want to share before the session.";
+  }
 }
 
 function getMonthLabel() {
@@ -562,7 +707,7 @@ function renderUpcomingAppointments() {
     item.innerHTML = `
       <div class="upcoming-item-left">
         <strong>${formatFullDate(dateObj)}</strong>
-        <span>With ${meetingData.mentorName}</span>
+        <span>With ${booking.mentorName || meetingData.mentorName}</span>
       </div>
       <div class="upcoming-item-right">
         <span class="time">${booking.time}</span>
@@ -728,7 +873,7 @@ chatForm.addEventListener("submit", function (e) {
 
     const mentorMeta = document.createElement("div");
     mentorMeta.className = "chat-meta";
-    mentorMeta.textContent = "Emily Carter • Graduate Mentor • MBA • Harvard";
+    mentorMeta.textContent = getBookingByDateKey(selectedDateKey)?.mentorName || meetingData.mentorName;
 
     const mentorBubble = document.createElement("div");
     mentorBubble.className = "chat-bubble";
@@ -773,6 +918,7 @@ cancelNo2.addEventListener("click", () => {
 cancelYes2.addEventListener("click", () => {
   closeModal(cancelConfirmModal);
   openModal(supportModal);
+  supportLink.href = meetingData.supportUrl;
 });
 
 supportCloseBtn.addEventListener("click", () => {
@@ -780,14 +926,18 @@ supportCloseBtn.addEventListener("click", () => {
 });
 
 supportLink.addEventListener("click", function (e) {
+  if (meetingData.supportUrl) {
+    return;
+  }
+
   e.preventDefault();
-  alert("Support form would open here for the refund request.");
 });
 
 updateMeetingInfoFromSelected();
 setActiveViewButton();
 renderCalendar();
 renderUpcomingAppointments();
+syncSelectedService(getBookingByDateKey(selectedDateKey));
 // Mobile sidebar toggle
 const menuBtn = document.getElementById("mobileMenuToggle");
 const overlay = document.getElementById("sidebarOverlay");
