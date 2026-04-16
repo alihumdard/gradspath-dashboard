@@ -1,11 +1,15 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Bookings\app\Http\Controllers\Student\BookingAvailabilityController;
 use Modules\Bookings\app\Http\Controllers\Mentor\BookingsController;
 use Modules\Bookings\app\Http\Controllers\Student\BookingController;
 
 Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
 	Route::get('/student/bookings', [BookingController::class, 'index'])->name('student.bookings.index');
+	Route::get('/student/bookings/availability/months', [BookingAvailabilityController::class, 'months'])->name('student.bookings.availability.months');
+	Route::get('/student/bookings/availability/days', [BookingAvailabilityController::class, 'days'])->name('student.bookings.availability.days');
+	Route::get('/student/bookings/availability/times', [BookingAvailabilityController::class, 'times'])->name('student.bookings.availability.times');
 	Route::get('/student/bookings/create', [BookingController::class, 'create'])->name('student.bookings.create');
 	Route::get('/student/book-mentor/{id}', [BookingController::class, 'create'])->name('student.book-mentor');
 	Route::get('/student/mentor/{id}/book', [BookingController::class, 'create'])->name('student.mentor.book');

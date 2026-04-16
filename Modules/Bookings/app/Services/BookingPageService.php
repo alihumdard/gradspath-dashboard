@@ -3,11 +3,14 @@
 namespace Modules\Bookings\app\Services;
 
 use Illuminate\Support\Str;
+use Modules\Auth\app\Models\User;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
 
 class BookingPageService
 {
+    public function __construct(private readonly BookingAvailabilityService $availability) {}
+
     public function getSelectedMentor(int $mentorId): Mentor
     {
         return Mentor::query()
@@ -15,7 +18,7 @@ class BookingPageService
                 'user:id,name',
                 'university:id,name,display_name',
                 'rating:id,mentor_id,avg_stars',
-                'services' => fn($query) => $query
+                'services' => fn ($query) => $query
                     ->where('services_config.is_active', true)
                     ->wherePivot('is_active', true)
                     ->orderBy('mentor_services.sort_order')
@@ -26,10 +29,10 @@ class BookingPageService
             ->firstOrFail();
     }
 
-    public function buildBookingPageData(Mentor $mentor): array
+    public function buildBookingPageData(Mentor $mentor, ?User $student = null): array
     {
         $services = $mentor->services
-            ->map(fn(ServiceConfig $service) => $this->transformService($service))
+            ->map(fn (ServiceConfig $service) => $this->transformService($service))
             ->values()
             ->all();
 
@@ -40,8 +43,25 @@ class BookingPageService
 
         $mentorName = $mentor->user?->name ?? 'Mentor';
         $programLabel = $this->programLabel($mentor->program_type);
-        $firstOfficeHoursService = collect($services)->firstWhere('isOfficeHours', true);
-        $fallbackService = collect($services)->firstWhere('isOfficeHours', false);
+        $officeHours = $this->availability->nextOfficeHourSessionForMentor($mentor) ?? [
+            'sessionId' => null,
+            'mentorName' => $mentorName,
+            'mentorMeta' => trim($programLabel.' • '.$school, ' •'),
+            'weeklyService' => 'Office Hours',
+            'recurringTime' => $mentor->office_hours_schedule ?: 'Schedule coming soon',
+            'meetingType' => 'Small Group Office Hours',
+            'spotsFilled' => 0,
+            'maxSpots' => 3,
+            'remainingSpots' => 3,
+            'isFull' => false,
+            'isBookable' => false,
+            'availabilityText' => 'Availability updates soon',
+            'sessionDate' => null,
+            'sessionTime' => null,
+            'rotation' => null,
+            'serviceLocked' => false,
+            'note' => 'This mentor has not published an upcoming office-hours session yet.',
+        ];
 
         return [
             'mentor' => [
@@ -56,18 +76,19 @@ class BookingPageService
                     ? number_format((float) $mentor->rating->avg_stars, 1)
                     : 'New',
             ],
-            'services' => $services,
-            'officeHours' => [
-                'mentorName' => $mentorName,
-                'mentorMeta' => trim($programLabel.' • '.$school, ' •'),
-                'weeklyService' => $fallbackService['name'] ?? ($firstOfficeHoursService['name'] ?? 'Office Hours'),
-                'recurringTime' => $mentor->office_hours_schedule ?: 'Schedule coming soon',
-                'spotsFilled' => 0,
-                'maxSpots' => 3,
-                'meetingType' => 'Small Group Office Hours',
-                'soloFallbackAllowed' => true,
+            'student' => [
+                'name' => $student?->name,
+                'email' => $student?->email,
             ],
+            'services' => $services,
+            'officeHours' => $officeHours,
             'selectedServiceId' => $services[0]['id'] ?? null,
+            'availabilityRoutes' => [
+                'months' => route('student.bookings.availability.months'),
+                'days' => route('student.bookings.availability.days'),
+                'times' => route('student.bookings.availability.times'),
+            ],
+            'bookingSubmitUrl' => route('student.bookings.store'),
         ];
     }
 
@@ -146,11 +167,11 @@ class BookingPageService
         return match ($service->service_slug) {
             'free-consultation' => 'Meet the mentor, assess fit, and align your goals in a focused introductory session.',
             'tutoring' => 'Targeted academic or test-prep support shaped around this mentor\'s expertise.',
-            'program-insights' => 'Get firsthand insight into programs, culture, and what the path is really like.',
-            'interview-prep' => 'Practice interviews, sharpen answers, and get direct feedback before the real thing.',
-            'application-review' => 'Receive detailed feedback on essays, resumes, and application materials.',
-            'gap-year-planning' => 'Plan a purposeful gap year that strengthens your next application cycle.',
-            'office-hours' => 'Office Hours are subscription-based and booked using credits at a recurring weekly time.',
+            'program-insights', 'program_insights' => 'Get firsthand insight into programs, culture, and what the path is really like.',
+            'interview-prep', 'interview_prep' => 'Practice interviews, sharpen answers, and get direct feedback before the real thing.',
+            'application-review', 'application_review' => 'Receive detailed feedback on essays, resumes, and application materials.',
+            'gap-year-planning', 'gap_year_planning' => 'Plan a purposeful gap year that strengthens your next application cycle.',
+            'office-hours', 'office_hours' => 'Office Hours are subscription-based and booked using credits at a recurring weekly time.',
             default => 'Book this mentor for focused guidance tailored to your goals and next steps.',
         };
     }
@@ -175,7 +196,7 @@ class BookingPageService
         return collect(preg_split('/\s+/', trim($name)) ?: [])
             ->filter()
             ->take(2)
-            ->map(fn(string $part) => Str::upper(Str::substr($part, 0, 1)))
+            ->map(fn (string $part) => Str::upper(Str::substr($part, 0, 1)))
             ->implode('');
     }
 }

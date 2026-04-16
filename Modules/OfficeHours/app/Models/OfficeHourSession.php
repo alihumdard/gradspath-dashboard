@@ -3,6 +3,9 @@
 namespace Modules\OfficeHours\app\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Modules\Auth\app\Models\User;
+use Modules\Payments\app\Models\ServiceConfig;
 
 class OfficeHourSession extends Model
 {
@@ -33,4 +36,19 @@ class OfficeHourSession extends Model
         'current_occupancy' => 'integer',
         'max_spots' => 'integer',
     ];
+
+    public function schedule(): BelongsTo
+    {
+        return $this->belongsTo(OfficeHourSchedule::class, 'schedule_id');
+    }
+
+    public function currentService(): BelongsTo
+    {
+        return $this->belongsTo(ServiceConfig::class, 'current_service_id');
+    }
+
+    public function firstBooker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'first_booker_id');
+    }
 }

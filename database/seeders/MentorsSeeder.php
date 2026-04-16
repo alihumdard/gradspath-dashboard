@@ -50,6 +50,18 @@ class MentorsSeeder extends Seeder
                 'is_featured' => false,
                 'service_slugs' => ['free_consultation', 'program_insights', 'application_review'],
             ],
+            [
+                'name' => 'Abdul Rauf',
+                'email' => 'abdul.rauf@uol.edu.pk',
+                'title' => 'MBA Admissions Mentor',
+                'mentor_type' => 'graduate',
+                'program_type' => 'mba',
+                'institution' => 'University of Lahore',
+                'office_hours_schedule' => 'Every Friday at 8 PM PKT',
+                'status' => 'active',
+                'is_featured' => false,
+                'service_slugs' => ['program_insights', 'interview_prep', 'office_hours'],
+            ],
         ];
 
         foreach ($mentors as $seed) {
@@ -78,8 +90,8 @@ class MentorsSeeder extends Seeder
                     'grad_school_display' => $university?->display_name ?? $seed['institution'],
                     'mentor_type' => $seed['mentor_type'],
                     'program_type' => $seed['program_type'],
-                    'bio' => $seed['name'] . ' helps students navigate applications with practical guidance.',
-                    'description' => $seed['name'] . ' provides practical strategy and structured preparation for admissions.',
+                    'bio' => $seed['name'] . ' helps students navigate applications with practical guidance, program strategy, and interview preparation.',
+                    'description' => $seed['name'] . ' provides structured admissions guidance, first-hand program insight, and practical next steps for students preparing stronger applications.',
                     'office_hours_schedule' => $seed['office_hours_schedule'],
                     'edu_email' => $seed['email'],
                     'calendly_link' => 'https://calendly.com/' . str_replace(['@', '.'], ['-', '-'], $seed['email']),

@@ -18,7 +18,8 @@ class CreateBookingRequest extends FormRequest
             'mentor_id' => ['required', 'integer', 'exists:mentors,id'],
             'service_config_id' => ['required', 'integer', 'exists:services_config,id'],
             'session_type' => ['required', 'in:1on1,1on3,1on5,office_hours'],
-            'session_at' => ['required', 'date', 'after:now'],
+            'mentor_availability_slot_id' => ['nullable', 'integer', 'exists:mentor_availability_slots,id'],
+            'office_hour_session_id' => ['nullable', 'integer', 'exists:office_hour_sessions,id'],
             'session_timezone' => ['nullable', 'string', 'max:80'],
             'meeting_type' => ['nullable', 'in:zoom,google_meet'],
             'guest_participants' => ['nullable', 'array', 'max:4'],
@@ -50,8 +51,27 @@ class CreateBookingRequest extends FormRequest
                 })
                 ->values();
 
+            if ($sessionType === 'office_hours') {
+                if (!$this->filled('office_hour_session_id')) {
+                    $validator->errors()->add('office_hour_session_id', 'An office-hours session must be selected.');
+                }
+
+                if ($this->filled('mentor_availability_slot_id')) {
+                    $validator->errors()->add('mentor_availability_slot_id', 'Office Hours cannot use a standard mentor availability slot.');
+                }
+            } else {
+                if (!$this->filled('mentor_availability_slot_id')) {
+                    $validator->errors()->add('mentor_availability_slot_id', 'Please choose an available time slot.');
+                }
+
+                if ($this->filled('office_hour_session_id')) {
+                    $validator->errors()->add('office_hour_session_id', 'Standard bookings cannot use an office-hours session.');
+                }
+            }
+
             if ($expectedGuests === 0 && $guestParticipants->isNotEmpty()) {
                 $validator->errors()->add('guest_participants', 'Guest participants are only allowed for group bookings.');
+
                 return;
             }
 
@@ -62,8 +82,21 @@ class CreateBookingRequest extends FormRequest
                 );
             }
 
-            if ($guestParticipants->pluck('email')->filter()->count() !== $guestParticipants->pluck('email')->filter()->unique()->count()) {
+            $emails = $guestParticipants
+                ->pluck('email')
+                ->map(fn ($email) => strtolower(trim((string) $email)))
+                ->filter();
+
+            if ($emails->count() !== $emails->unique()->count()) {
                 $validator->errors()->add('guest_participants', 'Each group participant must use a different email address.');
+            }
+
+            if ($emails->contains(fn (string $email) => !str_contains((string) str($email)->after('@'), '.edu'))) {
+                $validator->errors()->add('guest_participants', 'Each invited applicant must use a valid .edu email address.');
+            }
+
+            if ($this->user()?->email && $emails->contains(strtolower((string) $this->user()->email))) {
+                $validator->errors()->add('guest_participants', 'Do not enter your own email in the additional applicant fields.');
             }
         });
     }

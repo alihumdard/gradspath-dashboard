@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Auth\app\Models\User;
 use Modules\Bookings\app\Models\MentorAvailabilitySlot;
+use Modules\Bookings\app\Models\BookingParticipant;
 use Modules\Feedback\app\Models\Feedback;
 use Modules\OfficeHours\app\Models\OfficeHourSession;
 use Modules\Payments\app\Models\CreditTransaction;
@@ -89,6 +90,11 @@ class Booking extends Model
         return $this->belongsToMany(User::class, 'booking_participants')
             ->withPivot(['participant_role', 'is_primary'])
             ->withTimestamps();
+    }
+
+    public function participantRecords(): HasMany
+    {
+        return $this->hasMany(BookingParticipant::class, 'booking_id');
     }
 
     public function feedback(): HasMany

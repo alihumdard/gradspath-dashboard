@@ -51,6 +51,16 @@ class InstitutionsSeeder extends Seeder
                 'state_province' => 'Connecticut',
                 'is_active' => true,
             ],
+            [
+                'name' => 'University of Lahore',
+                'display_name' => 'UOL',
+                'country' => 'PK',
+                'alpha_two_code' => 'PK',
+                'domains' => ['uol.edu.pk'],
+                'web_pages' => ['https://www.uol.edu.pk'],
+                'state_province' => 'Punjab',
+                'is_active' => true,
+            ],
         ];
 
         foreach ($institutions as $item) {
@@ -76,6 +86,10 @@ class InstitutionsSeeder extends Seeder
             'University of Connecticut' => [
                 ['program_name' => 'Therapy Pathways', 'program_type' => 'therapy', 'tier' => 'regional', 'duration_months' => 24],
                 ['program_name' => 'MBA', 'program_type' => 'mba', 'tier' => 'regional', 'duration_months' => 24],
+            ],
+            'University of Lahore' => [
+                ['program_name' => 'MBA', 'program_type' => 'mba', 'tier' => 'regional', 'duration_months' => 24],
+                ['program_name' => 'Law', 'program_type' => 'law', 'tier' => 'regional', 'duration_months' => 36],
             ],
         ];
 

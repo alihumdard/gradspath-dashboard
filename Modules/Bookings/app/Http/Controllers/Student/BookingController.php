@@ -44,7 +44,7 @@ class BookingController extends Controller
         return view('bookings::student.create', [
             'mentorId' => $mentorId,
             'selectedMentor' => $selectedMentor,
-            'bookingPageData' => $this->bookingPage->buildBookingPageData($selectedMentor),
+            'bookingPageData' => $this->bookingPage->buildBookingPageData($selectedMentor, Auth::user()),
             'mentors' => Mentor::query()
                 ->with('user:id,name')
                 ->where('status', 'active')

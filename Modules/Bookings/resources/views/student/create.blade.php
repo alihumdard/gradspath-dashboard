@@ -14,6 +14,11 @@
 
 @section('portal_content')
         <div class="page-shell">
+          @if ($errors->any())
+            <div class="special-request-note" style="margin-bottom: 18px;">
+              {{ $errors->first() }}
+            </div>
+          @endif
           <header class="booking-topbar">
             <div class="booking-topbar-left">
               <button class="back-arrow-btn" type="button" aria-label="Go back">
@@ -138,13 +143,13 @@
                   </div>
                 </div>
                 <div class="month-row">
-                  <button class="month-nav" type="button" aria-label="Previous month">
+                  <button class="month-nav" id="prevMonthBtn" type="button" aria-label="Previous month">
                     <svg viewBox="0 0 24 24">
                       <path d="M15.5 19 8.5 12l7-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                   </button>
-                  <div class="month-display">March 2026</div>
-                  <button class="month-nav" type="button" aria-label="Next month">
+                  <div class="month-display" id="monthDisplay">Loading months...</div>
+                  <button class="month-nav" id="nextMonthBtn" type="button" aria-label="Next month">
                     <svg viewBox="0 0 24 24">
                       <path d="m8.5 19 7-7-7-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -198,6 +203,15 @@
               </div>
             </section>
           </main>
+          <form id="bookingForm" action="{{ route('student.bookings.store') }}" method="POST" hidden>
+            @csrf
+            <input type="hidden" name="mentor_id" value="{{ $bookingPageData['mentor']['id'] ?? $mentorId }}">
+            <input type="hidden" name="service_config_id" id="formServiceConfigId">
+            <input type="hidden" name="session_type" id="formSessionType">
+            <input type="hidden" name="mentor_availability_slot_id" id="formSlotId">
+            <input type="hidden" name="office_hour_session_id" id="formOfficeHourSessionId">
+            <input type="hidden" name="meeting_type" value="zoom">
+          </form>
         </div>
 @endsection
 

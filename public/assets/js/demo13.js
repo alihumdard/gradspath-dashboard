@@ -1,155 +1,5 @@
-const mentors = [
-  {
-    id: 1,
-    mentorType: "Graduates",
-    name: "Dr. Sarah Jenkin",
-    school: "Harvard",
-    program: "Therapy",
-    programLabel: "PhD Person",
-    rating: 5.0,
-    officeHours: "Every Tuesday at 5 PM EST",
-    description:
-      "Expert in grad school applications for STEM fields. I help with statement of purpose review, school selection strategy, interview confidence, research fit conversations, and application planning for students who want a more organized process from start to finish.",
-    weeklyService: "Tutoring",
-    sessionTime: "Tuesday, 5:00 PM EST",
-    rotation: "Weekly",
-    spotsFilled: 1,
-    maxSpots: 3,
-    servicesOffered: [
-      "Tutoring",
-      "Program Insights",
-      "Interview Prep",
-      "Application Review",
-      "Gap Year Planning",
-    ],
-    icon: "therapy",
-  },
-  {
-    id: 2,
-    mentorType: "Graduates",
-    name: "Daniel Ross",
-    school: "Yale Law School",
-    program: "Law",
-    programLabel: "Law",
-    rating: 5.0,
-    officeHours: "Every Wednesday at 7 PM EST",
-    description:
-      "I help with law school applications, personal statements, addenda, interview preparation, and the transition into 1L. I especially enjoy helping students clarify their narrative and present a sharper application story.",
-    weeklyService: "Program Insights",
-    sessionTime: "Wednesday, 7:00 PM EST",
-    rotation: "Biweekly",
-    spotsFilled: 2,
-    maxSpots: 3,
-    servicesOffered: [
-      "Tutoring",
-      "Program Insights",
-      "Interview Prep",
-      "Application Review",
-      "Gap Year Planning",
-    ],
-    icon: "law",
-  },
-  {
-    id: 3,
-    mentorType: "Graduates",
-    name: "Michael Kim",
-    school: "Wharton",
-    program: "MBA",
-    programLabel: "MBA",
-    rating: 4.9,
-    officeHours: "Every Thursday at 6 PM EST",
-    description:
-      "Former McKinsey consultant. I can help with case prep, MBA positioning, behavioral interview preparation, career narrative development, and school comparisons for students trying to decide where they fit best.",
-    weeklyService: "Interview Prep",
-    sessionTime: "Thursday, 6:00 PM EST",
-    rotation: "Weekly",
-    spotsFilled: 3,
-    maxSpots: 3,
-    servicesOffered: [
-      "Tutoring",
-      "Program Insights",
-      "Interview Prep",
-      "Application Review",
-      "Gap Year Planning",
-    ],
-    icon: "mba",
-  },
-  {
-    id: 4,
-    mentorType: "Graduates",
-    name: "Emma Torres",
-    school: "Boston College",
-    program: "Therapy",
-    programLabel: "M.A. in Mental Health Counseling",
-    rating: 4.9,
-    officeHours: "Every Monday at 8 PM EST",
-    description:
-      "I can help students understand counseling programs, interview expectations, licensure questions, and different career paths across mental health training. I also support students comparing therapy-related graduate options.",
-    weeklyService: "Program Insights",
-    sessionTime: "Monday, 8:00 PM EST",
-    rotation: "Weekly",
-    spotsFilled: 1,
-    maxSpots: 3,
-    servicesOffered: [
-      "Tutoring",
-      "Program Insights",
-      "Interview Prep",
-      "Application Review",
-      "Gap Year Planning",
-    ],
-    icon: "therapy",
-  },
-  {
-    id: 5,
-    mentorType: "Professionals",
-    name: "Ava Mitchell",
-    school: "Northwestern",
-    program: "Law",
-    programLabel: "Attorney",
-    rating: 4.8,
-    officeHours: "Every Friday at 1 PM EST",
-    description:
-      "Practicing attorney offering office hours for students exploring legal careers, internship pathways, application timing, and interview preparation. Great for students who want a practical perspective beyond the classroom.",
-    weeklyService: "Interview Prep",
-    sessionTime: "Friday, 1:00 PM EST",
-    rotation: "Biweekly",
-    spotsFilled: 0,
-    maxSpots: 3,
-    servicesOffered: [
-      "Tutoring",
-      "Program Insights",
-      "Interview Prep",
-      "Application Review",
-      "Gap Year Planning",
-    ],
-    icon: "law",
-  },
-  {
-    id: 6,
-    mentorType: "Professionals",
-    name: "Jordan Lee",
-    school: "Columbia Business School",
-    program: "MBA",
-    programLabel: "MBA Professional",
-    rating: 4.9,
-    officeHours: "Every Sunday at 4 PM EST",
-    description:
-      "I support students thinking about MBA timing, admissions strategy, resume positioning, and professional storytelling. Sessions are especially useful for early-career students trying to decide whether business school makes sense.",
-    weeklyService: "Tutoring",
-    sessionTime: "Sunday, 4:00 PM EST",
-    rotation: "Weekly",
-    spotsFilled: 2,
-    maxSpots: 3,
-    servicesOffered: [
-      "Tutoring",
-      "Program Insights",
-      "Interview Prep",
-      "Application Review",
-      "Gap Year Planning",
-    ],
-    icon: "mba",
-  },
-];
+const officeHoursDataEl = document.getElementById("officeHoursData");
+const mentors = officeHoursDataEl ? JSON.parse(officeHoursDataEl.textContent) : [];
 
 const state = {
   mentorType: "Graduates",
@@ -158,7 +8,6 @@ const state = {
   schoolSearch: "",
 };
 
-// UI Elements
 const body = document.body;
 const appShell = document.querySelector(".app-shell");
 const themeToggle = document.getElementById("themeToggle");
@@ -171,7 +20,6 @@ const mentorCount = document.getElementById("mentorCount");
 const resultsSummary = document.getElementById("resultsSummary");
 const filterPills = document.querySelectorAll(".filter-pill");
 
-// Theme Logic
 function initTheme() {
   const savedTheme = localStorage.getItem("theme") || "light";
   body.setAttribute("data-theme", savedTheme);
@@ -186,7 +34,6 @@ if (themeToggle) {
   });
 }
 
-// Sidebar Logic
 if (mobileMenuToggle) {
   mobileMenuToggle.addEventListener("click", () => {
     appShell.classList.add("sidebar-active");
@@ -199,22 +46,21 @@ if (sidebarOverlay) {
   });
 }
 
-// Helper Functions
 function getSpotsNote(mentor) {
   if (mentor.spotsFilled === 1) {
-    return "Only one student is currently booked. If no one else joins by the cutoff, this student may choose another eligible service shown below.";
+    return "Only one student is currently booked. If no one else joins by the cutoff, that student may choose another eligible service.";
   }
   if (mentor.spotsFilled >= mentor.maxSpots) {
-    return "This session is full for this week.";
+    return "This session is full for the upcoming run.";
   }
   if (mentor.spotsFilled === 0) {
-    return "No students are currently booked. The scheduled service for this week is currently open.";
+    return "No students are currently booked. The upcoming office-hours session is open.";
   }
-  return "Multiple students are already booked, so the session will stay focused on this week's designated rotating service.";
+  return "Multiple students are already booked, so the session will stay focused on this week's designated service.";
 }
 
 function truncateText(text, limit = 120) {
-  if (text.length <= limit) return text;
+  if (!text || text.length <= limit) return text || "";
   return text.slice(0, limit).trim() + "...";
 }
 
@@ -260,8 +106,8 @@ function renderMentors() {
 
   mentorGrid.innerHTML = filtered
     .map((mentor) => {
-      const isFull = mentor.spotsFilled >= mentor.maxSpots;
-      const progress = (mentor.spotsFilled / mentor.maxSpots) * 100;
+      const isFull = mentor.spotsFilled >= mentor.maxSpots || !mentor.isBookable;
+      const progress = mentor.maxSpots > 0 ? (mentor.spotsFilled / mentor.maxSpots) * 100 : 0;
       const shortDescription = truncateText(mentor.description, 120);
 
       return `
@@ -274,7 +120,7 @@ function renderMentors() {
                 <p>${getDisplayProgramLine(mentor)}</p>
               </div>
             </div>
-            <div class="rating-pill">★ ${mentor.rating.toFixed(1)}</div>
+            <div class="rating-pill">★ ${Number(mentor.rating || 5).toFixed(1)}</div>
           </div>
 
           <p class="office-hours-line">
@@ -283,12 +129,12 @@ function renderMentors() {
 
           <div class="description-block">
             <p class="description-text" 
-               data-full="${mentor.description.replace(/"/g, "&quot;")}" 
+               data-full="${(mentor.description || "").replace(/"/g, "&quot;")}" 
                data-short="${shortDescription.replace(/"/g, "&quot;")}" 
                data-expanded="false">
               ${shortDescription}
             </p>
-            ${mentor.description.length > 120 ? `<button class="read-more-btn" type="button">Read More</button>` : ""}
+            ${(mentor.description || "").length > 120 ? `<button class="read-more-btn" type="button">Read More</button>` : ""}
           </div>
 
           <div class="card-main-box">
@@ -310,12 +156,12 @@ function renderMentors() {
             <div class="services-display">
               <p class="services-title">Service Options</p>
               <div class="services-grid">
-                ${mentor.servicesOffered.map((service) => `<div class="service-card ${service === mentor.weeklyService ? "active" : ""}">${service}</div>`).join("")}
+                ${(mentor.servicesOffered || []).map((service) => `<div class="service-card ${service === mentor.weeklyService ? "active" : ""}">${service}</div>`).join("")}
               </div>
             </div>
 
             <div class="card-action">
-              <button class="book-btn ${isFull ? "full" : ""}" ${isFull ? "disabled" : ""}>
+              <button class="book-btn ${isFull ? "full" : ""}" data-booking-url="${mentor.bookingUrl || "#"}" ${isFull ? "disabled" : ""}>
                 ${isFull ? "Session Full" : "Book Now"}
               </button>
             </div>
@@ -328,7 +174,6 @@ function renderMentors() {
 }
 
 function attachEvents() {
-  // Read More
   document.querySelectorAll(".read-more-btn").forEach((button) => {
     button.addEventListener("click", () => {
       const textEl = button.previousElementSibling;
@@ -345,19 +190,17 @@ function attachEvents() {
     });
   });
 
-  // Booking
   document.querySelectorAll(".book-btn").forEach((button) => {
     button.addEventListener("click", () => {
-      // Agar session full hai toh kuch na karein
       if (button.classList.contains("full")) return;
-
-      // Pop-ups hata diye gaye hain, ab seedha redirect hoga
-      window.location.href = "/student/bookings";
+      const bookingUrl = button.dataset.bookingUrl;
+      if (bookingUrl) {
+        window.location.href = bookingUrl;
+      }
     });
   });
 }
 
-// Global Filtering Listeners
 filterPills.forEach((pill) => {
   pill.addEventListener("click", () => {
     const group = pill.dataset.filterGroup;
@@ -370,27 +213,28 @@ filterPills.forEach((pill) => {
   });
 });
 
-mentorSearchInput.addEventListener("input", (e) => {
+mentorSearchInput?.addEventListener("input", (e) => {
   state.mentorSearch = e.target.value.trim();
   renderMentors();
 });
 
-schoolSearchInput.addEventListener("input", (e) => {
+schoolSearchInput?.addEventListener("input", (e) => {
   state.schoolSearch = e.target.value.trim();
   renderMentors();
 });
 
-// Sidebar Active Navigation
 function setActiveNav() {
-  const currentPath = window.location.pathname.split("/").pop() || "demo1.html";
+  const currentPath = window.location.pathname;
   document.querySelectorAll(".nav-item").forEach((item) => {
     const href = item.getAttribute("href");
-    if (href === currentPath) item.classList.add("active");
-    else item.classList.remove("active");
+    if (href && currentPath.startsWith(href)) {
+      item.classList.add("active");
+    } else {
+      item.classList.remove("active");
+    }
   });
 }
 
-// Initialize
 initTheme();
 setActiveNav();
 renderMentors();

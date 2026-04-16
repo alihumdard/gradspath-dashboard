@@ -1,6 +1,5 @@
-﻿const body = document.body;
+const body = document.body;
 const themeToggle = document.getElementById("themeToggle");
-const userHasOfficeHoursCredits = false;
 const bookingPageDataEl = document.getElementById("bookingPageData");
 const bookingPageData = bookingPageDataEl
   ? JSON.parse(bookingPageDataEl.textContent)
@@ -20,91 +19,24 @@ if (themeToggle) {
   });
 }
 
-const fallbackServices = [
-  {
-    id: "free-consultation",
-    name: "Free Consultation",
-    duration: "15 min",
-    desc: "Meet a mentor of your choosing, assess the fit, and align your goals in a focused introductory session.",
-    prices: {
-      1: { label: "Free", total: "Free" },
-    },
-    allowedSizes: [1],
-    defaultSize: 1,
-    isOfficeHours: false,
-  },
-  {
-    id: "tutoring",
-    name: "Tutoring",
-    duration: "60 min",
-    desc: "High-performance preparation for the GMAT, GRE, LSAT, and therapy licensing exams with current graduate mentors.",
-    prices: {
-      1: { label: "$70.00", total: "$70.00" },
-      3: { label: "$188.98 total - $62.99 each", total: "$188.98 total" },
-      5: { label: "$279.97 total - $55.99 each", total: "$279.97 total" },
-    },
-    allowedSizes: [1, 3, 5],
-    defaultSize: 1,
-    isOfficeHours: false,
-  },
-  {
-    id: "office-hours",
-    name: "Office Hours",
-    duration: "45 min",
-    desc: "Office Hours are subscription-based and booked using 1 credit. These sessions may have 1 to 3 students depending on availability.",
-    prices: {
-      1: { label: "1 credit", total: "1 credit" },
-    },
-    allowedSizes: [],
-    defaultSize: 1,
-    isOfficeHours: true,
-  },
-];
-
-const fallbackOfficeHours = {
-  mentorName: "Daniel Ross",
-  mentorMeta: "Law / Yale Law School",
-  weeklyService: "Program Insights",
-  recurringTime: "Wednesdays at 7:00 PM",
-  spotsFilled: 2,
-  maxSpots: 3,
-  meetingType: "Small Group Office Hours",
-  soloFallbackAllowed: true,
-};
-
-const mentorData = bookingPageData?.mentor || {
-  name: "Daniel Ross",
-  initials: "DR",
-  meta: "Law / Yale Law School",
-  description:
-    "I help with law school applications, personal statements, and 1L transition advice.",
-  rating: "5.0",
-};
-
-const services =
-  Array.isArray(bookingPageData?.services) && bookingPageData.services.length > 0
-    ? bookingPageData.services
-    : fallbackServices;
-
-const selectedMentorOfficeHours =
-  bookingPageData?.officeHours || fallbackOfficeHours;
-
-const schedule = {
-  "2026-03-11": ["10:00 AM", "11:30 AM", "1:00 PM", "4:30 PM"],
-  "2026-03-12": ["9:00 AM", "10:30 AM", "2:00 PM", "5:00 PM"],
-  "2026-03-13": ["8:30 AM", "11:00 AM", "1:30 PM", "3:00 PM"],
-  "2026-03-14": ["10:00 AM", "12:00 PM", "2:30 PM"],
-  "2026-03-15": ["9:30 AM", "11:30 AM", "3:30 PM"],
-  "2026-03-16": ["10:00 AM", "1:00 PM", "4:00 PM"],
-  "2026-03-17": ["9:00 AM", "12:30 PM", "2:00 PM", "5:30 PM"],
-};
+const mentorData = bookingPageData?.mentor || {};
+const studentData = bookingPageData?.student || {};
+const services = Array.isArray(bookingPageData?.services)
+  ? bookingPageData.services
+  : [];
+const officeHoursData = bookingPageData?.officeHours || null;
+const availabilityRoutes = bookingPageData?.availabilityRoutes || {};
 
 const state = {
-  selectedServiceId:
-    bookingPageData?.selectedServiceId || services[0]?.id || "tutoring",
+  selectedServiceId: bookingPageData?.selectedServiceId || services[0]?.id || null,
   meetingSize: 1,
+  selectedMonthIndex: 0,
+  availableMonths: [],
+  availableDays: [],
+  availableTimes: [],
   selectedDate: null,
   selectedTime: null,
+  selectedSlotId: null,
 };
 
 const serviceGrid = document.getElementById("serviceGrid");
@@ -115,6 +47,7 @@ const specialRequestNote = document.getElementById("specialRequestNote");
 const groupFields = document.getElementById("groupFields");
 const groupFormGrid = document.getElementById("groupFormGrid");
 const creditNote = document.getElementById("creditNote");
+const selectionCard = document.getElementById("selectionCard");
 
 const officeHoursPanel = document.getElementById("officeHoursPanel");
 const officeHoursMentorName = document.getElementById("officeHoursMentorName");
@@ -125,11 +58,13 @@ const officeHoursRecurringTime = document.getElementById("officeHoursRecurringTi
 const officeHoursMeetingType = document.getElementById("officeHoursMeetingType");
 const officeHoursAvailability = document.getElementById("officeHoursAvailability");
 const officeHoursNote = document.getElementById("officeHoursNote");
-const selectionCard = document.getElementById("selectionCard");
 
 const calendarGrid = document.getElementById("calendarGrid");
 const timeGrid = document.getElementById("timeGrid");
 const selectedDateLabel = document.getElementById("selectedDateLabel");
+const monthDisplay = document.getElementById("monthDisplay");
+const prevMonthBtn = document.getElementById("prevMonthBtn");
+const nextMonthBtn = document.getElementById("nextMonthBtn");
 
 const mentorInitials = document.getElementById("mentorInitials");
 const mentorDisplayName = document.getElementById("mentorDisplayName");
@@ -145,14 +80,18 @@ const summaryDate = document.getElementById("summaryDate");
 const summaryTime = document.getElementById("summaryTime");
 const continueBtn = document.getElementById("continueBtn");
 
+const bookingForm = document.getElementById("bookingForm");
+const formServiceConfigId = document.getElementById("formServiceConfigId");
+const formSessionType = document.getElementById("formSessionType");
+const formSlotId = document.getElementById("formSlotId");
+const formOfficeHourSessionId = document.getElementById("formOfficeHourSessionId");
+
 const creditModal = document.getElementById("creditModal");
 const closeCreditModal = document.getElementById("closeCreditModal");
 const officeHoursModalPanel = creditModal?.querySelector(
   ".office-hours-modal-panel",
 );
-
 const storeModal = document.getElementById("storeModal");
-const openStoreBtn = document.getElementById("openStoreBtn");
 const closeStoreModal = document.getElementById("closeStoreModal");
 const storeModalPanel = storeModal?.querySelector(".store-modal-panel-inner");
 
@@ -160,20 +99,13 @@ function getServiceById(id) {
   return services.find((service) => service.id === id);
 }
 
-function hydrateMentorDetails() {
-  if (mentorInitials) mentorInitials.textContent = mentorData.initials || "M";
-  if (mentorDisplayName) mentorDisplayName.textContent = mentorData.name || "Mentor";
-  if (mentorDisplayMeta) mentorDisplayMeta.textContent = mentorData.meta || "Mentor";
-  if (mentorDisplayRating) mentorDisplayRating.textContent = mentorData.rating || "New";
-  if (mentorDescription) {
-    mentorDescription.textContent =
-      mentorData.description || "Mentor description coming soon.";
-  }
-  if (summaryMentor) summaryMentor.textContent = mentorData.name || "Mentor";
-}
-
-function getAccentClass(index) {
-  return index % 2 === 0 ? "accent-purple" : "accent-pink";
+function currentSessionType() {
+  const service = getServiceById(state.selectedServiceId);
+  if (!service) return "1on1";
+  if (service.isOfficeHours) return "office_hours";
+  if (state.meetingSize === 3) return "1on3";
+  if (state.meetingSize === 5) return "1on5";
+  return "1on1";
 }
 
 function formatLongDate(dateString) {
@@ -203,7 +135,17 @@ function getServiceIcon(serviceId) {
         <path d="m4 10 8-4 8 4-8 4-8-4Zm3 2.5v3L12 18l5-2.5v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `,
+    program_insights: `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m4 10 8-4 8 4-8 4-8-4Zm3 2.5v3L12 18l5-2.5v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `,
     "interview-prep": `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M8 11V8a4 4 0 1 1 8 0v3m-9 0h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `,
+    interview_prep: `
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M8 11V8a4 4 0 1 1 8 0v3m-9 0h10a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
@@ -213,7 +155,17 @@ function getServiceIcon(serviceId) {
         <path d="M8 7h8M8 11h8M8 15h5M7 4h7l4 4v12H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `,
+    application_review: `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M8 7h8M8 11h8M8 15h5M7 4h7l4 4v12H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `,
     "gap-year-planning": `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-6-9h12M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `,
+    gap_year_planning: `
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-6-9h12M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
@@ -223,9 +175,30 @@ function getServiceIcon(serviceId) {
         <path d="M7 3h10M8 6h8m-9 3h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Zm3 5 2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `,
+    office_hours: `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 3h10M8 6h8m-9 3h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Zm3 5 2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `,
   };
 
   return icons[serviceId] || icons.tutoring;
+}
+
+function hydrateMentorDetails() {
+  if (mentorInitials) mentorInitials.textContent = mentorData.initials || "M";
+  if (mentorDisplayName) mentorDisplayName.textContent = mentorData.name || "Mentor";
+  if (mentorDisplayMeta) mentorDisplayMeta.textContent = mentorData.meta || "Mentor";
+  if (mentorDisplayRating) mentorDisplayRating.textContent = mentorData.rating || "New";
+  if (mentorDescription) {
+    mentorDescription.textContent =
+      mentorData.description || "Mentor description coming soon.";
+  }
+  if (summaryMentor) summaryMentor.textContent = mentorData.name || "Mentor";
+}
+
+function getAccentClass(index) {
+  return index % 2 === 0 ? "accent-purple" : "accent-pink";
 }
 
 function ensureSelectedMeetingSize(service) {
@@ -244,20 +217,112 @@ function ensureSelectedMeetingSize(service) {
   }
 }
 
-function renderServices() {
-  serviceGrid.innerHTML = "";
+async function fetchAvailability(url, params) {
+  const query = new URLSearchParams(params);
+  const response = await fetch(`${url}?${query.toString()}`, {
+    headers: {
+      Accept: "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    credentials: "same-origin",
+  });
 
-  if (!services.length) {
-    serviceGrid.innerHTML = `
-      <div class="service-card active">
-        <div class="service-heading">
-          <h4>No services available yet</h4>
-        </div>
-        <p class="service-desc">This mentor has not published booking services yet.</p>
-      </div>
-    `;
+  if (!response.ok) {
+    throw new Error("Unable to load availability.");
+  }
+
+  return response.json();
+}
+
+function currentAvailabilityParams() {
+  const service = getServiceById(state.selectedServiceId);
+
+  return {
+    mentor_id: mentorData.id,
+    service_config_id: service?.serviceConfigId || "",
+    session_type: currentSessionType(),
+  };
+}
+
+async function loadMonths() {
+  const service = getServiceById(state.selectedServiceId);
+  if (!service || service.isOfficeHours) {
+    state.availableMonths = [];
+    renderMonthNavigation();
     return;
   }
+
+  const result = await fetchAvailability(
+    availabilityRoutes.months,
+    currentAvailabilityParams(),
+  );
+
+  state.availableMonths = result.months || [];
+  state.selectedMonthIndex = 0;
+  state.availableDays = [];
+  state.availableTimes = [];
+  state.selectedDate = null;
+  state.selectedTime = null;
+  state.selectedSlotId = null;
+
+  renderMonthNavigation();
+
+  if (state.availableMonths.length > 0) {
+    await loadDays();
+  } else {
+    renderCalendar();
+    renderTimes();
+    updateSummary();
+    updateContinue();
+  }
+}
+
+async function loadDays() {
+  const currentMonth = state.availableMonths[state.selectedMonthIndex];
+  if (!currentMonth) {
+    state.availableDays = [];
+    renderCalendar();
+    renderTimes();
+    return;
+  }
+
+  const result = await fetchAvailability(availabilityRoutes.days, {
+    ...currentAvailabilityParams(),
+    month: currentMonth.month,
+  });
+
+  state.availableDays = result.days || [];
+  state.availableTimes = [];
+  state.selectedDate = null;
+  state.selectedTime = null;
+  state.selectedSlotId = null;
+
+  renderMonthNavigation();
+  renderCalendar();
+  renderTimes();
+  updateSummary();
+  updateContinue();
+}
+
+async function loadTimes(date) {
+  const result = await fetchAvailability(availabilityRoutes.times, {
+    ...currentAvailabilityParams(),
+    date,
+  });
+
+  state.availableTimes = result.times || [];
+  state.selectedDate = date;
+  state.selectedTime = null;
+  state.selectedSlotId = null;
+
+  renderCalendar();
+  renderTimes();
+  updateSummary();
+  updateContinue();
+}
+
+function renderServices() {
+  serviceGrid.innerHTML = "";
 
   services.forEach((service, index) => {
     const isActive = service.id === state.selectedServiceId;
@@ -267,7 +332,6 @@ function renderServices() {
     const card = document.createElement("button");
     card.type = "button";
     card.className = `service-card ${accentClass} ${isActive ? "active" : ""}`;
-
     card.innerHTML = `
       <div class="service-top">
         <div class="service-icon">
@@ -278,22 +342,22 @@ function renderServices() {
           <div class="service-subprice">${defaultPrice}</div>
         </div>
       </div>
-
       <p class="service-desc">${service.desc}</p>
-
       <div class="service-bottom">
         <span class="service-duration">${service.duration}</span>
         <span class="service-price">${service.isOfficeHours ? "1 credit" : defaultPrice}</span>
       </div>
     `;
 
-    card.addEventListener("click", () => {
+    card.addEventListener("click", async () => {
       state.selectedServiceId = service.id;
       state.meetingSize = service.defaultSize || 1;
+      ensureSelectedMeetingSize(service);
       renderServices();
       renderMeetingSizes();
       renderGroupFields();
       renderOfficeHoursPanel();
+      await loadMonths();
       updateSummary();
       updateContinue();
     });
@@ -306,15 +370,7 @@ function renderMeetingSizes() {
   const service = getServiceById(state.selectedServiceId);
   meetingSizeGrid.innerHTML = "";
 
-  if (!service) {
-    meetingSection.hidden = true;
-    creditNote.hidden = true;
-    specialRequestNote.hidden = true;
-    groupFields.hidden = true;
-    officeHoursPanel.hidden = true;
-    selectionCard.classList.remove("office-hours-active");
-    return;
-  }
+  if (!service) return;
 
   ensureSelectedMeetingSize(service);
 
@@ -329,48 +385,34 @@ function renderMeetingSizes() {
 
   meetingSection.hidden = false;
   creditNote.hidden = true;
-
-  if (service.allowedSizes.length === 1 && service.allowedSizes[0] === 1) {
-    meetingHelperText.textContent =
-      service.id === "free-consultation"
-        ? "Free Consultation is only available as a 15 minute 1 on 1 session."
-        : "This service is only available as a 1 on 1 session.";
-  } else {
-    meetingHelperText.textContent =
-      "Choose whether this is an individual booking or a small group request.";
-  }
+  meetingHelperText.textContent =
+    "Choose whether this is an individual booking or a small group request.";
 
   service.allowedSizes.forEach((size) => {
     const priceInfo = service.prices[size];
     const card = document.createElement("button");
     card.type = "button";
     card.className = `meeting-size-card ${state.meetingSize === size ? "active" : ""}`;
-
-    let subtext = "Standard booking";
-    if (size === 1) {
-      subtext = priceInfo.label;
-    } else if (size === 3 || size === 5) {
-      subtext = `Special request - ${priceInfo.label}`;
-    }
+    const subtext =
+      size === 1 ? priceInfo.label : `Special request - ${priceInfo.label}`;
 
     card.innerHTML = `
       <strong>1 on ${size}</strong>
       <span>${subtext}</span>
     `;
 
-    card.addEventListener("click", () => {
+    card.addEventListener("click", async () => {
       state.meetingSize = size;
       renderMeetingSizes();
       renderGroupFields();
+      await loadMonths();
       updateSummary();
     });
 
     meetingSizeGrid.appendChild(card);
   });
 
-  specialRequestNote.hidden = !(
-    state.meetingSize === 3 || state.meetingSize === 5
-  );
+  specialRequestNote.hidden = !(state.meetingSize === 3 || state.meetingSize === 5);
   renderOfficeHoursPanel();
 }
 
@@ -390,28 +432,38 @@ function renderGroupFields() {
   payerField.innerHTML = `
     <label for="payerApplicant">Who is paying?</label>
     <select id="payerApplicant" disabled>
-      <option value="1" selected>Applicant 1</option>
+      <option value="1" selected>${studentData.name || "Applicant 1"} (booking user)</option>
     </select>
   `;
-
   groupFormGrid.appendChild(payerField);
 
-  for (let i = 1; i <= state.meetingSize; i += 1) {
+  const primaryApplicant = document.createElement("div");
+  primaryApplicant.className = "applicant-row";
+  primaryApplicant.innerHTML = `
+    <div class="form-field">
+      <label>Applicant 1 Name</label>
+      <input type="text" value="${studentData.name || ""}" disabled />
+    </div>
+    <div class="form-field">
+      <label>Applicant 1 Email</label>
+      <input type="email" value="${studentData.email || ""}" disabled />
+    </div>
+  `;
+  groupFormGrid.appendChild(primaryApplicant);
+
+  for (let i = 2; i <= state.meetingSize; i += 1) {
     const row = document.createElement("div");
     row.className = "applicant-row";
-
     row.innerHTML = `
       <div class="form-field">
         <label for="applicantName${i}">Applicant ${i} Name</label>
         <input id="applicantName${i}" type="text" placeholder="Enter applicant ${i} name" />
       </div>
-
       <div class="form-field">
         <label for="applicantEmail${i}">Applicant ${i} Email</label>
         <input id="applicantEmail${i}" type="email" placeholder="Enter applicant ${i} email" />
       </div>
     `;
-
     groupFormGrid.appendChild(row);
   }
 }
@@ -419,7 +471,7 @@ function renderGroupFields() {
 function renderOfficeHoursPanel() {
   const service = getServiceById(state.selectedServiceId);
 
-  if (!service || !service.isOfficeHours) {
+  if (!service || !service.isOfficeHours || !officeHoursData) {
     officeHoursPanel.hidden = true;
     selectionCard.classList.remove("office-hours-active");
     return;
@@ -427,72 +479,86 @@ function renderOfficeHoursPanel() {
 
   officeHoursPanel.hidden = false;
   selectionCard.classList.add("office-hours-active");
+  officeHoursMentorName.textContent = officeHoursData.mentorName || mentorData.name;
+  officeHoursMentorMeta.textContent = officeHoursData.mentorMeta || mentorData.meta;
+  officeHoursWeeklyService.textContent = officeHoursData.weeklyService || "Office Hours";
+  officeHoursRecurringTime.textContent = officeHoursData.recurringTime || "Schedule coming soon";
+  officeHoursMeetingType.textContent = officeHoursData.meetingType || "Small Group Office Hours";
+  officeHoursCapacityPill.textContent = `${officeHoursData.spotsFilled || 0}/${officeHoursData.maxSpots || 3} spots filled`;
+  officeHoursAvailability.textContent =
+    officeHoursData.availabilityText || "Availability updates soon";
+  officeHoursNote.textContent =
+    officeHoursData.note ||
+    "This session stays focused on the designated weekly service once multiple students are booked.";
+}
 
-  const filled = Number(selectedMentorOfficeHours.spotsFilled || 0);
-  const maxSpots = Number(selectedMentorOfficeHours.maxSpots || 3);
-  const remaining = Math.max(maxSpots - filled, 0);
-
-  officeHoursMentorName.textContent = selectedMentorOfficeHours.mentorName;
-  officeHoursMentorMeta.textContent = selectedMentorOfficeHours.mentorMeta;
-  officeHoursWeeklyService.textContent = selectedMentorOfficeHours.weeklyService;
-  officeHoursRecurringTime.textContent = selectedMentorOfficeHours.recurringTime;
-  officeHoursMeetingType.textContent = selectedMentorOfficeHours.meetingType;
-  officeHoursCapacityPill.textContent = `${filled}/${maxSpots} spots filled`;
-
-  if (remaining <= 0) {
-    officeHoursAvailability.textContent = "Currently full";
-  } else if (remaining === 1) {
-    officeHoursAvailability.textContent = "1 spot remaining";
-  } else {
-    officeHoursAvailability.textContent = `${remaining} spots remaining`;
-  }
-
-  if (filled === 1 && selectedMentorOfficeHours.soloFallbackAllowed) {
-    officeHoursNote.innerHTML = `
-      This week's office hours for this mentor are currently set as <strong>${selectedMentorOfficeHours.weeklyService}</strong>.
-      Right now only one student is booked. If no one else joins by the cutoff, the student may request another eligible service this mentor offers.
-    `;
-  } else {
-    officeHoursNote.innerHTML = `
-      This week's office hours for this mentor are currently set as <strong>${selectedMentorOfficeHours.weeklyService}</strong>.
-      If other students join, this is the meeting focus you are agreeing to.
-      If you are the only student booked by the cutoff, you may request another eligible service this mentor offers.
-    `;
-  }
+function renderMonthNavigation() {
+  const currentMonth = state.availableMonths[state.selectedMonthIndex];
+  monthDisplay.textContent = currentMonth
+    ? currentMonth.label
+    : "No available months";
+  prevMonthBtn.disabled = state.selectedMonthIndex <= 0;
+  nextMonthBtn.disabled =
+    state.availableMonths.length === 0 ||
+    state.selectedMonthIndex >= state.availableMonths.length - 1;
 }
 
 function renderCalendar() {
   calendarGrid.innerHTML = "";
+  const service = getServiceById(state.selectedServiceId);
 
-  Object.keys(schedule).forEach((dateString) => {
-    const date = new Date(`${dateString}T12:00:00`);
+  if (service?.isOfficeHours) {
+    calendarGrid.innerHTML = `
+      <button class="time-slot disabled" disabled>
+        Office Hours uses the upcoming live session shown on the left.
+      </button>
+    `;
+    return;
+  }
+
+  if (!state.availableDays.length) {
+    calendarGrid.innerHTML = `
+      <button class="time-slot disabled" disabled>
+        No dates available for this month
+      </button>
+    `;
+    return;
+  }
+
+  state.availableDays.forEach((day) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `date-card ${state.selectedDate === dateString ? "active" : ""}`;
+    btn.className = `date-card ${state.selectedDate === day.date ? "active" : ""}`;
     btn.innerHTML = `
-      <span class="date-day">${date.toLocaleDateString("en-US", { weekday: "short" })}</span>
-      <span class="date-num">${date.getDate()}</span>
+      <span class="date-day">${day.weekday}</span>
+      <span class="date-num">${day.day}</span>
     `;
-
     btn.addEventListener("click", () => {
-      state.selectedDate = dateString;
-      state.selectedTime = null;
-      renderCalendar();
-      renderTimes();
-      updateSummary();
-      updateContinue();
+      loadTimes(day.date);
     });
-
     calendarGrid.appendChild(btn);
   });
 }
 
 function renderTimes() {
   timeGrid.innerHTML = "";
+  const service = getServiceById(state.selectedServiceId);
+
+  if (service?.isOfficeHours) {
+    selectedDateLabel.textContent = officeHoursData?.sessionDate
+      ? formatLongDate(officeHoursData.sessionDate)
+      : "Upcoming office-hours session";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `time-slot ${officeHoursData?.isBookable ? "active" : "disabled"}`;
+    btn.disabled = !officeHoursData?.isBookable;
+    btn.textContent = officeHoursData?.sessionTime || "Session not yet published";
+    timeGrid.appendChild(btn);
+    return;
+  }
 
   if (!state.selectedDate) {
     selectedDateLabel.textContent = "Select a date first";
-
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "time-slot disabled";
@@ -504,50 +570,50 @@ function renderTimes() {
 
   selectedDateLabel.textContent = formatLongDate(state.selectedDate);
 
-  const times = schedule[state.selectedDate] || [];
-  times.forEach((time) => {
+  if (!state.availableTimes.length) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `time-slot ${state.selectedTime === time ? "active" : ""}`;
-    btn.textContent = time;
+    btn.className = "time-slot disabled";
+    btn.disabled = true;
+    btn.textContent = "No times available";
+    timeGrid.appendChild(btn);
+    return;
+  }
 
+  state.availableTimes.forEach((time) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `time-slot ${state.selectedSlotId === time.slotId ? "active" : ""}`;
+    btn.textContent = time.label;
     btn.addEventListener("click", () => {
-      state.selectedTime = time;
+      state.selectedTime = time.label;
+      state.selectedSlotId = time.slotId;
       renderTimes();
       updateSummary();
       updateContinue();
     });
-
     timeGrid.appendChild(btn);
   });
 }
 
 function updateSummary() {
   const service = getServiceById(state.selectedServiceId);
-
-  if (!service) {
-    summaryService.textContent = "Not available";
-    summaryDuration.textContent = "Not available";
-    summaryMeetingSize.textContent = "Not available";
-    summaryPrice.textContent = "Not available";
-    summaryDate.textContent = state.selectedDate
-      ? formatLongDate(state.selectedDate)
-      : "Not selected";
-    summaryTime.textContent = state.selectedTime || "Not selected";
-    return;
-  }
+  if (!service) return;
 
   const priceInfo = service.prices[state.meetingSize] || service.prices[1];
-
   summaryService.textContent = service.name;
   summaryDuration.textContent = service.duration;
+  summaryMeetingSize.textContent = service.isOfficeHours
+    ? `${officeHoursData?.spotsFilled || 0}/${officeHoursData?.maxSpots || 3} filled`
+    : `1 on ${state.meetingSize}`;
+  summaryPrice.textContent = priceInfo?.total || priceInfo?.label || "Not available";
 
   if (service.isOfficeHours) {
-    summaryMeetingSize.textContent = `${selectedMentorOfficeHours.spotsFilled}/${selectedMentorOfficeHours.maxSpots} filled`;
-    summaryPrice.textContent = "1 credit";
-  } else {
-    summaryMeetingSize.textContent = `1 on ${state.meetingSize}`;
-    summaryPrice.textContent = priceInfo?.total || priceInfo?.label || "Not available";
+    summaryDate.textContent = officeHoursData?.sessionDate
+      ? formatLongDate(officeHoursData.sessionDate)
+      : "Not scheduled";
+    summaryTime.textContent = officeHoursData?.sessionTime || "Not scheduled";
+    return;
   }
 
   summaryDate.textContent = state.selectedDate
@@ -557,7 +623,49 @@ function updateSummary() {
 }
 
 function updateContinue() {
-  continueBtn.disabled = !(state.selectedDate && state.selectedTime);
+  const service = getServiceById(state.selectedServiceId);
+
+  if (!service) {
+    continueBtn.disabled = true;
+    return;
+  }
+
+  if (service.isOfficeHours) {
+    continueBtn.disabled = !officeHoursData?.isBookable;
+    return;
+  }
+
+  continueBtn.disabled = !state.selectedSlotId;
+}
+
+function clearGeneratedGuestInputs() {
+  bookingForm
+    .querySelectorAll('input[data-guest-participant="true"]')
+    .forEach((input) => input.remove());
+}
+
+function appendGuestInput(name, value) {
+  const input = document.createElement("input");
+  input.type = "hidden";
+  input.name = name;
+  input.value = value;
+  input.dataset.guestParticipant = "true";
+  bookingForm.appendChild(input);
+}
+
+function addGuestParticipantInputs() {
+  clearGeneratedGuestInputs();
+
+  if (currentSessionType() === "1on1" || currentSessionType() === "office_hours") {
+    return;
+  }
+
+  for (let i = 2; i <= state.meetingSize; i += 1) {
+    const nameValue = document.getElementById(`applicantName${i}`)?.value?.trim() || "";
+    const emailValue = document.getElementById(`applicantEmail${i}`)?.value?.trim() || "";
+    appendGuestInput(`guest_participants[${i - 2}][full_name]`, nameValue);
+    appendGuestInput(`guest_participants[${i - 2}][email]`, emailValue);
+  }
 }
 
 function openModal(modal) {
@@ -571,23 +679,45 @@ function closeModal(modal) {
   if (!modal) return;
   modal.classList.remove("open");
   modal.hidden = true;
-
   const anyOpenModal = document.querySelector(".global-modal-overlay.open");
   if (!anyOpenModal) {
     document.body.classList.remove("modal-open");
   }
 }
 
+async function initializeAvailability() {
+  try {
+    await loadMonths();
+  } catch (error) {
+    monthDisplay.textContent = "Availability unavailable";
+  }
+}
+
+prevMonthBtn?.addEventListener("click", async () => {
+  if (state.selectedMonthIndex <= 0) return;
+  state.selectedMonthIndex -= 1;
+  await loadDays();
+});
+
+nextMonthBtn?.addEventListener("click", async () => {
+  if (state.selectedMonthIndex >= state.availableMonths.length - 1) return;
+  state.selectedMonthIndex += 1;
+  await loadDays();
+});
+
 continueBtn?.addEventListener("click", () => {
   const service = getServiceById(state.selectedServiceId);
   if (!service) return;
 
-  if (service.isOfficeHours && !userHasOfficeHoursCredits) {
-    openModal(creditModal);
-    return;
-  }
+  formServiceConfigId.value = service.serviceConfigId;
+  formSessionType.value = currentSessionType();
+  formSlotId.value = service.isOfficeHours ? "" : String(state.selectedSlotId || "");
+  formOfficeHourSessionId.value = service.isOfficeHours
+    ? String(officeHoursData?.sessionId || "")
+    : "";
 
-  window.location.href = "/student/bookings";
+  addGuestParticipantInputs();
+  bookingForm.submit();
 });
 
 closeCreditModal?.addEventListener("click", (event) => {
@@ -600,10 +730,6 @@ creditModal?.addEventListener("click", (event) => {
   if (officeHoursModalPanel && !officeHoursModalPanel.contains(event.target)) {
     closeModal(creditModal);
   }
-});
-
-openStoreBtn?.addEventListener("click", () => {
-  openModal(storeModal);
 });
 
 closeStoreModal?.addEventListener("click", (event) => {
@@ -620,28 +746,13 @@ storeModal?.addEventListener("click", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
-    if (creditModal?.classList.contains("open")) {
-      closeModal(creditModal);
-    }
-    if (storeModal?.classList.contains("open")) {
-      closeModal(storeModal);
-    }
+    if (creditModal?.classList.contains("open")) closeModal(creditModal);
+    if (storeModal?.classList.contains("open")) closeModal(storeModal);
   }
-});
-
-document.querySelectorAll(".program-card").forEach((card) => {
-  card.addEventListener("click", () => {
-    document
-      .querySelectorAll(".program-card")
-      .forEach((item) => item.classList.remove("active"));
-    card.classList.add("active");
-  });
 });
 
 closeModal(creditModal);
 closeModal(storeModal);
-
-ensureSelectedMeetingSize(getServiceById(state.selectedServiceId));
 hydrateMentorDetails();
 renderServices();
 renderMeetingSizes();
@@ -651,6 +762,7 @@ renderCalendar();
 renderTimes();
 updateSummary();
 updateContinue();
+initializeAvailability();
 
 const menuBtn = document.getElementById("mobileMenuToggle");
 const overlay = document.getElementById("sidebarOverlay");
@@ -664,10 +776,8 @@ if (overlay && shell) {
 }
 
 const navItems = document.querySelectorAll(".nav-item");
-
 function setActiveNav() {
   const currentPath = window.location.pathname;
-
   navItems.forEach((item) => {
     const href = item.getAttribute("href");
     if (href && currentPath.startsWith(href)) {
@@ -679,7 +789,6 @@ function setActiveNav() {
 }
 
 setActiveNav();
-
 navItems.forEach((item) => {
   item.addEventListener("click", () => {
     navItems.forEach((nav) => nav.classList.remove("active"));

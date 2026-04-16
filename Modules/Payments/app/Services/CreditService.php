@@ -22,6 +22,10 @@ class CreditService
 
     public function creditsNeeded(ServiceConfig $service, string $meetingSize): int
     {
+        if ((bool) $service->is_office_hours || $meetingSize === 'office_hours') {
+            return 1;
+        }
+
         return match ($meetingSize) {
             '1on3' => (int) $service->credit_cost_1on3,
             '1on5' => (int) $service->credit_cost_1on5,
