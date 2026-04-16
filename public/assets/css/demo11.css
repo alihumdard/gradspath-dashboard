@@ -303,6 +303,7 @@ select {
   padding: 0;
 }
 
+.topbar,
 .shell-topbar {
   height: 72px;
   background: var(--sidebar-bg);
@@ -314,6 +315,7 @@ select {
   gap: 20px;
 }
 
+.topbar-left,
 .shell-topbar-left {
   display: flex;
   align-items: center;
@@ -361,6 +363,7 @@ select {
   box-shadow: 0 0 0 3px rgba(122, 77, 255, 0.1);
 }
 
+.topbar-right,
 .shell-topbar-right {
   display: flex;
   align-items: center;
@@ -1702,6 +1705,7 @@ h1 {
 }
 
 @media (max-width: 991px) {
+  .topbar-right .credits-box,
   .shell-topbar-right .credits-box,
   .booking-topbar-right .credit-pill {
     display: none !important;
@@ -1724,6 +1728,7 @@ h1 {
   .app-shell.sidebar-active .sidebar {
     transform: translateX(0);
   }
+  .topbar,
   .shell-topbar {
     padding: 0 12px;
     height: 60px;
@@ -1734,6 +1739,7 @@ h1 {
     z-index: 1001;
     background: var(--sidebar-bg);
   }
+  .topbar-right,
   .shell-topbar-right {
     gap: 6px;
     flex-wrap: nowrap;
