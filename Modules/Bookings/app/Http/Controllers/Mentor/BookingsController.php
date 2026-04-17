@@ -73,6 +73,8 @@ class BookingsController extends Controller
             'serviceCatalog' => $serviceCatalog,
             'counterpartLabel' => 'Student',
             'viewerRoleLabel' => 'You',
+            'viewerId' => (int) Auth::id(),
+            'chat' => $this->chatConfiguration(),
             'upcomingBookings' => $bookings->getCollection()
                 ->sortBy('session_at')
                 ->map(fn (Booking $booking) => $this->transformBooking($booking))
@@ -104,6 +106,24 @@ class BookingsController extends Controller
             'zoomLink' => $booking->meeting_link,
             'isUpcoming' => $sessionAt ? $sessionAt->isFuture() : false,
             'isTodayOrFuture' => $sessionAt ? $sessionAt->greaterThanOrEqualTo(now()->startOfDay()) : false,
+            'chatThreadUrl' => route('mentor.bookings.chat.index', $booking->id),
+            'chatSendUrl' => route('mentor.bookings.chat.store', $booking->id),
+            'chatChannel' => 'booking.'.$booking->id,
+        ];
+    }
+
+    private function chatConfiguration(): array
+    {
+        return [
+            'enabled' => true,
+            'authEndpoint' => url('/broadcasting/auth'),
+            'realtime' => [
+                'enabled' => (bool) config('broadcasting.connections.reverb.key'),
+                'key' => config('broadcasting.connections.reverb.key'),
+                'host' => env('REVERB_HOST', request()->getHost()),
+                'port' => (int) env('REVERB_PORT', 8080),
+                'scheme' => env('REVERB_SCHEME', 'http'),
+            ],
         ];
     }
 

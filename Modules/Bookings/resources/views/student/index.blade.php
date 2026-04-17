@@ -240,24 +240,10 @@
               <h3>Chat Before Session</h3>
               <p>Simple message thread between you and your mentor.</p>
             </div>
-            <span class="chat-status">Available</span>
+            <span class="chat-status" id="chatStatus">Connecting...</span>
           </div>
-          <div class="chat-window" id="chatWindow">
-            <div class="chat-message mentor">
-              <div class="chat-avatar">EC</div>
-              <div class="chat-bubble-wrap">
-                <div class="chat-meta" id="chatCounterpartMeta">Emily Carter &bull; Graduate Mentor &bull; MBA &bull; Harvard</div>
-                <div class="chat-bubble" id="chatCounterpartBubble">Hi! Looking forward to meeting with you. Feel free to
-                  send anything you want to review before the session.</div>
-              </div>
-            </div>
-            <div class="chat-message user">
-              <div class="chat-bubble-wrap">
-                <div class="chat-meta" id="chatViewerMeta">You</div>
-                <div class="chat-bubble" id="chatViewerBubble">Thank you. I may send a few questions ahead of time.</div>
-              </div>
-            </div>
-          </div>
+          <div class="chat-typing" id="chatTyping" aria-live="polite"></div>
+          <div class="chat-window" id="chatWindow"></div>
           <form class="chat-input-row" id="chatForm">
             <input
             type="text"
@@ -314,6 +300,7 @@
 
 @section('page_js')
         <script id="bookingDetailsData" type="application/json">@json($bookingPageData ?? [])</script>
+        <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
         <script src="https://unpkg.com/lucide@latest">
         </script>
         <script src="{{ asset('assets/js/demo9.js') }}">

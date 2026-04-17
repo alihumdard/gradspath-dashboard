@@ -37,6 +37,7 @@ const meetingData = {
   supportUrl: bookingDetailsData.supportUrl || "/student/support",
   counterpartLabel: bookingDetailsData.counterpartLabel || "Mentor",
   viewerRoleLabel: bookingDetailsData.viewerRoleLabel || "You",
+  viewerId: bookingDetailsData.viewerId || null,
 };
 
 const bookedDates = upcomingBookings.reduce((carry, booking) => {
@@ -51,6 +52,9 @@ const bookedDates = upcomingBookings.reduce((carry, booking) => {
     zoomLink: booking.zoomLink || null,
     meetingSize: booking.meetingSize || "1 on 1",
     duration: booking.duration || null,
+    chatThreadUrl: booking.chatThreadUrl || null,
+    chatSendUrl: booking.chatSendUrl || null,
+    chatChannel: booking.chatChannel || null,
   };
 
   return carry;
@@ -86,15 +90,13 @@ const supportLink = document.getElementById("supportLink");
 const chatForm = document.getElementById("chatForm");
 const chatInput = document.getElementById("chatInput");
 const chatWindow = document.getElementById("chatWindow");
-const chatCounterpartAvatar = chatWindow?.querySelector(".chat-message.mentor .chat-avatar");
-const chatCounterpartMeta = document.getElementById("chatCounterpartMeta");
-const chatCounterpartBubble = document.getElementById("chatCounterpartBubble");
-const chatViewerMeta = document.getElementById("chatViewerMeta");
-const chatViewerBubble = document.getElementById("chatViewerBubble");
+const chatStatusEl = document.getElementById("chatStatus");
+const chatTypingEl = document.getElementById("chatTyping");
 const viewButtons = document.querySelectorAll(".view-btn");
 const themeToggle = document.getElementById("themeToggle");
 const body = document.body;
 const root = document.documentElement;
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
 function updateTheme(theme) {
   root.setAttribute("data-theme", theme);
@@ -153,6 +155,14 @@ const todayKey = formatDateKey(
 let currentDate = new Date(today.getFullYear(), today.getMonth(), 1);
 let currentView = "month";
 let selectedDateKey = getDefaultSelectedDateKey();
+let chatClient = null;
+let activeChatBookingId = null;
+let activeChatChannel = null;
+let activeChatChannelName = null;
+let localTypingActive = false;
+let localTypingTimeoutId = null;
+let remoteTypingTimeoutId = null;
+const chatMessagesByBooking = new Map();
 if (selectedDateKey) {
   const selectedDate = parseDateKey(selectedDateKey);
   currentDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
@@ -214,6 +224,12 @@ function getInitials(name) {
     .join("") || "GP";
 }
 
+function setChatStatus(text) {
+  if (chatStatusEl) {
+    chatStatusEl.textContent = text;
+  }
+}
+
 function getDefaultSelectedDateKey() {
   if (selectedBooking?.sessionDateKey && bookedDates[selectedBooking.sessionDateKey]) {
     return selectedBooking.sessionDateKey;
@@ -256,7 +272,7 @@ function updateMeetingInfoFromSelected() {
   mentorNameEl.textContent = booking?.mentorName || meetingData.mentorName;
   updateZoomLink(booking);
   syncSelectedService(booking);
-  updateChatFromSelected(booking);
+  void updateChatFromSelected(booking);
 }
 
 function syncSelectedService(booking) {
@@ -271,31 +287,326 @@ function syncSelectedService(booking) {
   });
 }
 
-function updateChatFromSelected(booking) {
-  const counterpartName = booking?.mentorName || meetingData.mentorName;
-  const serviceName = booking?.service || meetingData.selectedService;
-  const dateText = meetingDateEl?.textContent || "your scheduled date";
-  const timeText = booking?.time || meetingTimeEl?.textContent || "the scheduled time";
+function renderChatEmpty(message) {
+  if (!chatWindow) return;
 
-  if (chatCounterpartAvatar) {
-    chatCounterpartAvatar.textContent = getInitials(counterpartName);
+  chatWindow.innerHTML = "";
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "chat-message user";
+
+  const bubbleWrap = document.createElement("div");
+  bubbleWrap.className = "chat-bubble-wrap";
+
+  const meta = document.createElement("div");
+  meta.className = "chat-meta";
+  meta.textContent = "Chat";
+
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble";
+  bubble.textContent = message;
+
+  bubbleWrap.appendChild(meta);
+  bubbleWrap.appendChild(bubble);
+  wrapper.appendChild(bubbleWrap);
+  chatWindow.appendChild(wrapper);
+}
+
+function setTypingIndicator(text = "") {
+  if (!chatTypingEl) return;
+
+  chatTypingEl.textContent = text;
+}
+
+function clearTypingIndicator() {
+  if (remoteTypingTimeoutId) {
+    clearTimeout(remoteTypingTimeoutId);
+    remoteTypingTimeoutId = null;
   }
 
-  if (chatCounterpartMeta) {
-    chatCounterpartMeta.textContent = counterpartName;
+  setTypingIndicator("");
+}
+
+function createChatMessageElement(message) {
+  const wrapper = document.createElement("div");
+  wrapper.className = `chat-message ${message.isOwn ? "user" : "mentor"}`;
+  wrapper.dataset.messageId = String(message.id);
+
+  if (!message.isOwn) {
+    const avatar = document.createElement("div");
+    avatar.className = "chat-avatar";
+    avatar.textContent = getInitials(message.senderName);
+    wrapper.appendChild(avatar);
   }
 
-  if (chatCounterpartBubble) {
-    chatCounterpartBubble.textContent = `Hi! Looking forward to our ${serviceName} session on ${dateText} at ${timeText}. Feel free to share anything you want reviewed before we meet.`;
+  const bubbleWrap = document.createElement("div");
+  bubbleWrap.className = "chat-bubble-wrap";
+
+  const meta = document.createElement("div");
+  meta.className = "chat-meta";
+  meta.textContent = message.isOwn ? meetingData.viewerRoleLabel : message.senderName;
+
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble";
+  bubble.textContent = message.messageText;
+
+  bubbleWrap.appendChild(meta);
+  bubbleWrap.appendChild(bubble);
+  wrapper.appendChild(bubbleWrap);
+
+  return wrapper;
+}
+
+function renderChatMessages(messages) {
+  if (!chatWindow) return;
+
+  chatWindow.innerHTML = "";
+
+  if (!Array.isArray(messages) || messages.length === 0) {
+    renderChatEmpty("No messages yet. Start the conversation before the session.");
+    return;
   }
 
-  if (chatViewerMeta) {
-    chatViewerMeta.textContent = meetingData.viewerRoleLabel;
+  messages.forEach((message) => {
+    chatWindow.appendChild(createChatMessageElement(message));
+  });
+
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
+function normalizeChatMessage(message) {
+  if (!message || typeof message !== "object") {
+    return message;
   }
 
-  if (chatViewerBubble) {
-    chatViewerBubble.textContent = "Thanks. I will use this thread for anything I want to share before the session.";
+  const senderId = Number(message.senderId || 0);
+  const viewerId = Number(meetingData.viewerId || 0);
+
+  return {
+    ...message,
+    isOwn: senderId > 0 && viewerId > 0 ? senderId === viewerId : Boolean(message.isOwn),
+  };
+}
+
+function mergeChatMessage(bookingId, message) {
+  const cacheKey = String(bookingId);
+  const existing = chatMessagesByBooking.get(cacheKey) || [];
+  const normalizedMessage = normalizeChatMessage(message);
+
+  if (existing.some((row) => Number(row.id) === Number(normalizedMessage.id))) {
+    return existing;
   }
+
+  const next = [...existing, normalizedMessage].sort((a, b) => Number(a.id) - Number(b.id));
+  chatMessagesByBooking.set(cacheKey, next);
+  return next;
+}
+
+function ensureChatClient() {
+  const realtime = bookingDetailsData.chat?.realtime || {};
+  const authEndpoint =
+    bookingDetailsData.chat?.authEndpoint || "/broadcasting/auth";
+
+  if (!realtime.enabled || typeof window.Pusher === "undefined") {
+    return null;
+  }
+
+  if (chatClient) {
+    return chatClient;
+  }
+
+  chatClient = new window.Pusher(realtime.key, {
+    cluster: realtime.cluster || "mt1",
+    wsHost: realtime.host,
+    wsPort: realtime.port,
+    wssPort: realtime.port,
+    forceTLS: realtime.scheme === "https",
+    enabledTransports: ["ws", "wss"],
+    authEndpoint,
+    disableStats: true,
+    auth: {
+      headers: {
+        "X-CSRF-TOKEN": csrfToken,
+        "X-Requested-With": "XMLHttpRequest",
+        Accept: "application/json",
+      },
+    },
+  });
+
+  chatClient.connection.bind("connected", () => setChatStatus("Live"));
+  chatClient.connection.bind("error", () => setChatStatus("Saved in DB"));
+  chatClient.connection.bind("unavailable", () => setChatStatus("Offline"));
+
+  return chatClient;
+}
+
+function sendTypingEvent(isTyping) {
+  if (!activeChatChannel || !activeChatBookingId) {
+    return;
+  }
+
+  try {
+    activeChatChannel.trigger("client-typing", {
+      bookingId: Number(activeChatBookingId),
+      senderId: Number(meetingData.viewerId || 0),
+      senderName: meetingData.mentorName,
+      isTyping,
+    });
+  } catch (error) {
+    console.debug("Unable to send typing event.", error);
+  }
+}
+
+function stopTypingIndicatorBroadcast() {
+  if (localTypingTimeoutId) {
+    clearTimeout(localTypingTimeoutId);
+    localTypingTimeoutId = null;
+  }
+
+  if (!localTypingActive) {
+    return;
+  }
+
+  localTypingActive = false;
+  sendTypingEvent(false);
+}
+
+function queueTypingIndicatorBroadcast() {
+  if (!chatInput || !activeChatBookingId) {
+    return;
+  }
+
+  const hasText = chatInput.value.trim().length > 0;
+
+  if (!hasText) {
+    stopTypingIndicatorBroadcast();
+    return;
+  }
+
+  if (!localTypingActive) {
+    localTypingActive = true;
+    sendTypingEvent(true);
+  }
+
+  if (localTypingTimeoutId) {
+    clearTimeout(localTypingTimeoutId);
+  }
+
+  localTypingTimeoutId = window.setTimeout(() => {
+    stopTypingIndicatorBroadcast();
+  }, 1600);
+}
+
+function handleRemoteTypingEvent(payload) {
+  if (
+    !payload ||
+    Number(payload.bookingId) !== Number(activeChatBookingId) ||
+    Number(payload.senderId) === Number(meetingData.viewerId || 0)
+  ) {
+    return;
+  }
+
+  if (!payload.isTyping) {
+    clearTypingIndicator();
+    return;
+  }
+
+  const senderName = String(payload.senderName || meetingData.counterpartLabel || "Someone");
+  setTypingIndicator(`${senderName} is typing...`);
+
+  if (remoteTypingTimeoutId) {
+    clearTimeout(remoteTypingTimeoutId);
+  }
+
+  remoteTypingTimeoutId = window.setTimeout(() => {
+    clearTypingIndicator();
+  }, 2200);
+}
+
+function subscribeToChatChannel(booking) {
+  const client = ensureChatClient();
+
+  if (!client || !booking?.chatChannel) {
+    setChatStatus("Saved in DB");
+    return;
+  }
+
+  const channelName = `private-${booking.chatChannel}`;
+
+  if (activeChatChannelName === channelName) {
+    return;
+  }
+
+  if (activeChatChannelName) {
+    stopTypingIndicatorBroadcast();
+    clearTypingIndicator();
+    client.unsubscribe(activeChatChannelName);
+  }
+
+  activeChatChannelName = channelName;
+  activeChatChannel = client.subscribe(channelName);
+  activeChatChannel.bind("chat.message.sent", (payload) => {
+    if (!payload?.message || Number(payload.bookingId) !== Number(activeChatBookingId)) {
+      return;
+    }
+
+    const messages = mergeChatMessage(payload.bookingId, payload.message);
+    renderChatMessages(messages);
+    clearTypingIndicator();
+  });
+  activeChatChannel.bind("client-typing", handleRemoteTypingEvent);
+}
+
+async function loadChatThread(booking) {
+  if (!booking?.chatThreadUrl) {
+    renderChatEmpty("Chat is not available for this booking.");
+    setChatStatus("Unavailable");
+    clearTypingIndicator();
+    return;
+  }
+
+  activeChatBookingId = booking.id;
+  subscribeToChatChannel(booking);
+
+  const cacheKey = String(booking.id);
+  if (chatMessagesByBooking.has(cacheKey)) {
+    renderChatMessages(chatMessagesByBooking.get(cacheKey));
+  } else {
+    renderChatEmpty("Loading conversation...");
+  }
+
+  try {
+    const response = await fetch(booking.chatThreadUrl, {
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        Accept: "application/json",
+      },
+      credentials: "same-origin",
+    });
+
+    if (!response.ok) {
+      throw new Error("Unable to load chat thread.");
+    }
+
+    const payload = await response.json();
+    const messages = Array.isArray(payload.messages)
+      ? payload.messages.map(normalizeChatMessage)
+      : [];
+    chatMessagesByBooking.set(cacheKey, messages);
+
+    if (Number(activeChatBookingId) === Number(booking.id)) {
+      renderChatMessages(messages);
+      setChatStatus(chatClient ? "Live" : "Saved in DB");
+    }
+  } catch (error) {
+    renderChatEmpty("Unable to load the conversation right now.");
+    setChatStatus("Unavailable");
+    console.debug("Unable to load chat thread.", error);
+  }
+}
+
+async function updateChatFromSelected(booking) {
+  await loadChatThread(booking);
 }
 
 function getMonthLabel() {
@@ -832,63 +1143,64 @@ todayBtn.addEventListener("click", () => {
   renderCalendar();
 });
 
-chatForm.addEventListener("submit", function (e) {
+chatForm.addEventListener("submit", async function (e) {
   e.preventDefault();
 
+  const booking = getBookingByDateKey(selectedDateKey);
   const message = chatInput.value.trim();
-  if (!message) return;
 
-  const wrapper = document.createElement("div");
-  wrapper.className = "chat-message user";
+  if (!booking?.chatSendUrl || !message) {
+    return;
+  }
 
-  const bubbleWrap = document.createElement("div");
-  bubbleWrap.className = "chat-bubble-wrap";
+  const socketId = chatClient?.connection?.socket_id;
+  stopTypingIndicatorBroadcast();
 
-  const meta = document.createElement("div");
-  meta.className = "chat-meta";
-  meta.textContent = "You";
+  try {
+    const response = await fetch(booking.chatSendUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-TOKEN": csrfToken,
+        "X-Requested-With": "XMLHttpRequest",
+        Accept: "application/json",
+        ...(socketId ? { "X-Socket-Id": socketId } : {}),
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({ message }),
+    });
 
-  const bubble = document.createElement("div");
-  bubble.className = "chat-bubble";
-  bubble.textContent = message;
+    if (!response.ok) {
+      throw new Error("Unable to send message.");
+    }
 
-  bubbleWrap.appendChild(meta);
-  bubbleWrap.appendChild(bubble);
-  wrapper.appendChild(bubbleWrap);
-  chatWindow.appendChild(wrapper);
+    const payload = await response.json();
+    const savedMessage = payload?.message;
 
-  chatInput.value = "";
-  chatWindow.scrollTop = chatWindow.scrollHeight;
+    if (!savedMessage) {
+      throw new Error("Missing message payload.");
+    }
 
-  setTimeout(() => {
-    const mentorReply = document.createElement("div");
-    mentorReply.className = "chat-message mentor";
-
-    const avatar = document.createElement("div");
-    avatar.className = "chat-avatar";
-    avatar.textContent = "EC";
-
-    const mentorWrap = document.createElement("div");
-    mentorWrap.className = "chat-bubble-wrap";
-
-    const mentorMeta = document.createElement("div");
-    mentorMeta.className = "chat-meta";
-    mentorMeta.textContent = getBookingByDateKey(selectedDateKey)?.mentorName || meetingData.mentorName;
-
-    const mentorBubble = document.createElement("div");
-    mentorBubble.className = "chat-bubble";
-    mentorBubble.textContent =
-      "Thanks for the message. I saw this and will be ready for our session.";
-
-    mentorWrap.appendChild(mentorMeta);
-    mentorWrap.appendChild(mentorBubble);
-    mentorReply.appendChild(avatar);
-    mentorReply.appendChild(mentorWrap);
-    chatWindow.appendChild(mentorReply);
-
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-  }, 900);
+    const messages = mergeChatMessage(booking.id, savedMessage);
+    renderChatMessages(messages);
+    chatInput.value = "";
+    clearTypingIndicator();
+    setChatStatus(chatClient ? "Live" : "Saved in DB");
+  } catch (error) {
+    setChatStatus("Send failed");
+    console.debug("Unable to send chat message.", error);
+  }
 });
+
+if (chatInput) {
+  chatInput.addEventListener("input", () => {
+    queueTypingIndicatorBroadcast();
+  });
+
+  chatInput.addEventListener("blur", () => {
+    stopTypingIndicatorBroadcast();
+  });
+}
 
 function openModal(modal) {
   modal.classList.remove("hidden");

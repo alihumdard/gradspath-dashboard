@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Bookings\app\Http\Controllers\BookingChatController;
 use Modules\Bookings\app\Http\Controllers\Student\BookingAvailabilityController;
 use Modules\Bookings\app\Http\Controllers\Mentor\BookingsController;
 use Modules\Bookings\app\Http\Controllers\Student\BookingController;
@@ -16,9 +17,13 @@ Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () 
 	Route::post('/student/bookings', [BookingController::class, 'store'])->name('student.bookings.store');
 	Route::get('/student/bookings/{id}', [BookingController::class, 'show'])->middleware('booking.participant')->name('student.bookings.show');
 	Route::patch('/student/bookings/{id}/cancel', [BookingController::class, 'cancel'])->middleware('booking.participant')->name('student.bookings.cancel');
+	Route::get('/student/bookings/{id}/chat', [BookingChatController::class, 'index'])->middleware('booking.participant')->name('student.bookings.chat.index');
+	Route::post('/student/bookings/{id}/chat', [BookingChatController::class, 'store'])->middleware('booking.participant')->name('student.bookings.chat.store');
 });
 
 Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
 	Route::get('/mentor/bookings', [BookingsController::class, 'index'])->name('mentor.bookings.index');
 	Route::get('/mentor/bookings/{id}', [BookingsController::class, 'show'])->middleware('booking.participant')->name('mentor.bookings.show');
+	Route::get('/mentor/bookings/{id}/chat', [BookingChatController::class, 'index'])->middleware('booking.participant')->name('mentor.bookings.chat.index');
+	Route::post('/mentor/bookings/{id}/chat', [BookingChatController::class, 'store'])->middleware('booking.participant')->name('mentor.bookings.chat.store');
 });
