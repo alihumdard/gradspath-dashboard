@@ -52,6 +52,8 @@ const bookedDates = upcomingBookings.reduce((carry, booking) => {
     zoomLink: booking.zoomLink || null,
     meetingSize: booking.meetingSize || "1 on 1",
     duration: booking.duration || null,
+    canCancel: Boolean(booking.canCancel),
+    cancelUrl: booking.cancelUrl || null,
     chatThreadUrl: booking.chatThreadUrl || null,
     chatSendUrl: booking.chatSendUrl || null,
     chatChannel: booking.chatChannel || null,
@@ -86,6 +88,8 @@ const cancelNo2 = document.getElementById("cancelNo2");
 const cancelYes2 = document.getElementById("cancelYes2");
 const supportCloseBtn = document.getElementById("supportCloseBtn");
 const supportLink = document.getElementById("supportLink");
+const cancelBookingForm = document.getElementById("cancelBookingForm");
+const cancelBookingReasonInput = document.getElementById("cancelBookingReason");
 
 const chatForm = document.getElementById("chatForm");
 const chatInput = document.getElementById("chatInput");
@@ -264,15 +268,40 @@ function formatFullDate(dateObj) {
 }
 
 function updateMeetingInfoFromSelected() {
-  const dateObj = parseDateKey(selectedDateKey);
   const booking = getBookingByDateKey(selectedDateKey);
+  const dateObj = selectedDateKey ? parseDateKey(selectedDateKey) : null;
 
-  meetingDateEl.textContent = formatFullDate(dateObj);
+  meetingDateEl.textContent = dateObj ? formatFullDate(dateObj) : "Not set";
   meetingTimeEl.textContent = booking ? booking.time : "Not set";
   mentorNameEl.textContent = booking?.mentorName || meetingData.mentorName;
   updateZoomLink(booking);
+  syncCancelState(booking);
   syncSelectedService(booking);
   void updateChatFromSelected(booking);
+}
+
+function syncCancelState(booking) {
+  if (!cancelMeetingBtn) return;
+
+  const canCancel = Boolean(booking?.canCancel && booking?.cancelUrl && cancelBookingForm);
+
+  cancelMeetingBtn.disabled = !canCancel;
+  cancelMeetingBtn.setAttribute("aria-disabled", canCancel ? "false" : "true");
+  cancelMeetingBtn.title = canCancel
+    ? "Cancel this meeting"
+    : "This meeting can no longer be cancelled";
+
+  if (!cancelBookingForm) {
+    return;
+  }
+
+  cancelBookingForm.action = canCancel ? booking.cancelUrl : "";
+
+  if (cancelBookingReasonInput) {
+    cancelBookingReasonInput.value = booking?.service
+      ? `Cancelled from booking page for ${booking.service}`
+      : "Cancelled from booking page";
+  }
 }
 
 function syncSelectedService(booking) {
@@ -1210,40 +1239,67 @@ function closeModal(modal) {
   modal.classList.add("hidden");
 }
 
-cancelMeetingBtn.addEventListener("click", () => {
-  openModal(cancelModal);
-});
+if (cancelMeetingBtn) {
+  cancelMeetingBtn.addEventListener("click", () => {
+    const booking = getBookingByDateKey(selectedDateKey);
 
-cancelNo1.addEventListener("click", () => {
-  closeModal(cancelModal);
-});
+    if (!booking?.canCancel || !booking?.cancelUrl || !cancelModal) {
+      return;
+    }
 
-cancelYes1.addEventListener("click", () => {
-  closeModal(cancelModal);
-  openModal(cancelConfirmModal);
-});
+    openModal(cancelModal);
+  });
+}
 
-cancelNo2.addEventListener("click", () => {
-  closeModal(cancelConfirmModal);
-});
+if (cancelNo1) {
+  cancelNo1.addEventListener("click", () => {
+    closeModal(cancelModal);
+  });
+}
 
-cancelYes2.addEventListener("click", () => {
-  closeModal(cancelConfirmModal);
-  openModal(supportModal);
-  supportLink.href = meetingData.supportUrl;
-});
+if (cancelYes1) {
+  cancelYes1.addEventListener("click", () => {
+    closeModal(cancelModal);
+    openModal(cancelConfirmModal);
+  });
+}
 
-supportCloseBtn.addEventListener("click", () => {
-  closeModal(supportModal);
-});
+if (cancelNo2) {
+  cancelNo2.addEventListener("click", () => {
+    closeModal(cancelConfirmModal);
+  });
+}
 
-supportLink.addEventListener("click", function (e) {
-  if (meetingData.supportUrl) {
-    return;
-  }
+if (cancelYes2) {
+  cancelYes2.addEventListener("click", () => {
+    const booking = getBookingByDateKey(selectedDateKey);
 
-  e.preventDefault();
-});
+    if (!booking?.canCancel || !booking?.cancelUrl || !cancelBookingForm) {
+      closeModal(cancelConfirmModal);
+      return;
+    }
+
+    closeModal(cancelConfirmModal);
+    cancelYes2.disabled = true;
+    cancelBookingForm.submit();
+  });
+}
+
+if (supportCloseBtn) {
+  supportCloseBtn.addEventListener("click", () => {
+    closeModal(supportModal);
+  });
+}
+
+if (supportLink) {
+  supportLink.addEventListener("click", function (e) {
+    if (meetingData.supportUrl) {
+      return;
+    }
+
+    e.preventDefault();
+  });
+}
 
 updateMeetingInfoFromSelected();
 setActiveViewButton();

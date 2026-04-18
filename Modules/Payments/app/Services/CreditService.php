@@ -65,6 +65,34 @@ class CreditService
     public function purchase(User $user, int $amount, ?string $paymentId = null, ?string $eventId = null): UserCredit
     {
         return DB::transaction(function () use ($user, $amount, $paymentId, $eventId) {
+            if ($paymentId) {
+                $existingByPayment = CreditTransaction::query()
+                    ->where('type', 'purchase')
+                    ->where('stripe_payment_id', $paymentId)
+                    ->first();
+
+                if ($existingByPayment) {
+                    return UserCredit::query()->lockForUpdate()->firstOrCreate(
+                        ['user_id' => $user->id],
+                        ['balance' => 0]
+                    );
+                }
+            }
+
+            if ($eventId) {
+                $existingByEvent = CreditTransaction::query()
+                    ->where('type', 'purchase')
+                    ->where('stripe_event_id', $eventId)
+                    ->first();
+
+                if ($existingByEvent) {
+                    return UserCredit::query()->lockForUpdate()->firstOrCreate(
+                        ['user_id' => $user->id],
+                        ['balance' => 0]
+                    );
+                }
+            }
+
             $wallet = UserCredit::query()->lockForUpdate()->firstOrCreate(
                 ['user_id' => $user->id],
                 ['balance' => 0]

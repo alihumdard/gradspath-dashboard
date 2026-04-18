@@ -104,8 +104,11 @@ class BookingsController extends Controller
             'sessionTimeLabel' => $sessionAt?->format('g:i A'),
             'sessionMonthLabel' => $sessionAt?->format('F Y'),
             'zoomLink' => $booking->meeting_link,
+            'status' => $booking->status,
             'isUpcoming' => $sessionAt ? $sessionAt->isFuture() : false,
             'isTodayOrFuture' => $sessionAt ? $sessionAt->greaterThanOrEqualTo(now()->startOfDay()) : false,
+            'canCancel' => false,
+            'cancelUrl' => null,
             'chatThreadUrl' => route('mentor.bookings.chat.index', $booking->id),
             'chatSendUrl' => route('mentor.bookings.chat.store', $booking->id),
             'chatChannel' => 'booking.'.$booking->id,
@@ -120,9 +123,15 @@ class BookingsController extends Controller
             'realtime' => [
                 'enabled' => (bool) config('broadcasting.connections.reverb.key'),
                 'key' => config('broadcasting.connections.reverb.key'),
-                'host' => env('REVERB_HOST', request()->getHost()),
-                'port' => (int) env('REVERB_PORT', 8080),
-                'scheme' => env('REVERB_SCHEME', 'http'),
+                'host' => config('broadcasting.connections.reverb.options.host')
+                    ?: config('reverb.servers.reverb.hostname')
+                    ?: request()->getHost(),
+                'port' => (int) (
+                    config('broadcasting.connections.reverb.options.port')
+                    ?? config('reverb.servers.reverb.port')
+                    ?? 8080
+                ),
+                'scheme' => config('broadcasting.connections.reverb.options.scheme', 'http'),
             ],
         ];
     }

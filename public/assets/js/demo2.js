@@ -6,6 +6,10 @@ const checkoutSection = document.getElementById("checkoutSection");
 const payButton = document.getElementById("payButton");
 const themeToggle = document.getElementById("themeToggle");
 const heroIcon = document.querySelector(".icon-top");
+const storePageDataEl = document.getElementById("storePageData");
+const storePageData = storePageDataEl ? JSON.parse(storePageDataEl.textContent) : {};
+const csrfToken =
+  document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
 
 // Load saved theme from localStorage, default to 'light'
 (function initTheme() {
@@ -45,9 +49,65 @@ subscribeButton.addEventListener("click", () => {
   });
 });
 
-// payButton.addEventListener("click", () => {
-//   alert("Replace this with your real Stripe checkout flow.");
-// });
+payButton?.addEventListener("click", async () => {
+  const selectedProgram =
+    document.querySelector(".program-pill.selected")?.dataset.program?.toLowerCase() || "mba";
+
+  payButton.disabled = true;
+  payButton.textContent = "Redirecting...";
+
+  try {
+    const response = await fetch(storePageData.checkoutUrl, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-CSRF-TOKEN": csrfToken,
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        credits: storePageData.creditPackCredits || 5,
+        office_hours_program: selectedProgram,
+      }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.message || "Unable to start Stripe checkout.");
+    }
+
+    if (!data.checkout_url) {
+      throw new Error("Stripe checkout URL was not returned.");
+    }
+
+    window.location.href = data.checkout_url;
+  } catch (error) {
+    payButton.disabled = false;
+    payButton.textContent = `Pay $${storePageData.creditPackPrice || 200}`;
+
+    if (window.AppToast?.show) {
+      window.AppToast.show({
+        type: "error",
+        title: "Store checkout issue",
+        message: error.message || "Something went wrong. Please try again.",
+      });
+    } else {
+      window.alert(error.message || "Something went wrong. Please try again.");
+    }
+  }
+});
+
+if (storePageData.cancelled && window.AppToast?.show) {
+  window.addEventListener("load", () => {
+    window.AppToast.show({
+      type: "warning",
+      title: "Payment cancelled",
+      message: "Your credit purchase was cancelled.",
+    });
+  });
+}
 
 if (heroIcon) {
   heroIcon.addEventListener("mouseenter", () => {

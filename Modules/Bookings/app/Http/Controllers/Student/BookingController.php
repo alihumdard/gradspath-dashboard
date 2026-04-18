@@ -7,7 +7,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
+use Modules\Bookings\app\Exceptions\BookingException;
 use Modules\Bookings\app\Http\Requests\CancelBookingRequest;
 use Modules\Bookings\app\Http\Requests\CreateBookingRequest;
 use Modules\Bookings\app\Models\Booking;
@@ -67,9 +69,22 @@ class BookingController extends Controller
 
     public function store(CreateBookingRequest $request): RedirectResponse
     {
+        $service = ServiceConfig::query()->findOrFail((int) $request->validated()['service_config_id']);
+        $sessionType = (string) $request->validated()['session_type'];
+
+        if (!$service->is_office_hours && $this->amountCharged($service, $sessionType) > 0) {
+            return back()
+                ->withErrors(['booking' => 'Please complete payment with Stripe before creating this booking.'])
+                ->withInput();
+        }
+
         try {
-            $booking = $this->bookings->createBooking(Auth::user(), $request->validated());
-        } catch (\RuntimeException $exception) {
+            $booking = $this->bookings->createBooking(
+                Auth::user(),
+                $request->validated(),
+                ['charge_credits' => (bool) $service->is_office_hours]
+            );
+        } catch (BookingException $exception) {
             return back()->withErrors(['booking' => $exception->getMessage()])->withInput();
         }
 
@@ -105,13 +120,22 @@ class BookingController extends Controller
 
         try {
             $this->bookings->cancelBooking($booking, Auth::user(), $request->validated()['reason'] ?? null);
-        } catch (\RuntimeException $exception) {
+        } catch (BookingException $exception) {
             return back()->withErrors(['booking' => $exception->getMessage()]);
         }
 
         return redirect()
             ->route('student.bookings.index')
             ->with('success', 'Booking cancelled.');
+    }
+
+    private function amountCharged(ServiceConfig $service, string $sessionType): float
+    {
+        return match ($sessionType) {
+            '1on3' => (float) ($service->price_1on3_per_person ?? 0) * 3,
+            '1on5' => (float) ($service->price_1on5_per_person ?? 0) * 5,
+            default => (float) ($service->price_1on1 ?? 0),
+        };
     }
 
     private function buildBookingDetailsPayload($bookings, ?Booking $selectedBooking): array
@@ -168,8 +192,14 @@ class BookingController extends Controller
             'sessionTimeLabel' => $sessionAt?->format('g:i A'),
             'sessionMonthLabel' => $sessionAt?->format('F Y'),
             'zoomLink' => $booking->meeting_link,
+            'status' => $booking->status,
             'isUpcoming' => $sessionAt ? $sessionAt->isFuture() : false,
             'isTodayOrFuture' => $sessionAt ? $sessionAt->greaterThanOrEqualTo(now()->startOfDay()) : false,
+            'canCancel' => in_array((string) $booking->status, ['pending', 'confirmed'], true)
+                && (bool) $sessionAt?->isFuture(),
+            'cancelUrl' => Route::has('student.bookings.cancel')
+                ? route('student.bookings.cancel', $booking->id)
+                : null,
             'chatThreadUrl' => route('student.bookings.chat.index', $booking->id),
             'chatSendUrl' => route('student.bookings.chat.store', $booking->id),
             'chatChannel' => 'booking.'.$booking->id,
@@ -184,9 +214,15 @@ class BookingController extends Controller
             'realtime' => [
                 'enabled' => (bool) config('broadcasting.connections.reverb.key'),
                 'key' => config('broadcasting.connections.reverb.key'),
-                'host' => env('REVERB_HOST', request()->getHost()),
-                'port' => (int) env('REVERB_PORT', 8080),
-                'scheme' => env('REVERB_SCHEME', 'http'),
+                'host' => config('broadcasting.connections.reverb.options.host')
+                    ?: config('reverb.servers.reverb.hostname')
+                    ?: request()->getHost(),
+                'port' => (int) (
+                    config('broadcasting.connections.reverb.options.port')
+                    ?? config('reverb.servers.reverb.port')
+                    ?? 8080
+                ),
+                'scheme' => config('broadcasting.connections.reverb.options.scheme', 'http'),
             ],
         ];
     }

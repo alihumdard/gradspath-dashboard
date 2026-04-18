@@ -16,6 +16,7 @@ class PurchaseCreditsRequest extends FormRequest
         return [
             'credits' => ['required', 'integer', 'min:1', 'max:1000'],
             'stripe_payment_id' => ['nullable', 'string', 'max:255'],
+            'office_hours_program' => ['nullable', 'in:mba,law,therapy'],
         ];
     }
 }

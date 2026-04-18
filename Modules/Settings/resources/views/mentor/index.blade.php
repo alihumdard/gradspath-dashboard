@@ -48,19 +48,6 @@
         <p class="subtitle">
           Update the profile details and services students see across discovery and booking.
         </p>
-
-        @if (session('success'))
-          <div class="success-message" style="display: block; margin-bottom: 20px;">
-            {{ session('success') }}
-          </div>
-        @endif
-
-        @if ($viewErrors->any())
-          <div class="error-text" style="display: block; margin-bottom: 20px;">
-            Please review the highlighted fields and try again.
-          </div>
-        @endif
-
         <form id="mentorForm" method="POST" action="{{ route('mentor.settings.update') }}" novalidate>
           @csrf
           @method('PATCH')

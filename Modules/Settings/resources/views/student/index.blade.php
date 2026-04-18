@@ -16,19 +16,6 @@
         <p class="subtitle">
           Keep your study profile up to date so the platform can show relevant programs and mentors.
         </p>
-
-        @if (session('success'))
-          <div class="success-message" style="display: block; margin-bottom: 20px;">
-            {{ session('success') }}
-          </div>
-        @endif
-
-        @if ($viewErrors->any())
-          <div class="error-text" style="display: block; margin-bottom: 20px;">
-            Please review the highlighted fields and try again.
-          </div>
-        @endif
-
         <form method="POST" action="{{ route('student.settings.update') }}" novalidate>
           @csrf
           @method('PATCH')

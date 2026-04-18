@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'stripe' => [
+        'secret_key' => env('STRIPE_SECRET_KEY'),
+        'publishable_key' => env('STRIPE_PUBLISHABLE_KEY'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        'api_base' => env('STRIPE_API_BASE', 'https://api.stripe.com/v1'),
+        'booking_success_url' => env('STRIPE_BOOKING_SUCCESS_URL'),
+        'booking_cancel_url' => env('STRIPE_BOOKING_CANCEL_URL'),
+    ],
+
 ];

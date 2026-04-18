@@ -29,6 +29,7 @@
 </head>
 <body>
     @yield('content')
+    @include('layouts.partials.toasts')
 
     <!-- Demo JS -->
     @yield('js')

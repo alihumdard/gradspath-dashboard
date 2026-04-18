@@ -10,6 +10,7 @@ use Modules\Bookings\app\Models\MentorAvailabilitySlot;
 use Modules\Bookings\app\Models\BookingParticipant;
 use Modules\Bookings\app\Models\Chat;
 use Modules\Feedback\app\Models\Feedback;
+use Modules\Feedback\app\Models\MentorFeedback;
 use Modules\OfficeHours\app\Models\OfficeHourSession;
 use Modules\Payments\app\Models\CreditTransaction;
 use Modules\Payments\app\Models\ServiceConfig;
@@ -106,6 +107,11 @@ class Booking extends Model
     public function feedback(): HasMany
     {
         return $this->hasMany(Feedback::class);
+    }
+
+    public function mentorFeedback(): HasMany
+    {
+        return $this->hasMany(MentorFeedback::class, 'booking_id');
     }
 
     public function transactions(): HasMany

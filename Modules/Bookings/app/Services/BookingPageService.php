@@ -89,6 +89,8 @@ class BookingPageService
                 'times' => route('student.bookings.availability.times'),
             ],
             'bookingSubmitUrl' => route('student.bookings.store'),
+            'bookingCheckoutUrl' => route('student.bookings.checkout.store'),
+            'creditBalanceUrl' => route('student.credits.balance'),
         ];
     }
 

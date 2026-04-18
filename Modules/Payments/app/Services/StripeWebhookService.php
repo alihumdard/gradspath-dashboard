@@ -8,7 +8,10 @@ use Modules\Payments\app\Models\StripeWebhook;
 
 class StripeWebhookService
 {
-    public function __construct(private readonly CreditService $creditService) {}
+    public function __construct(
+        private readonly BookingCheckoutService $bookingCheckout,
+        private readonly CreditService $creditService
+    ) {}
 
     public function process(array $payload): StripeWebhook
     {
@@ -35,18 +38,27 @@ class StripeWebhookService
             ]);
 
             if ($eventType === 'checkout.session.completed') {
-                $userId = (int) data_get($payload, 'data.object.metadata.user_id');
-                $credits = (int) data_get($payload, 'data.object.metadata.credits', 0);
+                $paymentType = (string) data_get($payload, 'data.object.metadata.payment_type');
 
-                if ($userId > 0 && $credits > 0) {
-                    $user = User::query()->find($userId);
-                    if ($user) {
-                        $this->creditService->purchase(
-                            $user,
-                            $credits,
-                            (string) data_get($payload, 'data.object.payment_intent'),
-                            $eventId
-                        );
+                if ($paymentType === 'booking') {
+                    $this->bookingCheckout->finalizePaidBookingFromStripeSession(
+                        (array) data_get($payload, 'data.object', []),
+                        $eventId
+                    );
+                } elseif ($paymentType === 'credits') {
+                    $userId = (int) data_get($payload, 'data.object.metadata.user_id');
+                    $credits = (int) data_get($payload, 'data.object.metadata.credits', 0);
+
+                    if ($userId > 0 && $credits > 0) {
+                        $user = User::query()->find($userId);
+                        if ($user) {
+                            $this->creditService->purchase(
+                                $user,
+                                $credits,
+                                (string) data_get($payload, 'data.object.payment_intent'),
+                                $eventId
+                            );
+                        }
                     }
                 }
             }

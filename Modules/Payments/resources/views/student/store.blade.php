@@ -22,7 +22,20 @@
   </div>
 @endsection
 
+@php
+  $storePageData = [
+      'checkoutUrl' => route('student.store.checkout'),
+      'creditPackCredits' => $creditPackCredits ?? 5,
+      'creditPackPrice' => $creditPackPrice ?? 200,
+      'selectedProgram' => 'mba',
+      'cancelled' => request()->query('checkout') === 'cancelled',
+  ];
+@endphp
+
 @section('portal_content')
+  <script id="storePageData" type="application/json">
+    @json($storePageData)
+  </script>
   <section class="pricing-shell">
     <section class="pricing-card">
       <div class="card-top">
@@ -35,14 +48,13 @@
         <div class="hero-price-wrap">
           <div class="price-line">
             <span class="currency">$</span>
-            <span class="price">200</span>
+            <span class="price">{{ $creditPackPrice ?? 200 }}</span>
           </div>
-          <div class="billing">USD / month</div>
+          <div class="billing">USD one-time</div>
         </div>
 
         <p class="card-subtitle">
-          Flexible office hour access for students who want consistent
-          support, better value, and simpler monthly booking.
+          Buy a 5-credit pack for Office Hours and use it across available mentors as needed.
         </p>
       </div>
 
@@ -117,29 +129,25 @@
       </div>
 
       <button type="button" class="primary-cta" id="subscribeButton">
-        Subscribe to Office Hours
+        Buy {{ $creditPackCredits ?? 5 }} Credits
       </button>
 
       <ul class="feature-list">
         <li>
-          5 credits per month to use across MBA, Law, or Therapy office
-          hours
+          {{ $creditPackCredits ?? 5 }} credits added to your balance immediately after successful payment
         </li>
         <li>45 minutes per meeting with small-group access</li>
         <li>First come, first serve booking</li>
         <li>Maximum of 5 people per meeting</li>
-        <li>Sessions happen every other week</li>
+        <li>Use credits across MBA, Law, or Therapy office hours</li>
         <li>
-          Better value for students who want more meetings at a lower
-          per-session cost
+          One-time purchase with Stripe Checkout
         </li>
-        <li>Simple monthly subscription with recurring access</li>
+        <li>No recurring billing in this version</li>
       </ul>
 
       <p class="footnote">
-        Your selected program is used for internal analytics so we can
-        understand demand, improve scheduling, and see which categories
-        perform best.
+        Your selected program is used for internal analytics and does not restrict where your credits can be used.
       </p>
     </section>
 
@@ -149,28 +157,28 @@
         <span class="secure-pill">Secure checkout</span>
       </div>
 
-      <div class="checkout-summary">
-        <div class="summary-row">
-          <span>Subscription</span>
-          <span>Office Hours</span>
+        <div class="checkout-summary">
+          <div class="summary-row">
+            <span>Package</span>
+            <span>{{ $creditPackCredits ?? 5 }} Credits</span>
+          </div>
+          <div class="summary-row">
+            <span>Selected program</span>
+            <span id="summaryProgram">MBA</span>
+          </div>
+          <div class="summary-row">
+            <span>Use</span>
+            <span>All programs</span>
+          </div>
+          <div class="summary-row">
+            <span>Billing</span>
+            <span>One-time</span>
+          </div>
+          <div class="summary-row total-row">
+            <span>Total</span>
+            <span>${{ $creditPackPrice ?? 200 }}</span>
+          </div>
         </div>
-        <div class="summary-row">
-          <span>Selected program</span>
-          <span id="summaryProgram">MBA</span>
-        </div>
-        <div class="summary-row">
-          <span>Credit use</span>
-          <span>All programs</span>
-        </div>
-        <div class="summary-row">
-          <span>Billing</span>
-          <span>Monthly</span>
-        </div>
-        <div class="summary-row total-row">
-          <span>Total</span>
-          <span>$200/month</span>
-        </div>
-      </div>
 
       <div class="payment-fields">
         <div class="field">
@@ -197,12 +205,11 @@
       </div>
 
       <button type="button" class="pay-button" id="payButton">
-        Pay $200/month
+        Pay ${{ $creditPackPrice ?? 200 }}
       </button>
 
       <p class="checkout-note">
-        Credits are flexible across all office hours. Your selected
-        program is only used for internal tracking and analytics.
+        Credits are flexible across all office hours. Your selected program is only used for internal tracking and analytics.
       </p>
     </section>
   </section>

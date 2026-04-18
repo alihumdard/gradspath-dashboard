@@ -5,6 +5,7 @@ namespace Modules\Bookings\app\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Modules\Auth\app\Models\User;
+use Modules\Bookings\app\Exceptions\BookingException;
 use Modules\Bookings\app\Events\BookingCancelled;
 use Modules\Bookings\app\Events\BookingCreated;
 use Modules\Bookings\app\Models\Booking;
@@ -18,12 +19,13 @@ class BookingService
 {
     public function __construct(private readonly CreditService $creditService) {}
 
-    public function createBooking(User $student, array $data): Booking
+    public function createBooking(User $student, array $data, array $options = []): Booking
     {
         $mentor = Mentor::query()->findOrFail((int) $data['mentor_id']);
         $service = ServiceConfig::query()->findOrFail((int) $data['service_config_id']);
         $sessionType = (string) ($data['session_type'] ?? '1on1');
-        $credits = $this->creditService->creditsNeeded($service, $sessionType);
+        $chargeCredits = (bool) ($options['charge_credits'] ?? true);
+        $credits = $chargeCredits ? $this->creditService->creditsNeeded($service, $sessionType) : 0;
         $requestedGroupSize = $this->requestedGroupSize($sessionType);
         $approvalStatus = $requestedGroupSize > 1 ? 'pending' : 'not_required';
         $amountCharged = $this->amountCharged($service, $sessionType);
@@ -35,6 +37,7 @@ class BookingService
             $mentor,
             $service,
             $sessionType,
+            $chargeCredits,
             $credits,
             $requestedGroupSize,
             $approvalStatus,
@@ -44,7 +47,7 @@ class BookingService
             $data
         ) {
             [$sessionAt, $sessionTimezone, $durationMinutes, $slotId, $officeHourSessionId] = $sessionType === 'office_hours'
-                ? $this->reserveOfficeHourSession($student, $mentor, $data)
+                ? $this->reserveOfficeHourSession($student, $mentor, $service, $data)
                 : $this->reserveAvailabilitySlot($mentor, $service, $sessionType, $requestedGroupSize, $data);
 
             $booking = Booking::create([
@@ -63,7 +66,7 @@ class BookingService
                 'approval_status' => $sessionType === 'office_hours' ? 'not_required' : $approvalStatus,
                 'credits_charged' => $credits,
                 'amount_charged' => $amountCharged,
-                'currency' => 'USD',
+                'currency' => $this->currency(),
                 'pricing_snapshot' => $pricingSnapshot,
                 'is_group_payer' => $requestedGroupSize > 1,
                 'group_payer_id' => $requestedGroupSize > 1 ? $student->id : null,
@@ -99,7 +102,9 @@ class BookingService
                 );
             }
 
-            $this->creditService->deduct($student, $credits, $booking, 'Booking charge');
+            if ($chargeCredits && $credits > 0) {
+                $this->creditService->deduct($student, $credits, $booking, 'Booking charge');
+            }
 
             event(new BookingCreated($booking));
 
@@ -110,7 +115,15 @@ class BookingService
     public function cancelBooking(Booking $booking, User $actor, ?string $reason = null): Booking
     {
         if ((int) $booking->student_id !== (int) $actor->id && !$actor->hasRole('admin')) {
-            throw new \RuntimeException('You are not allowed to cancel this booking.');
+            throw new BookingException('You are not allowed to cancel this booking.');
+        }
+
+        if (!in_array((string) $booking->status, ['pending', 'confirmed'], true)) {
+            throw new BookingException('This booking can no longer be cancelled.');
+        }
+
+        if (!$booking->session_at?->isFuture()) {
+            throw new BookingException('Only upcoming bookings can be cancelled.');
         }
 
         DB::transaction(function () use ($booking, $actor, $reason) {
@@ -160,32 +173,32 @@ class BookingService
             ->findOrFail((int) $data['mentor_availability_slot_id']);
 
         if ((int) $slot->mentor_id !== (int) $mentor->id) {
-            throw new \RuntimeException('This time slot does not belong to the selected mentor.');
+            throw new BookingException('This time slot does not belong to the selected mentor.');
         }
 
         if ((int) ($slot->service_config_id ?? 0) !== (int) $service->id) {
-            throw new \RuntimeException('This time slot does not match the selected service.');
+            throw new BookingException('This time slot does not match the selected service.');
         }
 
         if ($slot->session_type !== $sessionType) {
-            throw new \RuntimeException('This time slot does not match the selected meeting size.');
+            throw new BookingException('This time slot does not match the selected meeting size.');
         }
 
         if (!$slot->is_active || $slot->is_blocked || $slot->is_booked) {
-            throw new \RuntimeException('This time slot is no longer available.');
+            throw new BookingException('This time slot is no longer available.');
         }
 
         if ($slot->bookings()->whereIn('status', ['pending', 'confirmed'])->exists()) {
-            throw new \RuntimeException('This time slot has already been reserved.');
+            throw new BookingException('This time slot has already been reserved.');
         }
 
         if ((int) $slot->max_participants < $requestedGroupSize) {
-            throw new \RuntimeException('This time slot cannot support the selected meeting size.');
+            throw new BookingException('This time slot cannot support the selected meeting size.');
         }
 
         $sessionAt = Carbon::parse($slot->slot_date->toDateString().' '.$slot->start_time, $slot->timezone ?: config('app.timezone'));
         if ($sessionAt->lte(now())) {
-            throw new \RuntimeException('Please choose a future time slot.');
+            throw new BookingException('Please choose a future time slot.');
         }
 
         $slot->booked_participants_count = $requestedGroupSize;
@@ -201,7 +214,7 @@ class BookingService
         ];
     }
 
-    private function reserveOfficeHourSession(User $student, Mentor $mentor, array $data): array
+    private function reserveOfficeHourSession(User $student, Mentor $mentor, ServiceConfig $service, array $data): array
     {
         $session = OfficeHourSession::query()
             ->with('schedule')
@@ -209,16 +222,16 @@ class BookingService
             ->findOrFail((int) $data['office_hour_session_id']);
 
         if ((int) ($session->schedule?->mentor_id ?? 0) !== (int) $mentor->id) {
-            throw new \RuntimeException('This office-hours session does not belong to the selected mentor.');
+            throw new BookingException('This office-hours session does not belong to the selected mentor.');
         }
 
         if ($session->status !== 'upcoming' || $session->is_full) {
-            throw new \RuntimeException('This office-hours session is no longer bookable.');
+            throw new BookingException('This office-hours session is no longer bookable.');
         }
 
         $sessionAt = Carbon::parse($session->session_date->toDateString().' '.$session->start_time, $session->timezone ?: config('app.timezone'));
         if ($sessionAt->lte(now())) {
-            throw new \RuntimeException('Please choose an upcoming office-hours session.');
+            throw new BookingException('Please choose an upcoming office-hours session.');
         }
 
         if (
@@ -228,11 +241,11 @@ class BookingService
                 ->whereIn('status', ['pending', 'confirmed'])
                 ->exists()
         ) {
-            throw new \RuntimeException('You have already booked this office-hours session.');
+            throw new BookingException('You have already booked this office-hours session.');
         }
 
         if ((int) $session->current_occupancy >= (int) $session->max_spots) {
-            throw new \RuntimeException('This office-hours session is full.');
+            throw new BookingException('This office-hours session is full.');
         }
 
         $session->current_occupancy = (int) $session->current_occupancy + 1;
@@ -247,7 +260,7 @@ class BookingService
         return [
             $sessionAt,
             $session->timezone ?: 'UTC',
-            45,
+            max((int) $service->duration_minutes, 1),
             null,
             $session->id,
         ];
@@ -282,7 +295,7 @@ class BookingService
             'duration_minutes' => (int) $service->duration_minutes,
             'credits_charged' => $credits,
             'amount_charged' => round($amountCharged, 2),
-            'currency' => 'USD',
+            'currency' => $this->currency(),
             'price_1on1' => $service->price_1on1 !== null ? (float) $service->price_1on1 : null,
             'price_1on3_per_person' => $service->price_1on3_per_person !== null ? (float) $service->price_1on3_per_person : null,
             'price_1on3_total' => $service->price_1on3_total !== null ? (float) $service->price_1on3_total : null,
@@ -290,6 +303,11 @@ class BookingService
             'price_1on5_total' => $service->price_1on5_total !== null ? (float) $service->price_1on5_total : null,
             'office_hours_subscription_price' => $service->office_hours_subscription_price !== null ? (float) $service->office_hours_subscription_price : null,
         ];
+    }
+
+    private function currency(): string
+    {
+        return strtoupper((string) config('app.currency', 'USD'));
     }
 
     private function guestParticipants(array $participants): array

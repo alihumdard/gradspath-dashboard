@@ -29,6 +29,11 @@
                   id="cancelMeetingBtn"
                   type="button"
                   >Cancel Meeting</button>
+                  <form id="cancelBookingForm" method="POST" class="hidden">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="reason" id="cancelBookingReason" value="Cancelled from booking page">
+                  </form>
               </div>
             </div>
             <section class="service-section">
@@ -306,4 +311,3 @@
         <script src="{{ asset('assets/js/demo9.js') }}">
         </script>
 @endsection
-

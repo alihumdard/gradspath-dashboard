@@ -26,6 +26,8 @@ const services = Array.isArray(bookingPageData?.services)
   : [];
 const officeHoursData = bookingPageData?.officeHours || null;
 const availabilityRoutes = bookingPageData?.availabilityRoutes || {};
+const bookingCheckoutUrl = bookingPageData?.bookingCheckoutUrl || "";
+const creditBalanceUrl = bookingPageData?.creditBalanceUrl || "";
 
 const state = {
   selectedServiceId: bookingPageData?.selectedServiceId || services[0]?.id || null,
@@ -85,6 +87,8 @@ const formServiceConfigId = document.getElementById("formServiceConfigId");
 const formSessionType = document.getElementById("formSessionType");
 const formSlotId = document.getElementById("formSlotId");
 const formOfficeHourSessionId = document.getElementById("formOfficeHourSessionId");
+const csrfToken =
+  bookingForm?.querySelector('input[name="_token"]')?.value || "";
 
 const creditModal = document.getElementById("creditModal");
 const closeCreditModal = document.getElementById("closeCreditModal");
@@ -97,6 +101,25 @@ const storeModalPanel = storeModal?.querySelector(".store-modal-panel-inner");
 
 function getServiceById(id) {
   return services.find((service) => service.id === id);
+}
+
+function currentPriceAmount() {
+  const service = getServiceById(state.selectedServiceId);
+  const priceInfo = service?.prices?.[state.meetingSize] || service?.prices?.[1];
+
+  return Number(priceInfo?.amount || 0);
+}
+
+function isPaidService() {
+  const service = getServiceById(state.selectedServiceId);
+
+  return Boolean(service && !service.isOfficeHours && currentPriceAmount() > 0);
+}
+
+function isFreeService() {
+  const service = getServiceById(state.selectedServiceId);
+
+  return Boolean(service && !service.isOfficeHours && currentPriceAmount() <= 0);
 }
 
 function currentSessionType() {
@@ -623,6 +646,10 @@ function updateSummary() {
 }
 
 function updateContinue() {
+  if (continueBtn?.dataset?.busy === "true") {
+    return;
+  }
+
   const service = getServiceById(state.selectedServiceId);
 
   if (!service) {
@@ -668,6 +695,96 @@ function addGuestParticipantInputs() {
   }
 }
 
+function currentBookingPayload() {
+  const service = getServiceById(state.selectedServiceId);
+
+  return {
+    mentor_id: mentorData.id,
+    service_config_id: service?.serviceConfigId || "",
+    session_type: currentSessionType(),
+    mentor_availability_slot_id: service?.isOfficeHours ? "" : String(state.selectedSlotId || ""),
+    office_hour_session_id: service?.isOfficeHours
+      ? String(officeHoursData?.sessionId || "")
+      : "",
+    meeting_type: "zoom",
+    guest_participants:
+      currentSessionType() === "1on1" || currentSessionType() === "office_hours"
+        ? []
+        : Array.from({ length: state.meetingSize - 1 }, (_, index) => ({
+            full_name:
+              document.getElementById(`applicantName${index + 2}`)?.value?.trim() || "",
+            email:
+              document.getElementById(`applicantEmail${index + 2}`)?.value?.trim() || "",
+          })),
+  };
+}
+
+function setClientMessage(message) {
+  if (!message) return;
+
+  if (window.AppToast?.show) {
+    window.AppToast.show({
+      type: "error",
+      title: "Booking issue",
+      message,
+    });
+    return;
+  }
+
+  window.alert(message);
+}
+
+function clearClientMessage() {}
+
+function setContinueBusy(isBusy, label = "Continue") {
+  if (!continueBtn) return;
+  continueBtn.disabled = isBusy;
+  continueBtn.dataset.busy = isBusy ? "true" : "false";
+  continueBtn.textContent = isBusy ? label : "Continue";
+}
+
+async function fetchCreditBalance() {
+  const response = await fetch(creditBalanceUrl, {
+    headers: {
+      Accept: "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    credentials: "same-origin",
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to check your credit balance right now.");
+  }
+
+  return response.json();
+}
+
+async function startStripeCheckout(payload) {
+  const response = await fetch(bookingCheckoutUrl, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-CSRF-TOKEN": csrfToken,
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    credentials: "same-origin",
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.message || "Unable to start Stripe checkout.");
+  }
+
+  if (!data.checkout_url) {
+    throw new Error("Stripe checkout URL was not returned.");
+  }
+
+  window.location.href = data.checkout_url;
+}
+
 function openModal(modal) {
   if (!modal) return;
   modal.hidden = false;
@@ -709,6 +826,11 @@ continueBtn?.addEventListener("click", () => {
   const service = getServiceById(state.selectedServiceId);
   if (!service) return;
 
+  clearClientMessage();
+  setContinueBusy(true, isPaidService() ? "Redirecting..." : "Processing...");
+
+  const payload = currentBookingPayload();
+
   formServiceConfigId.value = service.serviceConfigId;
   formSessionType.value = currentSessionType();
   formSlotId.value = service.isOfficeHours ? "" : String(state.selectedSlotId || "");
@@ -717,7 +839,30 @@ continueBtn?.addEventListener("click", () => {
     : "";
 
   addGuestParticipantInputs();
-  bookingForm.submit();
+
+  (async () => {
+    try {
+      if (service.isOfficeHours) {
+        const balance = await fetchCreditBalance();
+        if (Number(balance.balance || 0) < 1) {
+          throw new Error("You need at least 1 credit to book Office Hours.");
+        }
+        bookingForm.submit();
+        return;
+      }
+
+      if (isFreeService()) {
+        bookingForm.submit();
+        return;
+      }
+
+      await startStripeCheckout(payload);
+    } catch (error) {
+      setContinueBusy(false);
+      setClientMessage(error.message || "Something went wrong. Please try again.");
+      updateContinue();
+    }
+  })();
 });
 
 closeCreditModal?.addEventListener("click", (event) => {

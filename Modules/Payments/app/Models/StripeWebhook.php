@@ -13,6 +13,7 @@ class StripeWebhook extends Model
         'event_type',
         'payload',
         'processed',
+        'error_message',
         'received_at',
         'processed_at',
     ];

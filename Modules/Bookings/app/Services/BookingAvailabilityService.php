@@ -5,6 +5,7 @@ namespace Modules\Bookings\app\Services;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Modules\Bookings\app\Models\MentorAvailabilitySlot;
 use Modules\OfficeHours\app\Models\OfficeHourSession;
 use Modules\Payments\app\Models\ServiceConfig;
@@ -92,6 +93,86 @@ class BookingAvailabilityService
             return null;
         }
 
+        return $this->transformOfficeHourSession($mentor, $session);
+    }
+
+    public function officeHoursDirectoryMentors(): array
+    {
+        $mentors = Mentor::query()
+            ->with([
+                'user:id,name',
+                'university:id,name,display_name',
+                'rating:id,mentor_id,avg_stars',
+                'services' => fn ($query) => $query->where('services_config.is_active', true)->orderBy('services_config.sort_order'),
+            ])
+            ->where('status', 'active')
+            ->get();
+
+        $sessionsByMentor = $this->nextOfficeHourSessionsForMentors($mentors->pluck('id')->all());
+
+        return $mentors
+            ->map(function (Mentor $mentor) use ($sessionsByMentor) {
+                $session = $sessionsByMentor->get($mentor->id);
+
+                if (!$session) {
+                    return null;
+                }
+
+                $sessionData = $this->transformOfficeHourSession($mentor, $session);
+
+                return [
+                    'id' => $mentor->id,
+                    'mentorType' => $mentor->mentor_type === 'professional' ? 'Professionals' : 'Graduates',
+                    'name' => $mentor->user?->name ?? 'Mentor',
+                    'school' => $mentor->grad_school_display ?: $mentor->university?->display_name ?: $mentor->university?->name ?: 'School not listed',
+                    'program' => $this->programLabel($mentor->program_type),
+                    'programLabel' => $this->programLabel($mentor->program_type),
+                    'rating' => (float) ($mentor->rating?->avg_stars ?? 5.0),
+                    'officeHours' => $mentor->office_hours_schedule ?: $sessionData['sessionTime'],
+                    'description' => $mentor->bio ?: $mentor->description ?: 'Mentor profile coming soon.',
+                    'weeklyService' => $sessionData['weeklyService'],
+                    'sessionTime' => $sessionData['sessionTime'],
+                    'rotation' => $sessionData['rotation'],
+                    'spotsFilled' => $sessionData['spotsFilled'],
+                    'maxSpots' => $sessionData['maxSpots'],
+                    'servicesOffered' => $mentor->services
+                        ->where('is_office_hours', false)
+                        ->pluck('service_name')
+                        ->values()
+                        ->all(),
+                    'icon' => $this->programIcon($mentor->program_type),
+                    'isBookable' => $sessionData['isBookable'],
+                    'bookingUrl' => route('student.book-mentor', $mentor->id),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function nextOfficeHourSessionsForMentors(array $mentorIds): Collection
+    {
+        if ($mentorIds === []) {
+            return collect();
+        }
+
+        return OfficeHourSession::query()
+            ->with(['schedule.mentor.user:id,name', 'currentService:id,service_name,service_slug'])
+            ->whereHas('schedule', fn (Builder $query) => $query
+                ->whereIn('mentor_id', $mentorIds)
+                ->where('is_active', true))
+            ->where('status', 'upcoming')
+            ->whereDate('session_date', '>=', now()->toDateString())
+            ->orderBy('session_date')
+            ->orderBy('start_time')
+            ->get()
+            ->groupBy(fn (OfficeHourSession $session) => (int) ($session->schedule?->mentor_id ?? 0))
+            ->map(fn (Collection $sessions) => $sessions->first())
+            ->forget(0);
+    }
+
+    private function transformOfficeHourSession(Mentor $mentor, OfficeHourSession $session): array
+    {
         $startsAt = Carbon::parse($session->session_date->toDateString().' '.$session->start_time, $session->timezone ?: config('app.timezone'));
         $remaining = max(((int) $session->max_spots) - ((int) $session->current_occupancy), 0);
 
@@ -114,54 +195,6 @@ class BookingAvailabilityService
             'serviceLocked' => (bool) $session->service_locked,
             'note' => $this->officeHoursNote($session),
         ];
-    }
-
-    public function officeHoursDirectoryMentors(): array
-    {
-        return Mentor::query()
-            ->with([
-                'user:id,name',
-                'university:id,name,display_name',
-                'rating:id,mentor_id,avg_stars',
-                'services' => fn ($query) => $query->where('services_config.is_active', true)->orderBy('services_config.sort_order'),
-            ])
-            ->where('status', 'active')
-            ->get()
-            ->map(function (Mentor $mentor) {
-                $session = $this->nextOfficeHourSessionForMentor($mentor);
-
-                if (!$session) {
-                    return null;
-                }
-
-                return [
-                    'id' => $mentor->id,
-                    'mentorType' => $mentor->mentor_type === 'professional' ? 'Professionals' : 'Graduates',
-                    'name' => $mentor->user?->name ?? 'Mentor',
-                    'school' => $mentor->grad_school_display ?: $mentor->university?->display_name ?: $mentor->university?->name ?: 'School not listed',
-                    'program' => $this->programLabel($mentor->program_type),
-                    'programLabel' => $this->programLabel($mentor->program_type),
-                    'rating' => (float) ($mentor->rating?->avg_stars ?? 5.0),
-                    'officeHours' => $mentor->office_hours_schedule ?: $session['sessionTime'],
-                    'description' => $mentor->bio ?: $mentor->description ?: 'Mentor profile coming soon.',
-                    'weeklyService' => $session['weeklyService'],
-                    'sessionTime' => $session['sessionTime'],
-                    'rotation' => $session['rotation'],
-                    'spotsFilled' => $session['spotsFilled'],
-                    'maxSpots' => $session['maxSpots'],
-                    'servicesOffered' => $mentor->services
-                        ->where('is_office_hours', false)
-                        ->pluck('service_name')
-                        ->values()
-                        ->all(),
-                    'icon' => $this->programIcon($mentor->program_type),
-                    'isBookable' => $session['isBookable'],
-                    'bookingUrl' => route('student.book-mentor', $mentor->id),
-                ];
-            })
-            ->filter()
-            ->values()
-            ->all();
     }
 
     private function baseSlotQuery(int $mentorId, int $serviceConfigId, string $sessionType): Builder

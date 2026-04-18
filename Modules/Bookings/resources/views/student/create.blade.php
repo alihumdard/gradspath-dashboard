@@ -14,11 +14,6 @@
 
 @section('portal_content')
         <div class="page-shell">
-          @if ($errors->any())
-            <div class="special-request-note" style="margin-bottom: 18px;">
-              {{ $errors->first() }}
-            </div>
-          @endif
           <header class="booking-topbar">
             <div class="booking-topbar-left">
               <button class="back-arrow-btn" type="button" aria-label="Go back">
@@ -269,6 +264,17 @@
 @endsection
 
 @section('page_js')
+        @if (request()->query('checkout') === 'cancelled')
+        <script>
+          window.addEventListener('load', function () {
+            window.AppToast?.show({
+              type: 'warning',
+              title: 'Payment cancelled',
+              message: 'Payment was cancelled. Your booking was not created.',
+            });
+          });
+        </script>
+        @endif
         <script id="bookingPageData" type="application/json">@json($bookingPageData)</script>
         <script src="{{ asset('assets/js/demo11.js') }}">
         </script>

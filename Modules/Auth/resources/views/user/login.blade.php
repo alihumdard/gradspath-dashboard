@@ -33,16 +33,6 @@
       <p class="text-sm text-[#6D28D9] mb-6">
         Sign in to continue with Grads Paths.
       </p>
-      @if (session('status'))
-        <div class="mb-4 rounded-xl border border-[#D8B4FE] bg-[#F5F3FF] px-4 py-3 text-sm text-[#3730A3]">
-          {{ session('status') }}
-        </div>
-      @endif
-      @if (session('success'))
-        <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {{ session('success') }}
-        </div>
-      @endif
       <form id="login-form" method="POST" action="{{ route('auth.login.post') }}" class="space-y-4">
         @csrf
         <input type="hidden" name="auth_context" value="login" />
