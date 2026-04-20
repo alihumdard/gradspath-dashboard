@@ -1,0 +1,72 @@
+      :root {
+        --bg: #ffffff;
+        --surface: #f4f4f5;
+        --text-main: #09090b;
+        --text-muted: #52525b;
+        --glass-border: rgba(0, 0, 0, 0.08);
+        --glass-bg: rgba(255, 255, 255, 0.7);
+      }
+
+      .dark {
+        --bg: #09090b;
+        --surface: #18181b;
+        --text-main: #ffffff;
+        --text-muted: #a1a1aa;
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --glass-bg: rgba(24, 24, 27, 0.6);
+      }
+
+      body {
+        background-color: var(--bg);
+        color: var(--text-main);
+        transition:
+          background-color 0.3s ease,
+          color 0.3s ease;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #52525b;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #2dd4bf;
+      }
+
+      /* Glass Effect - Apple Style */
+      .glass {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--shadow-glass);
+      }
+
+      /* Smooth Sidebar Transition */
+      .sidebar-transition {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Navigation Link Hover Line */
+      .nav-link {
+        position: relative;
+      }
+      .nav-link::after {
+        content: "";
+        position: absolute;
+        width: 0;
+        height: 2px;
+        bottom: -4px;
+        left: 0;
+        background-color: #2dd4bf;
+        transition: width 0.3s ease;
+      }
+      .nav-link:hover::after {
+        width: 100%;
+      }

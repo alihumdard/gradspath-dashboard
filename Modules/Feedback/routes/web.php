@@ -1,0 +1,23 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Modules\Feedback\app\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
+use Modules\Feedback\app\Http\Controllers\Mentor\FeedbackController as MentorFeedbackController;
+use Modules\Feedback\app\Http\Controllers\Student\FeedbackController as StudentFeedbackController;
+
+Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
+	Route::get('/student/feedback', [StudentFeedbackController::class, 'index'])->name('student.feedback.index');
+});
+
+Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
+	Route::get('/mentor/feedback', [MentorFeedbackController::class, 'index'])->name('mentor.feedback.index');
+});
+
+Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
+	Route::post('/student/feedback', [StudentFeedbackController::class, 'store'])->name('student.feedback.store');
+});
+
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->name('admin.feedback.')->group(function () {
+	Route::patch('/feedback/{id}', [AdminFeedbackController::class, 'update'])->name('update');
+	Route::delete('/feedback/{id}', [AdminFeedbackController::class, 'destroy'])->name('destroy');
+});

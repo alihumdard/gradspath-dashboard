@@ -1,0 +1,11 @@
+{
+    "name": "OfficeHours",
+    "alias": "officehours",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\OfficeHours\\app\\Providers\\OfficeHoursServiceProvider"
+    ],
+    "files": []
+}

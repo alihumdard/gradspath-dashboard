@@ -1,0 +1,16 @@
+<?php
+
+// NOTE: This migration is auto-published by Spatie Laravel Permission.
+// Run: php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+// This file is included here for reference and ordering clarity.
+// The actual file will be generated in your project by the command above.
+//
+// Required package: composer require spatie/laravel-permission
+//
+// Spatie creates 5 tables:
+//   roles, permissions, model_has_roles, model_has_permissions, role_has_permissions
+//
+// After publishing, ensure the timestamp on the generated file comes AFTER
+// 2024_01_01_000001 (users table) so the foreign key to users resolves correctly.
+//
+// No manual edits needed to the Spatie migration — assign roles & permissions in the seeder.

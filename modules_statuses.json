@@ -1,0 +1,12 @@
+{
+    "Auth": true,
+    "Discovery": true,
+    "Institutions": true,
+    "OfficeHours": true,
+    "Feedback": true,
+    "MentorNotes": true,
+    "Bookings": true,
+    "Support": true,
+    "Settings": true,
+    "Payments": true
+}

@@ -1,0 +1,147 @@
+@extends('layouts.portal-student')
+@section('title', 'Institutions - Grads Paths')
+@section('portal_css_asset', 'assets/css/demo3a.css')
+@section('portal_active_nav', 'institutions')
+@section('page_topbar_left')
+        <div class="search-wrap">
+          <input
+          type="text"
+          class="search-input"
+          id="topbarSearch"
+          placeholder="Search mentors, universities..."
+          />
+        </div>
+@endsection
+
+@section('portal_content')
+        <div class="page-wrap">
+          <div class="top-bar">
+            <h1>Explore by University</h1>
+          </div>
+          <p class="intro-text">Filter by program tier and mentor category, search for a school,
+            then click a university to explore available graduate mentor
+            programs.</p>
+          <section id="universitiesSection" class="section active">
+            <div class="filter-shell">
+              <div class="filter-card filter-card-tier">
+                <div class="filter-header">
+                  <div class="filter-header-icon">
+                    <i data-lucide="sliders-horizontal">
+                    </i>
+                  </div>
+                  <div>
+                    <h3>Program Tier</h3>
+                    <p>Choose the type of schools you want to view</p>
+                  </div>
+                </div>
+                <div id="tierFilters" class="chip-row">
+                </div>
+              </div>
+              <div class="filter-card filter-card-program">
+                <div class="filter-header">
+                  <div class="filter-header-icon">
+                    <i data-lucide="graduation-cap">
+                    </i>
+                  </div>
+                  <div>
+                    <h3>Program Type</h3>
+                    <p>Filter schools by mentor category</p>
+                  </div>
+                </div>
+                <div id="programFilters" class="chip-row">
+                </div>
+              </div>
+            </div>
+            <div class="search-shell">
+              <div class="search-bar">
+                <i data-lucide="search">
+                </i>
+                <input
+                id="schoolSearchInput"
+                type="text"
+                placeholder="Search universities..."
+                autocomplete="off"
+                />
+              </div>
+            </div>
+            <div class="results-meta">
+              <div class="results-meta-left">
+                <span class="results-badge" id="resultsBadge"
+                >All universities</span
+                >
+                <span class="results-count" id="resultsCount">
+                </span>
+              </div>
+            </div>
+            <div id="universityGrid" class="university-grid">
+            </div>
+          </section>
+          <section id="programsSection" class="section">
+            <div class="programs-header">
+              <button id="backBtn" class="back-btn">
+                <i data-lucide="arrow-left">
+                </i>Back to universities</button>
+            </div>
+            <div class="selected-school-card">
+              <div class="selected-school-main">
+                <div class="selected-school-icon">
+                  <i data-lucide="building-2">
+                  </i>
+                </div>
+                <div>
+                  <div class="selected-school-topline">
+                    <span id="selectedSchoolTierTag" class="school-tier-tag"
+                    >Tier</span
+                    >
+                    <span
+                    id="selectedSchoolProgramTag"
+                    class="school-program-tag"
+                    >Programs</span
+                    >
+                  </div>
+                  <h2 id="selectedSchoolName">University Name</h2>
+                  <p id="selectedSchoolSubtext">Available mentor programs at this institution</p>
+                </div>
+              </div>
+            </div>
+            <div class="school-view-shell">
+              <div class="school-view-top">
+                <div>
+                  <h3 class="school-section-title">Available program categories</h3>
+                  <p class="school-section-subtitle">Choose a program below to see the mentors available at this
+                    school.</p>
+                </div>
+              </div>
+              <div class="school-family-toolbar">
+                <div class="toolbar-label">Filter programs at this school:</div>
+                <div id="schoolProgramFilters" class="chip-row compact">
+                </div>
+              </div>
+              <div id="programGrid" class="program-grid">
+              </div>
+            </div>
+            <div id="mentorsPanel" class="mentors-panel hidden">
+              <div class="mentors-panel-header">
+                <div>
+                  <div class="mentor-eyebrow">Mentor View</div>
+                  <h3 id="mentorPanelTitle">Columbia University ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· MBA</h3>
+                  <p id="mentorPanelSubtext">Mentors available from this specific graduate program</p>
+                </div>
+                <a href="{{ route('student.mentors.index') }}" style="text-decoration: none">
+                  <button id="seeAllMentorsBtn" class="see-all-btn">See all graduate mentors</button>
+                </a>
+              </div>
+              <div id="mentorGrid" class="mentor-grid">
+              </div>
+            </div>
+          </section>
+        </div>
+@endsection
+
+@section('page_js')
+        <script src="https://unpkg.com/lucide@latest">
+        </script>
+        <script>window.institutionsData = @json($institutionsData);</script>
+        <script src="{{ asset('assets/js/demo3a.js') }}">
+        </script>
+@endsection

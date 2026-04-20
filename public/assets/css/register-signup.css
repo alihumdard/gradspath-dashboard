@@ -1,0 +1,252 @@
+:root {
+  --bg-1: #05030f;
+  --bg-2: #0b0720;
+  --panel: #f7f7fc;
+  --panel-border: #7d4bff;
+  --text-main: #1d1945;
+  --text-sub: #5f3bd1;
+  --accent: #6b35f1;
+  --accent-2: #7b49ff;
+  --accent-soft: #efe8ff;
+  --error: #b42318;
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --shadow: 0 30px 80px rgba(13, 8, 38, 0.6);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  color: var(--text-main);
+  font-family: "Poppins", "Segoe UI", sans-serif;
+}
+
+.signup-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 14px;
+  background:
+    radial-gradient(1000px 420px at 8% 5%, rgba(123, 73, 255, 0.25), transparent 60%),
+    radial-gradient(800px 400px at 92% 94%, rgba(44, 177, 255, 0.18), transparent 58%),
+    linear-gradient(160deg, var(--bg-1), var(--bg-2));
+}
+
+.signup-wrap {
+  width: min(760px, 100%);
+}
+
+.signup-card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--panel-border);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 34px 28px 24px;
+}
+
+.signup-card h1 {
+  margin: 6px 0 4px;
+  font-size: clamp(1.8rem, 2.8vw, 2.75rem);
+  line-height: 1.1;
+  color: #2f3296;
+}
+
+.subtitle {
+  margin: 0 0 22px;
+  font-size: 1.05rem;
+  color: var(--text-sub);
+}
+
+.close-btn {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  font-size: 2rem;
+  line-height: 1;
+  text-decoration: none;
+  color: #4d3ec8;
+}
+
+.signup-form {
+  display: grid;
+  gap: 12px;
+}
+
+.field-head {
+  margin-top: 4px;
+  font-size: 1.03rem;
+  font-weight: 700;
+  color: #251f52;
+}
+
+.top-gap {
+  margin-top: 8px;
+}
+
+.chip-row,
+.role-row {
+  display: grid;
+  gap: 12px;
+}
+
+.chip-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.role-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.chip,
+.role-card {
+  border: 1.5px solid #bfa7ff;
+  background: #fbf9ff;
+  color: #5e31d3;
+  border-radius: var(--radius-md);
+  min-height: 48px;
+  font-weight: 700;
+  font-size: 1.03rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.role-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 60px;
+  font-size: 1.9rem;
+}
+
+.chip:hover,
+.role-card:hover,
+.chip.active,
+.role-card.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px rgba(107, 53, 241, 0.28);
+}
+
+.label {
+  margin-top: 4px;
+  font-weight: 700;
+  color: #281f56;
+}
+
+.label span {
+  color: #ce2535;
+}
+
+.input-wrap {
+  position: relative;
+}
+
+.input-wrap input {
+  width: 100%;
+  border: 1.6px solid #8153ff;
+  background: #faf8ff;
+  color: #211a4e;
+  border-radius: var(--radius-md);
+  min-height: 56px;
+  padding: 0 50px 0 16px;
+  font-size: 1.03rem;
+  outline: none;
+}
+
+.input-wrap input::placeholder {
+  color: #9f7cf1;
+}
+
+.input-wrap input:focus {
+  box-shadow: 0 0 0 3px rgba(107, 53, 241, 0.14);
+}
+
+.input-wrap > i,
+.inline-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6d37eb;
+  font-size: 1.14rem;
+}
+
+.inline-icon {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.note {
+  margin: 6px 0 0;
+  color: #5f3bc9;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.continue-btn {
+  margin-top: 6px;
+  min-height: 54px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.continue-btn:hover {
+  filter: brightness(1.05);
+}
+
+.signin-link {
+  margin: 0;
+  text-align: center;
+  color: #4f3f97;
+}
+
+.signin-link a {
+  color: #5327cf;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.error {
+  margin-top: -6px;
+  color: var(--error);
+  font-size: 0.88rem;
+}
+
+@media (max-width: 720px) {
+  .signup-card {
+    padding: 22px 16px 20px;
+    border-radius: 16px;
+  }
+
+  .chip-row {
+    grid-template-columns: 1fr;
+  }
+
+  .role-row {
+    grid-template-columns: 1fr;
+  }
+}

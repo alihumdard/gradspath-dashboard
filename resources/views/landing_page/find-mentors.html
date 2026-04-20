@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Grads Paths • Find Mentors Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <style>
+      /* Dark mode overrides to make the theme toggle fully working across hardcoded elements */
+      html.dark body { background-color: var(--bg); color: var(--text-main); }
+      html.dark .bg-white { background-color: var(--surface) !important; color: var(--text-main) !important; }
+      html.dark .bg-\[\#F3E8FF\] { background-color: rgba(14, 12, 20, 0.5) !important; border-color: var(--border) !important; color: var(--text-main) !important; }
+      html.dark .bg-\[\#FDFBFF\] { background-color: var(--surface) !important; border-color: var(--border) !important; color: var(--text-main) !important; }
+      html.dark .text-\[\#3730A3\] { color: var(--text-main) !important; }
+      html.dark .text-\[\#3730A3\]\/60 { color: var(--primary) !important; opacity: 1 !important; }
+      html.dark .text-\[\#6D28D9\] { color: var(--text-muted) !important; }
+      html.dark .text-\[\#6D28D9\]\/70 { color: var(--primary) !important; opacity: 1 !important; }
+      html.dark .border-\[\#6D28D9\] { border-color: var(--border) !important; }
+      html.dark .border-\[\#EBE0F8\] { border-color: var(--border) !important; }
+      html.dark aside nav a:hover { background-color: rgba(255,255,255,0.05) !important; color: white !important; }
+      html.dark input, html.dark select, html.dark textarea { background-color: var(--bg) !important; color: var(--text-main) !important; border-color: var(--border) !important; }
+    </style>
+    <script>
+      if (localStorage.getItem("theme") === "light") {
+        document.documentElement.classList.remove("dark");
+      } else {
+        document.documentElement.classList.add("dark");
+      }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              background: "var(--bg)",
+              surface: "var(--surface)",
+              primary: "var(--primary)",
+              secondary: "var(--secondary)",
+              accent: "var(--accent)",
+              border: "var(--border)",
+              text: { main: "var(--text-main)", muted: "var(--text-muted)" },
+            },
+            fontFamily: {
+              sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+              display: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="antialiased overflow-x-hidden">
+    <div class="min-h-screen lg:flex">
+      <aside
+        class="w-full lg:w-72 border-b lg:border-b-0 lg:border-r border-[#6D28D9] bg-white text-[#3730A3]"
+      >
+        <div class="px-5 py-5 border-b border-[#6D28D9]">
+          <a href="index.html" class="inline-flex items-center gap-2">
+            <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-[#8C5FE2] to-[#E57CE1] text-white flex items-center justify-center">
+              <i class="fa-solid fa-graduation-cap text-sm"></i>
+            </span>
+            <span class="flex flex-col gap-0 leading-tight">
+              <span class="font-display font-medium text-base text-[#3730A3]">Grads Paths</span>
+              <span class="text-[11px] text-[#6D28D9]">Graduate guidance, done right</span>
+            </span>
+          </a>
+        </div>
+
+        <nav class="px-4 py-5 space-y-1.5 text-sm font-semibold text-[#6D28D9] h-[calc(100vh-80px)] overflow-y-auto">
+          
+          <a href="index.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#6D28D9] bg-white border border-transparent hover:border-[#6D28D9] hover:text-[#3730A3] transition-colors mb-2">
+            <i class="fa-solid fa-arrow-left text-sm w-4 text-center"></i> 
+            <span>Back to the Website</span>
+          </a>
+
+          <!-- Find Mentors (Active/Open by default) -->
+          <details open class="group">
+            <summary class="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer list-none [&::-webkit-details-marker]:hidden bg-white border border-[#6D28D9] text-[#3730A3] font-bold transition-colors">
+              <div class="flex items-center gap-3">
+                <i class="fa-solid fa-user-group text-sm w-4 text-center"></i>
+                <span>Find Mentors</span>
+              </div>
+              <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200 group-open:rotate-180"></i>
+            </summary>
+            <div class="flex flex-col gap-1 px-3 py-2 ml-4 border-l-2 border-[#EBE0F8] mt-1 space-y-1">
+              <a href="#graduates" class="block px-3 py-1.5 text-[13px] font-medium text-[#6D28D9] hover:text-[#3730A3]">Graduates</a>
+              <a href="#professionals" class="block px-3 py-1.5 text-[13px] font-medium text-[#6D28D9] hover:text-[#3730A3]">Professionals</a>
+            </div>
+          </details>
+
+          <!-- Institutions -->
+          <details class="group">
+            <summary class="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer list-none [&::-webkit-details-marker]:hidden bg-white border border-transparent hover:border-[#6D28D9] text-[#6D28D9] hover:text-[#3730A3] font-bold transition-colors">
+              <div class="flex items-center gap-3">
+                <i class="fa-solid fa-building-columns text-sm w-4 text-center"></i>
+                <span>Institutions</span>
+              </div>
+              <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200 group-open:rotate-180"></i>
+            </summary>
+            <div class="flex flex-col gap-1 px-3 py-2 ml-4 border-l-2 border-[#EBE0F8] mt-1 space-y-1">
+              <a href="#institutions" class="block px-3 py-1.5 text-[13px] font-medium text-[#6D28D9] hover:text-[#3730A3]">Elite Programs</a>
+              <a href="#institutions" class="block px-3 py-1.5 text-[13px] font-medium text-[#6D28D9] hover:text-[#3730A3]">Top 25 Programs</a>
+              <a href="#institutions" class="block px-3 py-1.5 text-[13px] font-medium text-[#6D28D9] hover:text-[#3730A3]">Regional Leaders</a>
+            </div>
+          </details>
+
+          <!-- Programs -->
+          <details class="group">
+            <summary class="flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer list-none [&::-webkit-details-marker]:hidden bg-white border border-transparent hover:border-[#6D28D9] text-[#6D28D9] hover:text-[#3730A3] font-bold transition-colors">
+              <div class="flex items-center gap-3">
+                <i class="fa-regular fa-rectangle-list text-sm w-4 text-center"></i>
+                <span>Programs</span>
+              </div>
+              <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200 group-open:rotate-180"></i>
+            </summary>
+            <div class="flex flex-col gap-1 px-3 py-2 ml-4 border-l-2 border-[#EBE0F8] mt-1 space-y-1">
+              <a href="#programs" class="block px-3 py-1.5 text-[13px] font-medium text-[#6D28D9] hover:text-[#3730A3]">MBA</a>
+              <a href="#programs" class="block px-3 py-1.5 text-[13px] font-medium text-[#6D28D9] hover:text-[#3730A3]">Law</a>
+              <a href="#programs" class="block px-3 py-1.5 text-[13px] font-medium text-[#6D28D9] hover:text-[#3730A3]">Psychology</a>
+            </div>
+          </details>
+
+          <!-- Standard Links -->
+          <a href="#feedback" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#6D28D9] bg-white border border-transparent hover:border-[#6D28D9] hover:text-[#3730A3] font-bold transition-colors mt-2">
+            <i class="fa-regular fa-message text-sm w-4 text-center"></i> 
+            <span>Feedback</span>
+          </a>
+
+          <a href="#" class="flex flex-col gap-0.5 px-3 py-2.5 rounded-xl text-[#6D28D9] bg-white border border-transparent hover:border-[#6D28D9] hover:text-[#3730A3] font-bold transition-colors">
+            <div class="flex items-center gap-3">
+              <i class="fa-regular fa-clipboard text-sm w-4 text-center"></i> 
+              <span class="leading-tight">Mentor Notes on Users</span>
+            </div>
+            <span class="text-[10px] font-medium text-[#E92E88] ml-7">Only visible to verified mentors</span>
+          </a>
+
+          <a href="#bookings" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#6D28D9] bg-white border border-transparent hover:border-[#6D28D9] hover:text-[#3730A3] font-bold transition-colors">
+            <i class="fa-regular fa-calendar-check text-sm w-4 text-center"></i> 
+            <span>Bookings</span>
+          </a>
+
+          <a href="index.html#get-in-touch" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#6D28D9] bg-white border border-transparent hover:border-[#6D28D9] hover:text-[#3730A3] font-bold transition-colors">
+            <i class="fa-regular fa-life-ring text-sm w-4 text-center"></i> 
+            <span>Support</span>
+          </a>
+
+          <!-- SETTINGS SECTION -->
+          <div class="pt-6 pb-2">
+            <p class="px-3 text-[11px] font-bold uppercase tracking-wider text-[#3730A3]/60 mb-2 border-t border-[#EBE0F8] pt-6">Settings</p>
+            <a href="#" class="flex flex-col gap-1 px-3 py-2 rounded-xl text-[#6D28D9] bg-white border border-transparent hover:border-[#6D28D9] hover:text-[#3730A3] font-bold transition-colors">
+              <span class="leading-tight">Profile & Preferences</span>
+              <span class="text-[10px] font-normal text-[#6D28D9]/70">Change what's displayed about you</span>
+            </a>
+          </div>
+
+        </nav>
+      </aside>
+
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-7 bg-white">
+        <!-- Dashboard Header: Search and Theme Toggle -->
+        <header class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 relative">
+          <div class="relative w-full sm:max-w-md shrink-0 sm:shrink">
+            <input type="text" placeholder="Search mentors, programs..." class="w-full bg-white border border-[#6D28D9] rounded-xl px-4 py-2 pl-10 text-sm text-[#3730A3] placeholder:text-[#6D28D9]/70 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] transition-all" />
+            <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-[#6D28D9] text-xs"></i>
+          </div>
+          
+          <div class="flex items-center justify-end gap-3 w-full sm:w-auto sm:ml-auto">
+            <button id="theme-toggle" class="w-10 h-10 rounded-full border border-[#6D28D9] dark:border-[#a78bfa] bg-white dark:bg-[#1a1033] flex items-center justify-center text-[#6D28D9] dark:text-[#a78bfa] hover:bg-[#F3E8FF] dark:hover:bg-white/5 transition-all shrink-0" aria-label="Toggle theme">
+              <svg class="dark:hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4.5"></circle>
+                <line x1="12" y1="2" x2="12" y2="4.5"></line>
+                <line x1="12" y1="19.5" x2="12" y2="22"></line>
+                <line x1="4.5" y1="12" x2="2" y2="12"></line>
+                <line x1="22" y1="12" x2="19.5" y2="12"></line>
+                <line x1="19.5" y1="4.5" x2="17.5" y2="6.5"></line>
+                <line x1="6.5" y1="17.5" x2="4.5" y2="19.5"></line>
+                <line x1="19.5" y1="19.5" x2="17.5" y2="17.5"></line>
+                <line x1="4.5" y1="4.5" x2="6.5" y2="6.5"></line>
+              </svg>
+              <svg class="hidden dark:block" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </button>          
+
+            <div class="flex items-center gap-1.5 px-5 py-[9px] bg-white dark:bg-[#1a1033] rounded-full border border-[#6D28D9] dark:border-[#a78bfa] text-[#3730A3] dark:text-white text-[13px] font-bold shadow-sm whitespace-nowrap shrink-0 transition-colors">
+              <span class="text-[#6D28D9] dark:text-[#a78bfa]"><i class="fa-solid fa-coins mr-1"></i> Credits:</span>
+              <span class="text-[#E92E88]">3</span>
+            </div>
+            
+            <a href="#" class="px-6 py-[9px] bg-white dark:bg-[#1a1033] border border-[#6D28D9] dark:border-[#a78bfa] text-[#6D28D9] dark:text-[#a78bfa] text-[13px] font-extrabold rounded-full shadow-sm hover:text-[#3730A3] hover:bg-[#F3E8FF] dark:hover:bg-white/5 transition-colors whitespace-nowrap uppercase tracking-wider shrink-0 flex items-center justify-center">
+              Store
+            </a>
+          </div>
+        </header>
+
+        <div id="dashboard-view" class="space-y-7">
+        <section id="mentors-week" class="bg-white border border-[#6D28D9] rounded-2xl p-5 sm:p-6">
+          <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+            <div>
+              <h1 class="text-2xl sm:text-3xl font-extrabold text-[#3730A3]">Find Mentors</h1>
+              <p class="text-[#6D28D9]">
+                Grads Paths Portal • Mentors of the Week
+              </p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="openExplore('Graduate')" class="px-3 py-2 rounded-lg bg-[var(--primary)]/20 text-[var(--primary)] text-xs font-bold">See all graduate mentors</button>
+              <button onclick="openExplore('Professional')" class="px-3 py-2 rounded-lg bg-[var(--accent)]/20 text-[var(--accent)] text-xs font-bold">See all professional mentors</button>
+            </div>
+          </div>
+
+          <div id="graduates" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <article class="rounded-3xl p-4 bg-[#F3E8FF] space-y-3 shadow-sm border border-[#EBE0F8]">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-3">
+                  <img src="https://i.pravatar.cc/150?u=sarah" alt="Dr. Sarah Jenkin" class="w-14 h-14 rounded-2xl object-cover shrink-0 shadow-sm" />
+                  <div class="flex flex-col">
+                    <h3 class="font-extrabold text-xl text-[#3730A3] leading-tight mb-0.5">Dr. Sarah Jenkin</h3>
+                    <p class="text-[13px] font-bold text-[#6D28D9]">PhD • Harvard University</p>
+                  </div>
+                </div>
+                <span class="text-sm font-bold px-3 py-1.5 rounded-full bg-white text-[#5B30E5] shadow-sm flex items-center gap-1">★ 5.0</span>
+              </div>
+                            <div class="bg-white rounded-[20px] p-5 shadow-sm relative">
+                <input type="checkbox" id="mentor-1" class="peer hidden" />
+                <p class="text-[15px] font-bold text-[#3730A3] leading-snug line-clamp-3 peer-checked:line-clamp-none transition-all duration-300">
+                  STEM application strategy, statement of purpose review, and interview prep. We work through a timeline approach that includes crafting the perfect personal statement, addressing any GPA gaps, getting ideal letters of recommendation, and practicing for high-pressure interviews. Over a span of several weeks, we aim for the top programs including Ivy League institutions.
+                </p>
+                <div class="flex justify-center mt-3">
+                  <label for="mentor-1" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline peer-checked:hidden">Read more</label>
+                </div>
+                <div class="hidden peer-checked:flex justify-center mt-3 w-full">
+                  <label for="mentor-1" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline">Show less</label>
+                </div>
+              </div>
+                            <div class="bg-white rounded-[20px] p-4 shadow-sm relative">
+                <div class="bg-[#6F52FF] text-white text-xs font-bold px-3 py-1.5 rounded-full w-fit mb-3">Student note</div>
+                <input type="checkbox" id="student-1" class="peer hidden" />
+                <p class="text-[15px] font-bold text-[#6D28D9] leading-snug line-clamp-3 peer-checked:line-clamp-none transition-all duration-300">
+                  “Very clear, practical advice that helped me improve my essays in one session. The mentor took the time to review my entire draft, offering structural changes that made my narrative stand out. We also did a mock interview which gave me great insights into behavioral questions. I feel much more confident about my applications now!”
+                </p>
+                <div class="flex justify-center mt-3">
+                  <label for="student-1" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline peer-checked:hidden">Read more</label>
+                </div>
+                <div class="hidden peer-checked:flex flex-col items-center mt-3 gap-3 w-full border-t border-[#EBE0F8] pt-3">
+                  <label for="student-1" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline">Show less</label>
+                  <a href="#feedback" class="px-4 py-2 bg-[#F3E8FF] text-[#6D28D9] text-[12px] text-center font-bold rounded-xl border border-[#EBE0F8] hover:bg-[#EBE0F8] hover:text-[#3730A3] transition-colors w-full">
+                    See more feedback in the feedback section
+                  </a>
+                </div>
+              </div>
+            </article>
+
+            <article class="rounded-3xl p-4 bg-[#F3E8FF] space-y-3 shadow-sm border border-[#EBE0F8]">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-3">
+                  <img src="https://i.pravatar.cc/150?u=michael" alt="Michael Kim" class="w-14 h-14 rounded-2xl object-cover shrink-0 shadow-sm" />
+                  <div class="flex flex-col">
+                    <h3 class="font-extrabold text-xl text-[#3730A3] leading-tight mb-0.5">Michael Kim</h3>
+                    <p class="text-[13px] font-bold text-[#6D28D9]">MBA • University of Pennsylvania</p>
+                  </div>
+                </div>
+                <span class="text-sm font-bold px-3 py-1.5 rounded-full bg-white text-[#5B30E5] shadow-sm flex items-center gap-1">★ 4.9</span>
+              </div>
+                            <div class="bg-white rounded-[20px] p-5 shadow-sm relative">
+                <input type="checkbox" id="mentor-2" class="peer hidden" />
+                <p class="text-[15px] font-bold text-[#3730A3] leading-snug line-clamp-3 peer-checked:line-clamp-none transition-all duration-300">
+                  Case interview prep, MBA admissions timeline planning, and profile positioning. I specialize in identifying your unique leadership stories from past work experience and mapping them onto target business schools. We will also dissect consulting frameworks and practice case mock interviews rigorously before your super days.
+                </p>
+                <div class="flex justify-center mt-3">
+                  <label for="mentor-2" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline peer-checked:hidden">Read more</label>
+                </div>
+                <div class="hidden peer-checked:flex justify-center mt-3 w-full">
+                  <label for="mentor-2" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline">Show less</label>
+                </div>
+              </div>
+                            <div class="bg-white rounded-[20px] p-4 shadow-sm relative">
+                <div class="bg-[#6F52FF] text-white text-xs font-bold px-3 py-1.5 rounded-full w-fit mb-3">Student note</div>
+                <input type="checkbox" id="student-2" class="peer hidden" />
+                <p class="text-[15px] font-bold text-[#6D28D9] leading-snug line-clamp-3 peer-checked:line-clamp-none transition-all duration-300">
+                  “Excellent mock interview and specific tips I could apply immediately. His insight into what top programs look for was invaluable, and I walked away with a concrete action list for the next month of preparation. Definitely scheduling more sessions as deadlines approach.”
+                </p>
+                <div class="flex justify-center mt-3">
+                  <label for="student-2" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline peer-checked:hidden">Read more</label>
+                </div>
+                <div class="hidden peer-checked:flex flex-col items-center mt-3 gap-3 w-full border-t border-[#EBE0F8] pt-3">
+                  <label for="student-2" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline">Show less</label>
+                  <a href="#feedback" class="px-4 py-2 bg-[#F3E8FF] text-[#6D28D9] text-[12px] text-center font-bold rounded-xl border border-[#EBE0F8] hover:bg-[#EBE0F8] hover:text-[#3730A3] transition-colors w-full">
+                    See more feedback in the feedback section
+                  </a>
+                </div>
+              </div>
+            </article>
+
+            <article class="rounded-3xl p-4 bg-[#F3E8FF] space-y-3 shadow-sm border border-[#EBE0F8]">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-3">
+                  <img src="https://i.pravatar.cc/150?u=anita" alt="Anita Lopez" class="w-14 h-14 rounded-2xl object-cover shrink-0 shadow-sm" />
+                  <div class="flex flex-col">
+                    <h3 class="font-extrabold text-xl text-[#3730A3] leading-tight mb-0.5">Anita Lopez</h3>
+                    <p class="text-[13px] font-bold text-[#6D28D9]">JD • Yale University</p>
+                  </div>
+                </div>
+                <span class="text-sm font-bold px-3 py-1.5 rounded-full bg-white text-[#5B30E5] shadow-sm flex items-center gap-1">★ 4.8</span>
+              </div>
+                            <div class="bg-white rounded-[20px] p-5 shadow-sm relative">
+                <input type="checkbox" id="mentor-3" class="peer hidden" />
+                <p class="text-[15px] font-bold text-[#3730A3] leading-snug line-clamp-3 peer-checked:line-clamp-none transition-all duration-300">
+                  Law school application strategy, personal statement editing, and LSAT planning. Together we review multiple drafts of essays to align your legal interests with your past achievements. We also determine a target list of T14 schools and strategize reach, target, and safety applications to maximize your scholarship potential.
+                </p>
+                <div class="flex justify-center mt-3">
+                  <label for="mentor-3" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline peer-checked:hidden">Read more</label>
+                </div>
+                <div class="hidden peer-checked:flex justify-center mt-3 w-full">
+                  <label for="mentor-3" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline">Show less</label>
+                </div>
+              </div>
+                            <div class="bg-white rounded-[20px] p-4 shadow-sm relative">
+                <div class="bg-[#6F52FF] text-white text-xs font-bold px-3 py-1.5 rounded-full w-fit mb-3">Student note</div>
+                <input type="checkbox" id="student-3" class="peer hidden" />
+                <p class="text-[15px] font-bold text-[#6D28D9] leading-snug line-clamp-3 peer-checked:line-clamp-none transition-all duration-300">
+                  “Great breakdown of my school list and stronger essay structure. She caught inconsistencies in my resume that I completely missed and helped me reframe my work experience to sound more compelling for admissions committees. Highly recommended!”
+                </p>
+                <div class="flex justify-center mt-3">
+                  <label for="student-3" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline peer-checked:hidden">Read more</label>
+                </div>
+                <div class="hidden peer-checked:flex flex-col items-center mt-3 gap-3 w-full border-t border-[#EBE0F8] pt-3">
+                  <label for="student-3" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline">Show less</label>
+                  <a href="#feedback" class="px-4 py-2 bg-[#F3E8FF] text-[#6D28D9] text-[12px] text-center font-bold rounded-xl border border-[#EBE0F8] hover:bg-[#EBE0F8] hover:text-[#3730A3] transition-colors w-full">
+                    See more feedback in the feedback section
+                  </a>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div id="professionals" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
+            <article class="rounded-3xl p-4 bg-[#F3E8FF] space-y-3 shadow-sm border border-[#EBE0F8]">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-3">
+                  <img src="https://i.pravatar.cc/150?u=emma" alt="Emma Reed" class="w-14 h-14 rounded-2xl object-cover shrink-0 shadow-sm" />
+                  <div class="flex flex-col">
+                    <h3 class="font-extrabold text-xl text-[#3730A3] leading-tight mb-0.5">Emma Reed</h3>
+                    <p class="text-[13px] font-bold text-[#6D28D9]">LCSW • New York University</p>
+                  </div>
+                </div>
+                <span class="text-sm font-bold px-3 py-1.5 rounded-full bg-white text-[#5B30E5] shadow-sm flex items-center gap-1">★ 4.9</span>
+              </div>
+                            <div class="bg-white rounded-[20px] p-5 shadow-sm relative">
+                <input type="checkbox" id="mentor-4" class="peer hidden" />
+                <p class="text-[15px] font-bold text-[#3730A3] leading-snug line-clamp-3 peer-checked:line-clamp-none transition-all duration-300">
+                  Therapy licensure pathways, practicum planning, and grad application guidance. Navigating the difference between MSW, MFT, and PsyD can be confusing, so we start by assessing your long-term career goals. Then we prepare application materials focused on clinical potential and cultural competency.
+                </p>
+                <div class="flex justify-center mt-3">
+                  <label for="mentor-4" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline peer-checked:hidden">Read more</label>
+                </div>
+                <div class="hidden peer-checked:flex justify-center mt-3 w-full">
+                  <label for="mentor-4" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline">Show less</label>
+                </div>
+              </div>
+                            <div class="bg-white rounded-[20px] p-4 shadow-sm relative">
+                <div class="bg-[#6F52FF] text-white text-xs font-bold px-3 py-1.5 rounded-full w-fit mb-3">Student note</div>
+                <input type="checkbox" id="student-4" class="peer hidden" />
+                <p class="text-[15px] font-bold text-[#6D28D9] leading-snug line-clamp-3 peer-checked:line-clamp-none transition-all duration-300">
+                  “Very helpful licensure roadmap and realistic timeline. Having an expert explain the different state rules saved me hours of confusing research. We also improved my personal statement significantly by focusing on my motivation for the field.”
+                </p>
+                <div class="flex justify-center mt-3">
+                  <label for="student-4" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline peer-checked:hidden">Read more</label>
+                </div>
+                <div class="hidden peer-checked:flex flex-col items-center mt-3 gap-3 w-full border-t border-[#EBE0F8] pt-3">
+                  <label for="student-4" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline">Show less</label>
+                  <a href="#feedback" class="px-4 py-2 bg-[#F3E8FF] text-[#6D28D9] text-[12px] text-center font-bold rounded-xl border border-[#EBE0F8] hover:bg-[#EBE0F8] hover:text-[#3730A3] transition-colors w-full">
+                    See more feedback in the feedback section
+                  </a>
+                </div>
+              </div>
+            </article>
+
+            <article class="rounded-3xl p-4 bg-[#F3E8FF] space-y-3 shadow-sm border border-[#EBE0F8]">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-3">
+                  <img src="https://i.pravatar.cc/150?u=chris" alt="Chris Walker" class="w-14 h-14 rounded-2xl object-cover shrink-0 shadow-sm" />
+                  <div class="flex flex-col">
+                    <h3 class="font-extrabold text-xl text-[#3730A3] leading-tight mb-0.5">Chris Walker</h3>
+                    <p class="text-[13px] font-bold text-[#6D28D9]">CPA • University of Texas at Austin</p>
+                  </div>
+                </div>
+                <span class="text-sm font-bold px-3 py-1.5 rounded-full bg-white text-[#5B30E5] shadow-sm flex items-center gap-1">★ 4.7</span>
+              </div>
+                            <div class="bg-white rounded-[20px] p-5 shadow-sm relative">
+                <input type="checkbox" id="mentor-5" class="peer hidden" />
+                <p class="text-[15px] font-bold text-[#3730A3] leading-snug line-clamp-3 peer-checked:line-clamp-none transition-all duration-300">
+                  CPA pathway planning, recruiting strategy, and resume review for accounting roles. Big 4 recruiting operates on a strict timeline, and we will make sure your resume highlights the right quantitative and leadership skills. We also practice behavioral interviews using STAR methodologies, focusing on teamwork and analytical thinking.
+                </p>
+                <div class="flex justify-center mt-3">
+                  <label for="mentor-5" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline peer-checked:hidden">Read more</label>
+                </div>
+                <div class="hidden peer-checked:flex justify-center mt-3 w-full">
+                  <label for="mentor-5" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline">Show less</label>
+                </div>
+              </div>
+                            <div class="bg-white rounded-[20px] p-4 shadow-sm relative">
+                <div class="bg-[#6F52FF] text-white text-xs font-bold px-3 py-1.5 rounded-full w-fit mb-3">Student note</div>
+                <input type="checkbox" id="student-5" class="peer hidden" />
+                <p class="text-[15px] font-bold text-[#6D28D9] leading-snug line-clamp-3 peer-checked:line-clamp-none transition-all duration-300">
+                  “Actionable recruiting advice and a much stronger resume. Not only did we fix formatting issues, but he also taught me how to network effectively with firm partners at events. I ended up getting two internship offers thanks to his guidance!”
+                </p>
+                <div class="flex justify-center mt-3">
+                  <label for="student-5" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline peer-checked:hidden">Read more</label>
+                </div>
+                <div class="hidden peer-checked:flex flex-col items-center mt-3 gap-3 w-full border-t border-[#EBE0F8] pt-3">
+                  <label for="student-5" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline">Show less</label>
+                  <a href="#feedback" class="px-4 py-2 bg-[#F3E8FF] text-[#6D28D9] text-[12px] text-center font-bold rounded-xl border border-[#EBE0F8] hover:bg-[#EBE0F8] hover:text-[#3730A3] transition-colors w-full">
+                    See more feedback in the feedback section
+                  </a>
+                </div>
+              </div>
+            </article>
+
+            <article class="rounded-3xl p-4 bg-[#F3E8FF] space-y-3 shadow-sm border border-[#EBE0F8]">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-3">
+                  <img src="https://i.pravatar.cc/150?u=nina" alt="Nina Owens" class="w-14 h-14 rounded-2xl object-cover shrink-0 shadow-sm" />
+                  <div class="flex flex-col">
+                    <h3 class="font-extrabold text-xl text-[#3730A3] leading-tight mb-0.5">Nina Owens</h3>
+                    <p class="text-[13px] font-bold text-[#6D28D9]">RN, NP • University of Michigan</p>
+                  </div>
+                </div>
+                <span class="text-sm font-bold px-3 py-1.5 rounded-full bg-white text-[#5B30E5] shadow-sm flex items-center gap-1">★ 4.8</span>
+              </div>
+                            <div class="bg-white rounded-[20px] p-5 shadow-sm relative">
+                <input type="checkbox" id="mentor-6" class="peer hidden" />
+                <p class="text-[15px] font-bold text-[#3730A3] leading-snug line-clamp-3 peer-checked:line-clamp-none transition-all duration-300">
+                  Nursing pathway mentorship, NP school planning, and application support. We discuss whether you should pursue DNP or MSN pathways depending on your clinical interests. We also run through scenarios for clinical interviews and refine your application essays to show authentic commitment to patient care.
+                </p>
+                <div class="flex justify-center mt-3">
+                  <label for="mentor-6" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline peer-checked:hidden">Read more</label>
+                </div>
+                <div class="hidden peer-checked:flex justify-center mt-3 w-full">
+                  <label for="mentor-6" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline">Show less</label>
+                </div>
+              </div>
+                            <div class="bg-white rounded-[20px] p-4 shadow-sm relative">
+                <div class="bg-[#6F52FF] text-white text-xs font-bold px-3 py-1.5 rounded-full w-fit mb-3">Student note</div>
+                <input type="checkbox" id="student-6" class="peer hidden" />
+                <p class="text-[15px] font-bold text-[#6D28D9] leading-snug line-clamp-3 peer-checked:line-clamp-none transition-all duration-300">
+                  “Clear NP planning guidance with useful school comparisons. I was stuck between two different specialties, and she walked me through the day-to-day realities of both. Her advice on getting strong letters of recommendation from my current charge nurses was spot on.”
+                </p>
+                <div class="flex justify-center mt-3">
+                  <label for="student-6" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline peer-checked:hidden">Read more</label>
+                </div>
+                <div class="hidden peer-checked:flex flex-col items-center mt-3 gap-3 w-full border-t border-[#EBE0F8] pt-3">
+                  <label for="student-6" class="text-[#5B30E5] text-[13px] font-extrabold cursor-pointer hover:underline">Show less</label>
+                  <a href="#feedback" class="px-4 py-2 bg-[#F3E8FF] text-[#6D28D9] text-[12px] text-center font-bold rounded-xl border border-[#EBE0F8] hover:bg-[#EBE0F8] hover:text-[#3730A3] transition-colors w-full">
+                    See more feedback in the feedback section
+                  </a>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="programs" class="bg-white border border-[#6D28D9] rounded-3xl p-6 sm:p-8">
+          <div class="text-center mb-8">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-[#3730A3] mb-3">Where Our Mentors Come From</h2>
+            <p class="text-sm sm:text-base text-[#6D28D9]">
+              Select a program to view all of the institutions offered for that specific pathway.
+            </p>
+          </div>
+
+          <!-- Pill Tab Container -->
+          <div class="flex justify-center mb-8">
+            <div class="inline-flex border border-[#6D28D9] rounded-full p-1 bg-[#FDFBFF] max-w-full overflow-x-auto whitespace-nowrap">
+              <button onclick="switchProgramTab('mba')" id="tab-btn-mba" class="program-tab-btn px-6 py-2.5 rounded-full text-[13px] font-extrabold bg-[#8C5FE2] text-white transition-colors duration-200 uppercase tracking-wide">MBA Programs</button>
+              <button onclick="switchProgramTab('law')" id="tab-btn-law" class="program-tab-btn px-6 py-2.5 rounded-full text-[13px] font-extrabold text-[#6D28D9] hover:bg-[#F3E8FF] transition-colors duration-200 uppercase tracking-wide">Law Programs</button>
+              <button onclick="switchProgramTab('therapy')" id="tab-btn-therapy" class="program-tab-btn px-6 py-2.5 rounded-full text-[13px] font-extrabold text-[#6D28D9] hover:bg-[#F3E8FF] transition-colors duration-200 uppercase tracking-wide">Therapy Pathways Programs</button>
+            </div>
+          </div>
+
+          <!-- MBA Institutions -->
+          <div id="tab-content-mba" class="program-tab-content grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 transition-opacity duration-300">
+            <button onclick="openExploreByCollege(this)" class="flex flex-col items-center justify-center rounded-2xl border border-[#6D28D9] p-4 bg-white hover:bg-[#F9F5FF] transition-colors">
+              <div class="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#6D28D9] flex items-center justify-center text-lg font-extrabold mb-3 shadow-sm border border-[#EBE0F8]">H</div>
+              <p class="text-[13px] font-extrabold text-[#3730A3]">Harvard</p>
+            </button>
+            <button onclick="openExploreByCollege(this)" class="flex flex-col items-center justify-center rounded-2xl border border-[#6D28D9] p-4 bg-white hover:bg-[#F9F5FF] transition-colors">
+              <div class="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#6D28D9] flex items-center justify-center text-lg font-extrabold mb-3 shadow-sm border border-[#EBE0F8]">S</div>
+              <p class="text-[13px] font-extrabold text-[#3730A3]">Stanford</p>
+            </button>
+            <button onclick="openExploreByCollege(this)" class="flex flex-col items-center justify-center rounded-2xl border border-[#6D28D9] p-4 bg-white hover:bg-[#F9F5FF] transition-colors">
+              <div class="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#6D28D9] flex items-center justify-center text-lg font-extrabold mb-3 shadow-sm border border-[#EBE0F8]">P</div>
+              <p class="text-[13px] font-extrabold text-[#3730A3]">UPenn</p>
+            </button>
+            <button onclick="openExploreByCollege(this)" class="flex flex-col items-center justify-center rounded-2xl border border-[#6D28D9] p-4 bg-white hover:bg-[#F9F5FF] transition-colors">
+              <div class="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#6D28D9] flex items-center justify-center text-lg font-extrabold mb-3 shadow-sm border border-[#EBE0F8]">M</div>
+              <p class="text-[13px] font-extrabold text-[#3730A3]">MIT</p>
+            </button>
+            <button onclick="openExploreByCollege(this)" class="flex flex-col items-center justify-center rounded-2xl border border-[#6D28D9] p-4 bg-white hover:bg-[#F9F5FF] transition-colors">
+              <div class="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#6D28D9] flex items-center justify-center text-lg font-extrabold mb-3 shadow-sm border border-[#EBE0F8]">C</div>
+              <p class="text-[13px] font-extrabold text-[#3730A3]">Columbia</p>
+            </button>
+            <button onclick="openExploreByCollege(this)" class="flex flex-col items-center justify-center rounded-2xl border border-[#6D28D9] p-4 bg-white hover:bg-[#F9F5FF] transition-colors">
+              <div class="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#6D28D9] flex items-center justify-center text-lg font-extrabold mb-3 shadow-sm border border-[#EBE0F8]">N</div>
+              <p class="text-[13px] font-extrabold text-[#3730A3]">NYU</p>
+            </button>
+          </div>
+
+          <!-- Law Institutions -->
+          <div id="tab-content-law" class="program-tab-content hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 transition-opacity duration-300">
+            <button onclick="openExploreByCollege(this)" class="flex flex-col items-center justify-center rounded-2xl border border-[#6D28D9] p-4 bg-white hover:bg-[#F9F5FF] transition-colors">
+              <div class="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#6D28D9] flex items-center justify-center text-lg font-extrabold mb-3 shadow-sm border border-[#EBE0F8]">Y</div>
+              <p class="text-[13px] font-extrabold text-[#3730A3]">Yale</p>
+            </button>
+            <button onclick="openExploreByCollege(this)" class="flex flex-col items-center justify-center rounded-2xl border border-[#6D28D9] p-4 bg-white hover:bg-[#F9F5FF] transition-colors">
+              <div class="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#6D28D9] flex items-center justify-center text-lg font-extrabold mb-3 shadow-sm border border-[#EBE0F8]">H</div>
+              <p class="text-[13px] font-extrabold text-[#3730A3]">Harvard</p>
+            </button>
+            <button onclick="openExploreByCollege(this)" class="flex flex-col items-center justify-center rounded-2xl border border-[#6D28D9] p-4 bg-white hover:bg-[#F9F5FF] transition-colors">
+              <div class="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#6D28D9] flex items-center justify-center text-lg font-extrabold mb-3 shadow-sm border border-[#EBE0F8]">S</div>
+              <p class="text-[13px] font-extrabold text-[#3730A3]">Stanford</p>
+            </button>
+            <button onclick="openExploreByCollege(this)" class="flex flex-col items-center justify-center rounded-2xl border border-[#6D28D9] p-4 bg-white hover:bg-[#F9F5FF] transition-colors">
+              <div class="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#6D28D9] flex items-center justify-center text-lg font-extrabold mb-3 shadow-sm border border-[#EBE0F8]">C</div>
+              <p class="text-[13px] font-extrabold text-[#3730A3]">Columbia</p>
+            </button>
+          </div>
+
+          <!-- Therapy Institutions -->
+          <div id="tab-content-therapy" class="program-tab-content hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 transition-opacity duration-300">
+            <button onclick="openExploreByCollege(this)" class="flex flex-col items-center justify-center rounded-2xl border border-[#6D28D9] p-4 bg-white hover:bg-[#F9F5FF] transition-colors">
+              <div class="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#6D28D9] flex items-center justify-center text-lg font-extrabold mb-3 shadow-sm border border-[#EBE0F8]">N</div>
+              <p class="text-[13px] font-extrabold text-[#3730A3]">NYU</p>
+            </button>
+            <button onclick="openExploreByCollege(this)" class="flex flex-col items-center justify-center rounded-2xl border border-[#6D28D9] p-4 bg-white hover:bg-[#F9F5FF] transition-colors">
+              <div class="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#6D28D9] flex items-center justify-center text-lg font-extrabold mb-3 shadow-sm border border-[#EBE0F8]">U</div>
+              <p class="text-[13px] font-extrabold text-[#3730A3]">UT Austin</p>
+            </button>
+            <button onclick="openExploreByCollege(this)" class="flex flex-col items-center justify-center rounded-2xl border border-[#6D28D9] p-4 bg-white hover:bg-[#F9F5FF] transition-colors">
+              <div class="w-12 h-12 rounded-full bg-[#F3E8FF] text-[#6D28D9] flex items-center justify-center text-lg font-extrabold mb-3 shadow-sm border border-[#EBE0F8]">M</div>
+              <p class="text-[13px] font-extrabold text-[#3730A3]">U Michigan</p>
+            </button>
+          </div>
+        </section>
+
+        <section id="feedback" class="bg-white border border-[#6D28D9] rounded-2xl p-5 sm:p-6">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-2xl font-extrabold text-[#3730A3]">Feedback</h2>
+            <button class="px-3 py-2 rounded-lg bg-[var(--secondary)]/20 text-[var(--secondary)] text-xs font-bold">Request review audit</button>
+          </div>
+          <p class="text-sm text-[#6D28D9] mt-2">
+            Public feedback from completed meetings is shown here for transparency.
+          </p>
+          <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="rounded-xl border border-[#6D28D9] p-3">
+              <p class="font-bold text-sm text-[#3730A3]">Dr. Sarah Jenkin</p>
+              <p class="text-xs text-[#6D28D9] mt-1">"Strong structure, super clear action plan, and very responsive between sessions."</p>
+            </div>
+            <div class="rounded-xl border border-[#6D28D9] p-3">
+              <p class="font-bold text-sm text-[#3730A3]">Michael Kim</p>
+              <p class="text-xs text-[#6D28D9] mt-1">"Great mock interview quality and helpful insight on program fit."</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="bookings" class="bg-white border border-[#6D28D9] rounded-2xl p-5 sm:p-6">
+          <h2 class="text-2xl font-extrabold text-[#3730A3]">Bookings</h2>
+          <p class="text-sm text-[#6D28D9] mt-2">
+            Google Calendar integration placeholder: when a Zoom meeting is created, bookings can sync to your calendar and appear here.
+          </p>
+          <button class="mt-4 px-4 py-2 rounded-lg bg-[var(--accent)] text-white text-sm font-bold">
+            Connect Google Calendar
+          </button>
+        </section>
+      </div>
+
+      <!-- EXPLORE MENTORS VIEW (Hidden by default) -->
+      <div id="explore-view" class="hidden space-y-7">
+        <div class="bg-white border border-[#6D28D9] rounded-3xl p-6 sm:p-8">
+          <div class="flex flex-wrap items-center justify-between mb-6 gap-4 border-b border-[#EBE0F8] pb-5">
+            <div>
+              <button onclick="showDashboard()" class="text-[#6D28D9] bg-[#F3E8FF] px-4 py-2 rounded-xl text-sm font-bold hover:bg-[#EBE0F8] mb-3 flex items-center gap-2 transition-colors"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</button>
+              <h1 id="explore-title" class="text-2xl sm:text-3xl font-extrabold text-[#3730A3]">Explore Mentors</h1>
+            </div>
+          </div>
+
+          <!-- Filters -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 bg-[#F3E8FF] p-5 rounded-2xl border border-[#EBE0F8]">
+            <div>
+              <label class="block text-[11px] font-extrabold text-[#6D28D9] tracking-wider uppercase mb-1.5">Program</label>
+              <select id="filter-program" onchange="renderExploreGrid()" class="w-full bg-white border border-[#6D28D9] rounded-xl px-3 py-2.5 text-sm text-[#3730A3] font-bold focus:outline-none focus:ring-1 focus:ring-[#6D28D9]">
+                <option value="">All Programs</option>
+                <option value="MBA">MBA Programs</option>
+                <option value="Law">Law Programs</option>
+                <option value="Therapy">Therapy Pathways</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-[11px] font-extrabold text-[#6D28D9] tracking-wider uppercase mb-1.5">Mentor Type</label>
+              <select id="filter-type" onchange="renderExploreGrid()" class="w-full bg-white border border-[#6D28D9] rounded-xl px-3 py-2.5 text-sm text-[#3730A3] font-bold focus:outline-none focus:ring-1 focus:ring-[#6D28D9]">
+                <option value="">All Types</option>
+                <option value="Graduate">Graduate Mentors</option>
+                <option value="Professional">Professional Mentors</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-extrabold text-[#6D28D9] tracking-wider uppercase mb-1.5">Institution</label>
+              <select id="filter-college" onchange="renderExploreGrid()" class="w-full bg-white border border-[#6D28D9] rounded-xl px-3 py-2.5 text-sm text-[#3730A3] font-bold focus:outline-none focus:ring-1 focus:ring-[#6D28D9]">
+                <option value="">All Institutions</option>
+                <option value="Harvard">Harvard University</option>
+                <option value="Stanford">Stanford University</option>
+                <option value="UPenn">University of Pennsylvania</option>
+                <option value="Yale">Yale University</option>
+                <option value="Columbia">Columbia University</option>
+                <option value="MIT">MIT</option>
+                <option value="NYU">NYU</option>
+                <option value="UT Austin">UT Austin</option>
+                <option value="U Michigan">University of Michigan</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-[11px] font-extrabold text-[#6D28D9] tracking-wider uppercase mb-1.5">Availability Date/Time</label>
+              <div class="flex gap-2">
+                <input type="date" id="filter-date" onchange="renderExploreGrid()" class="w-1/2 bg-white border border-[#6D28D9] rounded-xl px-2 py-2.5 text-sm text-[#3730A3] font-bold focus:outline-none focus:ring-1 focus:ring-[#6D28D9]" />
+                <input type="time" id="filter-time" onchange="renderExploreGrid()" class="w-1/2 bg-white border border-[#6D28D9] rounded-xl px-2 py-2.5 text-sm text-[#3730A3] font-bold focus:outline-none focus:ring-1 focus:ring-[#6D28D9]" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Mentors Grid -->
+          <div id="explore-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <!-- Mentors injected via JS -->
+          </div>
+        </div>
+      </div>
+      </main>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        var themeToggleBtn = document.getElementById("theme-toggle");
+        if (themeToggleBtn) {
+          themeToggleBtn.addEventListener("click", function () {
+            var html = document.documentElement;
+            if (html.classList.contains("dark")) {
+              html.classList.remove("dark");
+              localStorage.setItem("theme", "light");
+            } else {
+              html.classList.add("dark");
+              localStorage.setItem("theme", "dark");
+            }
+          });
+        }
+
+        window.switchProgramTab = function (tabId) {
+          // Reset styles on all tab buttons
+          document.querySelectorAll('.program-tab-btn').forEach(btn => {
+            btn.classList.remove('bg-[#8C5FE2]', 'text-white');
+            btn.classList.add('text-[#6D28D9]', 'hover:bg-[#F3E8FF]');
+          });
+
+          // Hide all content grids
+          document.querySelectorAll('.program-tab-content').forEach(content => {
+            content.classList.add('hidden');
+          });
+          
+          // Activate the clicked button
+          var activeBtn = document.getElementById('tab-btn-' + tabId);
+          activeBtn.classList.add('bg-[#8C5FE2]', 'text-white');
+          activeBtn.classList.remove('text-[#6D28D9]', 'hover:bg-[#F3E8FF]');
+          
+          // Show the linked content grid
+          var activeContent = document.getElementById('tab-content-' + tabId);
+          activeContent.classList.remove('hidden');
+        };
+      });
+    
+        // Mentors Data for Explore View
+        const exploreMentors = [
+          { name: 'Dr. Sarah Jenkin', credentials: 'PhD • Harvard University', type: 'Graduate', program: 'MBA', college: 'Harvard', rating: 5.0, img: 'sarah' },
+          { name: 'Michael Kim', credentials: 'MBA • University of Pennsylvania', type: 'Graduate', program: 'MBA', college: 'UPenn', rating: 4.9, img: 'michael' },
+          { name: 'Emma Reed', credentials: 'LCSW • New York University', type: 'Professional', program: 'Therapy', college: 'NYU', rating: 4.9, img: 'emma' },
+          { name: 'Anita Lopez', credentials: 'JD • Yale University', type: 'Graduate', program: 'Law', college: 'Yale', rating: 4.8, img: 'anita' },
+          { name: 'Nina Owens', credentials: 'RN, NP • University of Michigan', type: 'Professional', program: 'Therapy', college: 'U Michigan', rating: 4.8, img: 'nina' },
+          { name: 'Chris Walker', credentials: 'CPA • University of Texas at Austin', type: 'Professional', program: 'MBA', college: 'UT Austin', rating: 4.7, img: 'chris' },
+          { name: 'David Smith', credentials: 'MBA • Stanford University', type: 'Graduate', program: 'MBA', college: 'Stanford', rating: 4.6, img: 'david' },
+          { name: 'Jessica Lee', credentials: 'JD • Columbia University', type: 'Graduate', program: 'Law', college: 'Columbia', rating: 4.5, img: 'jessica' }
+        ];
+
+        window.showDashboard = function() {
+          document.getElementById('dashboard-view').classList.remove('hidden');
+          document.getElementById('explore-view').classList.add('hidden');
+          window.scrollTo(0,0);
+        };
+
+        window.openExplore = function(typeFilter) {
+          document.getElementById('dashboard-view').classList.add('hidden');
+          document.getElementById('explore-view').classList.remove('hidden');
+          
+          document.getElementById('explore-title').textContent = typeFilter === 'Graduate' ? 'Explore Graduate Mentors' : (typeFilter === 'Professional' ? 'Explore Professional Mentors' : 'Explore All Mentors');
+          
+          // Reset all filters except type
+          document.getElementById('filter-program').value = '';
+          document.getElementById('filter-college').value = '';
+          document.getElementById('filter-date').value = '';
+          document.getElementById('filter-time').value = '';
+          document.getElementById('filter-type').value = typeFilter;
+          
+          window.renderExploreGrid();
+          window.scrollTo(0,0);
+        };
+
+        window.openExploreByCollege = function(btn) {
+          const collegeName = btn.querySelector('p').textContent;
+          // Determine program based on active tab
+          let activeProgram = '';
+          if(!document.getElementById('tab-content-mba').classList.contains('hidden')) activeProgram = 'MBA';
+          else if(!document.getElementById('tab-content-law').classList.contains('hidden')) activeProgram = 'Law';
+          else activeProgram = 'Therapy';
+          
+          document.getElementById('dashboard-view').classList.add('hidden');
+          document.getElementById('explore-view').classList.remove('hidden');
+          document.getElementById('explore-title').textContent = activeProgram + ' Mentors at ' + collegeName;
+
+          document.getElementById('filter-program').value = activeProgram;
+          document.getElementById('filter-type').value = '';
+          document.getElementById('filter-college').value = collegeName;
+          document.getElementById('filter-date').value = '';
+          document.getElementById('filter-time').value = '';
+
+          window.renderExploreGrid();
+          window.scrollTo(0,0);
+        };
+
+        window.renderExploreGrid = function() {
+          const grid = document.getElementById('explore-grid');
+          grid.innerHTML = '';
+          
+          const progFilter = document.getElementById('filter-program').value;
+          const colFilter = document.getElementById('filter-college').value;
+          const typeFilter = document.getElementById('filter-type').value;
+          
+          let filtered = exploreMentors.filter(m => {
+            if (typeFilter && m.type !== typeFilter) return false;
+            if (progFilter && m.program !== progFilter) return false;
+            // Includes logic allows 'Harvard' to match 'Harvard University'
+            if (colFilter && !m.college.includes(colFilter) && !colFilter.includes(m.college)) return false;
+            return true;
+          });
+          
+          // Sort by rating desc
+          filtered.sort((a,b) => b.rating - a.rating);
+          
+          if(filtered.length === 0) {
+            grid.innerHTML = '<p class="col-span-full text-center py-10 text-[#6D28D9] font-bold">No mentors found matching these criteria.</p>';
+            return;
+          }
+
+          filtered.forEach(m => {
+            grid.innerHTML += `
+              <article class="rounded-3xl p-4 bg-[#F3E8FF] space-y-3 shadow-sm border border-[#EBE0F8] flex flex-col h-full">
+                <div class="flex items-start justify-between mb-2">
+                  <div class="flex items-center gap-3">
+                    <img src="https://i.pravatar.cc/150?u=${m.img}" alt="${m.name}" class="w-14 h-14 rounded-2xl object-cover shrink-0 shadow-sm" />
+                    <div class="flex flex-col">
+                      <h3 class="font-extrabold text-xl text-[#3730A3] leading-tight mb-0.5">${m.name}</h3>
+                      <p class="text-[13px] font-bold text-[#6D28D9]">${m.credentials}</p>
+                    </div>
+                  </div>
+                  <span class="text-sm font-bold px-3 py-1.5 rounded-full bg-white text-[#5B30E5] shadow-sm flex items-center gap-1 shrink-0">★ ${m.rating.toFixed(1)}</span>
+                </div>
+                <div class="bg-white rounded-[20px] p-5 shadow-sm relative flex-1">
+                   <p class="text-[15px] font-bold text-[#3730A3] leading-snug">
+                      Expert in ${m.program} applications, timeline planning, and professional positioning strategies.
+                   </p>
+                </div>
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-2 gap-3 mt-auto pt-2">
+                  <button class="py-2.5 rounded-2xl bg-[#6D28D9] text-white font-extrabold shadow-sm hover:opacity-90 transition-opacity text-sm">View Profile</button>
+                  <button class="py-2.5 rounded-2xl bg-white border border-[#6D28D9] text-[#6D28D9] font-extrabold shadow-sm hover:bg-[#F3E8FF] transition-opacity text-sm">Check Availability</button>
+                </div>
+              </article>
+            `;
+          });
+        }
+
+      </script>
+  </body>
+</html>
