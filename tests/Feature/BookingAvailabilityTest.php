@@ -2,10 +2,12 @@
 
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\User;
+use Modules\Bookings\app\Mail\BookingCancelledNotificationMail;
 use Modules\Bookings\app\Jobs\SendBookingConfirmationJob;
 use Modules\Bookings\app\Mail\MentorBookingNotificationMail;
 use Modules\Bookings\app\Mail\StudentBookingConfirmationMail;
@@ -25,6 +27,29 @@ beforeEach(function () {
     Role::findOrCreate('mentor', 'web');
     Role::findOrCreate('admin', 'web');
 });
+
+function fakeGoogleCalendarSync(string $eventId = 'google-event-123', string $hangoutLink = 'https://meet.google.com/test-room'): void
+{
+    config([
+        'services.google_calendar.enabled' => true,
+        'services.google_calendar.calendar_id' => 'calendar@example.com',
+        'services.google_calendar.service_account_email' => 'service-account@example.iam.gserviceaccount.com',
+        'services.google_calendar.private_key' => "-----BEGIN PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEApQxB9frx8aCSHksF\nX0ougzjVKmUkl0Ez0lGtCaUeMhHPzPUBEnr6MzYxbouYTKHjSnHXHENxrnySVKN4\nTUkYGQIDAQABAkBCYyjRAWx6LYU4rCJwDs2guKZ9lAtgz7hBe9rnS0RXDM+KGoIh\njO3eaBny4sNhNeKfTeiW1TxdWcmcA1mBTKhRAiEA1wnSgHmNHUrLP5LfNoguQV5W\nj5VSPaxsGGaT1nFEgT0CIQDEfLA8mSHr1La6eX6okCnUAG/YuTgpbT8mNepdauEo\nDQIhAILsEwJvfvAPopFRPZ946BiadD81HX45JRLyGR5dleTNAiBWBZDStugW62Wk\ndhRxj8wAOMC+zTg9Ssre27Pjeitg8QIgQ9tk9PrZB257H09IsYmfQW6DodFQEFtf\nldnpc0Ywzkc=\n-----END PRIVATE KEY-----",
+    ]);
+
+    Http::fake([
+        'https://oauth2.googleapis.com/token' => Http::response([
+            'access_token' => 'google-access-token',
+            'expires_in' => 3600,
+            'token_type' => 'Bearer',
+        ], 200),
+        'https://www.googleapis.com/calendar/v3/calendars/*/events?conferenceDataVersion=1&sendUpdates=all' => Http::response([
+            'id' => $eventId,
+            'hangoutLink' => $hangoutLink,
+        ], 200),
+        'https://www.googleapis.com/calendar/v3/calendars/*/events/*?sendUpdates=all' => Http::response([], 204),
+    ]);
+}
 
 function makeUser(string $emailPrefix): User
 {
@@ -213,6 +238,117 @@ it('returns only real available slot months days and times', function () {
         ->and($times[0]['slotId'])->toBe($openSlotId);
 });
 
+it('returns recurring office-hours availability as one date with session details', function () {
+    $student = makeUser('student-office-hours-availability');
+    $student->assignRole('student');
+    $mentor = makeMentor();
+    $officeHoursService = makeService([
+        'service_name' => 'Office Hours',
+        'service_slug' => 'office-hours-'.Str::lower(Str::random(8)),
+        'duration_minutes' => 45,
+        'is_office_hours' => true,
+        'price_1on1' => null,
+        'price_1on3_per_person' => null,
+        'price_1on3_total' => null,
+        'price_1on5_per_person' => null,
+        'price_1on5_total' => null,
+        'office_hours_subscription_price' => 200,
+    ]);
+    $focusService = makeService([
+        'service_name' => 'Interview Prep',
+        'service_slug' => 'interview-prep-'.Str::lower(Str::random(8)),
+    ]);
+
+    DB::table('mentor_services')->insert([
+        [
+            'mentor_id' => $mentor->id,
+            'service_config_id' => $officeHoursService->id,
+            'is_active' => true,
+            'sort_order' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+        [
+            'mentor_id' => $mentor->id,
+            'service_config_id' => $focusService->id,
+            'is_active' => true,
+            'sort_order' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+    ]);
+
+    $sessionDate = now()->addDays(7)->toDateString();
+    $sessionMonth = \Carbon\Carbon::parse($sessionDate)->format('Y-m');
+
+    $scheduleId = DB::table('office_hour_schedules')->insertGetId([
+        'mentor_id' => $mentor->id,
+        'day_of_week' => 'tue',
+        'start_time' => '17:00:00',
+        'timezone' => 'America/New_York',
+        'frequency' => 'weekly',
+        'max_spots' => 3,
+        'is_active' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $sessionId = DB::table('office_hour_sessions')->insertGetId([
+        'schedule_id' => $scheduleId,
+        'current_service_id' => $focusService->id,
+        'session_date' => $sessionDate,
+        'start_time' => '17:00:00',
+        'timezone' => 'America/New_York',
+        'current_occupancy' => 2,
+        'max_spots' => 3,
+        'is_full' => false,
+        'service_locked' => true,
+        'status' => 'upcoming',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $query = [
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $officeHoursService->id,
+        'session_type' => 'office_hours',
+    ];
+
+    $months = $this->actingAs($student)
+        ->getJson(route('student.bookings.availability.months', $query))
+        ->assertOk()
+        ->json('months');
+
+    expect($months)->toHaveCount(1)
+        ->and($months[0]['month'])->toBe($sessionMonth);
+
+    $days = $this->actingAs($student)
+        ->getJson(route('student.bookings.availability.days', array_merge($query, ['month' => $sessionMonth])))
+        ->assertOk()
+        ->json('days');
+
+    expect($days)->toHaveCount(1)
+        ->and($days[0]['date'])->toBe($sessionDate)
+        ->and($days[0]['sessionId'])->toBe($sessionId)
+        ->and($days[0]['spotsFilled'])->toBe(2)
+        ->and($days[0]['maxSpots'])->toBe(3)
+        ->and($days[0]['isBookable'])->toBeTrue();
+
+    $times = $this->actingAs($student)
+        ->getJson(route('student.bookings.availability.times', array_merge($query, [
+            'date' => $sessionDate,
+        ])))
+        ->assertOk()
+        ->json('times');
+
+    expect($times)->toHaveCount(1)
+        ->and($times[0]['sessionId'])->toBe($sessionId)
+        ->and($times[0]['timeRangeLabel'])->toBe('5:00 PM to 5:45 PM')
+        ->and($times[0]['recurrenceLabel'])->toBe('This is a recurring weekly session')
+        ->and($times[0]['spotsFilled'])->toBe(2)
+        ->and($times[0]['availabilityText'])->toBe('1 spot remaining');
+});
+
 it('creates a booking from a selected availability slot and reserves it', function () {
     $student = makeUser('booking-student');
     $student->assignRole('student');
@@ -275,6 +411,13 @@ it('creates a booking from a selected availability slot and reserves it', functi
         'group_payer_id' => $student->id,
     ]);
 
+    $booking = Booking::query()->latest('id')->firstOrFail();
+
+    expect($booking->session_at?->timezoneName)->toBe('UTC')
+        ->and($booking->session_timezone)->toBe('America/New_York')
+        ->and($booking->session_at?->format('H:i'))->toBe('17:00')
+        ->and($booking->sessionAtInTimezone()?->format('H:i'))->toBe('13:00');
+
     $this->assertDatabaseHas('mentor_availability_slots', [
         'id' => $slotId,
         'is_booked' => true,
@@ -284,6 +427,7 @@ it('creates a booking from a selected availability slot and reserves it', functi
 
 it('queues a confirmation job and sends booking emails for 1on1 to student and mentor', function () {
     Queue::fake();
+    fakeGoogleCalendarSync();
 
     $student = makeUser('booking-student');
     $student->assignRole('student');
@@ -313,7 +457,10 @@ it('queues a confirmation job and sends booking emails for 1on1 to student and m
         ->latest('id')
         ->firstOrFail();
 
-    expect($booking->meeting_link)->not->toBeNull();
+    expect($booking->meeting_link)->toBe('https://meet.google.com/test-room')
+        ->and($booking->meeting_type)->toBe('google_meet')
+        ->and($booking->calendar_sync_status)->toBe('synced')
+        ->and($booking->external_calendar_event_id)->toBe('google-event-123');
 
     Queue::assertPushed(SendBookingConfirmationJob::class, function (SendBookingConfirmationJob $job) use ($booking) {
         return $job->bookingId === $booking->id;
@@ -328,6 +475,7 @@ it('queues a confirmation job and sends booking emails for 1on1 to student and m
             && $mail->bookingDetails['counterpart_name'] === $mentor->user->name
             && $mail->bookingDetails['mentor_name'] === $mentor->user->name
             && !array_key_exists('mentor_email', $mail->bookingDetails)
+            && $mail->bookingDetails['session_time'] === '1:00 PM'
             && $mail->bookingDetails['meeting_link'] === $booking->meeting_link
             && !str_contains($mail->render(), $mentor->user->email);
     });
@@ -336,9 +484,150 @@ it('queues a confirmation job and sends booking emails for 1on1 to student and m
         return $mail->hasTo($mentor->user->email)
             && $mail->bookingDetails['counterpart_name'] === $student->name
             && $mail->bookingDetails['student_email'] === $student->email
+            && $mail->bookingDetails['session_time'] === '1:00 PM'
             && $mail->bookingDetails['meeting_link'] === $booking->meeting_link
             && str_contains($mail->render(), $student->email);
     });
+});
+
+it('keeps the booking when google calendar sync fails and still queues confirmation emails', function () {
+    Queue::fake();
+
+    config([
+        'services.google_calendar.enabled' => true,
+        'services.google_calendar.calendar_id' => 'calendar@example.com',
+        'services.google_calendar.service_account_email' => 'service-account@example.iam.gserviceaccount.com',
+        'services.google_calendar.private_key' => "-----BEGIN PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEApQxB9frx8aCSHksF\nX0ougzjVKmUkl0Ez0lGtCaUeMhHPzPUBEnr6MzYxbouYTKHjSnHXHENxrnySVKN4\nTUkYGQIDAQABAkBCYyjRAWx6LYU4rCJwDs2guKZ9lAtgz7hBe9rnS0RXDM+KGoIh\njO3eaBny4sNhNeKfTeiW1TxdWcmcA1mBTKhRAiEA1wnSgHmNHUrLP5LfNoguQV5W\nj5VSPaxsGGaT1nFEgT0CIQDEfLA8mSHr1La6eX6okCnUAG/YuTgpbT8mNepdauEo\nDQIhAILsEwJvfvAPopFRPZ946BiadD81HX45JRLyGR5dleTNAiBWBZDStugW62Wk\ndhRxj8wAOMC+zTg9Ssre27Pjeitg8QIgQ9tk9PrZB257H09IsYmfQW6DodFQEFtf\nldnpc0Ywzkc=\n-----END PRIVATE KEY-----",
+    ]);
+
+    Http::fake([
+        'https://oauth2.googleapis.com/token' => Http::response([
+            'access_token' => 'google-access-token',
+        ], 200),
+        'https://www.googleapis.com/calendar/v3/calendars/*/events?conferenceDataVersion=1&sendUpdates=all' => Http::response([
+            'error' => ['message' => 'calendar create failed'],
+        ], 500),
+    ]);
+
+    $student = makeUser('booking-student-failure');
+    $student->assignRole('student');
+    fundStudent($student);
+
+    $mentor = makeMentor();
+    $service = makeService();
+    attachMentorService($mentor, $service);
+    $slotId = createAvailabilitySlot($mentor, $service, '1on1');
+
+    $this->actingAs($student)
+        ->post(route('student.bookings.store'), [
+            'mentor_id' => $mentor->id,
+            'service_config_id' => $service->id,
+            'session_type' => '1on1',
+            'mentor_availability_slot_id' => $slotId,
+        ])
+        ->assertRedirect();
+
+    $booking = Booking::query()->latest('id')->firstOrFail();
+
+    expect($booking->calendar_sync_status)->toBe('failed');
+
+    Queue::assertPushed(SendBookingConfirmationJob::class, fn (SendBookingConfirmationJob $job) => $job->bookingId === $booking->id);
+});
+
+it('allows a mentor to cancel more than 24 hours ahead and sends cancellation notifications', function () {
+    Mail::fake();
+    fakeGoogleCalendarSync();
+
+    $student = makeUser('cancel-student');
+    $student->assignRole('student');
+    fundStudent($student);
+
+    $mentor = makeMentor();
+    $service = makeService();
+    attachMentorService($mentor, $service);
+    $slotId = createAvailabilitySlot($mentor, $service, '1on1', 5);
+
+    $this->actingAs($student)
+        ->post(route('student.bookings.store'), [
+            'mentor_id' => $mentor->id,
+            'service_config_id' => $service->id,
+            'session_type' => '1on1',
+            'mentor_availability_slot_id' => $slotId,
+        ])
+        ->assertRedirect();
+
+    $booking = Booking::query()->with('mentor.user')->latest('id')->firstOrFail();
+
+    $this->actingAs($mentor->user)
+        ->patch(route('mentor.bookings.cancel', $booking->id), [
+            'reason' => 'Mentor cancelled from test.',
+        ])
+        ->assertRedirect(route('mentor.bookings.index'));
+
+    expect($booking->fresh()->status)->toBe('cancelled')
+        ->and($booking->fresh()->calendar_sync_status)->toBe('cancelled');
+
+    $this->assertDatabaseHas('mentor_availability_slots', [
+        'id' => $slotId,
+        'is_booked' => false,
+        'booked_participants_count' => 0,
+    ]);
+
+    Mail::assertSent(BookingCancelledNotificationMail::class);
+});
+
+it('blocks self-cancellation inside 24 hours for both students and mentors', function () {
+    fakeGoogleCalendarSync();
+
+    $student = makeUser('late-cancel-student');
+    $student->assignRole('student');
+    fundStudent($student);
+
+    $mentor = makeMentor();
+    $service = makeService();
+    attachMentorService($mentor, $service);
+
+    $slotId = DB::table('mentor_availability_slots')->insertGetId([
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'slot_date' => now()->addHours(23)->toDateString(),
+        'start_time' => now()->addHours(23)->format('H:i:s'),
+        'end_time' => now()->addDay()->format('H:i:s'),
+        'timezone' => 'America/New_York',
+        'session_type' => '1on1',
+        'max_participants' => 1,
+        'booked_participants_count' => 0,
+        'is_booked' => false,
+        'is_blocked' => false,
+        'is_active' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $this->actingAs($student)
+        ->post(route('student.bookings.store'), [
+            'mentor_id' => $mentor->id,
+            'service_config_id' => $service->id,
+            'session_type' => '1on1',
+            'mentor_availability_slot_id' => $slotId,
+        ])
+        ->assertRedirect();
+
+    $booking = Booking::query()->latest('id')->firstOrFail();
+
+    $this->actingAs($student)
+        ->patch(route('student.bookings.cancel', $booking->id), [
+            'reason' => 'Too late student cancel.',
+        ])
+        ->assertSessionHasErrors('booking');
+
+    $this->actingAs($mentor->user)
+        ->patch(route('mentor.bookings.cancel', $booking->id), [
+            'reason' => 'Too late mentor cancel.',
+        ])
+        ->assertSessionHasErrors('booking');
+
+    expect($booking->fresh()->status)->toBe('confirmed');
 });
 
 it('queues a confirmation job and sends booking emails for 1on3 to mentor and all participants without duplicates', function () {

@@ -17,6 +17,16 @@
         <div class="mentor-note-box">
           {{ $mentor['bio'] ?? 'Mentor biography' }}
         </div>
+
+        @if ($mentor['canBook'] ?? false)
+          <div class="mt-4">
+            <a href="{{ $mentor['bookingUrl'] ?? route('mentor.mentor.book', $mentor['id'] ?? 1) }}" class="store-btn">Book Now</a>
+          </div>
+        @else
+          <div class="mt-4 text-sm text-slate-600">
+            You cannot book a meeting with your own mentor profile.
+          </div>
+        @endif
       </article>
     </section>
   </div>

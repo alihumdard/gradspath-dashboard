@@ -15,6 +15,21 @@ class BookingAvailabilityService
 {
     public function availableMonths(int $mentorId, int $serviceConfigId, string $sessionType): array
     {
+        if ($sessionType === 'office_hours') {
+            $session = $this->nextGeneratedOfficeHourSession($mentorId);
+
+            if (!$session) {
+                return [];
+            }
+
+            $month = $session->session_date->copy()->startOfMonth();
+
+            return [[
+                'month' => $month->format('Y-m'),
+                'label' => $month->format('F Y'),
+            ]];
+        }
+
         return $this->baseSlotQuery($mentorId, $serviceConfigId, $sessionType)
             ->orderBy('slot_date')
             ->get()
@@ -31,6 +46,38 @@ class BookingAvailabilityService
 
     public function availableDays(int $mentorId, int $serviceConfigId, string $sessionType, string $month): array
     {
+        if ($sessionType === 'office_hours') {
+            $session = $this->nextGeneratedOfficeHourSession($mentorId);
+            $monthStart = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+
+            if (!$session || !$session->session_date->copy()->startOfMonth()->equalTo($monthStart)) {
+                return [
+                    'month' => $monthStart->format('Y-m'),
+                    'label' => $monthStart->format('F Y'),
+                    'days' => [],
+                ];
+            }
+
+            $remaining = max(((int) $session->max_spots) - ((int) $session->current_occupancy), 0);
+
+            return [
+                'month' => $monthStart->format('Y-m'),
+                'label' => $monthStart->format('F Y'),
+                'days' => [[
+                    'date' => $session->session_date->toDateString(),
+                    'label' => $session->session_date->format('D j'),
+                    'weekday' => $session->session_date->format('D'),
+                    'day' => $session->session_date->format('j'),
+                    'sessionId' => (int) $session->id,
+                    'spotsFilled' => (int) $session->current_occupancy,
+                    'maxSpots' => (int) $session->max_spots,
+                    'remainingSpots' => $remaining,
+                    'isFull' => (bool) $session->is_full || $remaining === 0,
+                    'isBookable' => $session->status === 'upcoming' && !((bool) $session->is_full || $remaining === 0),
+                ]],
+            ];
+        }
+
         $monthStart = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
         $monthEnd = $monthStart->copy()->endOfMonth();
 
@@ -57,6 +104,47 @@ class BookingAvailabilityService
 
     public function availableTimes(int $mentorId, int $serviceConfigId, string $sessionType, string $date): array
     {
+        if ($sessionType === 'office_hours') {
+            $session = $this->nextGeneratedOfficeHourSession($mentorId);
+            $selectedDate = Carbon::parse($date)->toDateString();
+
+            if (!$session || $session->session_date->toDateString() !== $selectedDate) {
+                return [
+                    'date' => $selectedDate,
+                    'label' => Carbon::parse($selectedDate)->format('l, F j, Y'),
+                    'times' => [],
+                ];
+            }
+
+            $durationMinutes = $this->officeHoursDuration($serviceConfigId);
+            $startsAt = Carbon::parse($session->session_date->toDateString().' '.$session->start_time, $session->timezone ?: config('app.timezone'));
+            $endsAt = $startsAt->copy()->addMinutes($durationMinutes);
+            $remaining = max(((int) $session->max_spots) - ((int) $session->current_occupancy), 0);
+            $recurrenceLabel = match ((string) ($session->schedule?->frequency ?? 'weekly')) {
+                'biweekly' => 'This is a recurring biweekly session',
+                default => 'This is a recurring weekly session',
+            };
+
+            return [
+                'date' => $selectedDate,
+                'label' => Carbon::parse($selectedDate)->format('l, F j, Y'),
+                'times' => [[
+                    'sessionId' => (int) $session->id,
+                    'sessionDate' => $selectedDate,
+                    'startTime' => $startsAt->format('g:i A'),
+                    'endTime' => $endsAt->format('g:i A'),
+                    'timeRangeLabel' => $startsAt->format('g:i A').' to '.$endsAt->format('g:i A'),
+                    'recurrenceLabel' => $recurrenceLabel,
+                    'spotsFilled' => (int) $session->current_occupancy,
+                    'maxSpots' => (int) $session->max_spots,
+                    'remainingSpots' => $remaining,
+                    'availabilityText' => $remaining === 0 ? 'Currently full' : ($remaining === 1 ? '1 spot remaining' : "{$remaining} spots remaining"),
+                    'isBookable' => $session->status === 'upcoming' && !((bool) $session->is_full || $remaining === 0),
+                    'isFull' => (bool) $session->is_full || $remaining === 0,
+                ]],
+            ];
+        }
+
         $slots = $this->baseSlotQuery($mentorId, $serviceConfigId, $sessionType)
             ->whereDate('slot_date', $date)
             ->orderBy('start_time')
@@ -171,6 +259,18 @@ class BookingAvailabilityService
             ->forget(0);
     }
 
+    private function nextGeneratedOfficeHourSession(int $mentorId): ?OfficeHourSession
+    {
+        return OfficeHourSession::query()
+            ->with(['schedule', 'currentService:id,service_name,service_slug'])
+            ->whereHas('schedule', fn (Builder $query) => $query->where('mentor_id', $mentorId)->where('is_active', true))
+            ->where('status', 'upcoming')
+            ->whereDate('session_date', '>=', now()->toDateString())
+            ->orderBy('session_date')
+            ->orderBy('start_time')
+            ->first();
+    }
+
     private function transformOfficeHourSession(Mentor $mentor, OfficeHourSession $session): array
     {
         $startsAt = Carbon::parse($session->session_date->toDateString().' '.$session->start_time, $session->timezone ?: config('app.timezone'));
@@ -201,8 +301,8 @@ class BookingAvailabilityService
     {
         return MentorAvailabilitySlot::query()
             ->where('mentor_id', $mentorId)
-            ->where('service_config_id', $serviceConfigId)
             ->where('session_type', $sessionType)
+            ->where('service_config_id', $serviceConfigId)
             ->where('is_active', true)
             ->where('is_blocked', false)
             ->where(function (Builder $query) {
@@ -250,5 +350,12 @@ class BookingAvailabilityService
             'mba' => 'mba',
             default => 'therapy',
         };
+    }
+
+    private function officeHoursDuration(int $serviceConfigId): int
+    {
+        $service = ServiceConfig::query()->find($serviceConfigId);
+
+        return max((int) ($service?->duration_minutes ?? 45), 1);
     }
 }

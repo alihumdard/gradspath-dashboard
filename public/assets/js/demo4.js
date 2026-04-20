@@ -172,7 +172,9 @@ function createMentorCard(mentor) {
       <button class="feedback-read-more-btn" type="button">Read More ▼</button>
     </div>
 
-    <button class="book-now-btn" type="button">Book Now</button>
+    <button class="book-now-btn" type="button" ${mentor.canBook === false ? "disabled" : ""}>
+      ${mentor.canBook === false ? "Unavailable" : "Book Now"}
+    </button>
   `;
 
   const bioBtn = article.querySelector(".mentor-bio-btn");
@@ -189,7 +191,11 @@ function createMentorCard(mentor) {
 
   const bookNowBtn = article.querySelector(".book-now-btn");
   bookNowBtn.addEventListener("click", () => {
-    window.location.href = `/student/mentor/${mentor.id}/book`;
+    if (!mentor.canBook || !mentor.bookingUrl) {
+      return;
+    }
+
+    window.location.href = mentor.bookingUrl;
   });
 
   const servicesAccordion = article.querySelector(".services-accordion");

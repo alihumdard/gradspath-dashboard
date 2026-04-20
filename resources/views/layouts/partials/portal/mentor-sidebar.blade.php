@@ -129,6 +129,24 @@
     </div>
 
     <div class="nav-group">
+      <a href="{{ route('mentor.availability.index') }}" @class(['nav-item single-link', 'active' => $activeNav === 'availability'])>
+        <span class="nav-left">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 2v4"></path>
+              <path d="M16 2v4"></path>
+              <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+              <path d="M3 10h18"></path>
+              <path d="M8 14h3"></path>
+              <path d="M8 18h8"></path>
+            </svg>
+          </span>
+          <span class="nav-text">Mentor Availability</span>
+        </span>
+      </a>
+    </div>
+
+    <div class="nav-group">
       <a href="{{ route('mentor.support.index') }}" @class(['nav-item single-link', 'active' => $activeNav === 'support'])>
         <span class="nav-left">
           <span class="nav-icon" aria-hidden="true">

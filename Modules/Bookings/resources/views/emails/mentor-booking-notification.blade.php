@@ -14,7 +14,7 @@
                         <td style="padding:32px 32px 24px; background:linear-gradient(135deg, #5b3df5 0%, #7c5cff 100%); color:#ffffff;">
                             <div style="font-size:12px; letter-spacing:1.6px; text-transform:uppercase; opacity:0.88;">Grads Paths</div>
                             <h1 style="margin:14px 0 10px; font-size:28px; line-height:1.2;">A new booking was made with you</h1>
-                            <p style="margin:0; font-size:16px; line-height:1.6;">Hi {{ $recipientName }}, {{ $booking['student_name'] }} has confirmed a session with you.</p>
+                            <p style="margin:0; font-size:16px; line-height:1.6;">Hi {{ $recipientName }}, {{ $booking['booker_name'] }} has confirmed a session with you. A Google Calendar invite should be sent when calendar sync is available.</p>
                         </td>
                     </tr>
 
@@ -48,17 +48,21 @@
                                                 </tr>
                                             @endif
                                             <tr>
-                                                <td style="padding:10px 0; font-size:14px; color:#6b7280; border-bottom:1px solid #e8e2ff;">Student</td>
-                                                <td style="padding:10px 0; font-size:15px; font-weight:700; text-align:right; border-bottom:1px solid #e8e2ff;">{{ $booking['student_name'] }}</td>
+                                                <td style="padding:10px 0; font-size:14px; color:#6b7280; border-bottom:1px solid #e8e2ff;">{{ $booking['booker_label'] ?? 'Booker' }}</td>
+                                                <td style="padding:10px 0; font-size:15px; font-weight:700; text-align:right; border-bottom:1px solid #e8e2ff;">{{ $booking['booker_name'] }}</td>
                                             </tr>
-                                            @if (!empty($booking['student_email']))
+                                            @if (!empty($booking['booker_email']))
                                                 <tr>
-                                                    <td style="padding:10px 0; font-size:14px; color:#6b7280;">Student Email</td>
+                                                    <td style="padding:10px 0; font-size:14px; color:#6b7280;">{{ $booking['booker_label'] ?? 'Booker' }} Email</td>
                                                     <td style="padding:10px 0; font-size:15px; font-weight:700; text-align:right;">
-                                                        <a href="mailto:{{ $booking['student_email'] }}" style="color:#3b82f6; text-decoration:none;">{{ $booking['student_email'] }}</a>
+                                                        <a href="mailto:{{ $booking['booker_email'] }}" style="color:#3b82f6; text-decoration:none;">{{ $booking['booker_email'] }}</a>
                                                     </td>
                                                 </tr>
                                             @endif
+                                            <tr>
+                                                <td style="padding:10px 0; font-size:14px; color:#6b7280;">Meeting Provider</td>
+                                                <td style="padding:10px 0; font-size:15px; font-weight:700; text-align:right;">{{ $booking['meeting_provider'] ?? 'Meeting Link' }}</td>
+                                            </tr>
                                         </table>
                                     </td>
                                 </tr>
@@ -69,14 +73,14 @@
                     @if (!empty($booking['meeting_link']))
                         <tr>
                             <td style="padding:16px 32px 8px;">
-                                <a href="{{ $booking['meeting_link'] }}" style="display:inline-block; padding:14px 22px; border-radius:999px; background:#5b3df5; color:#ffffff; font-size:15px; font-weight:700; text-decoration:none;">Open Meeting Link</a>
+                                <a href="{{ $booking['meeting_link'] }}" style="display:inline-block; padding:14px 22px; border-radius:999px; background:#5b3df5; color:#ffffff; font-size:15px; font-weight:700; text-decoration:none;">{{ $booking['meeting_link_label'] ?? 'Open Meeting Link' }}</a>
                             </td>
                         </tr>
                     @endif
 
                     <tr>
                         <td style="padding:8px 32px 32px;">
-                            <p style="margin:0; font-size:14px; line-height:1.7; color:#4b5563;">Please review the details above and use the meeting link at session time. If anything changes, we recommend handling updates through the platform rather than sharing personal contact details by email.</p>
+                            <p style="margin:0; font-size:14px; line-height:1.7; color:#4b5563;">Please review the details above and use the meeting link or Google Calendar invite at session time. If anything changes, we recommend handling updates through the platform rather than sharing personal contact details by email.</p>
                             <p style="margin:22px 0 0; font-size:14px; line-height:1.7; color:#4b5563;">Thanks,<br><strong>Grads Paths</strong></p>
                         </td>
                     </tr>

@@ -29,10 +29,15 @@ class BookingPageService
             ->firstOrFail();
     }
 
-    public function buildBookingPageData(Mentor $mentor, ?User $student = null): array
+    public function buildBookingPageData(Mentor $mentor, ?User $viewer = null, array $options = []): array
     {
+        $portal = (string) ($options['portal'] ?? 'student');
+        $allowOfficeHours = (bool) ($options['allow_office_hours'] ?? ($portal === 'student'));
+        $maxMeetingSize = (int) ($options['max_meeting_size'] ?? 5);
+
         $services = $mentor->services
-            ->map(fn (ServiceConfig $service) => $this->transformService($service))
+            ->map(fn (ServiceConfig $service) => $this->transformService($service, $maxMeetingSize, $allowOfficeHours))
+            ->filter()
             ->values()
             ->all();
 
@@ -77,40 +82,53 @@ class BookingPageService
                     : 'New',
             ],
             'student' => [
-                'name' => $student?->name,
-                'email' => $student?->email,
+                'name' => $viewer?->name,
+                'email' => $viewer?->email,
+            ],
+            'viewer' => [
+                'name' => $viewer?->name,
+                'email' => $viewer?->email,
+                'portal' => $portal,
             ],
             'services' => $services,
-            'officeHours' => $officeHours,
+            'officeHours' => $allowOfficeHours ? $officeHours : null,
             'selectedServiceId' => $services[0]['id'] ?? null,
             'availabilityRoutes' => [
-                'months' => route('student.bookings.availability.months'),
-                'days' => route('student.bookings.availability.days'),
-                'times' => route('student.bookings.availability.times'),
+                'months' => route("{$portal}.bookings.availability.months"),
+                'days' => route("{$portal}.bookings.availability.days"),
+                'times' => route("{$portal}.bookings.availability.times"),
             ],
-            'bookingSubmitUrl' => route('student.bookings.store'),
-            'bookingCheckoutUrl' => route('student.bookings.checkout.store'),
-            'creditBalanceUrl' => route('student.credits.balance'),
+            'bookingSubmitUrl' => route("{$portal}.bookings.store"),
+            'bookingCheckoutUrl' => route("{$portal}.bookings.checkout.store"),
+            'creditBalanceUrl' => $portal === 'student' ? route('student.credits.balance') : null,
+            'dashboardUrl' => route("{$portal}.dashboard"),
+            'officeHoursDirectoryUrl' => $portal === 'student'
+                ? route('student.office-hours')
+                : route('mentor.office-hours'),
         ];
     }
 
-    private function transformService(ServiceConfig $service): array
+    private function transformService(ServiceConfig $service, int $maxMeetingSize = 5, bool $allowOfficeHours = true): ?array
     {
+        if (!$allowOfficeHours && (bool) $service->is_office_hours) {
+            return null;
+        }
+
         $prices = [];
 
-        if ($service->price_1on1 !== null) {
+        if ($service->price_1on1 !== null && $maxMeetingSize >= 1) {
             $prices[1] = $this->formatPriceInfo((float) $service->price_1on1, 1);
         }
 
-        if ($service->price_1on3_per_person !== null) {
+        if ($service->price_1on3_per_person !== null && $maxMeetingSize >= 3) {
             $prices[3] = $this->formatPriceInfo((float) $service->price_1on3_per_person, 3);
         }
 
-        if ($service->price_1on5_per_person !== null) {
+        if ($service->price_1on5_per_person !== null && $maxMeetingSize >= 5) {
             $prices[5] = $this->formatPriceInfo((float) $service->price_1on5_per_person, 5);
         }
 
-        if ($service->is_office_hours) {
+        if ($service->is_office_hours && $allowOfficeHours) {
             $prices = [
                 1 => [
                     'label' => '1 credit',
@@ -121,6 +139,10 @@ class BookingPageService
         }
 
         $allowedSizes = array_map('intval', array_keys($prices));
+
+        if ($allowedSizes === []) {
+            return null;
+        }
 
         return [
             'id' => $service->service_slug ?: Str::slug($service->service_name),

@@ -1136,6 +1136,47 @@ h1 {
   gap: 10px;
 }
 
+.upcoming-group {
+  display: grid;
+  gap: 10px;
+}
+
+.upcoming-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px;
+}
+
+.upcoming-group-header h4 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.upcoming-group-header span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.upcoming-group-list {
+  display: grid;
+  gap: 10px;
+}
+
+.upcoming-empty-state {
+  border: 1.5px dashed var(--line);
+  border-radius: 16px;
+  padding: 18px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 14px;
+}
+
 .upcoming-item {
   border: 1.5px solid var(--line);
   border-radius: 16px;

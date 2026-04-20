@@ -17,6 +17,9 @@ const fallbackBooking = {
   duration: 45,
 };
 
+const bookingGroups = Array.isArray(bookingDetailsData.bookingGroups)
+  ? bookingDetailsData.bookingGroups
+  : [];
 const upcomingBookings =
   Array.isArray(bookingDetailsData.upcomingBookings) &&
   bookingDetailsData.upcomingBookings.length > 0
@@ -50,10 +53,12 @@ const bookedDates = upcomingBookings.reduce((carry, booking) => {
     serviceSlug: booking.serviceSlug || null,
     mentorName: booking.mentorDisplay || booking.mentorName || "Mentor",
     zoomLink: booking.zoomLink || null,
+    meetingLinkLabel: booking.meetingLinkLabel || "Open Meeting Link",
     meetingSize: booking.meetingSize || "1 on 1",
     duration: booking.duration || null,
     canCancel: Boolean(booking.canCancel),
     cancelUrl: booking.cancelUrl || null,
+    cancelPolicyCopy: booking.cancelPolicyCopy || "",
     chatThreadUrl: booking.chatThreadUrl || null,
     chatSendUrl: booking.chatSendUrl || null,
     chatChannel: booking.chatChannel || null,
@@ -177,7 +182,10 @@ if (counterpartLabelEl) {
   counterpartLabelEl.textContent = meetingData.counterpartLabel;
 }
 if (bookingSubtitleEl) {
-  bookingSubtitleEl.textContent = `Here is your meeting information with your ${meetingData.counterpartLabel.toLowerCase()}.`;
+  bookingSubtitleEl.textContent =
+    meetingData.counterpartLabel.toLowerCase() === "counterpart"
+      ? "Here is your meeting information for this booking."
+      : `Here is your meeting information with your ${meetingData.counterpartLabel.toLowerCase()}.`;
 }
 
 function formatDateKey(year, monthIndex, day) {
@@ -209,7 +217,7 @@ function updateZoomLink(booking) {
 
   if (booking?.zoomLink) {
     zoomLinkEl.href = booking.zoomLink;
-    zoomLinkEl.textContent = "Join Zoom Meeting";
+    zoomLinkEl.textContent = booking?.meetingLinkLabel || "Open Meeting Link";
     zoomLinkEl.removeAttribute("aria-disabled");
   } else {
     zoomLinkEl.href = "#";
@@ -283,13 +291,15 @@ function updateMeetingInfoFromSelected() {
 function syncCancelState(booking) {
   if (!cancelMeetingBtn) return;
 
+  const hasBooking = Boolean(booking);
   const canCancel = Boolean(booking?.canCancel && booking?.cancelUrl && cancelBookingForm);
 
-  cancelMeetingBtn.disabled = !canCancel;
-  cancelMeetingBtn.setAttribute("aria-disabled", canCancel ? "false" : "true");
+  cancelMeetingBtn.disabled = !hasBooking;
+  cancelMeetingBtn.setAttribute("aria-disabled", hasBooking ? "false" : "true");
+  cancelMeetingBtn.textContent = canCancel ? "Cancel Meeting" : "Contact Support";
   cancelMeetingBtn.title = canCancel
     ? "Cancel this meeting"
-    : "This meeting can no longer be cancelled";
+    : booking?.cancelPolicyCopy || "Self-service cancellation closes 24 hours before the meeting";
 
   if (!cancelBookingForm) {
     return;
@@ -478,7 +488,7 @@ function sendTypingEvent(isTyping) {
     activeChatChannel.trigger("client-typing", {
       bookingId: Number(activeChatBookingId),
       senderId: Number(meetingData.viewerId || 0),
-      senderName: meetingData.mentorName,
+      senderName: bookingDetailsData.viewerName || meetingData.viewerRoleLabel || "You",
       isTyping,
     });
   } catch (error) {
@@ -908,7 +918,7 @@ function renderDayView() {
     event.innerHTML = `
       <div>
         <div class="day-view-event-title">${booking.service}</div>
-        <div class="day-view-event-sub">With ${meetingData.mentorName}</div>
+        <div class="day-view-event-sub">With ${booking.mentorName || meetingData.mentorName}</div>
       </div>
       <div class="day-view-event-time">${booking.time}</div>
     `;
@@ -1020,9 +1030,62 @@ function renderCalendar() {
 
 function renderUpcomingAppointments() {
   upcomingListEl.innerHTML = "";
-
   const now = new Date(today);
   now.setHours(0, 0, 0, 0);
+
+  if (bookingGroups.length > 0) {
+    let renderedGroup = false;
+
+    bookingGroups.forEach((group) => {
+      const items = Array.isArray(group?.items)
+        ? group.items
+            .filter((booking) => booking?.sessionDateKey)
+            .filter((booking) => {
+              const dateObj = parseDateKey(booking.sessionDateKey);
+              dateObj.setHours(0, 0, 0, 0);
+              return dateObj >= now;
+            })
+            .sort((a, b) => String(a.sessionDateKey).localeCompare(String(b.sessionDateKey)))
+        : [];
+
+      if (!items.length) {
+        return;
+      }
+
+      renderedGroup = true;
+
+      const section = document.createElement("section");
+      section.className = "upcoming-group";
+
+      const header = document.createElement("div");
+      header.className = "upcoming-group-header";
+      header.innerHTML = `
+        <h4>${group.label || "Upcoming Bookings"}</h4>
+        <span>${items.length} booking${items.length === 1 ? "" : "s"}</span>
+      `;
+      section.appendChild(header);
+
+      const list = document.createElement("div");
+      list.className = "upcoming-group-list";
+
+      items.forEach((booking) => {
+        const key = booking.sessionDateKey;
+        const dateObj = parseDateKey(key);
+        list.appendChild(createUpcomingItem(booking, key, dateObj));
+      });
+
+      section.appendChild(list);
+      upcomingListEl.appendChild(section);
+    });
+
+    if (!renderedGroup) {
+      upcomingListEl.innerHTML = `
+        <div class="upcoming-empty-state">No future bookings yet.</div>
+      `;
+    }
+
+    return;
+  }
 
   const futureKeys = Object.keys(bookedDates)
     .sort()
@@ -1035,36 +1098,47 @@ function renderUpcomingAppointments() {
   futureKeys.forEach((key) => {
     const booking = bookedDates[key];
     const dateObj = parseDateKey(key);
-
-    const item = document.createElement("button");
-    item.type = "button";
-    item.className = "upcoming-item";
-
-    if (key === selectedDateKey) {
-      item.classList.add("active");
-    }
-
-    item.innerHTML = `
-      <div class="upcoming-item-left">
-        <strong>${formatFullDate(dateObj)}</strong>
-        <span>With ${booking.mentorName || meetingData.mentorName}</span>
-      </div>
-      <div class="upcoming-item-right">
-        <span class="time">${booking.time}</span>
-        <span class="service">${booking.service}</span>
-      </div>
-    `;
-
-    item.addEventListener("click", () => {
-      selectedDateKey = key;
-      currentDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
-      updateMeetingInfoFromSelected();
-      renderCalendar();
-      renderUpcomingAppointments();
-    });
-
-    upcomingListEl.appendChild(item);
+    upcomingListEl.appendChild(createUpcomingItem(booking, key, dateObj));
   });
+}
+
+function createUpcomingItem(booking, key, dateObj) {
+  const item = document.createElement("button");
+  item.type = "button";
+  item.className = "upcoming-item";
+  const counterpartName =
+    booking.mentorName || booking.counterpartName || meetingData.mentorName;
+  const timeText = booking.time || booking.sessionTimeLabel || "Not set";
+  const serviceText = booking.service || booking.serviceName || "Service";
+
+  if (key === selectedDateKey) {
+    item.classList.add("active");
+  }
+
+  const relationshipText = booking.relationshipLabel
+    ? `${booking.relationshipLabel} • ${counterpartName}`
+    : `With ${counterpartName}`;
+
+  item.innerHTML = `
+    <div class="upcoming-item-left">
+      <strong>${formatFullDate(dateObj)}</strong>
+      <span>${relationshipText}</span>
+    </div>
+    <div class="upcoming-item-right">
+      <span class="time">${timeText}</span>
+      <span class="service">${serviceText}</span>
+    </div>
+  `;
+
+  item.addEventListener("click", () => {
+    selectedDateKey = key;
+    currentDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+    updateMeetingInfoFromSelected();
+    renderCalendar();
+    renderUpcomingAppointments();
+  });
+
+  return item;
 }
 
 function setActiveViewButton() {
@@ -1243,7 +1317,14 @@ if (cancelMeetingBtn) {
   cancelMeetingBtn.addEventListener("click", () => {
     const booking = getBookingByDateKey(selectedDateKey);
 
+    if (!booking) {
+      return;
+    }
+
     if (!booking?.canCancel || !booking?.cancelUrl || !cancelModal) {
+      if (supportModal) {
+        openModal(supportModal);
+      }
       return;
     }
 

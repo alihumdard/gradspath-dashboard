@@ -18,9 +18,11 @@
           {{ $mentor['bio'] ?? 'Mentor biography' }}
         </div>
 
-        <div class="mt-4">
-          <a href="{{ route('student.book-mentor', $mentor['id'] ?? 1) }}" class="store-btn">Book Now</a>
-        </div>
+        @if ($mentor['canBook'] ?? false)
+          <div class="mt-4">
+            <a href="{{ $mentor['bookingUrl'] ?? route('student.book-mentor', $mentor['id'] ?? 1) }}" class="store-btn">Book Now</a>
+          </div>
+        @endif
       </article>
     </section>
   </div>

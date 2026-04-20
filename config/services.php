@@ -44,4 +44,13 @@ return [
         'booking_cancel_url' => env('STRIPE_BOOKING_CANCEL_URL'),
     ],
 
+    'google_calendar' => [
+        'enabled' => env('GOOGLE_CALENDAR_ENABLED', false),
+        'calendar_id' => env('GOOGLE_CALENDAR_ID'),
+        'service_account_email' => env('GOOGLE_SERVICE_ACCOUNT_EMAIL'),
+        'private_key' => env('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY'),
+        'token_uri' => env('GOOGLE_SERVICE_ACCOUNT_TOKEN_URI', 'https://oauth2.googleapis.com/token'),
+        'api_base' => env('GOOGLE_CALENDAR_API_BASE', 'https://www.googleapis.com/calendar/v3'),
+    ],
+
 ];

@@ -16,8 +16,11 @@ class BookingCheckoutController extends Controller
 
     public function store(CreateBookingRequest $request): JsonResponse
     {
+        $data = $request->validated();
+        $data['portal_context'] = $this->portalContext();
+
         try {
-            $payment = $this->checkout->createCheckoutSession(Auth::user(), $request->validated());
+            $payment = $this->checkout->createCheckoutSession(Auth::user(), $data);
         } catch (\RuntimeException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
@@ -42,20 +45,28 @@ class BookingCheckoutController extends Controller
             $payment = BookingPayment::query()
                 ->where('stripe_checkout_session_id', $sessionId)
                 ->first();
+            $portal = (string) data_get($payment?->request_payload, 'portal_context', $this->portalContext());
 
             if ($payment?->mentor_id) {
                 return redirect()
-                    ->route('student.mentor.book', ['id' => $payment->mentor_id])
+                    ->route("{$portal}.mentor.book", ['id' => $payment->mentor_id])
                     ->withErrors(['booking' => $exception->getMessage()]);
             }
 
             return redirect()
-                ->route('student.bookings.index')
+                ->route("{$portal}.bookings.index")
                 ->withErrors(['booking' => $exception->getMessage()]);
         }
 
         return redirect()
-            ->route('student.bookings.show', $booking->id)
+            ->route("{$this->portalContext()}.bookings.show", $booking->id)
             ->with('success', 'Payment successful. Your booking has been confirmed.');
+    }
+
+    private function portalContext(): string
+    {
+        $routeName = (string) request()->route()?->getName();
+
+        return str_starts_with($routeName, 'mentor.') ? 'mentor' : 'student';
     }
 }

@@ -32,7 +32,7 @@ class EnsureBookingParticipant
 
         $booking = Booking::query()->findOrFail($bookingId);
 
-        if ($user->hasRole('student') && (int) $booking->student_id === (int) $user->id) {
+        if ((int) $booking->student_id === (int) $user->id) {
             return $next($request);
         }
 

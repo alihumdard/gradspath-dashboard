@@ -2,6 +2,8 @@
 
 namespace Modules\Bookings\app\Models;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -33,6 +35,10 @@ class Booking extends Model
         'duration_minutes',
         'meeting_link',
         'meeting_type',
+        'external_calendar_event_id',
+        'calendar_provider',
+        'calendar_sync_status',
+        'calendar_last_error',
         'credits_charged',
         'amount_charged',
         'currency',
@@ -50,7 +56,6 @@ class Booking extends Model
     ];
 
     protected $casts = [
-        'session_at' => 'datetime',
         'cancelled_at' => 'datetime',
         'feedback_due_at' => 'datetime',
         'student_feedback_done' => 'boolean',
@@ -62,9 +67,41 @@ class Booking extends Model
         'pricing_snapshot' => 'array',
     ];
 
+    protected function sessionAt(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value ? Carbon::parse($value, 'UTC') : null,
+            set: fn ($value) => $value ? Carbon::parse($value)->utc()->toDateTimeString() : null,
+        );
+    }
+
+    public function isSelfCancellationWindowOpen(): bool
+    {
+        return $this->session_at !== null && $this->session_at->gt(now()->addDay());
+    }
+
+    public function sessionAtInTimezone(?string $timezone = null): ?Carbon
+    {
+        if (!$this->session_at) {
+            return null;
+        }
+
+        return $this->session_at->copy()->setTimezone($timezone ?: ($this->session_timezone ?: config('app.timezone', 'UTC')));
+    }
+
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
+    }
+
+    public function booker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'student_id');
+    }
+
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     public function mentor(): BelongsTo
