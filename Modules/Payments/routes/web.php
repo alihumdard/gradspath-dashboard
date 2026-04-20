@@ -17,6 +17,11 @@ Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () 
 	Route::get('/student/bookings/checkout/success', [BookingCheckoutController::class, 'success'])->name('student.bookings.checkout.success');
 });
 
+Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
+	Route::post('/mentor/bookings/checkout', [BookingCheckoutController::class, 'store'])->name('mentor.bookings.checkout.store');
+	Route::get('/mentor/bookings/checkout/success', [BookingCheckoutController::class, 'success'])->name('mentor.bookings.checkout.success');
+});
+
 Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');
 
 Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {

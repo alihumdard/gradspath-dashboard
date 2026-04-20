@@ -12,6 +12,7 @@ return new class extends Migration
         Schema::create('office_hour_schedules', function (Blueprint $table) {
             $table->id();
             $table->foreignId('mentor_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('current_service_id')->nullable()->constrained('services_config')->nullOnDelete();
             $table->enum('day_of_week', ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
             $table->time('start_time');
             $table->string('timezone')->default('America/New_York');

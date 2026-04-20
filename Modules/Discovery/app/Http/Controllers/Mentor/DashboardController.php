@@ -8,6 +8,7 @@ use Illuminate\View\View;
 use Modules\Discovery\app\Services\MentorDiscoveryService;
 use Modules\Institutions\app\Models\University;
 use Modules\Payments\app\Services\CreditService;
+use Modules\Settings\app\Models\Mentor;
 
 class DashboardController extends Controller
 {
@@ -19,9 +20,10 @@ class DashboardController extends Controller
     public function index(): View
     {
         $user = Auth::user();
+        $viewerMentor = $user ? Mentor::query()->where('user_id', $user->id)->first() : null;
 
         return view('discovery::mentor.dashboard', [
-            'featuredMentors' => $this->discovery->featured(),
+            'featuredMentors' => $this->discovery->featured(6, 'mentor', $viewerMentor?->id),
             'creditBalance' => $user ? $this->credits->getBalance($user) : 0,
             'institutions' => University::query()
                 ->where('is_active', true)

@@ -19,7 +19,7 @@ class BookingService
 {
     public function __construct(private readonly CreditService $creditService) {}
 
-    public function createBooking(User $student, array $data, array $options = []): Booking
+    public function createBooking(User $booker, array $data, array $options = []): Booking
     {
         $mentor = Mentor::query()->findOrFail((int) $data['mentor_id']);
         $service = ServiceConfig::query()->findOrFail((int) $data['service_config_id']);
@@ -31,9 +31,11 @@ class BookingService
         $amountCharged = $this->amountCharged($service, $sessionType);
         $pricingSnapshot = $this->pricingSnapshot($service, $sessionType, $credits, $amountCharged);
         $guestParticipants = $this->guestParticipants($data['guest_participants'] ?? []);
+        $this->assertBookerCanBookMentor($booker, $mentor);
+        $this->assertMentorOffersService($mentor, $service);
 
-        return DB::transaction(function () use (
-            $student,
+        $booking = DB::transaction(function () use (
+            $booker,
             $mentor,
             $service,
             $sessionType,
@@ -46,22 +48,22 @@ class BookingService
             $guestParticipants,
             $data
         ) {
-            [$sessionAt, $sessionTimezone, $durationMinutes, $slotId, $officeHourSessionId] = $sessionType === 'office_hours'
-                ? $this->reserveOfficeHourSession($student, $mentor, $service, $data)
+            [$sessionAtUtc, $sessionTimezone, $durationMinutes, $slotId, $officeHourSessionId] = $sessionType === 'office_hours'
+                ? $this->reserveOfficeHourSession($booker, $mentor, $service, $data)
                 : $this->reserveAvailabilitySlot($mentor, $service, $sessionType, $requestedGroupSize, $data);
 
             $booking = Booking::create([
-                'student_id' => $student->id,
+                'student_id' => $booker->id,
                 'mentor_id' => $mentor->id,
                 'service_config_id' => $service->id,
                 'mentor_availability_slot_id' => $slotId,
                 'office_hour_session_id' => $officeHourSessionId,
                 'session_type' => $sessionType,
                 'requested_group_size' => $requestedGroupSize > 1 ? $requestedGroupSize : null,
-                'session_at' => $sessionAt,
+                'session_at' => $sessionAtUtc,
                 'session_timezone' => $sessionTimezone,
                 'duration_minutes' => $durationMinutes,
-                'meeting_type' => $data['meeting_type'] ?? 'zoom',
+                'meeting_type' => $data['meeting_type'] ?? 'google_meet',
                 'status' => $approvalStatus === 'pending' ? 'pending' : 'confirmed',
                 'approval_status' => $sessionType === 'office_hours' ? 'not_required' : $approvalStatus,
                 'credits_charged' => $credits,
@@ -69,15 +71,15 @@ class BookingService
                 'currency' => $this->currency(),
                 'pricing_snapshot' => $pricingSnapshot,
                 'is_group_payer' => $requestedGroupSize > 1,
-                'group_payer_id' => $requestedGroupSize > 1 ? $student->id : null,
+                'group_payer_id' => $requestedGroupSize > 1 ? $booker->id : null,
             ]);
 
             DB::table('booking_participants')->insert([
                 'booking_id' => $booking->id,
-                'user_id' => $student->id,
-                'full_name' => $student->name,
-                'email' => $student->email,
-                'participant_role' => 'student',
+                'user_id' => $booker->id,
+                'full_name' => $booker->name,
+                'email' => $booker->email,
+                'participant_role' => $booker->hasRole('mentor') ? 'booker' : 'student',
                 'is_primary' => true,
                 'invite_status' => 'accepted',
                 'created_at' => now(),
@@ -103,18 +105,24 @@ class BookingService
             }
 
             if ($chargeCredits && $credits > 0) {
-                $this->creditService->deduct($student, $credits, $booking, 'Booking charge');
+                $this->creditService->deduct($booker, $credits, $booking, 'Booking charge');
             }
 
-            event(new BookingCreated($booking));
-
-            return $booking->fresh(['mentor.user', 'service']);
+            return $booking->fresh(['mentor.user', 'service', 'booker']);
         });
+
+        event(new BookingCreated($booking));
+
+        return $booking->fresh(['mentor.user', 'service', 'booker']);
     }
 
     public function cancelBooking(Booking $booking, User $actor, ?string $reason = null): Booking
     {
-        if ((int) $booking->student_id !== (int) $actor->id && !$actor->hasRole('admin')) {
+        $isAdmin = $actor->hasRole('admin');
+        $isBooker = (int) $booking->student_id === (int) $actor->id;
+        $isMentor = (int) ($booking->mentor?->user_id ?? 0) === (int) $actor->id;
+
+        if (!$isBooker && !$isMentor && !$isAdmin) {
             throw new BookingException('You are not allowed to cancel this booking.');
         }
 
@@ -126,9 +134,13 @@ class BookingService
             throw new BookingException('Only upcoming bookings can be cancelled.');
         }
 
+        if (!$isAdmin && !$booking->isSelfCancellationWindowOpen()) {
+            throw new BookingException('Self-service cancellation closes 24 hours before the meeting. Please contact support if you need help.');
+        }
+
         DB::transaction(function () use ($booking, $actor, $reason) {
             $booking->update([
-                'status' => 'cancelled_pending_refund',
+                'status' => 'cancelled',
                 'cancelled_at' => now(),
                 'cancel_reason' => $reason,
                 'cancelled_by' => $actor->id,
@@ -156,7 +168,7 @@ class BookingService
             }
         });
 
-        event(new BookingCancelled($booking));
+        event(new BookingCancelled($booking->fresh(['mentor.user', 'service', 'booker', 'participantRecords', 'cancelledBy'])));
 
         return $booking->fresh();
     }
@@ -176,12 +188,16 @@ class BookingService
             throw new BookingException('This time slot does not belong to the selected mentor.');
         }
 
-        if ((int) ($slot->service_config_id ?? 0) !== (int) $service->id) {
+        if ($slot->service_config_id !== null && (int) $slot->service_config_id !== (int) $service->id) {
             throw new BookingException('This time slot does not match the selected service.');
         }
 
         if ($slot->session_type !== $sessionType) {
             throw new BookingException('This time slot does not match the selected meeting size.');
+        }
+
+        if ($slot->service_config_id === null && $sessionType !== '1on1') {
+            throw new BookingException('This time slot is only available for 1 on 1 bookings.');
         }
 
         if (!$slot->is_active || $slot->is_blocked || $slot->is_booked) {
@@ -201,20 +217,23 @@ class BookingService
             throw new BookingException('Please choose a future time slot.');
         }
 
+        $sessionAtUtc = $sessionAt->copy()->utc();
+        $sessionEndUtc = Carbon::parse($slot->slot_date->toDateString().' '.$slot->end_time, $slot->timezone ?: config('app.timezone'))->utc();
+
         $slot->booked_participants_count = $requestedGroupSize;
         $slot->is_booked = true;
         $slot->save();
 
         return [
-            $sessionAt,
+            $sessionAtUtc,
             $slot->timezone ?: 'UTC',
-            max($sessionAt->diffInMinutes(Carbon::parse($slot->slot_date->toDateString().' '.$slot->end_time, $slot->timezone ?: config('app.timezone'))), 1),
+            max($sessionAtUtc->diffInMinutes($sessionEndUtc), 1),
             $slot->id,
             null,
         ];
     }
 
-    private function reserveOfficeHourSession(User $student, Mentor $mentor, ServiceConfig $service, array $data): array
+    private function reserveOfficeHourSession(User $booker, Mentor $mentor, ServiceConfig $service, array $data): array
     {
         $session = OfficeHourSession::query()
             ->with('schedule')
@@ -234,10 +253,12 @@ class BookingService
             throw new BookingException('Please choose an upcoming office-hours session.');
         }
 
+        $sessionAtUtc = $sessionAt->copy()->utc();
+
         if (
             Booking::query()
                 ->where('office_hour_session_id', $session->id)
-                ->where('student_id', $student->id)
+                ->where('student_id', $booker->id)
                 ->whereIn('status', ['pending', 'confirmed'])
                 ->exists()
         ) {
@@ -251,19 +272,39 @@ class BookingService
         $session->current_occupancy = (int) $session->current_occupancy + 1;
         $session->is_full = $session->current_occupancy >= (int) $session->max_spots;
         if (!$session->first_booker_id) {
-            $session->first_booker_id = $student->id;
+            $session->first_booker_id = $booker->id;
             $session->first_booked_at = now();
         }
         $session->service_locked = $session->current_occupancy >= 2;
         $session->save();
 
         return [
-            $sessionAt,
+            $sessionAtUtc,
             $session->timezone ?: 'UTC',
             max((int) $service->duration_minutes, 1),
             null,
             $session->id,
         ];
+    }
+
+    private function assertBookerCanBookMentor(User $booker, Mentor $mentor): void
+    {
+        if ((int) ($mentor->user_id ?? 0) === (int) $booker->id) {
+            throw new BookingException('You cannot book a meeting with yourself.');
+        }
+    }
+
+    private function assertMentorOffersService(Mentor $mentor, ServiceConfig $service): void
+    {
+        $offersService = $mentor->services()
+            ->where('services_config.id', $service->id)
+            ->where('services_config.is_active', true)
+            ->wherePivot('is_active', true)
+            ->exists();
+
+        if (!$offersService) {
+            throw new BookingException('This mentor does not currently offer the selected service.');
+        }
     }
 
     private function requestedGroupSize(string $sessionType): int

@@ -18,7 +18,7 @@ class MentorSearchController extends Controller
         
         return view('discovery::student.explore', [
             'mentors' => $this->discovery->search($filters),
-            'mentorsData' => $this->discovery->browseData(),
+            'mentorsData' => $this->discovery->browseData('student'),
             'filters' => $filters,
         ]);
     }
@@ -35,6 +35,8 @@ class MentorSearchController extends Controller
                 'name' => $mentor->user?->name ?? 'Mentor',
                 'role' => $mentor->title ?: ucfirst((string) ($mentor->program_type ?? $mentor->mentor_type ?? 'mentor')),
                 'bio' => $mentor->bio ?: 'Mentor biography',
+                'canBook' => true,
+                'bookingUrl' => route('student.book-mentor', $mentor->id),
             ],
         ]);
     }

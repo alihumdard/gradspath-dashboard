@@ -5,6 +5,7 @@ namespace Modules\OfficeHours\app\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
 
 class OfficeHourSchedule extends Model
@@ -13,6 +14,7 @@ class OfficeHourSchedule extends Model
 
     protected $fillable = [
         'mentor_id',
+        'current_service_id',
         'day_of_week',
         'start_time',
         'timezone',
@@ -29,6 +31,11 @@ class OfficeHourSchedule extends Model
     public function mentor(): BelongsTo
     {
         return $this->belongsTo(Mentor::class);
+    }
+
+    public function currentService(): BelongsTo
+    {
+        return $this->belongsTo(ServiceConfig::class, 'current_service_id');
     }
 
     public function sessions(): HasMany

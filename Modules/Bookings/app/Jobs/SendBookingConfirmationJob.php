@@ -18,7 +18,7 @@ class SendBookingConfirmationJob implements ShouldQueue
     public function handle(): void
     {
         $booking = Booking::query()
-            ->with(['student', 'mentor.user', 'service', 'participantRecords'])
+            ->with(['booker', 'mentor.user', 'service', 'participantRecords'])
             ->find($this->bookingId);
 
         if (!$booking) {
@@ -39,18 +39,18 @@ class SendBookingConfirmationJob implements ShouldQueue
             ));
         }
 
-        $studentRecipients = collect($booking->participantRecords)
+        $bookingRecipients = collect($booking->participantRecords)
             ->map(function ($participant) {
                 return [
                     'email' => $this->normalizeEmail($participant->email),
-                    'name' => $participant->full_name ?: 'Student',
+                    'name' => $participant->full_name ?: 'Booker',
                 ];
             })
             ->filter(fn (array $recipient) => $recipient['email'] !== null)
             ->unique('email')
             ->values();
 
-        foreach ($studentRecipients as $recipient) {
+        foreach ($bookingRecipients as $recipient) {
             Mail::to($recipient['email'])->send(new StudentBookingConfirmationMail(
                 $this->bookingDetails($booking, 'student'),
                 $recipient['name'],
@@ -60,21 +60,30 @@ class SendBookingConfirmationJob implements ShouldQueue
 
     private function bookingDetails(Booking $booking, string $recipientType): array
     {
-        $studentName = $booking->student?->name ?? 'Student';
-        $studentEmail = $this->normalizeEmail($booking->student?->email);
+        $bookerName = $booking->booker?->name ?? 'Booker';
+        $bookerEmail = $this->normalizeEmail($booking->booker?->email);
+        $bookerLabel = $booking->booker?->hasRole('mentor') ? 'Mentor' : 'Student';
         $mentorName = $booking->mentor?->user?->name ?? 'Mentor';
+        $sessionAt = $booking->sessionAtInTimezone();
+
         return [
             'booking_id' => $booking->id,
             'service_name' => $booking->service?->service_name ?? 'Service',
             'session_type_label' => $this->sessionTypeLabel($booking->session_type),
-            'session_date' => $booking->session_at?->format('l, F j, Y') ?? 'TBD',
-            'session_time' => $booking->session_at?->format('g:i A') ?? 'TBD',
+            'session_date' => $sessionAt?->format('l, F j, Y') ?? 'TBD',
+            'session_time' => $sessionAt?->format('g:i A') ?? 'TBD',
             'session_timezone' => $booking->session_timezone,
             'meeting_link' => $booking->meeting_link,
-            'counterpart_name' => $recipientType === 'mentor' ? $studentName : $mentorName,
-            'counterpart_email' => $recipientType === 'mentor' ? $studentEmail : null,
-            'student_name' => $studentName,
-            'student_email' => $studentEmail,
+            'meeting_provider' => $booking->meeting_type === 'google_meet' ? 'Google Calendar / Google Meet' : 'Meeting Link',
+            'meeting_link_label' => $booking->meeting_type === 'google_meet' ? 'Open Google Calendar Event' : 'Open Meeting Link',
+            'calendar_sync_status' => $booking->calendar_sync_status,
+            'counterpart_name' => $recipientType === 'mentor' ? $bookerName : $mentorName,
+            'counterpart_email' => $recipientType === 'mentor' ? $bookerEmail : null,
+            'student_name' => $bookerName,
+            'student_email' => $bookerEmail,
+            'booker_name' => $bookerName,
+            'booker_email' => $bookerEmail,
+            'booker_label' => $bookerLabel,
             'mentor_name' => $mentorName,
         ];
     }

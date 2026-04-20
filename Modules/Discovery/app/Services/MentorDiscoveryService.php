@@ -27,14 +27,14 @@ class MentorDiscoveryService
             ->paginate((int) ($filters['per_page'] ?? 12));
     }
 
-    public function browseData(): Collection
+    public function browseData(string $portal = 'student', ?int $viewerMentorId = null): Collection
     {
         return Mentor::query()
             ->with(['user:id,name,email,avatar_url', 'university:id,name,display_name', 'rating', 'services'])
             ->where('status', 'active')
             ->whereHas('user')
             ->get()
-            ->map(function (Mentor $mentor): array {
+            ->map(function (Mentor $mentor) use ($viewerMentorId, $portal): array {
                 $name = $mentor->user?->name ?? 'Mentor';
                 $school = $mentor->university?->display_name ?: $mentor->university?->name ?: 'University';
                 $services = $mentor->services
@@ -63,13 +63,15 @@ class MentorDiscoveryService
                         ->filter(fn($tag) => is_string($tag) && $tag !== '')
                         ->take(3)
                         ->implode(' • '),
+                    'canBook' => $viewerMentorId === null || (int) $mentor->id !== (int) $viewerMentorId,
+                    'bookingUrl' => route("{$portal}.mentor.book", $mentor->id),
                 ];
             })
             ->sortByDesc(fn(array $mentor) => $mentor['rating'] ?? 0)
             ->values();
     }
 
-    public function featured(int $limit = 6)
+    public function featured(int $limit = 6, string $portal = 'student', ?int $viewerMentorId = null)
     {
         return Mentor::query()
             ->with(['user:id,name,avatar_url', 'university:id,name,display_name', 'rating', 'services'])
@@ -81,11 +83,11 @@ class MentorDiscoveryService
             ->get()
             ->sortByDesc(fn(Mentor $mentor) => $mentor->rating?->avg_stars ?? 0)
             ->values()
-            ->map(fn(Mentor $mentor): array => $this->mapMentorCard($mentor))
+            ->map(fn(Mentor $mentor): array => $this->mapMentorCard($mentor, $portal, $viewerMentorId))
             ->values();
     }
 
-    private function mapMentorCard(Mentor $mentor): array
+    private function mapMentorCard(Mentor $mentor, string $portal = 'student', ?int $viewerMentorId = null): array
     {
         $name = $mentor->user?->name ?? 'Mentor';
         $school = $mentor->university?->display_name ?: $mentor->university?->name ?: 'University';
@@ -93,6 +95,7 @@ class MentorDiscoveryService
             ->pluck('service_name')
             ->filter(fn($service) => is_string($service) && $service !== '')
             ->values();
+        $canBook = $portal !== 'mentor' || $viewerMentorId === null || (int) $mentor->id !== (int) $viewerMentorId;
 
         return [
             'id' => $mentor->id,
@@ -109,6 +112,8 @@ class MentorDiscoveryService
                 : ['Office Hours', 'Program Insights', 'Application Review'],
             'review' => $mentor->rating?->top_tag
                 ?: 'Students value this mentor for practical, focused guidance.',
+            'canBook' => $canBook,
+            'bookingUrl' => $canBook ? route("{$portal}.mentor.book", $mentor->id) : null,
         ];
     }
 

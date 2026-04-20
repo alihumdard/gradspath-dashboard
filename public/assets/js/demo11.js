@@ -39,6 +39,8 @@ const state = {
   selectedDate: null,
   selectedTime: null,
   selectedSlotId: null,
+  selectedOfficeHourSessionId: null,
+  selectedOfficeHoursDetails: null,
 };
 
 const serviceGrid = document.getElementById("serviceGrid");
@@ -67,6 +69,10 @@ const selectedDateLabel = document.getElementById("selectedDateLabel");
 const monthDisplay = document.getElementById("monthDisplay");
 const prevMonthBtn = document.getElementById("prevMonthBtn");
 const nextMonthBtn = document.getElementById("nextMonthBtn");
+const monthRow = document.getElementById("monthRow");
+const timesSection = document.getElementById("timesSection");
+const availabilityPanelTitle = document.getElementById("availabilityPanelTitle");
+const availabilityPanelSubtext = document.getElementById("availabilityPanelSubtext");
 
 const mentorInitials = document.getElementById("mentorInitials");
 const mentorDisplayName = document.getElementById("mentorDisplayName");
@@ -269,9 +275,20 @@ function currentAvailabilityParams() {
 
 async function loadMonths() {
   const service = getServiceById(state.selectedServiceId);
-  if (!service || service.isOfficeHours) {
+  if (!service) {
     state.availableMonths = [];
+    state.availableDays = [];
+    state.availableTimes = [];
+    state.selectedDate = null;
+    state.selectedTime = null;
+    state.selectedSlotId = null;
+    state.selectedOfficeHourSessionId = null;
+    state.selectedOfficeHoursDetails = null;
     renderMonthNavigation();
+    renderCalendar();
+    renderTimes();
+    updateSummary();
+    updateContinue();
     return;
   }
 
@@ -287,6 +304,8 @@ async function loadMonths() {
   state.selectedDate = null;
   state.selectedTime = null;
   state.selectedSlotId = null;
+  state.selectedOfficeHourSessionId = null;
+  state.selectedOfficeHoursDetails = null;
 
   renderMonthNavigation();
 
@@ -319,6 +338,8 @@ async function loadDays() {
   state.selectedDate = null;
   state.selectedTime = null;
   state.selectedSlotId = null;
+  state.selectedOfficeHourSessionId = null;
+  state.selectedOfficeHoursDetails = null;
 
   renderMonthNavigation();
   renderCalendar();
@@ -337,6 +358,15 @@ async function loadTimes(date) {
   state.selectedDate = date;
   state.selectedTime = null;
   state.selectedSlotId = null;
+  state.selectedOfficeHourSessionId = null;
+  state.selectedOfficeHoursDetails = null;
+
+  if (currentSessionType() === "office_hours") {
+    const details = state.availableTimes[0] || null;
+    state.selectedOfficeHoursDetails = details;
+    state.selectedOfficeHourSessionId = details?.sessionId || null;
+    state.selectedTime = details?.timeRangeLabel || null;
+  }
 
   renderCalendar();
   renderTimes();
@@ -515,6 +545,33 @@ function renderOfficeHoursPanel() {
     "This session stays focused on the designated weekly service once multiple students are booked.";
 }
 
+function renderAvailabilityPanelMode() {
+  const service = getServiceById(state.selectedServiceId);
+  const isOfficeHours = Boolean(service?.isOfficeHours);
+
+  if (availabilityPanelTitle) {
+    availabilityPanelTitle.textContent = "Select Date & Time";
+  }
+
+  if (availabilityPanelSubtext) {
+    availabilityPanelSubtext.textContent = isOfficeHours
+      ? "Choose the recurring office-hours date and review the session details below."
+      : "Choose an available day and then select a time.";
+  }
+
+  if (monthRow) {
+    monthRow.hidden = false;
+  }
+
+  if (calendarGrid) {
+    calendarGrid.hidden = false;
+  }
+
+  if (timesSection) {
+    timesSection.classList.toggle("times-section--office-hours", isOfficeHours);
+  }
+}
+
 function renderMonthNavigation() {
   const currentMonth = state.availableMonths[state.selectedMonthIndex];
   monthDisplay.textContent = currentMonth
@@ -527,23 +584,15 @@ function renderMonthNavigation() {
 }
 
 function renderCalendar() {
+  renderAvailabilityPanelMode();
   calendarGrid.innerHTML = "";
   const service = getServiceById(state.selectedServiceId);
 
-  if (service?.isOfficeHours) {
-    calendarGrid.innerHTML = `
-      <button class="time-slot disabled" disabled>
-        Office Hours uses the upcoming live session shown on the left.
-      </button>
-    `;
-    return;
-  }
-
   if (!state.availableDays.length) {
     calendarGrid.innerHTML = `
-      <button class="time-slot disabled" disabled>
-        No dates available for this month
-      </button>
+      <div class="calendar-empty-state" role="status" aria-live="polite">
+        ${service?.isOfficeHours ? "No upcoming office-hours dates available" : "No dates available for this month"}
+      </div>
     `;
     return;
   }
@@ -552,10 +601,18 @@ function renderCalendar() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = `date-card ${state.selectedDate === day.date ? "active" : ""}`;
-    btn.innerHTML = `
-      <span class="date-day">${day.weekday}</span>
-      <span class="date-num">${day.day}</span>
-    `;
+    btn.innerHTML = service?.isOfficeHours
+      ? `
+        <span class="date-day">${day.weekday}</span>
+        <span class="date-num">${day.day}</span>
+        <span class="date-meta-badge ${day.isFull ? "is-full" : ""}">
+          ${day.isFull ? "Full" : `${day.spotsFilled}/${day.maxSpots} filled`}
+        </span>
+      `
+      : `
+        <span class="date-day">${day.weekday}</span>
+        <span class="date-num">${day.day}</span>
+      `;
     btn.addEventListener("click", () => {
       loadTimes(day.date);
     });
@@ -568,15 +625,26 @@ function renderTimes() {
   const service = getServiceById(state.selectedServiceId);
 
   if (service?.isOfficeHours) {
-    selectedDateLabel.textContent = officeHoursData?.sessionDate
-      ? formatLongDate(officeHoursData.sessionDate)
-      : "Upcoming office-hours session";
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = `time-slot ${officeHoursData?.isBookable ? "active" : "disabled"}`;
-    btn.disabled = !officeHoursData?.isBookable;
-    btn.textContent = officeHoursData?.sessionTime || "Session not yet published";
-    timeGrid.appendChild(btn);
+    if (!state.selectedDate || !state.selectedOfficeHoursDetails) {
+      selectedDateLabel.textContent = "Select a date first";
+      timeGrid.innerHTML = `
+        <div class="office-hours-time-detail is-placeholder">
+          <div class="office-hours-time-detail-line">Select the recurring office-hours date to view this week's session details.</div>
+        </div>
+      `;
+      return;
+    }
+
+    const details = state.selectedOfficeHoursDetails;
+    selectedDateLabel.textContent = formatLongDate(state.selectedDate);
+    timeGrid.innerHTML = `
+      <div class="office-hours-time-detail ${details.isBookable ? "is-bookable" : "is-full"}" role="status" aria-live="polite">
+        <div class="office-hours-time-detail-line">${details.recurrenceLabel}</div>
+        <div class="office-hours-time-detail-line"><strong>Time:</strong> ${details.timeRangeLabel}</div>
+        <div class="office-hours-time-detail-line"><strong>Spots:</strong> ${details.spotsFilled} of ${details.maxSpots} filled</div>
+        <div class="office-hours-time-detail-meta">${details.availabilityText}</div>
+      </div>
+    `;
     return;
   }
 
@@ -627,15 +695,15 @@ function updateSummary() {
   summaryService.textContent = service.name;
   summaryDuration.textContent = service.duration;
   summaryMeetingSize.textContent = service.isOfficeHours
-    ? `${officeHoursData?.spotsFilled || 0}/${officeHoursData?.maxSpots || 3} filled`
+    ? `${state.selectedOfficeHoursDetails?.spotsFilled ?? officeHoursData?.spotsFilled ?? 0}/${state.selectedOfficeHoursDetails?.maxSpots ?? officeHoursData?.maxSpots ?? 3} filled`
     : `1 on ${state.meetingSize}`;
   summaryPrice.textContent = priceInfo?.total || priceInfo?.label || "Not available";
 
   if (service.isOfficeHours) {
-    summaryDate.textContent = officeHoursData?.sessionDate
-      ? formatLongDate(officeHoursData.sessionDate)
+    summaryDate.textContent = state.selectedDate
+      ? formatLongDate(state.selectedDate)
       : "Not scheduled";
-    summaryTime.textContent = officeHoursData?.sessionTime || "Not scheduled";
+    summaryTime.textContent = state.selectedOfficeHoursDetails?.timeRangeLabel || "Not selected";
     return;
   }
 
@@ -658,7 +726,7 @@ function updateContinue() {
   }
 
   if (service.isOfficeHours) {
-    continueBtn.disabled = !officeHoursData?.isBookable;
+    continueBtn.disabled = !(state.selectedOfficeHourSessionId && state.selectedOfficeHoursDetails?.isBookable);
     return;
   }
 
@@ -704,7 +772,7 @@ function currentBookingPayload() {
     session_type: currentSessionType(),
     mentor_availability_slot_id: service?.isOfficeHours ? "" : String(state.selectedSlotId || ""),
     office_hour_session_id: service?.isOfficeHours
-      ? String(officeHoursData?.sessionId || "")
+      ? String(state.selectedOfficeHourSessionId || "")
       : "",
     meeting_type: "zoom",
     guest_participants:
@@ -835,7 +903,7 @@ continueBtn?.addEventListener("click", () => {
   formSessionType.value = currentSessionType();
   formSlotId.value = service.isOfficeHours ? "" : String(state.selectedSlotId || "");
   formOfficeHourSessionId.value = service.isOfficeHours
-    ? String(officeHoursData?.sessionId || "")
+    ? String(state.selectedOfficeHourSessionId || "")
     : "";
 
   addGuestParticipantInputs();
@@ -903,6 +971,7 @@ renderServices();
 renderMeetingSizes();
 renderGroupFields();
 renderOfficeHoursPanel();
+renderAvailabilityPanelMode();
 renderCalendar();
 renderTimes();
 updateSummary();

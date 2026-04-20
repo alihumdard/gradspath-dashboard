@@ -19,6 +19,7 @@ class BookingPolicy
     {
         return (int) $booking->student_id === (int) $user->id
             || $booking->participants()->wherePivot('is_primary', true)->where('users.id', $user->id)->exists()
+            || (int) ($booking->mentor?->user_id ?? 0) === (int) $user->id
             || $user->hasRole('admin');
     }
 }

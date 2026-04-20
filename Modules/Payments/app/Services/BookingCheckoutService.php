@@ -19,12 +19,17 @@ class BookingCheckoutService
         private readonly StripeClient $stripe,
     ) {}
 
-    public function createCheckoutSession(User $student, array $data): BookingPayment
+    public function createCheckoutSession(User $booker, array $data): BookingPayment
     {
         $service = ServiceConfig::query()->findOrFail((int) $data['service_config_id']);
         $mentor = Mentor::query()->findOrFail((int) $data['mentor_id']);
         $sessionType = (string) ($data['session_type'] ?? '1on1');
+        $portalContext = (string) ($data['portal_context'] ?? 'student');
         $amount = $this->amountFor($service, $sessionType);
+
+        if ($portalContext === 'mentor' && $sessionType !== '1on1') {
+            throw new \RuntimeException('Mentor-to-mentor booking currently supports standard 1 on 1 sessions only.');
+        }
 
         if ((bool) $service->is_office_hours || $sessionType === 'office_hours') {
             throw new \RuntimeException('Office Hours must be booked using credits.');
@@ -34,7 +39,7 @@ class BookingCheckoutService
             throw new \RuntimeException('This booking does not require Stripe checkout.');
         }
 
-        $this->assertSelectionIsBookable($mentor, $service, $sessionType, $data);
+        $this->assertSelectionIsBookable($mentor, $service, $sessionType, $data, $booker);
 
         $requestPayload = [
             'mentor_id' => (int) $mentor->id,
@@ -44,10 +49,11 @@ class BookingCheckoutService
             'office_hour_session_id' => $data['office_hour_session_id'] ?? null,
             'meeting_type' => (string) ($data['meeting_type'] ?? 'zoom'),
             'guest_participants' => array_values($data['guest_participants'] ?? []),
+            'portal_context' => $portalContext,
         ];
 
         $payment = BookingPayment::query()->create([
-            'user_id' => $student->id,
+            'user_id' => $booker->id,
             'mentor_id' => $mentor->id,
             'service_config_id' => $service->id,
             'mentor_availability_slot_id' => $requestPayload['mentor_availability_slot_id'],
@@ -63,14 +69,15 @@ class BookingCheckoutService
 
         $session = $this->stripe->createCheckoutSession([
             'mode' => 'payment',
-            'success_url' => $this->successUrl(),
-            'cancel_url' => $this->cancelUrl($mentor),
+            'success_url' => $this->successUrl($portalContext),
+            'cancel_url' => $this->cancelUrl($mentor, $portalContext),
             'client_reference_id' => (string) $payment->id,
-            'customer_email' => $student->email,
+            'customer_email' => $booker->email,
             'metadata' => [
                 'payment_type' => 'booking',
                 'booking_payment_id' => (string) $payment->id,
-                'user_id' => (string) $student->id,
+                'user_id' => (string) $booker->id,
+                'portal_context' => $portalContext,
             ],
             'line_items' => [[
                 'quantity' => 1,
@@ -97,7 +104,7 @@ class BookingCheckoutService
         return $payment->fresh();
     }
 
-    public function completeSuccessfulCheckout(User $student, string $checkoutSessionId): Booking
+    public function completeSuccessfulCheckout(User $booker, string $checkoutSessionId): Booking
     {
         $payment = BookingPayment::query()
             ->where('stripe_checkout_session_id', $checkoutSessionId)
@@ -110,8 +117,8 @@ class BookingCheckoutService
             $payment = BookingPayment::query()->findOrFail($paymentId);
         }
 
-        if ((int) $payment->user_id !== (int) $student->id) {
-            throw new \RuntimeException('This checkout session does not belong to the current student.');
+        if ((int) $payment->user_id !== (int) $booker->id) {
+            throw new \RuntimeException('This checkout session does not belong to the current user.');
         }
 
         return $this->finalizePaidBooking($payment, $session);
@@ -145,7 +152,7 @@ class BookingCheckoutService
                 throw new \RuntimeException('Stripe payment is not marked as paid.');
             }
 
-            $student = User::query()->findOrFail($payment->user_id);
+            $booker = User::query()->findOrFail($payment->user_id);
 
             $payment->forceFill([
                 'stripe_checkout_session_id' => (string) data_get($session, 'id', $payment->stripe_checkout_session_id),
@@ -158,7 +165,7 @@ class BookingCheckoutService
 
             try {
                 $booking = $this->bookings->createBooking(
-                    $student,
+                    $booker,
                     $payment->request_payload,
                     ['charge_credits' => false]
                 );
@@ -181,8 +188,22 @@ class BookingCheckoutService
         });
     }
 
-    private function assertSelectionIsBookable(Mentor $mentor, ServiceConfig $service, string $sessionType, array $data): void
+    private function assertSelectionIsBookable(Mentor $mentor, ServiceConfig $service, string $sessionType, array $data, User $booker): void
     {
+        if ((int) ($mentor->user_id ?? 0) === (int) $booker->id) {
+            throw new \RuntimeException('You cannot book a meeting with yourself.');
+        }
+
+        $offersService = $mentor->services()
+            ->where('services_config.id', $service->id)
+            ->where('services_config.is_active', true)
+            ->wherePivot('is_active', true)
+            ->exists();
+
+        if (!$offersService) {
+            throw new \RuntimeException('This mentor does not currently offer the selected service.');
+        }
+
         if ($sessionType === 'office_hours') {
             $session = OfficeHourSession::query()->findOrFail((int) ($data['office_hour_session_id'] ?? 0));
 
@@ -199,12 +220,16 @@ class BookingCheckoutService
             throw new \RuntimeException('This time slot does not belong to the selected mentor.');
         }
 
-        if ((int) ($slot->service_config_id ?? 0) !== (int) $service->id) {
+        if ($slot->service_config_id !== null && (int) $slot->service_config_id !== (int) $service->id) {
             throw new \RuntimeException('This time slot does not match the selected service.');
         }
 
         if ($slot->session_type !== $sessionType) {
             throw new \RuntimeException('This time slot does not match the selected meeting size.');
+        }
+
+        if ($slot->service_config_id === null && $sessionType !== '1on1') {
+            throw new \RuntimeException('This time slot is only available for 1 on 1 bookings.');
         }
 
         if (!$slot->is_active || $slot->is_blocked || $slot->is_booked) {
@@ -226,16 +251,16 @@ class BookingCheckoutService
         };
     }
 
-    private function successUrl(): string
+    private function successUrl(string $portalContext): string
     {
         return (string) (config('services.stripe.booking_success_url')
-            ?: route('student.bookings.checkout.success').'?session_id={CHECKOUT_SESSION_ID}');
+            ?: route("{$portalContext}.bookings.checkout.success").'?session_id={CHECKOUT_SESSION_ID}');
     }
 
-    private function cancelUrl(Mentor $mentor): string
+    private function cancelUrl(Mentor $mentor, string $portalContext): string
     {
         return (string) (config('services.stripe.booking_cancel_url')
-            ?: route('student.mentor.book', ['id' => $mentor->id, 'checkout' => 'cancelled']));
+            ?: route("{$portalContext}.mentor.book", ['id' => $mentor->id, 'checkout' => 'cancelled']));
     }
 
     private function labelFor(string $sessionType): string

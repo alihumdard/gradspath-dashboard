@@ -14,7 +14,7 @@
                         <td style="padding:32px 32px 24px; background:linear-gradient(135deg, #111827 0%, #334155 100%); color:#ffffff;">
                             <div style="font-size:12px; letter-spacing:1.6px; text-transform:uppercase; opacity:0.82;">Grads Paths</div>
                             <h1 style="margin:14px 0 10px; font-size:28px; line-height:1.2;">Your booking is confirmed</h1>
-                            <p style="margin:0; font-size:16px; line-height:1.6;">Hi {{ $recipientName }}, your session with {{ $booking['mentor_name'] }} is scheduled and ready.</p>
+                            <p style="margin:0; font-size:16px; line-height:1.6;">Hi {{ $recipientName }}, your session with {{ $booking['mentor_name'] }} is scheduled and ready. You should also receive a Google Calendar invite when calendar sync is available.</p>
                         </td>
                     </tr>
 
@@ -48,8 +48,12 @@
                                                 </tr>
                                             @endif
                                             <tr>
-                                                <td style="padding:10px 0; font-size:14px; color:#6b7280;">Mentor</td>
-                                                <td style="padding:10px 0; font-size:15px; font-weight:700; text-align:right;">{{ $booking['mentor_name'] }}</td>
+                                                <td style="padding:10px 0; font-size:14px; color:#6b7280; border-bottom:1px solid #e5e7eb;">Mentor</td>
+                                                <td style="padding:10px 0; font-size:15px; font-weight:700; text-align:right; border-bottom:1px solid #e5e7eb;">{{ $booking['mentor_name'] }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:10px 0; font-size:14px; color:#6b7280;">Meeting Provider</td>
+                                                <td style="padding:10px 0; font-size:15px; font-weight:700; text-align:right;">{{ $booking['meeting_provider'] ?? 'Meeting Link' }}</td>
                                             </tr>
                                         </table>
                                     </td>
@@ -61,14 +65,14 @@
                     @if (!empty($booking['meeting_link']))
                         <tr>
                             <td style="padding:16px 32px 8px;">
-                                <a href="{{ $booking['meeting_link'] }}" style="display:inline-block; padding:14px 22px; border-radius:999px; background:#111827; color:#ffffff; font-size:15px; font-weight:700; text-decoration:none;">Join Meeting</a>
+                                <a href="{{ $booking['meeting_link'] }}" style="display:inline-block; padding:14px 22px; border-radius:999px; background:#111827; color:#ffffff; font-size:15px; font-weight:700; text-decoration:none;">{{ $booking['meeting_link_label'] ?? 'Open Meeting Link' }}</a>
                             </td>
                         </tr>
                     @endif
 
                     <tr>
                         <td style="padding:8px 32px 32px;">
-                            <p style="margin:0; font-size:14px; line-height:1.7; color:#4b5563;">You can return to the student portal anytime to review your booking details. We recommend keeping communication inside the platform rather than sharing personal email addresses unless support or policy requires it.</p>
+                            <p style="margin:0; font-size:14px; line-height:1.7; color:#4b5563;">You can return to your bookings page anytime to review your booking details, manage messages, and review the 24-hour cancellation window. We recommend keeping communication inside the platform rather than sharing personal email addresses unless support or policy requires it.</p>
                             <p style="margin:22px 0 0; font-size:14px; line-height:1.7; color:#4b5563;">Thanks,<br><strong>Grads Paths</strong></p>
                         </td>
                     </tr>

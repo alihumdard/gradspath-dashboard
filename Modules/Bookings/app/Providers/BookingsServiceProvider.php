@@ -6,8 +6,11 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Modules\Bookings\app\Console\MarkCompletedBookingsCommand;
+use Modules\Bookings\app\Console\SyncMentorAvailabilityCommand;
+use Modules\Bookings\app\Events\BookingCancelled;
 use Modules\Bookings\app\Events\BookingCreated;
 use Modules\Bookings\app\Listeners\GenerateMeetingLinkListener;
+use Modules\Bookings\app\Listeners\HandleBookingCancelledListener;
 
 class BookingsServiceProvider extends ServiceProvider
 {
@@ -21,14 +24,17 @@ class BookingsServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
 
         Event::listen(BookingCreated::class, GenerateMeetingLinkListener::class);
+        Event::listen(BookingCancelled::class, HandleBookingCancelledListener::class);
 
         $this->commands([
             MarkCompletedBookingsCommand::class,
+            SyncMentorAvailabilityCommand::class,
         ]);
 
         $this->app->booted(function (): void {
             $schedule = $this->app->make(Schedule::class);
             $schedule->command('bookings:mark-completed')->everyFifteenMinutes();
+            $schedule->command('bookings:sync-availability')->dailyAt('00:15');
         });
     }
 

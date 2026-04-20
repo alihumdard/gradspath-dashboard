@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Modules\Bookings\app\Events\ChatMessageSent;
 use Modules\Bookings\app\Http\Requests\StoreChatMessageRequest;
+use Modules\Bookings\app\Jobs\SendBookingChatNotificationJob;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Models\Chat;
 use Modules\Settings\app\Models\Mentor;
@@ -72,6 +73,8 @@ class BookingChatController extends Controller
                 'error' => $exception->getMessage(),
             ]);
         }
+
+        SendBookingChatNotificationJob::dispatch($chat->id);
 
         return response()->json([
             'message' => $message,

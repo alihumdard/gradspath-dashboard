@@ -53,7 +53,11 @@ class BookingController extends Controller
         return view('bookings::student.create', [
             'mentorId' => $mentorId,
             'selectedMentor' => $selectedMentor,
-            'bookingPageData' => $this->bookingPage->buildBookingPageData($selectedMentor, Auth::user()),
+            'bookingPageData' => $this->bookingPage->buildBookingPageData($selectedMentor, Auth::user(), [
+                'portal' => 'student',
+                'allow_office_hours' => true,
+                'max_meeting_size' => 5,
+            ]),
             'mentors' => Mentor::query()
                 ->with('user:id,name')
                 ->where('status', 'active')
@@ -157,6 +161,7 @@ class BookingController extends Controller
             'counterpartLabel' => 'Mentor',
             'viewerRoleLabel' => 'You',
             'viewerId' => (int) Auth::id(),
+            'viewerName' => Auth::user()?->name,
             'chat' => $this->chatConfiguration(),
             'upcomingBookings' => $bookings->getCollection()
                 ->sortBy('session_at')
@@ -169,7 +174,7 @@ class BookingController extends Controller
 
     private function transformBooking(Booking $booking): array
     {
-        $sessionAt = $booking->session_at;
+        $sessionAt = $booking->sessionAtInTimezone();
         $mentorName = $booking->mentor?->user?->name ?? 'Mentor';
         $mentorMeta = collect([
             $booking->mentor?->title,
@@ -192,14 +197,17 @@ class BookingController extends Controller
             'sessionTimeLabel' => $sessionAt?->format('g:i A'),
             'sessionMonthLabel' => $sessionAt?->format('F Y'),
             'zoomLink' => $booking->meeting_link,
+            'meetingProvider' => $booking->meeting_type === 'google_meet' ? 'Google Meet' : 'Meeting Link',
+            'meetingLinkLabel' => $booking->meeting_type === 'google_meet' ? 'Join Google Meet' : 'Open Meeting Link',
             'status' => $booking->status,
             'isUpcoming' => $sessionAt ? $sessionAt->isFuture() : false,
             'isTodayOrFuture' => $sessionAt ? $sessionAt->greaterThanOrEqualTo(now()->startOfDay()) : false,
             'canCancel' => in_array((string) $booking->status, ['pending', 'confirmed'], true)
-                && (bool) $sessionAt?->isFuture(),
+                && $booking->isSelfCancellationWindowOpen(),
             'cancelUrl' => Route::has('student.bookings.cancel')
                 ? route('student.bookings.cancel', $booking->id)
                 : null,
+            'cancelPolicyCopy' => 'Self-service cancellation is available until 24 hours before the meeting. After that, please contact support.',
             'chatThreadUrl' => route('student.bookings.chat.index', $booking->id),
             'chatSendUrl' => route('student.bookings.chat.store', $booking->id),
             'chatChannel' => 'booking.'.$booking->id,

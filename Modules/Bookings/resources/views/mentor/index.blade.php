@@ -29,6 +29,11 @@
                   id="cancelMeetingBtn"
                   type="button"
                   >Cancel Meeting</button>
+                  <form id="cancelBookingForm" method="POST" class="hidden">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="reason" id="cancelBookingReason" value="Cancelled from booking page">
+                  </form>
               </div>
             </div>
             <section class="service-section">
@@ -171,7 +176,7 @@
               </i>
             </div>
             <div class="info-content">
-              <span class="label">Zoom Link</span>
+              <span class="label">Meeting Link</span>
               <a id="zoomLink" href="https://zoom.us/j/9876543210" target="_blank" rel="noopener noreferrer">Join Meeting</a>
             </div>
           </div>
@@ -238,7 +243,7 @@
           <div class="chat-header">
             <div>
               <h3>Chat Before Session</h3>
-              <p>Simple message thread between you and your mentor.</p>
+              <p>Simple message thread for this booking.</p>
             </div>
             <span class="chat-status" id="chatStatus">Connecting...</span>
           </div>
@@ -248,7 +253,7 @@
             <input
             type="text"
             id="chatInput"
-            placeholder="Type a message for your mentor..."
+            placeholder="Type a message..."
             autocomplete="off"
             />
             <button type="submit">Send</button>
@@ -306,4 +311,3 @@
         <script src="{{ asset('assets/js/demo9.js') }}">
         </script>
 @endsection
-

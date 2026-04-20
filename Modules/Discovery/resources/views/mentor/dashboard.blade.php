@@ -31,8 +31,10 @@
           <div class="mentor-grid">
             @forelse ($featuredMentors as $mentor)
               @php
-                $mentorActionUrl = route('mentor.mentors.show', $mentor['id']);
-                $mentorActionLabel = 'View Mentor';
+                $mentorActionUrl = $mentor['canBook'] ?? false
+                    ? ($mentor['bookingUrl'] ?? route('mentor.mentor.book', $mentor['id']))
+                    : route('mentor.mentors.show', $mentor['id']);
+                $mentorActionLabel = $mentor['canBook'] ?? false ? 'Book Now' : 'View Mentor';
               @endphp
               <article class="mentor-card">
                 <div class="mentor-card-header">

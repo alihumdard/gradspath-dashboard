@@ -1,4 +1,4 @@
-@extends('layouts.portal-student')
+@extends($portalLayout ?? 'layouts.portal-student')
 @section('title', 'Book with Mentor - Grads Paths')
 @section('portal_css_asset', 'assets/css/demo11.css')
 @section('portal_active_nav', 'bookings')
@@ -27,7 +27,7 @@
               </div>
             </div>
             <div class="booking-topbar-right">
-              <a href="{{ route('student.dashboard') }}" class="back-dashboard-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">Back to Dashboard</a>
+              <a href="{{ $bookingPageData['dashboardUrl'] ?? route('student.dashboard') }}" class="back-dashboard-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">Back to Dashboard</a>
             </div>
           </header>
           <main class="booking-layout">
@@ -84,7 +84,7 @@
                       <h3>Office Hours for This Mentor</h3>
                       <p class="office-hours-subtext">You are viewing the recurring office hours session for the mentor you selected in the previous step.</p>
                     </div>
-                    <a href="{{ route('student.office-hours') }}" class="office-hours-directory-link">See all mentors&rsquo; office hours &rarr;</a>
+                    <a href="{{ $bookingPageData['officeHoursDirectoryUrl'] ?? route('student.office-hours') }}" class="office-hours-directory-link">See all mentors&rsquo; office hours &rarr;</a>
                   </div>
                   <div class="office-hours-card">
                     <div class="office-hours-card-top">
@@ -133,11 +133,11 @@
                 <div class="calendar-header">
                   <div>
                     <p class="panel-kicker">Availability</p>
-                    <h2>Select Date & Time</h2>
-                    <p class="calendar-subtext">Choose an available day and then select a time.</p>
+                    <h2 id="availabilityPanelTitle">Select Date & Time</h2>
+                    <p class="calendar-subtext" id="availabilityPanelSubtext">Choose an available day and then select a time.</p>
                   </div>
                 </div>
-                <div class="month-row">
+                <div class="month-row" id="monthRow">
                   <button class="month-nav" id="prevMonthBtn" type="button" aria-label="Previous month">
                     <svg viewBox="0 0 24 24">
                       <path d="M15.5 19 8.5 12l7-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -152,7 +152,7 @@
                 </div>
                 <div class="calendar-grid" id="calendarGrid">
                 </div>
-                <div class="times-section">
+                <div class="times-section" id="timesSection">
                   <div class="times-heading-row">
                     <h3>Available Times</h3>
                     <p id="selectedDateLabel">Select a date first</p>
@@ -198,7 +198,7 @@
               </div>
             </section>
           </main>
-          <form id="bookingForm" action="{{ route('student.bookings.store') }}" method="POST" hidden>
+          <form id="bookingForm" action="{{ $bookingPageData['bookingSubmitUrl'] ?? route('student.bookings.store') }}" method="POST" hidden>
             @csrf
             <input type="hidden" name="mentor_id" value="{{ $bookingPageData['mentor']['id'] ?? $mentorId }}">
             <input type="hidden" name="service_config_id" id="formServiceConfigId">
