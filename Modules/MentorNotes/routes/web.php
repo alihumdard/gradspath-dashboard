@@ -9,5 +9,5 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
-    Route::view('/mentor/notes', 'mentornotes::mentor.notes')->name('mentor.notes');
+    Route::view('/mentor/notes', 'mentor-notes::mentor.notes')->name('mentor.notes');
 });

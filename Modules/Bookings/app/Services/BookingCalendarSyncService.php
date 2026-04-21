@@ -9,6 +9,12 @@ use Modules\Bookings\app\Models\Booking;
 
 class BookingCalendarSyncService
 {
+    private const SUPPORTED_CONFERENCE_TYPES = [
+        'hangoutsMeet',
+        'eventHangout',
+        'eventNamedHangout',
+    ];
+
     public function __construct(private readonly GoogleCalendarService $googleCalendar) {}
 
     public function syncCreatedBooking(Booking $booking): Booking
@@ -35,14 +41,16 @@ class BookingCalendarSyncService
         }
 
         try {
-            $event = $this->googleCalendar->createEvent($this->eventPayload($booking));
+            $event = $this->createEventForBooking($booking);
 
             $meetingLink = data_get($event, 'hangoutLink')
                 ?: data_get($event, 'conferenceData.entryPoints.0.uri')
                 ?: data_get($event, 'htmlLink');
+            $hasMeetLink = data_get($event, 'hangoutLink')
+                || data_get($event, 'conferenceData.entryPoints.0.uri');
 
             $booking->forceFill([
-                'meeting_type' => 'google_meet',
+                'meeting_type' => $hasMeetLink ? 'google_meet' : $booking->meeting_type,
                 'meeting_link' => $meetingLink,
                 'external_calendar_event_id' => data_get($event, 'id'),
                 'calendar_provider' => 'google_calendar',
@@ -63,6 +71,45 @@ class BookingCalendarSyncService
         }
 
         return $booking->fresh(['booker', 'mentor.user', 'participantRecords', 'service']);
+    }
+
+    private function createEventForBooking(Booking $booking): array
+    {
+        $payload = $this->eventPayload($booking);
+
+        try {
+            return $this->googleCalendar->createEvent($payload);
+        } catch (\Throwable $exception) {
+            $currentException = $exception;
+
+            if ($this->shouldRetryWithoutAttendees($currentException)) {
+                Log::info('Retrying booking calendar sync without attendees for service-account compatibility.', [
+                    'booking_id' => $booking->id,
+                    'error' => $currentException->getMessage(),
+                ]);
+
+                unset($payload['attendees']);
+
+                try {
+                    return $this->googleCalendar->createEvent($payload);
+                } catch (\Throwable $retryException) {
+                    $currentException = $retryException;
+                }
+            }
+
+            if (!$this->shouldRetryWithoutConferenceData($currentException)) {
+                throw $currentException;
+            }
+
+            Log::info('Retrying booking calendar sync without conference data because Meet creation is not supported for this calendar.', [
+                'booking_id' => $booking->id,
+                'error' => $currentException->getMessage(),
+            ]);
+
+            unset($payload['conferenceData'], $payload['attendees']);
+
+            return $this->googleCalendar->createEvent($payload);
+        }
     }
 
     public function cancelBookingEvent(Booking $booking): Booking
@@ -136,15 +183,54 @@ class BookingCalendarSyncService
             'start' => $this->eventDateTimePayload($start, $booking->session_timezone),
             'end' => $this->eventDateTimePayload($end, $booking->session_timezone),
             'attendees' => $this->attendees($booking),
-            'conferenceData' => [
-                'createRequest' => [
-                    'requestId' => 'booking-'.$booking->id.'-'.($booking->updated_at?->timestamp ?? time()),
-                    'conferenceSolutionKey' => [
-                        'type' => 'hangoutsMeet',
-                    ],
+            'conferenceData' => $this->conferenceData($booking),
+        ];
+    }
+
+    private function conferenceData(Booking $booking): ?array
+    {
+        $conferenceType = $this->preferredConferenceType();
+
+        if ($conferenceType === null) {
+            return null;
+        }
+
+        return [
+            'createRequest' => [
+                'requestId' => 'booking-'.$booking->id.'-'.($booking->updated_at?->timestamp ?? time()),
+                'conferenceSolutionKey' => [
+                    'type' => $conferenceType,
                 ],
             ],
         ];
+    }
+
+    private function preferredConferenceType(): ?string
+    {
+        $allowedTypes = $this->googleCalendar->allowedConferenceSolutionTypes();
+
+        foreach (self::SUPPORTED_CONFERENCE_TYPES as $type) {
+            if (in_array($type, $allowedTypes, true)) {
+                return $type;
+            }
+        }
+
+        return null;
+    }
+
+    private function shouldRetryWithoutAttendees(\Throwable $exception): bool
+    {
+        $message = $exception->getMessage();
+
+        return str_contains($message, 'forbiddenForServiceAccounts')
+            || str_contains($message, 'Service accounts cannot invite attendees without Domain-Wide Delegation of Authority');
+    }
+
+    private function shouldRetryWithoutConferenceData(\Throwable $exception): bool
+    {
+        $message = $exception->getMessage();
+
+        return str_contains($message, 'Invalid conference type value');
     }
 
     private function attendees(Booking $booking): array

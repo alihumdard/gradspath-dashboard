@@ -6,6 +6,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Modules\Bookings\app\Console\MarkCompletedBookingsCommand;
+use Modules\Bookings\app\Console\ResyncBookingMeetingsCommand;
 use Modules\Bookings\app\Console\SyncMentorAvailabilityCommand;
 use Modules\Bookings\app\Events\BookingCancelled;
 use Modules\Bookings\app\Events\BookingCreated;
@@ -28,6 +29,7 @@ class BookingsServiceProvider extends ServiceProvider
 
         $this->commands([
             MarkCompletedBookingsCommand::class,
+            ResyncBookingMeetingsCommand::class,
             SyncMentorAvailabilityCommand::class,
         ]);
 

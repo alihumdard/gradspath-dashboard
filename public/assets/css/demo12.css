@@ -193,15 +193,18 @@ select {
 }
 
 .nav-link {
-  height: 42px;
+  display: block;
+  min-height: 42px;
   border-radius: 12px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--muted);
   text-align: left;
-  padding: 0 12px;
+  padding: 10px 12px;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
+  line-height: 1.25;
 }
 
 .nav-link.active,
@@ -209,6 +212,7 @@ select {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text);
   border-color: var(--border);
+  text-decoration: none;
 }
 
 .sidebar-bottom {
@@ -431,6 +435,33 @@ select {
   color: var(--text);
   padding: 0 12px;
   outline: none;
+}
+
+.toolbar select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 34px;
+  color-scheme: dark;
+}
+
+.toolbar select option,
+.toolbar select optgroup {
+  background: #121622;
+  color: var(--text);
+}
+
+.toolbar select:focus {
+  border-color: rgba(98, 169, 255, 0.45);
+  box-shadow: 0 0 0 3px rgba(98, 169, 255, 0.14);
 }
 
 .toolbar input {

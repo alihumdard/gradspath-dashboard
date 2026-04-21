@@ -675,6 +675,18 @@ h1 {
   color: #3b82f6;
 }
 
+.zoom-box .info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zoom-box small {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .mentor-profile-box strong {
   white-space: normal;
   display: -webkit-box;

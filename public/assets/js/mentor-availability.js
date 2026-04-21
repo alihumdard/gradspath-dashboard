@@ -762,7 +762,8 @@
 
     const locked = isLockedDate(selectedDate);
     const hasSlots = day.blocks.length > 0;
-    const hasEditableSlots = day.blocks.some((block) => !block.isBooked);
+    const hasEditableFutureSlots = day.blocks.some((block) => !block.isBooked && !isPastTimeBlock(dayKey, block));
+    const canAddAnotherSlot = !locked && hasServiceOptions() && hasRemainingTimeWindow(dayKey);
     const formattedDate = selectedDate.toLocaleDateString(undefined, {
       weekday: "long",
       month: "long",
@@ -780,8 +781,8 @@
         : `Each slot must be assigned to one mentor service and only applies to ${formattedDate}.`
       : "Add an active mentor service first before opening booking availability for this day.";
 
-    addSlotButton.disabled = locked || !hasServiceOptions();
-    clearDayButton.disabled = locked || !hasEditableSlots;
+    addSlotButton.disabled = !canAddAnotherSlot;
+    clearDayButton.disabled = locked || !hasEditableFutureSlots;
 
     const error = getDayError(dayKey);
     dayErrorEl.textContent = error;
@@ -793,6 +794,8 @@
         ? "You do not have any active non-office-hours mentor services yet. Add one first to create availability slots."
         : locked
         ? `${formattedDate} is in the past and locked. Select a current or future date to edit availability.`
+        : !hasRemainingTimeWindow(dayKey)
+        ? `No future time remains on ${formattedDate}. Select another day to add availability.`
         : `This date is currently unavailable. Add a slot and choose its service to make ${formattedDate} bookable.`;
       return;
     }
@@ -863,14 +866,16 @@
 
   function renderSlotRow(block, locked) {
     const isBooked = Boolean(block.isBooked);
-    const isDisabled = locked || isBooked;
+    const isPast = isPastTimeBlock(state.selectedDayKey, block);
+    const isDisabled = locked || isBooked || isPast;
+    const badgeLabel = isBooked ? "Booked" : isPast ? "Past" : "";
 
     return `
       <div class="availability-day-slot-row ${isBooked ? "is-booked" : ""}">
         <div class="availability-day-slot-row-strike" aria-hidden="true"></div>
         <div class="availability-day-slot-row-top">
           <div class="availability-day-slot-summary">${escapeHtml(formatTimeRange(block.startTime, block.endTime))}</div>
-          ${isBooked ? `<span class="availability-day-slot-badge">Booked</span>` : ""}
+          ${badgeLabel ? `<span class="availability-day-slot-badge">${escapeHtml(badgeLabel)}</span>` : ""}
         </div>
         <div class="availability-day-slot-controls">
           <label>
@@ -892,7 +897,7 @@
             </select>
           </label>
           <button type="button" class="availability-danger-text-btn" data-remove-slot data-block-id="${block.id}" ${isDisabled ? "disabled" : ""}>
-            ${isBooked ? "Locked" : "Remove"}
+            ${isBooked || isPast ? "Locked" : "Remove"}
           </button>
         </div>
       </div>
@@ -1157,6 +1162,12 @@
           return;
         }
 
+        if (!block.isBooked && isPastTimeBlock(dayKey, block)) {
+          dayErrors[dayKey] = `${dayLabel} time blocks must start in the future.`;
+          hasErrors = true;
+          return;
+        }
+
         if (index > 0 && block.startTime < blocks[index - 1].endTime) {
           dayErrors[dayKey] = `${dayLabel} blocks cannot overlap.`;
           hasErrors = true;
@@ -1416,8 +1427,12 @@
     const day = state.days[dayKey];
 
     const last = sortBlocks(day.blocks).at(-1);
-    const start = last ? last.endTime : "09:00";
+    const start = last ? last.endTime : defaultStartTimeForDay(dayKey);
     const end = addHour(start);
+
+    if (!start || start >= "24:00" || start === "23:30" || end <= start) {
+      return;
+    }
 
     day.blocks.push({
       id: createBlockId(),
@@ -1449,7 +1464,7 @@
       return;
     }
 
-    day.blocks = day.blocks.filter((block) => block.isBooked);
+    day.blocks = day.blocks.filter((block) => block.isBooked || isPastTimeBlock(dayKey, block));
     markDirty();
   }
 
@@ -1511,6 +1526,88 @@
     }
 
     return startOfDay(date) < startOfDay(referenceToday);
+  }
+
+  function isPastTimeBlock(dayKey, block) {
+    if (!dayKey || !block || !block.startTime) {
+      return false;
+    }
+
+    const nowParts = currentTimePartsInTimezone(state.timezone);
+    if (!nowParts) {
+      return false;
+    }
+
+    if (dayKey < nowParts.dateKey) {
+      return true;
+    }
+
+    if (dayKey > nowParts.dateKey) {
+      return false;
+    }
+
+    return block.startTime <= nowParts.time;
+  }
+
+  function hasRemainingTimeWindow(dayKey) {
+    const nextStart = defaultStartTimeForDay(dayKey);
+    return Boolean(nextStart && nextStart < "23:30");
+  }
+
+  function defaultStartTimeForDay(dayKey) {
+    const nowParts = currentTimePartsInTimezone(state.timezone);
+    if (!nowParts || dayKey !== nowParts.dateKey) {
+      return "09:00";
+    }
+
+    const nextSlot = roundUpToNextHalfHour(nowParts.time);
+    return nextSlot < "23:30" ? nextSlot : "";
+  }
+
+  function currentTimePartsInTimezone(timezone) {
+    try {
+      const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: timezone || "UTC",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+
+      const parts = formatter.formatToParts(new Date());
+      const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+
+      return {
+        dateKey: `${values.year}-${values.month}-${values.day}`,
+        time: `${values.hour}:${values.minute}`,
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function roundUpToNextHalfHour(value) {
+    const [hourRaw, minuteRaw] = String(value || "00:00").split(":").map(Number);
+    let hour = Number.isFinite(hourRaw) ? hourRaw : 0;
+    let minute = Number.isFinite(minuteRaw) ? minuteRaw : 0;
+
+    if (minute === 0 || minute === 30) {
+      minute += 30;
+    } else if (minute < 30) {
+      minute = 30;
+    } else {
+      minute = 0;
+      hour += 1;
+    }
+
+    if (minute >= 60) {
+      minute = 0;
+      hour += 1;
+    }
+
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
   }
 
   function normalizeBlock(slot) {

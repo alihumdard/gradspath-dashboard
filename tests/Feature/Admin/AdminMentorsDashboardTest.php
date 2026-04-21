@@ -88,7 +88,7 @@ it('renders mentor db data with dynamic program and status filters', function ()
         'total_sessions' => 1,
     ]);
 
-    $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+    $response = $this->actingAs($admin)->get(route('admin.mentors'));
 
     $response->assertOk();
     $response->assertSee($mentorUser->name);

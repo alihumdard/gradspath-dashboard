@@ -88,7 +88,7 @@ it('renders services table from db data', function () {
         'status' => 'completed',
     ]);
 
-    $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+    $response = $this->actingAs($admin)->get(route('admin.services'));
 
     $response->assertOk();
     $response->assertSee('Interview Prep');

@@ -33,6 +33,21 @@ class GoogleCalendarService
         return $response->json();
     }
 
+    public function allowedConferenceSolutionTypes(): array
+    {
+        $response = Http::withToken($this->accessToken())
+            ->get($this->calendarEndpoint());
+
+        if ($response->failed()) {
+            throw new RuntimeException('Google Calendar get calendar metadata failed: '.$response->body());
+        }
+
+        return collect($response->json('conferenceProperties.allowedConferenceSolutionTypes', []))
+            ->filter(fn ($type) => is_string($type) && $type !== '')
+            ->values()
+            ->all();
+    }
+
     public function cancelEvent(string $eventId): void
     {
         $response = Http::withToken($this->accessToken())
@@ -48,7 +63,7 @@ class GoogleCalendarService
         $issuedAt = time();
         $claims = [
             'iss' => $this->serviceAccountEmail(),
-            'scope' => 'https://www.googleapis.com/auth/calendar.events',
+            'scope' => 'https://www.googleapis.com/auth/calendar',
             'aud' => $this->tokenUri(),
             'exp' => $issuedAt + 3600,
             'iat' => $issuedAt,
@@ -121,6 +136,15 @@ class GoogleCalendarService
             $this->apiBase(),
             rawurlencode((string) $this->calendarId()),
             rawurlencode($eventId),
+        );
+    }
+
+    private function calendarEndpoint(): string
+    {
+        return sprintf(
+            '%s/calendars/%s?conferenceDataVersion=1',
+            $this->apiBase(),
+            rawurlencode((string) $this->calendarId()),
         );
     }
 

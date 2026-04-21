@@ -87,6 +87,14 @@ class AvailabilityController extends Controller
 
             $officeHours = (array) $request->input('office_hours', []);
             $officeHoursEnabled = filter_var($officeHours['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $scheduleTimezone = (string) ($request->input('timezone') ?: config('app.timezone', 'UTC'));
+
+            try {
+                $scheduleNow = now($scheduleTimezone);
+            } catch (\Throwable) {
+                $scheduleTimezone = (string) config('app.timezone', 'UTC');
+                $scheduleNow = now($scheduleTimezone);
+            }
 
             foreach ((array) $request->input('date_slots', []) as $dateIndex => $dateSlot) {
                 $dateValue = (string) ($dateSlot['date'] ?? '');
@@ -181,6 +189,21 @@ class AvailabilityController extends Controller
                         $validator->errors()->add("date_slots.{$dateIndex}.slots.{$index}.service_config_id", "{$dateLabel} requires a service for every block.");
                     } elseif (!in_array($slot['service_config_id'], $mentorServiceIds, true)) {
                         $validator->errors()->add("date_slots.{$dateIndex}.slots.{$index}.service_config_id", "{$dateLabel} must use one of your active mentor services.");
+                    }
+
+                    if ($dateValue !== '') {
+                        try {
+                            $slotStartsAt = Carbon::parse($dateValue.' '.$slot['start_time'], $scheduleTimezone);
+
+                            if ($slotStartsAt->lte($scheduleNow)) {
+                                $validator->errors()->add(
+                                    "date_slots.{$dateIndex}.slots.{$index}.start_time",
+                                    "{$dateLabel} time blocks must start in the future."
+                                );
+                            }
+                        } catch (\Throwable) {
+                            // Let the existing date/time validation handle malformed values.
+                        }
                     }
 
                     $previousEnd = $slot['end_time'];

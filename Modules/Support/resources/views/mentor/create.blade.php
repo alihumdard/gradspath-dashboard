@@ -15,7 +15,10 @@
 @endsection
 
 @section('portal_content')
-  @include('support::partials.form-content')
+  @include('support::partials.form-content', [
+      'portalLabel' => 'Mentor Support',
+      'submitRoute' => route('mentor.support.store'),
+  ])
 @endsection
 
 @section('page_js')

@@ -5,10 +5,43 @@ const signOutBtn = document.getElementById("signOutBtn");
 const reloadBtn = document.getElementById("reloadBtn");
 const showPassword = document.getElementById("showPassword");
 const passwordInput = document.getElementById("password");
-const navLinks = document.querySelectorAll(".nav-link");
-const panels = document.querySelectorAll(".tab-panel");
+
+function readJsonScript(id) {
+    const element = document.getElementById(id);
+    if (!element) return null;
+
+    try {
+        return JSON.parse(element.textContent || "null");
+    } catch (error) {
+        return null;
+    }
+}
+
+const adminRevenueData = readJsonScript("adminRevenueData");
+const adminOverviewData = readJsonScript("adminOverviewData");
+const overviewBookingsChartData = Array.isArray(
+    adminOverviewData?.charts?.bookings_over_time,
+)
+    ? adminOverviewData.charts.bookings_over_time
+    : [];
+const overviewRevenueChartData = Array.isArray(
+    adminOverviewData?.charts?.revenue_over_time,
+)
+    ? adminOverviewData.charts.revenue_over_time
+    : [];
+const revenueProgramChartData = Array.isArray(
+    adminRevenueData?.charts?.program_revenue,
+)
+    ? adminRevenueData.charts.program_revenue
+    : [];
+const revenueTopMentorsChartData = Array.isArray(
+    adminRevenueData?.charts?.top_mentors,
+)
+    ? adminRevenueData.charts.top_mentors
+    : [];
 
 let chartsInitialized = false;
+const dashboardCharts = [];
 
 if (loginForm && loginScreen && dashboard && passwordInput) {
     loginForm.addEventListener("submit", function (e) {
@@ -50,18 +83,6 @@ if (reloadBtn) {
         window.location.reload();
     });
 }
-
-navLinks.forEach((link) => {
-    link.addEventListener("click", function () {
-        const tab = this.dataset.tab;
-
-        navLinks.forEach((item) => item.classList.remove("active"));
-        panels.forEach((panel) => panel.classList.remove("active"));
-
-        this.classList.add("active");
-        document.getElementById(tab).classList.add("active");
-    });
-});
 
 /* USERS FILTERING */
 const usersSearch = document.getElementById("usersSearch");
@@ -149,6 +170,16 @@ function getGridColor() {
     return "rgba(255,255,255,0.08)";
 }
 
+function createChartIfCanvas(id, config) {
+    const canvas = document.getElementById(id);
+
+    if (!canvas) {
+        return;
+    }
+
+    dashboardCharts.push(new Chart(canvas, config));
+}
+
 function initializeCharts() {
     const sharedOptions = {
         responsive: true,
@@ -173,14 +204,16 @@ function initializeCharts() {
         },
     };
 
-    new Chart(document.getElementById("bookingsChart"), {
+    createChartIfCanvas("bookingsChart", {
         type: "line",
         data: {
-            labels: ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
+            labels: overviewBookingsChartData.map((item) => item.label ?? ""),
             datasets: [
                 {
                     label: "Bookings",
-                    data: [38, 46, 51, 64, 78, 96],
+                    data: overviewBookingsChartData.map(
+                        (item) => Number(item?.value ?? 0) || 0,
+                    ),
                     borderWidth: 2,
                     tension: 0.35,
                 },
@@ -189,22 +222,40 @@ function initializeCharts() {
         options: sharedOptions,
     });
 
-    new Chart(document.getElementById("revenueChart"), {
+    createChartIfCanvas("revenueChart", {
         type: "bar",
         data: {
-            labels: ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
+            labels: overviewRevenueChartData.map((item) => item.label ?? ""),
             datasets: [
                 {
                     label: "Revenue",
-                    data: [4200, 5100, 5900, 7600, 9800, 12840],
+                    data: overviewRevenueChartData.map(
+                        (item) => Number(item?.value ?? 0) || 0,
+                    ),
                     borderWidth: 1,
                 },
             ],
         },
-        options: sharedOptions,
+        options: {
+            ...sharedOptions,
+            scales: {
+                x: {
+                    ticks: { color: getChartTextColor() },
+                    grid: { color: getGridColor() },
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: getChartTextColor(),
+                        callback: (value) => `$${value}`,
+                    },
+                    grid: { color: getGridColor() },
+                },
+            },
+        },
     });
 
-    new Chart(document.getElementById("servicesChart"), {
+    createChartIfCanvas("servicesChart", {
         type: "bar",
         data: {
             labels: [
@@ -227,14 +278,16 @@ function initializeCharts() {
         options: sharedOptions,
     });
 
-    new Chart(document.getElementById("programRevenueChart"), {
+    createChartIfCanvas("programRevenueChart", {
         type: "doughnut",
         data: {
-            labels: ["MBA", "Law", "CMHC", "MFT", "MSW", "Clinical Psy"],
+            labels: revenueProgramChartData.map((item) => item.label ?? "Unknown"),
             datasets: [
                 {
                     label: "Revenue",
-                    data: [6920, 3740, 2180, 900, 1450, 1100],
+                    data: revenueProgramChartData.map(
+                        (item) => Number(item?.value ?? 0) || 0,
+                    ),
                     borderWidth: 1,
                 },
             ],
@@ -253,27 +306,43 @@ function initializeCharts() {
         },
     });
 
-    new Chart(document.getElementById("topMentorsChart"), {
+    createChartIfCanvas("topMentorsChart", {
         type: "bar",
         data: {
-            labels: [
-                "Sarah Kim",
-                "Daniel Brooks",
-                "Rachel Adams",
-                "Leah Morris",
-                "Anthony Cruz",
-            ],
+            labels: revenueTopMentorsChartData.map(
+                (item) => item.label ?? "Unknown",
+            ),
             datasets: [
                 {
                     label: "Revenue",
-                    data: [1870, 1190, 790, 720, 610],
+                    data: revenueTopMentorsChartData.map(
+                        (item) => Number(item?.value ?? 0) || 0,
+                    ),
                     borderWidth: 1,
+                    minBarLength: 4,
                 },
             ],
         },
         options: {
             ...sharedOptions,
             indexAxis: "y",
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: getChartTextColor(),
+                        callback: (value) => `$${value}`,
+                    },
+                    grid: { color: getGridColor() },
+                },
+                y: {
+                    ticks: {
+                        color: getChartTextColor(),
+                        autoSkip: false,
+                    },
+                    grid: { color: getGridColor() },
+                },
+            },
         },
     });
 }
@@ -283,18 +352,6 @@ function initializeCharts() {
 /* ======================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Initialize demo12 functionality
-    navLinks.forEach((link) => {
-        link.addEventListener("click", function () {
-            const tab = this.dataset.tab;
-
-            navLinks.forEach((item) => item.classList.remove("active"));
-            panels.forEach((panel) => panel.classList.remove("active"));
-            this.classList.add("active");
-            document.getElementById(tab).classList.add("active");
-        });
-    });
-
     if (usersSearch && usersProgramFilter && usersInstitutionFilter) {
         usersSearch.addEventListener("input", filterUsers);
         usersProgramFilter.addEventListener("change", filterUsers);

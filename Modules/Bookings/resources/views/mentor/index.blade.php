@@ -176,8 +176,9 @@
               </i>
             </div>
             <div class="info-content">
-              <span class="label">Meeting Link</span>
+              <span class="label" id="meetingProviderLabel">Meeting Link</span>
               <a id="zoomLink" href="https://zoom.us/j/9876543210" target="_blank" rel="noopener noreferrer">Join Meeting</a>
+              <small id="meetingLinkStatusText">Meeting link will be shared soon.</small>
             </div>
           </div>
         </div>

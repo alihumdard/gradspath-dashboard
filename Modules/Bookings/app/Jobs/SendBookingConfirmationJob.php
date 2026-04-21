@@ -74,8 +74,8 @@ class SendBookingConfirmationJob implements ShouldQueue
             'session_time' => $sessionAt?->format('g:i A') ?? 'TBD',
             'session_timezone' => $booking->session_timezone,
             'meeting_link' => $booking->meeting_link,
-            'meeting_provider' => $booking->meeting_type === 'google_meet' ? 'Google Calendar / Google Meet' : 'Meeting Link',
-            'meeting_link_label' => $booking->meeting_type === 'google_meet' ? 'Open Google Calendar Event' : 'Open Meeting Link',
+            'meeting_provider' => $this->meetingProviderLabel($booking),
+            'meeting_link_label' => $this->meetingLinkLabel($booking),
             'calendar_sync_status' => $booking->calendar_sync_status,
             'counterpart_name' => $recipientType === 'mentor' ? $bookerName : $mentorName,
             'counterpart_email' => $recipientType === 'mentor' ? $bookerEmail : null,
@@ -102,5 +102,37 @@ class SendBookingConfirmationJob implements ShouldQueue
         $normalized = strtolower(trim((string) $email));
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    private function meetingProviderLabel(Booking $booking): string
+    {
+        if ($this->isGoogleMeetLink($booking)) {
+            return 'Google Calendar / Google Meet';
+        }
+
+        if ($booking->calendar_provider === 'google_calendar') {
+            return 'Google Calendar Event';
+        }
+
+        return 'Meeting Link';
+    }
+
+    private function meetingLinkLabel(Booking $booking): string
+    {
+        if ($this->isGoogleMeetLink($booking)) {
+            return 'Join Google Meet';
+        }
+
+        if ($booking->calendar_provider === 'google_calendar') {
+            return 'Open Google Calendar Event';
+        }
+
+        return 'Open Meeting Link';
+    }
+
+    private function isGoogleMeetLink(Booking $booking): bool
+    {
+        return $booking->meeting_type === 'google_meet'
+            || str_contains((string) $booking->meeting_link, 'meet.google.com');
     }
 }

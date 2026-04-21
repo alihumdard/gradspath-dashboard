@@ -87,7 +87,7 @@ it('renders only student users with dynamic program and institution filters', fu
         'status' => 'completed',
     ]);
 
-    $response = $this->actingAs($admin)->get(route('admin.dashboard'));
+    $response = $this->actingAs($admin)->get(route('admin.users'));
 
     $response->assertOk();
     $response->assertSee($student->name);
@@ -120,7 +120,7 @@ it('uses dash fallback for missing student program and institution data', functi
     expect($row['last_active'])->toBe('-');
 
     $this->actingAs($admin)
-        ->get(route('admin.dashboard'))
+        ->get(route('admin.users'))
         ->assertOk()
         ->assertSee($student->email);
 });

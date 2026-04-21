@@ -44,6 +44,7 @@ class MentorAvailabilityManagerService
             ->where('is_active', true)
             ->whereDate('slot_date', '>=', now()->toDateString())
             ->get()
+            ->filter(fn (MentorAvailabilitySlot $slot) => !$this->isExpiredUnbookedSlot($slot))
             ->sortBy(fn (MentorAvailabilitySlot $slot) => $slot->slot_date->toDateString().' '.$slot->start_time)
             ->groupBy(fn (MentorAvailabilitySlot $slot) => $slot->slot_date->toDateString());
 
@@ -106,6 +107,7 @@ class MentorAvailabilityManagerService
             ->where('is_active', true)
             ->whereDate('slot_date', '>=', now()->toDateString())
             ->get()
+            ->filter(fn (MentorAvailabilitySlot $slot) => !$this->isExpiredUnbookedSlot($slot))
             ->sortBy(fn (MentorAvailabilitySlot $slot) => $slot->slot_date->toDateString().' '.$slot->start_time)
             ->groupBy(fn (MentorAvailabilitySlot $slot) => $slot->slot_date->toDateString());
 
@@ -636,6 +638,23 @@ class MentorAvailabilityManagerService
         $startsAt = Carbon::parse($slot->slot_date->toDateString().' '.$slot->start_time, $timezone);
 
         return $startsAt->format('D, M j').' at '.$startsAt->format('g:i A').' '.$startsAt->format('T');
+    }
+
+    private function isExpiredUnbookedSlot(MentorAvailabilitySlot $slot): bool
+    {
+        if ((int) ($slot->active_bookings_count ?? 0) > 0) {
+            return false;
+        }
+
+        $timezone = (string) ($slot->timezone ?: config('app.timezone', 'UTC'));
+
+        try {
+            $startsAt = Carbon::parse($slot->slot_date->toDateString().' '.$slot->start_time, $timezone);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return $startsAt->lte(now($timezone));
     }
 
     private function officeHoursNote(string $serviceName, int $occupancy, bool $serviceLocked): string

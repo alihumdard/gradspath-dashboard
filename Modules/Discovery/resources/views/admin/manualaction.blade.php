@@ -255,7 +255,7 @@
           </script>
 
           <section
-            class="tab-panel"
+            class="{{ $manualSectionClass ?? 'tab-panel' }}"
             id="manual"
             data-initial-station="{{ old('manual_station', session('manual_station', 'mentor-station')) }}"
           >

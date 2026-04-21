@@ -34,7 +34,7 @@ const selectedBooking =
 
 const meetingData = {
   mentorName: selectedBooking.mentorDisplay || selectedBooking.mentorName || fallbackBooking.mentorDisplay,
-  zoomLink: selectedBooking.zoomLink || null,
+  meetingLink: selectedBooking.meetingLink || selectedBooking.zoomLink || null,
   selectedService: selectedBooking.serviceName || fallbackBooking.serviceName,
   selectedServiceSlug: selectedBooking.serviceSlug || fallbackBooking.serviceSlug,
   supportUrl: bookingDetailsData.supportUrl || "/student/support",
@@ -52,8 +52,11 @@ const bookedDates = upcomingBookings.reduce((carry, booking) => {
     service: booking.serviceName || "Service",
     serviceSlug: booking.serviceSlug || null,
     mentorName: booking.mentorDisplay || booking.mentorName || "Mentor",
-    zoomLink: booking.zoomLink || null,
+    meetingLink: booking.meetingLink || booking.zoomLink || null,
+    meetingProvider: booking.meetingProvider || "Meeting Link",
     meetingLinkLabel: booking.meetingLinkLabel || "Open Meeting Link",
+    meetingLinkStatus: booking.meetingLinkStatus || "not_synced",
+    meetingLinkStatusMessage: booking.meetingLinkStatusMessage || "Meeting link will be shared soon.",
     meetingSize: booking.meetingSize || "1 on 1",
     duration: booking.duration || null,
     canCancel: Boolean(booking.canCancel),
@@ -71,6 +74,8 @@ const mentorNameEl = document.getElementById("mentorName");
 const meetingDateEl = document.getElementById("meetingDate");
 const meetingTimeEl = document.getElementById("meetingTime");
 const zoomLinkEl = document.getElementById("zoomLink");
+const meetingProviderLabelEl = document.getElementById("meetingProviderLabel");
+const meetingLinkStatusTextEl = document.getElementById("meetingLinkStatusText");
 const monthLabelEl = document.getElementById("monthLabel");
 const monthTitleButton = document.getElementById("monthTitleButton");
 const monthDropdown = document.getElementById("monthDropdown");
@@ -215,14 +220,26 @@ function getBookingByDateKey(key) {
 function updateZoomLink(booking) {
   if (!zoomLinkEl) return;
 
-  if (booking?.zoomLink) {
-    zoomLinkEl.href = booking.zoomLink;
+  if (meetingProviderLabelEl) {
+    meetingProviderLabelEl.textContent = booking?.meetingProvider || "Meeting Link";
+  }
+
+  if (booking?.meetingLink) {
+    zoomLinkEl.href = booking.meetingLink;
     zoomLinkEl.textContent = booking?.meetingLinkLabel || "Open Meeting Link";
     zoomLinkEl.removeAttribute("aria-disabled");
+    if (meetingLinkStatusTextEl) {
+      meetingLinkStatusTextEl.textContent = booking?.meetingLinkStatusMessage || "Meeting link is ready.";
+    }
   } else {
     zoomLinkEl.href = "#";
-    zoomLinkEl.textContent = "Meeting link will be shared soon";
+    zoomLinkEl.textContent = booking?.meetingLinkStatus === "failed"
+      ? "Meeting link pending"
+      : "Meeting link pending";
     zoomLinkEl.setAttribute("aria-disabled", "true");
+    if (meetingLinkStatusTextEl) {
+      meetingLinkStatusTextEl.textContent = booking?.meetingLinkStatusMessage || "Meeting link will be shared soon.";
+    }
   }
 }
 
