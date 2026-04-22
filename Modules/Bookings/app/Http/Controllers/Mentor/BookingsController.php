@@ -126,9 +126,11 @@ class BookingsController extends Controller
             'sessionDateLabel' => $sessionAt?->format('l, F j, Y'),
             'sessionTimeLabel' => $sessionAt?->format('g:i A'),
             'sessionMonthLabel' => $sessionAt?->format('F Y'),
-            'zoomLink' => $booking->meeting_link,
-            'meetingProvider' => $booking->meeting_type === 'google_meet' ? 'Google Meet' : 'Meeting Link',
-            'meetingLinkLabel' => $booking->meeting_type === 'google_meet' ? 'Join Google Meet' : 'Open Meeting Link',
+            'meetingLink' => $booking->meeting_link,
+            'meetingProvider' => $this->meetingProviderLabel($booking),
+            'meetingLinkLabel' => $this->meetingLinkLabel($booking),
+            'meetingLinkStatus' => (string) ($booking->calendar_sync_status ?: 'not_synced'),
+            'meetingLinkStatusMessage' => $this->meetingLinkStatusMessage($booking),
             'status' => $booking->status,
             'bookingGroup' => $perspective,
             'relationshipLabel' => $perspective === 'booked' ? 'Booked by you' : 'Hosted by you',
@@ -223,5 +225,57 @@ class BookingsController extends Controller
     private function bookingPerspective(Booking $booking, Mentor $mentor): string
     {
         return (int) $booking->mentor_id === (int) $mentor->id ? 'hosted' : 'booked';
+    }
+
+    private function meetingLinkStatusMessage(Booking $booking): string
+    {
+        if ($booking->meeting_link) {
+            return $this->isGoogleMeetLink($booking)
+                ? 'Google Meet link is ready.'
+                : ($booking->calendar_provider === 'google_calendar'
+                    ? 'Google Calendar event link is ready.'
+                    : 'Meeting link is ready.');
+        }
+
+        return match ((string) $booking->calendar_sync_status) {
+            'synced' => $booking->calendar_provider === 'google_calendar'
+                ? 'Google Calendar event is ready.'
+                : 'Meeting link is ready.',
+            'failed' => 'Meeting link could not be generated automatically yet.',
+            'skipped' => 'Meeting link has not been generated for this booking yet.',
+            default => 'Meeting link will be shared soon.',
+        };
+    }
+
+    private function meetingProviderLabel(Booking $booking): string
+    {
+        if ($this->isGoogleMeetLink($booking)) {
+            return 'Google Meet';
+        }
+
+        if ($booking->calendar_provider === 'google_calendar') {
+            return 'Google Calendar';
+        }
+
+        return 'Meeting Link';
+    }
+
+    private function meetingLinkLabel(Booking $booking): string
+    {
+        if ($this->isGoogleMeetLink($booking)) {
+            return 'Join Google Meet';
+        }
+
+        if ($booking->calendar_provider === 'google_calendar') {
+            return 'Open Calendar Event';
+        }
+
+        return 'Open Meeting Link';
+    }
+
+    private function isGoogleMeetLink(Booking $booking): bool
+    {
+        return $booking->meeting_type === 'google_meet'
+            || str_contains((string) $booking->meeting_link, 'meet.google.com');
     }
 }

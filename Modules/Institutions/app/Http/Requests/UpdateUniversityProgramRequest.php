@@ -39,7 +39,9 @@ class UpdateUniversityProgramRequest extends FormRequest
             'duration_months' => ['nullable', 'integer', 'min:1'],
             'description' => ['nullable', 'string', 'max:255'],
             'is_active' => ['nullable', 'boolean'],
+            'notes' => ['required', 'string', 'max:1000'],
             'manual_station' => ['nullable', 'string'],
+            'manual_section' => ['nullable', 'string'],
         ];
     }
 }

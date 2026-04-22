@@ -7,10 +7,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Auth;
+use Modules\Auth\app\Services\AdminAuditService;
 use Modules\Institutions\app\Models\University;
 
 class InstitutionsController extends Controller
 {
+    public function __construct(private readonly AdminAuditService $audit) {}
+
     public function index(Request $request): View
     {
         $universities = University::query()->with('programs')->paginate((int) $request->integer('per_page', 20));
@@ -26,22 +30,39 @@ class InstitutionsController extends Controller
 
         $university = University::create($data);
 
-        return back()
-            ->with('manual_station', 'institution-station')
-            ->with('success', "Institution {$university->name} created successfully.");
+        $this->audit->log(
+            Auth::user(),
+            'manual_institution_create',
+            'universities',
+            $university->id,
+            null,
+            $university->fresh()->toArray(),
+            (string) $request->input('notes')
+        );
+
+        return $this->redirectToManualActions('institutions', "Institution {$university->name} created successfully.");
     }
 
     public function update(Request $request, int $id): RedirectResponse
     {
         $university = University::query()->findOrFail($id);
+        $before = $university->toArray();
 
         $data = $this->validateUniversityData($request, true);
 
         $university->update($data);
 
-        return back()
-            ->with('manual_station', 'institution-station')
-            ->with('success', 'Institution updated successfully.');
+        $this->audit->log(
+            Auth::user(),
+            'manual_institution_update',
+            'universities',
+            $university->id,
+            $before,
+            $university->fresh()->toArray(),
+            (string) $request->input('notes')
+        );
+
+        return $this->redirectToManualActions('institutions', 'Institution updated successfully.');
     }
 
     public function destroy(int $id): RedirectResponse
@@ -65,7 +86,9 @@ class InstitutionsController extends Controller
             'state_province' => [$isUpdate ? 'sometimes' : 'nullable', 'string', 'max:255'],
             'logo_url' => [$isUpdate ? 'sometimes' : 'nullable', 'url'],
             'is_active' => [$isUpdate ? 'sometimes' : 'nullable', 'boolean'],
+            'notes' => ['required', 'string', 'max:1000'],
             'manual_station' => ['nullable', 'string'],
+            'manual_section' => ['nullable', 'string'],
         ];
 
         $data = $request->validate($rules);
@@ -95,9 +118,20 @@ class InstitutionsController extends Controller
             )->validate();
         }
 
-        unset($data['manual_station']);
+        unset($data['manual_station'], $data['manual_section'], $data['notes']);
 
         return $data;
+    }
+
+    private function redirectToManualActions(string $section, string $message): RedirectResponse
+    {
+        return redirect()
+            ->route('admin.manual-actions')
+            ->with('manual_section', $section)
+            ->with('manual_status', [
+                'type' => 'success',
+                'message' => $message,
+            ]);
     }
 
     private function normalizeLineList(?string $value): ?array

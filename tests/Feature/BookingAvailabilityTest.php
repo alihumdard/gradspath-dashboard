@@ -43,6 +43,11 @@ function fakeGoogleCalendarSync(string $eventId = 'google-event-123', string $ha
             'expires_in' => 3600,
             'token_type' => 'Bearer',
         ], 200),
+        'https://www.googleapis.com/calendar/v3/calendars/*?conferenceDataVersion=1' => Http::response([
+            'conferenceProperties' => [
+                'allowedConferenceSolutionTypes' => ['hangoutsMeet'],
+            ],
+        ], 200),
         'https://www.googleapis.com/calendar/v3/calendars/*/events?conferenceDataVersion=1&sendUpdates=all' => Http::response([
             'id' => $eventId,
             'hangoutLink' => $hangoutLink,
@@ -504,6 +509,11 @@ it('keeps the booking when google calendar sync fails and still queues confirmat
         'https://oauth2.googleapis.com/token' => Http::response([
             'access_token' => 'google-access-token',
         ], 200),
+        'https://www.googleapis.com/calendar/v3/calendars/*?conferenceDataVersion=1' => Http::response([
+            'conferenceProperties' => [
+                'allowedConferenceSolutionTypes' => ['hangoutsMeet'],
+            ],
+        ], 200),
         'https://www.googleapis.com/calendar/v3/calendars/*/events?conferenceDataVersion=1&sendUpdates=all' => Http::response([
             'error' => ['message' => 'calendar create failed'],
         ], 500),
@@ -532,6 +542,75 @@ it('keeps the booking when google calendar sync fails and still queues confirmat
     expect($booking->calendar_sync_status)->toBe('failed');
 
     Queue::assertPushed(SendBookingConfirmationJob::class, fn (SendBookingConfirmationJob $job) => $job->bookingId === $booking->id);
+});
+
+it('uses the calendar supported conference type dynamically for google events', function () {
+    Queue::fake();
+
+    config([
+        'services.google_calendar.enabled' => true,
+        'services.google_calendar.calendar_id' => 'calendar@example.com',
+        'services.google_calendar.service_account_email' => 'service-account@example.iam.gserviceaccount.com',
+        'services.google_calendar.private_key' => "-----BEGIN PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEApQxB9frx8aCSHksF\nX0ougzjVKmUkl0Ez0lGtCaUeMhHPzPUBEnr6MzYxbouYTKHjSnHXHENxrnySVKN4\nTUkYGQIDAQABAkBCYyjRAWx6LYU4rCJwDs2guKZ9lAtgz7hBe9rnS0RXDM+KGoIh\njO3eaBny4sNhNeKfTeiW1TxdWcmcA1mBTKhRAiEA1wnSgHmNHUrLP5LfNoguQV5W\nj5VSPaxsGGaT1nFEgT0CIQDEfLA8mSHr1La6eX6okCnUAG/YuTgpbT8mNepdauEo\nDQIhAILsEwJvfvAPopFRPZ946BiadD81HX45JRLyGR5dleTNAiBWBZDStugW62Wk\ndhRxj8wAOMC+zTg9Ssre27Pjeitg8QIgQ9tk9PrZB257H09IsYmfQW6DodFQEFtf\nldnpc0Ywzkc=\n-----END PRIVATE KEY-----",
+    ]);
+
+    Http::fake(function (\Illuminate\Http\Client\Request $request) {
+        if ($request->url() === 'https://oauth2.googleapis.com/token') {
+            return Http::response([
+                'access_token' => 'google-access-token',
+                'expires_in' => 3600,
+                'token_type' => 'Bearer',
+            ], 200);
+        }
+
+        if (str_contains($request->url(), '/calendars/calendar%40example.com?conferenceDataVersion=1')) {
+            return Http::response([
+                'conferenceProperties' => [
+                    'allowedConferenceSolutionTypes' => ['eventHangout'],
+                ],
+            ], 200);
+        }
+
+        if (str_contains($request->url(), '/events?conferenceDataVersion=1&sendUpdates=all')) {
+            expect(data_get($request->data(), 'conferenceData.createRequest.conferenceSolutionKey.type'))
+                ->toBe('eventHangout');
+
+            return Http::response([
+                'id' => 'google-event-legacy-hangout',
+                'hangoutLink' => 'https://hangouts.google.com/test-room',
+            ], 200);
+        }
+
+        if (str_contains($request->url(), '/events/') && str_contains($request->url(), 'sendUpdates=all')) {
+            return Http::response([], 204);
+        }
+
+        return Http::response([], 404);
+    });
+
+    $student = makeUser('booking-student-dynamic-google');
+    $student->assignRole('student');
+    fundStudent($student);
+
+    $mentor = makeMentor();
+    $service = makeService();
+    attachMentorService($mentor, $service);
+    $slotId = createAvailabilitySlot($mentor, $service, '1on1');
+
+    $this->actingAs($student)
+        ->post(route('student.bookings.store'), [
+            'mentor_id' => $mentor->id,
+            'service_config_id' => $service->id,
+            'session_type' => '1on1',
+            'mentor_availability_slot_id' => $slotId,
+        ])
+        ->assertRedirect();
+
+    $booking = Booking::query()->latest('id')->firstOrFail();
+
+    expect($booking->calendar_sync_status)->toBe('synced')
+        ->and($booking->meeting_link)->toBe('https://hangouts.google.com/test-room')
+        ->and($booking->external_calendar_event_id)->toBe('google-event-legacy-hangout');
 });
 
 it('allows a mentor to cancel more than 24 hours ahead and sends cancellation notifications', function () {

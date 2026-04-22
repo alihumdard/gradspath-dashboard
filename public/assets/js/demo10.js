@@ -20,13 +20,6 @@ const calendlyLink = document.getElementById("calendlyLink");
 const bio = document.getElementById("bio");
 const description = document.getElementById("description");
 
-const avatarInitials = document.getElementById("avatarInitials");
-const cardName = document.getElementById("cardName");
-const cardSubtitle = document.getElementById("cardSubtitle");
-const officeHoursDisplay = document.getElementById("officeHoursDisplay");
-const officeHoursText = document.getElementById("officeHoursText");
-const cardDescription = document.getElementById("cardDescription");
-
 const nameError = document.getElementById("nameError");
 const eduEmailError = document.getElementById("eduEmailError");
 const calendlyError = document.getElementById("calendlyError");
@@ -61,15 +54,6 @@ if (overlay && shell) {
   overlay.addEventListener("click", () => shell.classList.remove("sidebar-active"));
 }
 
-function getInitials(name) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-
-  if (parts.length === 0) return "";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-}
-
 function showError(element, message) {
   if (element) {
     element.textContent = message;
@@ -79,34 +63,6 @@ function showError(element, message) {
 function clearError(element) {
   if (element) {
     element.textContent = "";
-  }
-}
-
-function updatePreview() {
-  if (!cardName || !cardSubtitle || !cardDescription) {
-    return;
-  }
-
-  const nameValue = fullName?.value.trim() || "";
-  const titleValue = program?.value.trim() || "";
-  const schoolValue = school?.value.trim() || "";
-  const officeHoursValue = officeHours?.value.trim() || "";
-  const bioValue = bio?.value.trim() || "";
-
-  cardName.textContent = nameValue;
-
-  if (avatarInitials) {
-    avatarInitials.textContent = getInitials(nameValue);
-  }
-
-  const subtitleParts = [titleValue, schoolValue].filter(Boolean);
-  cardSubtitle.textContent = subtitleParts.join(" • ");
-
-  cardDescription.textContent = bioValue;
-
-  if (officeHoursDisplay && officeHoursText) {
-    officeHoursText.textContent = officeHoursValue;
-    officeHoursDisplay.style.display = officeHoursValue ? "block" : "none";
   }
 }
 
@@ -183,28 +139,11 @@ if (mentorType) {
 if (fullName) {
   fullName.addEventListener("input", () => {
     validateName();
-    updatePreview();
   });
 }
 
 if (eduEmail) {
   eduEmail.addEventListener("input", validateEduEmail);
-}
-
-if (program) {
-  program.addEventListener("input", updatePreview);
-}
-
-if (school) {
-  school.addEventListener("input", updatePreview);
-}
-
-if (officeHours) {
-  officeHours.addEventListener("input", updatePreview);
-}
-
-if (bio) {
-  bio.addEventListener("input", updatePreview);
 }
 
 if (description) {
@@ -235,5 +174,3 @@ if (mentorForm) {
     }
   });
 }
-
-updatePreview();

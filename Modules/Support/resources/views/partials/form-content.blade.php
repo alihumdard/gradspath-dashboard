@@ -11,18 +11,37 @@
     <div class="feedback-card">
       <h1>Submit Feedback</h1>
 
-      <form id="supportForm" novalidate>
+      @if (session('success'))
+        <div id="successMessage" class="success-message visible" aria-live="polite">
+          {{ session('success') }}
+        </div>
+      @endif
+
+      @if ($errors->any())
+        <div class="error-summary" aria-live="polite">
+          <strong>Please fix the highlighted fields.</strong>
+          <ul>
+            @foreach ($errors->all() as $error)
+              <li>{{ $error }}</li>
+            @endforeach
+          </ul>
+        </div>
+      @endif
+
+      <form id="supportForm" method="POST" action="{{ $submitRoute }}" novalidate>
+        @csrf
+
         <div class="form-section">
           <div class="question-title-row">
             <span class="question-number">01</span>
             <div>
-              <h2>Name <span class="required">*</span></h2>
-              <p>Please provide your full name</p>
+              <h2>Name</h2>
+              <p>{{ auth()->user()?->name ?? 'Signed in user' }}</p>
             </div>
           </div>
           <div class="form-field">
-            <label for="name">NAME</label>
-            <input type="text" id="name" name="name" placeholder="e.g. Mike Ross" required />
+            <label for="display_name">NAME</label>
+            <input type="text" id="display_name" value="{{ auth()->user()?->name }}" readonly />
           </div>
         </div>
 
@@ -30,13 +49,13 @@
           <div class="question-title-row">
             <span class="question-number">02</span>
             <div>
-              <h2>Email <span class="required">*</span></h2>
-              <p>Your university email address</p>
+              <h2>Email</h2>
+              <p>{{ auth()->user()?->email ?? 'Signed in email' }}</p>
             </div>
           </div>
           <div class="form-field">
-            <label for="email">EMAIL</label>
-            <input type="email" id="email" name="email" placeholder="you@university.edu" required />
+            <label for="display_email">EMAIL</label>
+            <input type="email" id="display_email" value="{{ auth()->user()?->email }}" readonly />
           </div>
         </div>
 
@@ -50,7 +69,19 @@
           </div>
           <div class="form-field">
             <label for="subject">SUBJECT</label>
-            <input type="text" id="subject" name="subject" placeholder="e.g. Issue with....." required />
+            <input
+              type="text"
+              id="subject"
+              name="subject"
+              value="{{ old('subject') }}"
+              placeholder="e.g. Issue with booking, payment, or account access"
+              maxlength="200"
+              required
+              aria-invalid="{{ $errors->has('subject') ? 'true' : 'false' }}"
+            />
+            @error('subject')
+              <p class="field-error">{{ $message }}</p>
+            @enderror
           </div>
         </div>
 
@@ -63,21 +94,29 @@
             </div>
           </div>
           <div class="feedback-text-wrap">
-            <textarea id="message" name="message" rows="5" placeholder="Type your message here..." required></textarea>
+            <textarea
+              id="message"
+              name="message"
+              rows="5"
+              placeholder="Type your message here..."
+              maxlength="5000"
+              required
+              aria-invalid="{{ $errors->has('message') ? 'true' : 'false' }}"
+            >{{ old('message') }}</textarea>
             <div class="char-count">
               <span id="charCount">0</span> characters
             </div>
+            @error('message')
+              <p class="field-error">{{ $message }}</p>
+            @enderror
           </div>
         </div>
 
         <div class="form-footer">
           <button type="submit" class="send-message-btn">Send message</button>
         </div>
-
-        <div id="successMessage" class="success-message" aria-live="polite">
-          Thank you. Your support request has been submitted successfully.
-        </div>
       </form>
     </div>
   </div>
+
 </div>

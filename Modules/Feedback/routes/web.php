@@ -21,3 +21,7 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->nam
 	Route::patch('/feedback/{id}', [AdminFeedbackController::class, 'update'])->name('update');
 	Route::delete('/feedback/{id}', [AdminFeedbackController::class, 'destroy'])->name('destroy');
 });
+
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin/manual-actions')->name('admin.manual-actions.')->group(function () {
+	Route::patch('/feedback', [AdminFeedbackController::class, 'update'])->name('feedback.update');
+});

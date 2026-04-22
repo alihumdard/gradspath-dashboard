@@ -5,10 +5,43 @@ const signOutBtn = document.getElementById("signOutBtn");
 const reloadBtn = document.getElementById("reloadBtn");
 const showPassword = document.getElementById("showPassword");
 const passwordInput = document.getElementById("password");
-const navLinks = document.querySelectorAll(".nav-link");
-const panels = document.querySelectorAll(".tab-panel");
+
+function readJsonScript(id) {
+    const element = document.getElementById(id);
+    if (!element) return null;
+
+    try {
+        return JSON.parse(element.textContent || "null");
+    } catch (error) {
+        return null;
+    }
+}
+
+const adminRevenueData = readJsonScript("adminRevenueData");
+const adminOverviewData = readJsonScript("adminOverviewData");
+const overviewBookingsChartData = Array.isArray(
+    adminOverviewData?.charts?.bookings_over_time,
+)
+    ? adminOverviewData.charts.bookings_over_time
+    : [];
+const overviewRevenueChartData = Array.isArray(
+    adminOverviewData?.charts?.revenue_over_time,
+)
+    ? adminOverviewData.charts.revenue_over_time
+    : [];
+const revenueProgramChartData = Array.isArray(
+    adminRevenueData?.charts?.program_revenue,
+)
+    ? adminRevenueData.charts.program_revenue
+    : [];
+const revenueTopMentorsChartData = Array.isArray(
+    adminRevenueData?.charts?.top_mentors,
+)
+    ? adminRevenueData.charts.top_mentors
+    : [];
 
 let chartsInitialized = false;
+const dashboardCharts = [];
 
 if (loginForm && loginScreen && dashboard && passwordInput) {
     loginForm.addEventListener("submit", function (e) {
@@ -50,18 +83,6 @@ if (reloadBtn) {
         window.location.reload();
     });
 }
-
-navLinks.forEach((link) => {
-    link.addEventListener("click", function () {
-        const tab = this.dataset.tab;
-
-        navLinks.forEach((item) => item.classList.remove("active"));
-        panels.forEach((panel) => panel.classList.remove("active"));
-
-        this.classList.add("active");
-        document.getElementById(tab).classList.add("active");
-    });
-});
 
 /* USERS FILTERING */
 const usersSearch = document.getElementById("usersSearch");
@@ -149,6 +170,16 @@ function getGridColor() {
     return "rgba(255,255,255,0.08)";
 }
 
+function createChartIfCanvas(id, config) {
+    const canvas = document.getElementById(id);
+
+    if (!canvas) {
+        return;
+    }
+
+    dashboardCharts.push(new Chart(canvas, config));
+}
+
 function initializeCharts() {
     const sharedOptions = {
         responsive: true,
@@ -173,14 +204,16 @@ function initializeCharts() {
         },
     };
 
-    new Chart(document.getElementById("bookingsChart"), {
+    createChartIfCanvas("bookingsChart", {
         type: "line",
         data: {
-            labels: ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
+            labels: overviewBookingsChartData.map((item) => item.label ?? ""),
             datasets: [
                 {
                     label: "Bookings",
-                    data: [38, 46, 51, 64, 78, 96],
+                    data: overviewBookingsChartData.map(
+                        (item) => Number(item?.value ?? 0) || 0,
+                    ),
                     borderWidth: 2,
                     tension: 0.35,
                 },
@@ -189,22 +222,40 @@ function initializeCharts() {
         options: sharedOptions,
     });
 
-    new Chart(document.getElementById("revenueChart"), {
+    createChartIfCanvas("revenueChart", {
         type: "bar",
         data: {
-            labels: ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar"],
+            labels: overviewRevenueChartData.map((item) => item.label ?? ""),
             datasets: [
                 {
                     label: "Revenue",
-                    data: [4200, 5100, 5900, 7600, 9800, 12840],
+                    data: overviewRevenueChartData.map(
+                        (item) => Number(item?.value ?? 0) || 0,
+                    ),
                     borderWidth: 1,
                 },
             ],
         },
-        options: sharedOptions,
+        options: {
+            ...sharedOptions,
+            scales: {
+                x: {
+                    ticks: { color: getChartTextColor() },
+                    grid: { color: getGridColor() },
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: getChartTextColor(),
+                        callback: (value) => `$${value}`,
+                    },
+                    grid: { color: getGridColor() },
+                },
+            },
+        },
     });
 
-    new Chart(document.getElementById("servicesChart"), {
+    createChartIfCanvas("servicesChart", {
         type: "bar",
         data: {
             labels: [
@@ -227,14 +278,16 @@ function initializeCharts() {
         options: sharedOptions,
     });
 
-    new Chart(document.getElementById("programRevenueChart"), {
+    createChartIfCanvas("programRevenueChart", {
         type: "doughnut",
         data: {
-            labels: ["MBA", "Law", "CMHC", "MFT", "MSW", "Clinical Psy"],
+            labels: revenueProgramChartData.map((item) => item.label ?? "Unknown"),
             datasets: [
                 {
                     label: "Revenue",
-                    data: [6920, 3740, 2180, 900, 1450, 1100],
+                    data: revenueProgramChartData.map(
+                        (item) => Number(item?.value ?? 0) || 0,
+                    ),
                     borderWidth: 1,
                 },
             ],
@@ -253,27 +306,43 @@ function initializeCharts() {
         },
     });
 
-    new Chart(document.getElementById("topMentorsChart"), {
+    createChartIfCanvas("topMentorsChart", {
         type: "bar",
         data: {
-            labels: [
-                "Sarah Kim",
-                "Daniel Brooks",
-                "Rachel Adams",
-                "Leah Morris",
-                "Anthony Cruz",
-            ],
+            labels: revenueTopMentorsChartData.map(
+                (item) => item.label ?? "Unknown",
+            ),
             datasets: [
                 {
                     label: "Revenue",
-                    data: [1870, 1190, 790, 720, 610],
+                    data: revenueTopMentorsChartData.map(
+                        (item) => Number(item?.value ?? 0) || 0,
+                    ),
                     borderWidth: 1,
+                    minBarLength: 4,
                 },
             ],
         },
         options: {
             ...sharedOptions,
             indexAxis: "y",
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: getChartTextColor(),
+                        callback: (value) => `$${value}`,
+                    },
+                    grid: { color: getGridColor() },
+                },
+                y: {
+                    ticks: {
+                        color: getChartTextColor(),
+                        autoSkip: false,
+                    },
+                    grid: { color: getGridColor() },
+                },
+            },
         },
     });
 }
@@ -283,18 +352,6 @@ function initializeCharts() {
 /* ======================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Initialize demo12 functionality
-    navLinks.forEach((link) => {
-        link.addEventListener("click", function () {
-            const tab = this.dataset.tab;
-
-            navLinks.forEach((item) => item.classList.remove("active"));
-            panels.forEach((panel) => panel.classList.remove("active"));
-            this.classList.add("active");
-            document.getElementById(tab).classList.add("active");
-        });
-    });
-
     if (usersSearch && usersProgramFilter && usersInstitutionFilter) {
         usersSearch.addEventListener("input", filterUsers);
         usersProgramFilter.addEventListener("change", filterUsers);
@@ -787,6 +844,8 @@ const activityLog = document.getElementById("activityLog");
 
 /* ---------- helpers ---------- */
 function demo14Log(message) {
+    if (!activityLog) return;
+
     const now = new Date().toLocaleTimeString([], {
         hour: "numeric",
         minute: "2-digit",
@@ -1146,41 +1205,43 @@ function renderMentorForm() {
     renderMentorPreviews(mentor);
 }
 
-mentorSelect.addEventListener("change", renderMentorForm);
+if (mentorSelect && mentorInstitution && saveMentorBtn) {
+    mentorSelect.addEventListener("change", renderMentorForm);
 
-mentorInstitution.addEventListener("change", () => {
-    const institution = getInstitutionById(mentorInstitution.value);
-    mentorSchool.value = institution ? institution.name : "";
-});
+    mentorInstitution.addEventListener("change", () => {
+        const institution = getInstitutionById(mentorInstitution.value);
+        mentorSchool.value = institution ? institution.name : "";
+    });
 
-saveMentorBtn.addEventListener("click", () => {
-    const mentor = getSelectedMentor();
-    if (!mentor) return;
+    saveMentorBtn.addEventListener("click", () => {
+        const mentor = getSelectedMentor();
+        if (!mentor) return;
 
-    mentor.type = mentorType.value.trim();
-    mentor.name = mentorName.value.trim();
-    mentor.email = mentorEmail.value.trim();
-    mentor.officeHours = mentorOfficeHours.value.trim();
-    mentor.calendly = mentorCalendly.value.trim();
-    mentor.institutionId = Number(mentorInstitution.value);
-    mentor.programIds = getCheckedValues(mentorProgramsPicker);
-    mentor.description = mentorDescription.value.trim();
+        mentor.type = mentorType.value.trim();
+        mentor.name = mentorName.value.trim();
+        mentor.email = mentorEmail.value.trim();
+        mentor.officeHours = mentorOfficeHours.value.trim();
+        mentor.calendly = mentorCalendly.value.trim();
+        mentor.institutionId = Number(mentorInstitution.value);
+        mentor.programIds = getCheckedValues(mentorProgramsPicker);
+        mentor.description = mentorDescription.value.trim();
 
-    syncInstitutionMentorLists();
-    refreshFeedbackFromMentors();
+        syncInstitutionMentorLists();
+        refreshFeedbackFromMentors();
 
-    populateMentorSelect();
-    populateInstitutionSelect();
-    populateRefundUsers();
-    populateFeedbackSelect();
-    renderInstitutionForm();
-    renderProgramFilterPreview();
+        populateMentorSelect();
+        populateInstitutionSelect();
+        populateRefundUsers();
+        populateFeedbackSelect();
+        renderInstitutionForm();
+        renderProgramFilterPreview();
 
-    mentorSelect.value = String(mentor.id);
-    renderMentorForm();
+        mentorSelect.value = String(mentor.id);
+        renderMentorForm();
 
-    demo14Log(`Saved mentor settings for <strong>${mentor.name}</strong>.`);
-});
+        demo14Log(`Saved mentor settings for <strong>${mentor.name}</strong>.`);
+    });
+}
 
 /* ---------- refund station ---------- */
 function populateRefundUsers(filteredUsers = demo14Users) {
@@ -1207,31 +1268,33 @@ function renderRefundUserSummary() {
   `;
 }
 
-refundUserSelect.addEventListener("change", renderRefundUserSummary);
+if (refundUserSelect && applyRefundBtn) {
+    refundUserSelect.addEventListener("change", renderRefundUserSummary);
 
-applyRefundBtn.addEventListener("click", () => {
-    const user = demo14Users.find(
-        (u) => String(u.id) === refundUserSelect.value,
-    );
-    if (!user) return;
+    applyRefundBtn.addEventListener("click", () => {
+        const user = demo14Users.find(
+            (u) => String(u.id) === refundUserSelect.value,
+        );
+        if (!user) return;
 
-    const refund = Number(refundAmount.value || 0);
-    const addBack = Number(officeHoursAddBack.value || 0);
-    const reason = refundReason.value.trim();
+        const refund = Number(refundAmount.value || 0);
+        const addBack = Number(officeHoursAddBack.value || 0);
+        const reason = refundReason.value.trim();
 
-    user.lastRefund = refund;
-    user.officeHoursCredits += addBack;
+        user.lastRefund = refund;
+        user.officeHoursCredits += addBack;
 
-    renderRefundUserSummary();
+        renderRefundUserSummary();
 
-    demo14Log(
-        `Applied refund actions for <strong>${user.name}</strong>: refund ${formatMoney(refund)} and added back ${addBack} office hour credits${reason ? ` — ${reason}` : ""}.`,
-    );
+        demo14Log(
+            `Applied refund actions for <strong>${user.name}</strong>: refund ${formatMoney(refund)} and added back ${addBack} office hour credits${reason ? ` — ${reason}` : ""}.`,
+        );
 
-    refundAmount.value = "";
-    officeHoursAddBack.value = "";
-    refundReason.value = "";
-});
+        refundAmount.value = "";
+        officeHoursAddBack.value = "";
+        refundReason.value = "";
+    });
+}
 
 /* ---------- feedback station ---------- */
 function populateFeedbackSelect(filteredFeedback = demo14Feedback) {
@@ -1307,69 +1370,71 @@ function renderFeedbackForm() {
   `;
 }
 
-feedbackSelect.addEventListener("change", renderFeedbackForm);
+if (feedbackSelect && applyFeedbackBtn) {
+    feedbackSelect.addEventListener("change", renderFeedbackForm);
 
-applyFeedbackBtn.addEventListener("click", () => {
-    const item = getSelectedFeedback();
-    if (!item) return;
+    applyFeedbackBtn.addEventListener("click", () => {
+        const item = getSelectedFeedback();
+        if (!item) return;
 
-    const action = feedbackAction.value;
+        const action = feedbackAction.value;
 
-    if (!action) {
-        alert("Please choose an action first.");
-        return;
-    }
-
-    if (action === "delete") {
-        const userName = item.userName;
-        const mentorName = item.mentorName;
-        const index = demo14Feedback.findIndex((f) => f.id === item.id);
-
-        if (index > -1) {
-            demo14Feedback.splice(index, 1);
+        if (!action) {
+            alert("Please choose an action first.");
+            return;
         }
 
-        populateFeedbackSelect();
+        if (action === "delete") {
+            const userName = item.userName;
+            const mentorName = item.mentorName;
+            const index = demo14Feedback.findIndex((f) => f.id === item.id);
 
-        if (demo14Feedback.length > 0) {
-            feedbackSelect.value = feedbackSelect.options[0].value;
-            renderFeedbackForm();
-        } else {
-            feedbackMentorNameBox.textContent = "";
-            feedbackProgramBox.textContent = "";
-            feedbackMentorTypeBox.textContent = "";
-            feedbackDegreeBox.textContent = "";
-            feedbackDateBox.textContent = "";
-            feedbackSchoolBox.textContent = "";
-            feedbackDateBox.textContent = "";
-            feedbackStudentBox.textContent = "";
-            feedbackStarsBox.textContent = "";
-            feedbackPreparednessBox.textContent = "";
-            feedbackRecommendBox.textContent = "";
-            feedbackQuickText.textContent = "";
-            feedbackText.value = "";
-            feedbackRating.value = "";
-            feedbackNote.value = "";
-            feedbackSummary.innerHTML = "No feedback items left.";
-            feedbackServiceCards.innerHTML = "";
+            if (index > -1) {
+                demo14Feedback.splice(index, 1);
+            }
+
+            populateFeedbackSelect();
+
+            if (demo14Feedback.length > 0) {
+                feedbackSelect.value = feedbackSelect.options[0].value;
+                renderFeedbackForm();
+            } else {
+                feedbackMentorNameBox.textContent = "";
+                feedbackProgramBox.textContent = "";
+                feedbackMentorTypeBox.textContent = "";
+                feedbackDegreeBox.textContent = "";
+                feedbackDateBox.textContent = "";
+                feedbackSchoolBox.textContent = "";
+                feedbackDateBox.textContent = "";
+                feedbackStudentBox.textContent = "";
+                feedbackStarsBox.textContent = "";
+                feedbackPreparednessBox.textContent = "";
+                feedbackRecommendBox.textContent = "";
+                feedbackQuickText.textContent = "";
+                feedbackText.value = "";
+                feedbackRating.value = "";
+                feedbackNote.value = "";
+                feedbackSummary.innerHTML = "No feedback items left.";
+                feedbackServiceCards.innerHTML = "";
+            }
+
+            demo14Log(
+                `Deleted feedback from <strong>${userName}</strong> for mentor <strong>${mentorName}</strong>.`,
+            );
+            return;
         }
+
+        item.text = feedbackText.value.trim();
+        item.rating = Number(feedbackRating.value || item.rating);
+        item.statusNote = feedbackNote.value.trim();
+
+        renderFeedbackForm();
 
         demo14Log(
-            `Deleted feedback from <strong>${userName}</strong> for mentor <strong>${mentorName}</strong>.`,
+            `Amended feedback from <strong>${item.userName}</strong> for mentor <strong>${item.mentorName}</strong>.`,
         );
-        return;
-    }
-
-    item.text = feedbackText.value.trim();
-    item.rating = Number(feedbackRating.value || item.rating);
-    item.statusNote = feedbackNote.value.trim();
-
-    renderFeedbackForm();
-
-    demo14Log(
-        `Amended feedback from <strong>${item.userName}</strong> for mentor <strong>${item.mentorName}</strong>.`,
-    );
-});
+    });
+}
 
 /* ---------- institution station ---------- */
 function populateInstitutionSelect() {
@@ -1950,52 +2015,60 @@ function renderPaymentSummary() {
   `;
 }
 
-servicePricingSearch.addEventListener("input", () => {
-    renderPriceEditorCards(servicePricingSearch.value);
-});
-
-paymentServiceSelect.addEventListener("change", renderPaymentSummary);
-paymentQuantity.addEventListener("input", renderPaymentSummary);
-
-savePricingBtn.addEventListener("click", () => {
-    populateDiscountPricingPreview();
-    renderPaymentSummary();
-
-    if (getSelectedMentor()) {
-        renderMentorServiceCards(getSelectedMentor().services || []);
-        renderSelectedServices(getSelectedMentor().services || []);
-        renderMentorPreviews(getSelectedMentor());
-    }
-
-    renderFeedbackForm();
-    renderServiceForm();
-
-    demo14Log(
-        `Saved service pricing changes across website and payment previews.`,
-    );
-});
-
-resetPricingBtn.addEventListener("click", () => {
-    getAllServices().forEach((service) => {
-        demo14ServiceMeta[service].currentPrice =
-            demo14ServiceMeta[service].originalPrice;
+if (
+    servicePricingSearch &&
+    paymentServiceSelect &&
+    paymentQuantity &&
+    savePricingBtn &&
+    resetPricingBtn
+) {
+    servicePricingSearch.addEventListener("input", () => {
+        renderPriceEditorCards(servicePricingSearch.value);
     });
 
-    renderPriceEditorCards(servicePricingSearch.value);
-    populateDiscountPricingPreview();
-    renderPaymentSummary();
+    paymentServiceSelect.addEventListener("change", renderPaymentSummary);
+    paymentQuantity.addEventListener("input", renderPaymentSummary);
 
-    if (getSelectedMentor()) {
-        renderMentorServiceCards(getSelectedMentor().services || []);
-        renderSelectedServices(getSelectedMentor().services || []);
-        renderMentorPreviews(getSelectedMentor());
-    }
+    savePricingBtn.addEventListener("click", () => {
+        populateDiscountPricingPreview();
+        renderPaymentSummary();
 
-    renderFeedbackForm();
-    renderServiceForm();
+        if (getSelectedMentor()) {
+            renderMentorServiceCards(getSelectedMentor().services || []);
+            renderSelectedServices(getSelectedMentor().services || []);
+            renderMentorPreviews(getSelectedMentor());
+        }
 
-    demo14Log(`Reset all service prices back to original values.`);
-});
+        renderFeedbackForm();
+        renderServiceForm();
+
+        demo14Log(
+            `Saved service pricing changes across website and payment previews.`,
+        );
+    });
+
+    resetPricingBtn.addEventListener("click", () => {
+        getAllServices().forEach((service) => {
+            demo14ServiceMeta[service].currentPrice =
+                demo14ServiceMeta[service].originalPrice;
+        });
+
+        renderPriceEditorCards(servicePricingSearch.value);
+        populateDiscountPricingPreview();
+        renderPaymentSummary();
+
+        if (getSelectedMentor()) {
+            renderMentorServiceCards(getSelectedMentor().services || []);
+            renderSelectedServices(getSelectedMentor().services || []);
+            renderMentorPreviews(getSelectedMentor());
+        }
+
+        renderFeedbackForm();
+        renderServiceForm();
+
+        demo14Log(`Reset all service prices back to original values.`);
+    });
+}
 
 /* ---------- search ---------- */
 function applyGlobalSearch() {
@@ -2144,4 +2217,230 @@ function initializeDemo14() {
     demo14Log("Demo14 manual page ready.");
 }
 
-initializeDemo14();
+if (document.getElementById("manual") && document.querySelector(".demo14-page-wrap")) {
+    initializeDemo14();
+}
+
+const adminManualActionsData = readJsonScript("adminManualActionsData");
+
+function money(value) {
+    const numeric = Number(value ?? 0);
+    return Number.isFinite(numeric)
+        ? new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: "USD",
+          }).format(numeric)
+        : "-";
+}
+
+function renderSummary(element, rows) {
+    if (!element) return;
+
+    element.innerHTML = `<div class="manual-summary__meta">${rows
+        .map(
+            (row) =>
+                `<div><strong>${row.label}</strong><div>${row.value}</div></div>`,
+        )
+        .join("")}</div>`;
+}
+
+function initializeManualActionsHub() {
+    const app = document.getElementById("manualActionsApp");
+
+    if (!app || !adminManualActionsData) {
+        return;
+    }
+
+    const initialSection = app.dataset.initialSection || "mentor";
+    const buttons = Array.from(
+        app.querySelectorAll("[data-section-target]"),
+    );
+    const panels = Array.from(
+        app.querySelectorAll("[data-section-panel]"),
+    );
+
+    function setSection(section) {
+        buttons.forEach((button) => {
+            button.classList.toggle(
+                "is-active",
+                button.dataset.sectionTarget === section,
+            );
+        });
+
+        panels.forEach((panel) => {
+            panel.classList.toggle(
+                "is-active",
+                panel.dataset.sectionPanel === section,
+            );
+        });
+    }
+
+    buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+            setSection(button.dataset.sectionTarget || "mentor");
+        });
+    });
+
+    const mentors = Array.isArray(adminManualActionsData.mentors)
+        ? adminManualActionsData.mentors
+        : [];
+    const users = Array.isArray(adminManualActionsData.users)
+        ? adminManualActionsData.users
+        : [];
+    const services = Array.isArray(adminManualActionsData.services)
+        ? adminManualActionsData.services
+        : [];
+    const feedbackItems = Array.isArray(adminManualActionsData.feedback)
+        ? adminManualActionsData.feedback
+        : [];
+
+    const mentorSelect = document.getElementById("manualMentorSelect");
+    const mentorSummary = document.getElementById("manualMentorSummary");
+    const userSelect = document.getElementById("manualUserSelect");
+    const userSummary = document.getElementById("manualUserSummary");
+    const pricingSelect = document.getElementById("manualPricingServiceSelect");
+    const pricingSummary = document.getElementById("manualPricingSummary");
+    const feedbackSelect = document.getElementById("manualFeedbackSelect");
+    const feedbackSummary = document.getElementById("manualFeedbackSummary");
+
+    function syncMentorSummary() {
+        const mentor = mentors.find(
+            (item) => String(item.id) === String(mentorSelect?.value || ""),
+        );
+
+        if (!mentor) {
+            return;
+        }
+
+        renderSummary(mentorSummary, [
+            { label: "Mentor", value: `${mentor.name} (${mentor.email})` },
+            { label: "Current status", value: mentor.status },
+            { label: "Institution", value: mentor.institution },
+            {
+                label: "Services",
+                value: mentor.services.length ? mentor.services.join(", ") : "-",
+            },
+            { label: "Description", value: mentor.description || "-" },
+        ]);
+    }
+
+    function syncUserSummary() {
+        const user = users.find(
+            (item) => String(item.id) === String(userSelect?.value || ""),
+        );
+
+        if (!user) {
+            return;
+        }
+
+        renderSummary(userSummary, [
+            { label: "User", value: `${user.name} (${user.email})` },
+            { label: "Current balance", value: `${user.credits} credits` },
+        ]);
+    }
+
+    function syncPricingSummary() {
+        const service = services.find(
+            (item) => String(item.id) === String(pricingSelect?.value || ""),
+        );
+
+        if (!service) {
+            return;
+        }
+
+        renderSummary(pricingSummary, [
+            { label: "Service", value: service.name },
+            { label: "1 on 1", value: money(service.price_1on1) },
+            {
+                label: "1 on 3",
+                value: money(service.price_1on3_per_person),
+            },
+            {
+                label: "1 on 5",
+                value: money(service.price_1on5_per_person),
+            },
+            {
+                label: "Office hours",
+                value: money(service.office_hours_subscription_price),
+            },
+        ]);
+    }
+
+    function syncFeedbackSummary() {
+        const item = feedbackItems.find(
+            (feedback) =>
+                String(feedback.id) === String(feedbackSelect?.value || ""),
+        );
+
+        if (!item) {
+            return;
+        }
+
+        renderSummary(feedbackSummary, [
+            { label: "Mentor", value: item.mentor_name },
+            { label: "Student", value: item.student_name },
+            { label: "School", value: item.mentor_school },
+            { label: "Service", value: item.service_name },
+            { label: "Stars", value: `${item.stars}/5` },
+            { label: "Visible", value: item.is_visible ? "Yes" : "No" },
+            { label: "Comment", value: item.comment || "-" },
+            { label: "Admin note", value: item.admin_note || "-" },
+        ]);
+    }
+
+    mentorSelect?.addEventListener("change", syncMentorSummary);
+    userSelect?.addEventListener("change", syncUserSummary);
+    pricingSelect?.addEventListener("change", syncPricingSummary);
+    feedbackSelect?.addEventListener("change", syncFeedbackSummary);
+
+    const serviceCreateForm = document.getElementById("manualServiceCreateForm");
+
+    if (serviceCreateForm) {
+        const sessionTypes = ["1on1", "1on3", "1on5"];
+
+        function syncServiceSessionFields() {
+            sessionTypes.forEach((sessionType) => {
+                const toggle = serviceCreateForm.querySelector(
+                    `[data-session-toggle="${sessionType}"]`,
+                );
+                const enabled = Boolean(toggle?.checked);
+                const fields = serviceCreateForm.querySelectorAll(
+                    `[data-session-field="${sessionType}"]`,
+                );
+                const inputs = serviceCreateForm.querySelectorAll(
+                    `[data-session-input="${sessionType}"]`,
+                );
+
+                fields.forEach((field) => {
+                    field.classList.toggle("is-disabled", !enabled);
+                });
+
+                inputs.forEach((input) => {
+                    input.disabled = !enabled;
+
+                    if (!enabled) {
+                        input.value = "";
+                    }
+                });
+            });
+        }
+
+        sessionTypes.forEach((sessionType) => {
+            const toggle = serviceCreateForm.querySelector(
+                `[data-session-toggle="${sessionType}"]`,
+            );
+
+            toggle?.addEventListener("change", syncServiceSessionFields);
+        });
+
+        syncServiceSessionFields();
+    }
+
+    syncMentorSummary();
+    syncUserSummary();
+    syncPricingSummary();
+    syncFeedbackSummary();
+    setSection(initialSection);
+}
+
+initializeManualActionsHub();

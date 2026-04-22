@@ -10,6 +10,17 @@
   $adminMentorStatusOptions = $adminMentorsData['status_options'];
 
   $adminServiceRows = $adminServiceRows ?? app(\Modules\Discovery\app\Services\AdminServicesTableService::class)->build();
+  $adminRankingsData = $adminRankingsData ?? app(\Modules\Discovery\app\Services\AdminRankingsService::class)->build();
+  $adminRevenueData = $adminRevenueData ?? app(\Modules\Discovery\app\Services\AdminRevenueService::class)->build((string) request()->query('revenue_range', '30d'));
+  $adminProgramRankings = $adminRankingsData['programs'] ?? [];
+  $adminServiceRankings = $adminRankingsData['services'] ?? [];
+  $adminStudentSchoolRankings = $adminRankingsData['student_schools'] ?? [];
+  $adminMentorSchoolRankings = $adminRankingsData['mentor_schools'] ?? [];
+  $adminMeetingSizeRankings = $adminRankingsData['meeting_sizes'] ?? [];
+  $adminRevenueSummary = $adminRevenueData['summary'] ?? [];
+  $adminRevenueCharts = $adminRevenueData['charts'] ?? [];
+  $adminRevenueRanges = $adminRevenueData['available_ranges'] ?? [];
+  $adminSelectedRevenueRange = $adminRevenueData['selected_range'] ?? '30d';
 
   $formatAdminMoney = static function ($amount): string {
     if ($amount === null) {
@@ -535,31 +546,47 @@
             <div class="section-head">
               <div>
                 <h2>Revenue</h2>
-                <p>Programs, top mentors, and fixed service pricing model.</p>
+                <p>Programs, top mentors, payouts, and refunds for the selected timeframe.</p>
               </div>
               <button class="primary-btn">Export Revenue</button>
+            </div>
+
+            <div class="toolbar">
+              <form method="GET" action="{{ route('admin.dashboard') }}">
+                <input type="hidden" name="tab" value="revenue" />
+                <select id="revenueRange" name="revenue_range" onchange="this.form.submit()">
+                  @foreach ($adminRevenueRanges as $adminRevenueRange)
+                    <option value="{{ $adminRevenueRange['value'] }}" @selected($adminSelectedRevenueRange === $adminRevenueRange['value'])>
+                      {{ $adminRevenueRange['label'] }}
+                    </option>
+                  @endforeach
+                </select>
+              </form>
             </div>
 
             <div class="summary-grid">
               <div class="small-card">
                 <span>Gross Revenue</span>
-                <strong>$12,840</strong>
-                <small>30 days</small>
+                <strong>{{ $formatAdminMoney($adminRevenueSummary['gross_revenue'] ?? 0) }}</strong>
+                <small>{{ $adminRevenueSummary['timeframe_label'] ?? 'Last 30 Days' }}</small>
               </div>
               <div class="small-card">
                 <span>Mentor Payouts</span>
-                <strong>$8,722</strong>
-                <small>paid / due</small>
+                <strong>{{ $formatAdminMoney($adminRevenueSummary['mentor_payouts_total'] ?? 0) }}</strong>
+                <small>
+                  {{ $formatAdminMoney($adminRevenueSummary['mentor_payouts_paid'] ?? 0) }}
+                  paid / {{ $formatAdminMoney($adminRevenueSummary['mentor_payouts_pending'] ?? 0) }} due
+                </small>
               </div>
               <div class="small-card">
                 <span>Platform Revenue</span>
-                <strong>$4,118</strong>
+                <strong>{{ $formatAdminMoney($adminRevenueSummary['platform_revenue'] ?? 0) }}</strong>
                 <small>retained amount</small>
               </div>
               <div class="small-card">
                 <span>Refund Amount</span>
-                <strong>$420</strong>
-                <small>current period</small>
+                <strong>{{ $formatAdminMoney($adminRevenueSummary['refund_amount'] ?? 0) }}</strong>
+                <small>{{ $adminRevenueSummary['timeframe_label'] ?? 'Last 30 Days' }}</small>
               </div>
             </div>
 
@@ -588,7 +615,7 @@
               <div>
                 <h2>Rankings</h2>
                 <p>
-                  All programs, all services, and top 5 most booked schools.
+                  All programs, all services, and school rankings for both students and mentors.
                 </p>
               </div>
             </div>
@@ -599,24 +626,16 @@
                   <h3>Programs by Rank</h3>
                 </div>
                 <div class="mini-list">
-                  <div class="mini-item compact">
-                    <strong>1. MBA</strong><span>46 bookings</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>2. Law</strong><span>29 bookings</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>3. CMHC</strong><span>21 bookings</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>4. MSW</strong><span>15 bookings</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>5. Clinical Psy</strong><span>11 bookings</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>6. MFT</strong><span>8 bookings</span>
-                  </div>
+                  @forelse ($adminProgramRankings as $adminProgramRanking)
+                    <div class="mini-item compact">
+                      <strong>{{ $adminProgramRanking['rank'] }}. {{ $adminProgramRanking['label'] }}</strong>
+                      <span>{{ $adminProgramRanking['count'] }} bookings</span>
+                    </div>
+                  @empty
+                    <div class="mini-item compact">
+                      <strong>No booking data yet</strong><span>-</span>
+                    </div>
+                  @endforelse
                 </div>
               </div>
 
@@ -625,51 +644,52 @@
                   <h3>Services by Rank</h3>
                 </div>
                 <div class="mini-list">
-                  <div class="mini-item compact">
-                    <strong>1. Program Insights</strong><span>31 bookings</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>2. Interview Prep</strong><span>24 bookings</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>3. Free Consultation</strong><span>22 uses</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>4. Application Review</strong
-                    ><span>18 bookings</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>5. Office Hours</strong><span>14 bookings</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>6. Tutoring</strong><span>8 bookings</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>7. Gap Year Planning</strong><span>6 bookings</span>
-                  </div>
+                  @forelse ($adminServiceRankings as $adminServiceRanking)
+                    <div class="mini-item compact">
+                      <strong>{{ $adminServiceRanking['rank'] }}. {{ $adminServiceRanking['label'] }}</strong>
+                      <span>{{ $adminServiceRanking['count'] }} bookings</span>
+                    </div>
+                  @empty
+                    <div class="mini-item compact">
+                      <strong>No booking data yet</strong><span>-</span>
+                    </div>
+                  @endforelse
                 </div>
               </div>
 
               <div class="panel">
                 <div class="panel-head">
-                  <h3>Top 5 Most Booked Schools</h3>
+                  <h3>Top Student Schools by Bookings</h3>
                 </div>
                 <div class="mini-list">
-                  <div class="mini-item compact">
-                    <strong>1. Harvard</strong><span>Top demand</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>2. Yale</strong><span>Strong</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>3. NYU</strong><span>Strong</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>4. Stanford</strong><span>Growing</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>5. Columbia</strong><span>Growing</span>
-                  </div>
+                  @forelse ($adminStudentSchoolRankings as $adminStudentSchoolRanking)
+                    <div class="mini-item compact">
+                      <strong>{{ $adminStudentSchoolRanking['rank'] }}. {{ $adminStudentSchoolRanking['label'] }}</strong>
+                      <span>{{ $adminStudentSchoolRanking['count'] }} bookings</span>
+                    </div>
+                  @empty
+                    <div class="mini-item compact">
+                      <strong>No booking data yet</strong><span>-</span>
+                    </div>
+                  @endforelse
+                </div>
+              </div>
+
+              <div class="panel">
+                <div class="panel-head">
+                  <h3>Top Mentor Schools by Bookings</h3>
+                </div>
+                <div class="mini-list">
+                  @forelse ($adminMentorSchoolRankings as $adminMentorSchoolRanking)
+                    <div class="mini-item compact">
+                      <strong>{{ $adminMentorSchoolRanking['rank'] }}. {{ $adminMentorSchoolRanking['label'] }}</strong>
+                      <span>{{ $adminMentorSchoolRanking['count'] }} bookings</span>
+                    </div>
+                  @empty
+                    <div class="mini-item compact">
+                      <strong>No booking data yet</strong><span>-</span>
+                    </div>
+                  @endforelse
                 </div>
               </div>
 
@@ -678,19 +698,16 @@
                   <h3>Meeting Size Mix</h3>
                 </div>
                 <div class="mini-list">
-                  <div class="mini-item compact">
-                    <strong>1 on 1</strong><span>Most common</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>1 on 3</strong><span>Secondary</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>1 on 5</strong><span>Lower usage</span>
-                  </div>
-                  <div class="mini-item compact">
-                    <strong>Office Hours Credits</strong
-                    ><span>Subscription-based</span>
-                  </div>
+                  @forelse ($adminMeetingSizeRankings as $adminMeetingSizeRanking)
+                    <div class="mini-item compact">
+                      <strong>{{ $adminMeetingSizeRanking['rank'] }}. {{ $adminMeetingSizeRanking['label'] }}</strong>
+                      <span>{{ $adminMeetingSizeRanking['count'] }} bookings</span>
+                    </div>
+                  @empty
+                    <div class="mini-item compact">
+                      <strong>No booking data yet</strong><span>-</span>
+                    </div>
+                  @endforelse
                 </div>
               </div>
             </div>
@@ -701,6 +718,7 @@
       </section>
     </div>
 
+    <script id="adminRevenueData" type="application/json">@json($adminRevenueData ?? [])</script>
     <script src="{{ asset('assets/js/demo12.js') }}"></script>
     <!-- <script src="demo14.js"></script> -->
   </body>

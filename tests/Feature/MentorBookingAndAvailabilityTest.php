@@ -404,6 +404,42 @@ it('returns json validation errors for invalid scheduler edits', function () {
         ->assertJsonPath('errors.date_slots.0.slots.1.start_time.0', "{$dateLabel} time blocks cannot overlap.");
 });
 
+it('rejects same-day availability slots that start in the past', function () {
+    Carbon\Carbon::setTestNow(Carbon\Carbon::create(2026, 4, 20, 15, 0, 0, 'America/New_York'));
+
+    [$mentorUser, $mentor] = makePortalMentor('availability-past-today');
+    $service = makePortalService();
+    attachServiceToMentor($mentor, $service);
+    $today = Carbon\Carbon::now('America/New_York')->toDateString();
+    $dateLabel = Carbon\Carbon::parse($today)->format('l, F j, Y');
+
+    $this->actingAs($mentorUser)
+        ->patchJson(route('mentor.availability.update'), [
+            'timezone' => 'America/New_York',
+            'date_slots_payload' => dateSlotsPayload([
+                [
+                    'date' => $today,
+                    'enabled' => true,
+                    'slots' => [
+                        ['start_time' => '09:00', 'end_time' => '10:00', 'service_config_id' => $service->id],
+                    ],
+                ],
+            ]),
+        ])
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'Please fix the highlighted availability settings before saving.')
+        ->assertJsonPath('errors.date_slots.0.slots.0.start_time.0', "{$dateLabel} time blocks must start in the future.");
+
+    $this->assertDatabaseMissing('mentor_availability_slots', [
+        'mentor_id' => $mentor->id,
+        'slot_date' => $today,
+        'start_time' => '09:00:00',
+        'service_config_id' => $service->id,
+    ]);
+
+    Carbon\Carbon::setTestNow();
+});
+
 it('preserves booked future slots while replacing unbooked generic slots on availability update', function () {
     [$mentorUser, $mentor] = makePortalMentor('availability-preserve');
     $service = makePortalService();

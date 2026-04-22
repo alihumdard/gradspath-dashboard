@@ -29,6 +29,13 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->nam
 	Route::post('/services', [ServicesController::class, 'store'])->name('services.store');
 	Route::patch('/services/{id}', [ServicesController::class, 'update'])->name('services.update');
 
+	Route::prefix('manual-actions')->name('manual-actions.')->group(function () {
+		Route::post('/credits/adjust', [ManualActionsController::class, 'adjustCredits'])->name('credits.adjust');
+		Route::post('/mentors/update', [ManualActionsController::class, 'amendMentor'])->name('mentors.update');
+		Route::post('/services', [ServicesController::class, 'store'])->name('services.store');
+		Route::patch('/services/pricing', [ServicesController::class, 'update'])->name('services.pricing.update');
+	});
+
 	Route::post('/manual/credits/adjust', [ManualActionsController::class, 'adjustCredits'])->name('manual.credits.adjust');
 	Route::post('/manual/mentors/amend', [ManualActionsController::class, 'amendMentor'])->name('manual.mentors.amend');
 });

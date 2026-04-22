@@ -23,6 +23,11 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->nam
 	Route::delete('/institutions/{id}', [AdminInstitutionsController::class, 'destroy'])->name('destroy');
 });
 
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin/manual-actions')->name('admin.manual-actions.')->group(function () {
+	Route::post('/institutions', [AdminInstitutionsController::class, 'store'])->name('institutions.store');
+	Route::post('/programs', [AdminUniversityProgramsController::class, 'store'])->name('programs.store');
+});
+
 Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->name('admin.programs.')->group(function () {
 	Route::get('/programs', [AdminUniversityProgramsController::class, 'index'])->name('index');
 	Route::post('/programs', [AdminUniversityProgramsController::class, 'store'])->name('store');
