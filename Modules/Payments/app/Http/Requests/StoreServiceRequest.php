@@ -29,6 +29,8 @@ class StoreServiceRequest extends FormRequest
             'credit_cost_1on3' => ['nullable', 'integer', 'min:0'],
             'credit_cost_1on5' => ['nullable', 'integer', 'min:0'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'notes' => ['required', 'string', 'max:1000'],
+            'manual_section' => ['nullable', 'string'],
         ];
     }
 

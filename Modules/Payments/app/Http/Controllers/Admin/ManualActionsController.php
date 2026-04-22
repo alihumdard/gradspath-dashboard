@@ -23,11 +23,13 @@ class ManualActionsController extends Controller
         $data = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'amount' => ['required', 'integer', 'not_in:0'],
-            'notes' => ['nullable', 'string', 'max:1000'],
+            'notes' => ['required', 'string', 'max:1000'],
+            'manual_section' => ['nullable', 'string'],
         ]);
 
         $admin = Auth::user();
         $target = User::query()->findOrFail((int) $data['user_id']);
+        $beforeBalance = (int) ($target->credit?->balance ?? 0);
 
         try {
             if ((int) $data['amount'] > 0) {
@@ -36,7 +38,9 @@ class ManualActionsController extends Controller
                 $wallet = $this->credits->deduct($target, abs((int) $data['amount']), null, 'Admin adjustment');
             }
         } catch (\RuntimeException $exception) {
-            return back()->withErrors(['manual' => $exception->getMessage()]);
+            return back()
+                ->withInput()
+                ->withErrors(['manual' => $exception->getMessage()]);
         }
 
         $this->audit->log(
@@ -44,12 +48,12 @@ class ManualActionsController extends Controller
             'manual_credit_adjustment',
             'user_credits',
             $wallet->id,
-            null,
+            ['user_id' => $target->id, 'balance' => $beforeBalance],
             ['user_id' => $target->id, 'amount' => (int) $data['amount'], 'balance' => $wallet->balance],
-            $data['notes'] ?? null
+            $data['notes']
         );
 
-        return back()->with('success', "Credits adjusted successfully. New balance: {$wallet->balance}.");
+        return $this->redirectToManualActions('credits', "Credits adjusted successfully. New balance: {$wallet->balance}.");
     }
 
     public function amendMentor(Request $request): RedirectResponse
@@ -57,7 +61,8 @@ class ManualActionsController extends Controller
         $data = $request->validate([
             'mentor_id' => ['required', 'integer', 'exists:mentors,id'],
             'status' => ['required', 'in:pending,active,paused,rejected'],
-            'notes' => ['nullable', 'string', 'max:1000'],
+            'notes' => ['required', 'string', 'max:1000'],
+            'manual_section' => ['nullable', 'string'],
         ]);
 
         $admin = Auth::user();
@@ -74,9 +79,20 @@ class ManualActionsController extends Controller
             $mentor->id,
             $before,
             ['status' => $mentor->status],
-            $data['notes'] ?? null
+            $data['notes']
         );
 
-        return back()->with('success', 'Mentor status updated successfully.');
+        return $this->redirectToManualActions('mentor', 'Mentor status updated successfully.');
+    }
+
+    private function redirectToManualActions(string $section, string $message): RedirectResponse
+    {
+        return redirect()
+            ->route('admin.manual-actions')
+            ->with('manual_section', $section)
+            ->with('manual_status', [
+                'type' => 'success',
+                'message' => $message,
+            ]);
     }
 }

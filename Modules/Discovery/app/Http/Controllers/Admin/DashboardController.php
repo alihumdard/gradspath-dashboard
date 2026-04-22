@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Modules\Discovery\app\Services\AdminMentorsTableService;
+use Modules\Discovery\app\Services\AdminManualActionsService;
 use Modules\Discovery\app\Services\AdminOverviewService;
 use Modules\Discovery\app\Services\AdminRankingsService;
 use Modules\Discovery\app\Services\AdminRevenueService;
@@ -18,6 +19,7 @@ class DashboardController extends Controller
 {
     public function __construct(
         private readonly AdminOverviewService $overviewData,
+        private readonly AdminManualActionsService $manualActions,
         private readonly AdminUsersTableService $users,
         private readonly AdminMentorsTableService $mentors,
         private readonly AdminServicesTableService $servicesTable,
@@ -78,6 +80,8 @@ class DashboardController extends Controller
 
     public function manualActions(): View
     {
-        return view('discovery::admin.manual-actions');
+        return view('discovery::admin.manual-actions', [
+            'adminManualActionsData' => $this->manualActions->build(),
+        ]);
     }
 }

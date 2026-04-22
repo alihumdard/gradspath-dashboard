@@ -68,6 +68,8 @@ function programPayload(array $overrides = []): array
         'duration_months' => 24,
         'description' => 'A policy leadership track.',
         'is_active' => '1',
+        'notes' => 'Creating program from manual actions.',
+        'manual_section' => 'programs',
         'manual_station' => 'program-create-station',
     ], $overrides);
 }
@@ -232,6 +234,8 @@ it('update changes program fields correctly', function () {
             'description' => 'Updated description',
             'duration_months' => 36,
             'is_active' => '0',
+            'notes' => 'Updating program from manual actions.',
+            'manual_section' => 'programs',
             'manual_station' => 'program-create-station',
         ])
         ->assertRedirect();
@@ -300,18 +304,19 @@ it('non admin user cannot access admin program routes', function () {
         ->assertForbidden();
 });
 
-it('validation redirect keeps manual_station for station 7', function () {
+it('validation redirect keeps manual section state for program form', function () {
     $admin = createAdminUser();
 
     $response = $this->actingAs($admin)
-        ->from(route('admin.dashboard'))
+        ->from(route('admin.manual-actions'))
         ->post(route('admin.programs.store'), programPayload([
             'program_name' => '',
         ]));
 
-    $response->assertRedirect(route('admin.dashboard'));
+    $response->assertRedirect(route('admin.manual-actions'));
     $response->assertSessionHasErrors('program_name');
 
+    expect(session()->getOldInput('manual_section'))->toBe('programs');
     expect(session()->getOldInput('manual_station'))->toBe('program-create-station');
 });
 
