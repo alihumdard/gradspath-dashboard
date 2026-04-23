@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('booking_id')->nullable()->constrained('bookings')->nullOnDelete();
             $table->string('provider', 40);
-            $table->string('provider_meeting_id')->nullable();
+            $table->string('provider_meeting_id', 191)->nullable();
             $table->string('event_id')->nullable();
             $table->string('event_type', 120);
             $table->timestamp('occurred_at')->nullable();
