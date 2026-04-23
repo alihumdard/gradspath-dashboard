@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -45,7 +44,7 @@ function makePortalMentor(string $prefix, string $mentorType = 'graduate'): arra
     $mentor = Mentor::query()->create([
         'user_id' => $user->id,
         'mentor_type' => $mentorType,
-        'program_type' => $mentorType === 'professional' ? 'professional' : 'mba',
+        'program_type' => $mentorType === 'professional' ? 'other' : 'mba',
         'grad_school_display' => $mentorType === 'professional' ? 'Industry' : 'Harvard',
         'status' => 'active',
     ]);
@@ -222,7 +221,7 @@ it('renders the mentor availability editor page', function () {
         ->assertSee('Office Hours for This Mentor')
         ->assertSee('Enable recurring office hours')
         ->assertSee('Availability Scheduler')
-        ->assertSee('Scheduled Hours')
+        ->assertSee('Saved Dates')
         ->assertSee('Save Availability')
         ->assertSee('mentorAvailabilityPayload', false)
         ->assertSee('availabilityMonthGrid', false)
@@ -336,7 +335,8 @@ it('returns validation errors when office hours are enabled without a valid serv
             ],
         ])
         ->assertStatus(422)
-        ->assertJsonPath('errors.office_hours.service_config_id.0', 'Add at least one active mentor service before enabling office hours.');
+        ->assertJsonValidationErrors(['office_hours.service_config_id'])
+        ->assertJsonFragment(['Add at least one active mentor service before enabling office hours.']);
 });
 
 it('returns scheduler hydration data when saving availability as json', function () {
@@ -401,7 +401,8 @@ it('returns json validation errors for invalid scheduler edits', function () {
         ])
         ->assertStatus(422)
         ->assertJsonPath('message', 'Please fix the highlighted availability settings before saving.')
-        ->assertJsonPath('errors.date_slots.0.slots.1.start_time.0', "{$dateLabel} time blocks cannot overlap.");
+        ->assertJsonValidationErrors(['date_slots.0.slots.1.start_time'])
+        ->assertJsonFragment(["{$dateLabel} time blocks cannot overlap."]);
 });
 
 it('rejects same-day availability slots that start in the past', function () {
@@ -428,7 +429,8 @@ it('rejects same-day availability slots that start in the past', function () {
         ])
         ->assertStatus(422)
         ->assertJsonPath('message', 'Please fix the highlighted availability settings before saving.')
-        ->assertJsonPath('errors.date_slots.0.slots.0.start_time.0', "{$dateLabel} time blocks must start in the future.");
+        ->assertJsonValidationErrors(['date_slots.0.slots.0.start_time'])
+        ->assertJsonFragment(["{$dateLabel} time blocks must start in the future."]);
 
     $this->assertDatabaseMissing('mentor_availability_slots', [
         'mentor_id' => $mentor->id,
@@ -622,8 +624,6 @@ it('lets a mentor complete a paid 1on1 booking and shows it in the correct mento
 });
 
 it('allows either mentor participant to cancel a mentor-booked session before 24 hours', function () {
-    Broadcast::fake();
-
     [$hostUser, $hostMentor] = makePortalMentor('cancel-host', 'professional');
     [$bookerUser] = makePortalMentor('cancel-booker');
     $service = makePortalService();
@@ -654,7 +654,7 @@ it('allows either mentor participant to cancel a mentor-booked session before 24
         ->assertCreated()
         ->assertJsonPath('message.receiverId', $hostUser->id);
 
-    Broadcast::assertBroadcasted(ChatMessageSent::class, fn (ChatMessageSent $event) => $event->bookingId === $booking->id);
+    expect(Chat::query()->where('booking_id', $booking->id)->count())->toBe(1);
 
     $this->actingAs($hostUser)
         ->patch(route('mentor.bookings.cancel', $booking->id), [

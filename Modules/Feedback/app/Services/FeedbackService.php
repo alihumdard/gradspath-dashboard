@@ -21,8 +21,8 @@ class FeedbackService
                 throw new \RuntimeException('You cannot submit feedback for this booking.');
             }
 
-            if ($booking->status !== 'completed') {
-                throw new \RuntimeException('Feedback can only be submitted after session completion.');
+            if (! $booking->feedbackUnlocked()) {
+                throw new \RuntimeException('Feedback can only be submitted after attendance is confirmed or the feedback window opens.');
             }
 
             $feedback = Feedback::query()->updateOrCreate(

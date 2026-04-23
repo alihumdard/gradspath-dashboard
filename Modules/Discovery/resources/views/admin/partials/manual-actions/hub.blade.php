@@ -49,6 +49,7 @@
     <button class="manual-nav-btn" type="button" data-section-target="services">Services</button>
     <button class="manual-nav-btn" type="button" data-section-target="pricing">Pricing</button>
     <button class="manual-nav-btn" type="button" data-section-target="feedback">Feedback</button>
+    <button class="manual-nav-btn" type="button" data-section-target="bookings">Bookings</button>
   </div>
 
   <div class="manual-group-grid">

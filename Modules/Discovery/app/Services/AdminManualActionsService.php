@@ -3,6 +3,7 @@
 namespace Modules\Discovery\app\Services;
 
 use Modules\Auth\app\Models\User;
+use Modules\Bookings\app\Models\Booking;
 use Modules\Feedback\app\Models\Feedback;
 use Modules\Institutions\app\Models\University;
 use Modules\Institutions\app\Models\UniversityProgram;
@@ -84,12 +85,23 @@ class AdminManualActionsService
             ->latest('id')
             ->get();
 
+        $bookings = Booking::query()
+            ->with([
+                'booker:id,name,email',
+                'mentor.user:id,name,email',
+                'service:id,service_name',
+            ])
+            ->latest('id')
+            ->limit(100)
+            ->get();
+
         return [
             'summary' => [
                 'mentor_actions' => $mentors->count(),
                 'credit_accounts' => $users->count(),
                 'catalog_items' => $institutions->count() + $programs->count() + $services->count(),
                 'feedback_items' => $feedback->count(),
+                'booking_items' => $bookings->count(),
             ],
             'options' => [
                 'mentor_statuses' => [
@@ -113,10 +125,18 @@ class AdminManualActionsService
                     'top' => 'Top',
                     'regional' => 'Regional',
                 ],
+                'booking_outcomes' => [
+                    'completed' => 'Completed',
+                    'no_show_student' => 'Student no-show',
+                    'no_show_mentor' => 'Mentor no-show',
+                    'interrupted' => 'Interrupted',
+                    'ended_early' => 'Ended early',
+                    'unknown' => 'Unknown',
+                ],
             ],
             'mentors' => $mentors->map(fn (Mentor $mentor) => [
                 'id' => $mentor->id,
-                'label' => trim(($mentor->user?->name ?: 'Unknown mentor') . ' #' . $mentor->id),
+                'label' => trim(($mentor->user?->name ?: 'Unknown mentor').' #'.$mentor->id),
                 'name' => $mentor->user?->name ?: 'Unknown mentor',
                 'email' => $mentor->user?->email ?: '-',
                 'status' => $mentor->status ?: 'pending',
@@ -128,7 +148,7 @@ class AdminManualActionsService
             ])->values()->all(),
             'users' => $users->map(fn (User $user) => [
                 'id' => $user->id,
-                'label' => trim(($user->name ?: 'Unknown user') . ' (' . $user->email . ')'),
+                'label' => trim(($user->name ?: 'Unknown user').' ('.$user->email.')'),
                 'name' => $user->name ?: 'Unknown user',
                 'email' => $user->email,
                 'credits' => (int) ($user->credit?->balance ?? 0),
@@ -146,7 +166,7 @@ class AdminManualActionsService
             ])->values()->all(),
             'programs' => $programs->map(fn (UniversityProgram $program) => [
                 'id' => $program->id,
-                'label' => $program->program_name . ' - ' . ($program->university?->display_name ?: $program->university?->name ?: 'Unknown university'),
+                'label' => $program->program_name.' - '.($program->university?->display_name ?: $program->university?->name ?: 'Unknown university'),
                 'name' => $program->program_name,
                 'university' => $program->university?->display_name ?: $program->university?->name ?: '-',
                 'program_type' => $program->program_type,
@@ -173,7 +193,7 @@ class AdminManualActionsService
             ])->values()->all(),
             'feedback' => $feedback->map(fn (Feedback $item) => [
                 'id' => $item->id,
-                'label' => '#' . $item->id . ' - ' . ($item->mentor?->user?->name ?: 'Unknown mentor'),
+                'label' => '#'.$item->id.' - '.($item->mentor?->user?->name ?: 'Unknown mentor'),
                 'student_name' => $item->student?->name ?: 'Unknown student',
                 'mentor_name' => $item->mentor?->user?->name ?: 'Unknown mentor',
                 'mentor_school' => $item->mentor?->university?->display_name ?: $item->mentor?->university?->name ?: '-',
@@ -182,6 +202,18 @@ class AdminManualActionsService
                 'comment' => $item->comment ?: '',
                 'admin_note' => $item->admin_note ?: '',
                 'is_visible' => (bool) $item->is_visible,
+            ])->values()->all(),
+            'bookings' => $bookings->map(fn (Booking $booking) => [
+                'id' => $booking->id,
+                'label' => '#'.$booking->id.' - '.($booking->service?->service_name ?? 'Service').' - '.($booking->booker?->name ?? 'Booker'),
+                'status' => $booking->status,
+                'session_outcome' => $booking->session_outcome ?: 'completed',
+                'completion_source' => $booking->completion_source ?: 'schedule',
+                'booker_name' => $booking->booker?->name ?? 'Booker',
+                'mentor_name' => $booking->mentor?->user?->name ?? 'Mentor',
+                'service_name' => $booking->service?->service_name ?? 'Service',
+                'session_at' => $booking->session_at?->toIso8601String(),
+                'session_outcome_note' => $booking->session_outcome_note ?? '',
             ])->values()->all(),
         ];
     }

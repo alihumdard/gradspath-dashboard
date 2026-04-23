@@ -5,9 +5,10 @@ namespace Modules\Bookings\app\Jobs;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Mail;
-use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Mail\MentorBookingNotificationMail;
 use Modules\Bookings\app\Mail\StudentBookingConfirmationMail;
+use Modules\Bookings\app\Models\Booking;
+use Modules\Bookings\app\Services\BookingMeetingPresenter;
 
 class SendBookingConfirmationJob implements ShouldQueue
 {
@@ -15,13 +16,13 @@ class SendBookingConfirmationJob implements ShouldQueue
 
     public function __construct(public int $bookingId) {}
 
-    public function handle(): void
+    public function handle(BookingMeetingPresenter $meetingPresenter): void
     {
         $booking = Booking::query()
             ->with(['booker', 'mentor.user', 'service', 'participantRecords'])
             ->find($this->bookingId);
 
-        if (!$booking) {
+        if (! $booking) {
             return;
         }
 
@@ -34,7 +35,7 @@ class SendBookingConfirmationJob implements ShouldQueue
 
         if ($mentorEmail) {
             Mail::to($mentorEmail)->send(new MentorBookingNotificationMail(
-                $this->bookingDetails($booking, 'mentor'),
+                $this->bookingDetails($booking, 'mentor', $meetingPresenter),
                 $mentorUser?->name ?: 'Mentor',
             ));
         }
@@ -52,13 +53,13 @@ class SendBookingConfirmationJob implements ShouldQueue
 
         foreach ($bookingRecipients as $recipient) {
             Mail::to($recipient['email'])->send(new StudentBookingConfirmationMail(
-                $this->bookingDetails($booking, 'student'),
+                $this->bookingDetails($booking, 'student', $meetingPresenter),
                 $recipient['name'],
             ));
         }
     }
 
-    private function bookingDetails(Booking $booking, string $recipientType): array
+    private function bookingDetails(Booking $booking, string $recipientType, BookingMeetingPresenter $meetingPresenter): array
     {
         $bookerName = $booking->booker?->name ?? 'Booker';
         $bookerEmail = $this->normalizeEmail($booking->booker?->email);
@@ -74,8 +75,8 @@ class SendBookingConfirmationJob implements ShouldQueue
             'session_time' => $sessionAt?->format('g:i A') ?? 'TBD',
             'session_timezone' => $booking->session_timezone,
             'meeting_link' => $booking->meeting_link,
-            'meeting_provider' => $this->meetingProviderLabel($booking),
-            'meeting_link_label' => $this->meetingLinkLabel($booking),
+            'meeting_provider' => $meetingPresenter->providerLabel($booking),
+            'meeting_link_label' => $meetingPresenter->linkLabel($booking),
             'calendar_sync_status' => $booking->calendar_sync_status,
             'counterpart_name' => $recipientType === 'mentor' ? $bookerName : $mentorName,
             'counterpart_email' => $recipientType === 'mentor' ? $bookerEmail : null,
@@ -102,37 +103,5 @@ class SendBookingConfirmationJob implements ShouldQueue
         $normalized = strtolower(trim((string) $email));
 
         return $normalized === '' ? null : $normalized;
-    }
-
-    private function meetingProviderLabel(Booking $booking): string
-    {
-        if ($this->isGoogleMeetLink($booking)) {
-            return 'Google Calendar / Google Meet';
-        }
-
-        if ($booking->calendar_provider === 'google_calendar') {
-            return 'Google Calendar Event';
-        }
-
-        return 'Meeting Link';
-    }
-
-    private function meetingLinkLabel(Booking $booking): string
-    {
-        if ($this->isGoogleMeetLink($booking)) {
-            return 'Join Google Meet';
-        }
-
-        if ($booking->calendar_provider === 'google_calendar') {
-            return 'Open Google Calendar Event';
-        }
-
-        return 'Open Meeting Link';
-    }
-
-    private function isGoogleMeetLink(Booking $booking): bool
-    {
-        return $booking->meeting_type === 'google_meet'
-            || str_contains((string) $booking->meeting_link, 'meet.google.com');
     }
 }

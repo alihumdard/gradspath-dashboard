@@ -4,7 +4,7 @@ namespace Modules\Bookings\app\Console;
 
 use Illuminate\Console\Command;
 use Modules\Bookings\app\Models\Booking;
-use Modules\Bookings\app\Services\BookingCalendarSyncService;
+use Modules\Bookings\app\Services\BookingMeetingSyncService;
 
 class ResyncBookingMeetingsCommand extends Command
 {
@@ -12,9 +12,9 @@ class ResyncBookingMeetingsCommand extends Command
         {booking_ids?* : Specific booking IDs to resync}
         {--failed : Only retry bookings currently marked as failed}';
 
-    protected $description = 'Retry Google Calendar / meeting link sync for existing bookings.';
+    protected $description = 'Retry Zoom meeting sync for existing bookings.';
 
-    public function __construct(private readonly BookingCalendarSyncService $calendarSync)
+    public function __construct(private readonly BookingMeetingSyncService $meetingSync)
     {
         parent::__construct();
     }
@@ -36,7 +36,7 @@ class ResyncBookingMeetingsCommand extends Command
         $skipped = 0;
 
         foreach ($bookings as $booking) {
-            $result = $this->calendarSync->syncCreatedBooking($booking);
+            $result = $this->meetingSync->syncCreatedBooking($booking);
 
             $status = (string) $result->calendar_sync_status;
             $link = (string) ($result->meeting_link ?? '');

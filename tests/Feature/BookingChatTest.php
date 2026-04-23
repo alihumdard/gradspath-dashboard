@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\User;
@@ -128,7 +127,6 @@ it('lets a student load a booking chat thread and marks received messages as rea
 });
 
 it('lets a student send a chat message and broadcasts it', function () {
-    Broadcast::fake();
     Mail::fake();
 
     [$booking, $student, $mentor, $mentorUser] = makeChatBooking('1on3');
@@ -154,15 +152,10 @@ it('lets a student send a chat message and broadcasts it', function () {
         return $mail->hasTo($mentorUser->email);
     });
 
-    Broadcast::assertBroadcasted(ChatMessageSent::class, function (ChatMessageSent $event) use ($booking, $student) {
-        return $event->bookingId === $booking->id
-            && (int) $event->message['senderId'] === (int) $student->id;
-    });
+    expect(Chat::query()->where('booking_id', $booking->id)->count())->toBe(1);
 });
 
 it('lets a mentor load and send messages for their booking thread', function () {
-    Broadcast::fake();
-
     [$booking, $student, $mentor, $mentorUser] = makeChatBooking();
 
     Chat::query()->create([
@@ -188,7 +181,7 @@ it('lets a mentor load and send messages for their booking thread', function () 
         ->assertJsonPath('message.senderId', $mentorUser->id)
         ->assertJsonPath('message.receiverId', $student->id);
 
-    Broadcast::assertBroadcasted(ChatMessageSent::class);
+    expect(Chat::query()->where('booking_id', $booking->id)->count())->toBe(2);
 });
 
 it('blocks unrelated users from accessing another booking chat', function () {

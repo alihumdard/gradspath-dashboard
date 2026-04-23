@@ -13,6 +13,7 @@ use Modules\Bookings\app\Exceptions\BookingException;
 use Modules\Bookings\app\Http\Requests\CancelBookingRequest;
 use Modules\Bookings\app\Http\Requests\CreateBookingRequest;
 use Modules\Bookings\app\Models\Booking;
+use Modules\Bookings\app\Services\BookingMeetingPresenter;
 use Modules\Bookings\app\Services\BookingPageService;
 use Modules\Bookings\app\Services\BookingService;
 use Modules\Payments\app\Models\ServiceConfig;
@@ -22,7 +23,8 @@ class BookingController extends Controller
 {
     public function __construct(
         private readonly BookingService $bookings,
-        private readonly BookingPageService $bookingPage
+        private readonly BookingPageService $bookingPage,
+        private readonly BookingMeetingPresenter $meetingPresenter,
     ) {}
 
     public function index(Request $request): View
@@ -76,7 +78,7 @@ class BookingController extends Controller
         $service = ServiceConfig::query()->findOrFail((int) $request->validated()['service_config_id']);
         $sessionType = (string) $request->validated()['session_type'];
 
-        if (!$service->is_office_hours && $this->amountCharged($service, $sessionType) > 0) {
+        if (! $service->is_office_hours && $this->amountCharged($service, $sessionType) > 0) {
             return back()
                 ->withErrors(['booking' => 'Please complete payment with Stripe before creating this booking.'])
                 ->withInput();
@@ -197,12 +199,18 @@ class BookingController extends Controller
             'sessionTimeLabel' => $sessionAt?->format('g:i A'),
             'sessionMonthLabel' => $sessionAt?->format('F Y'),
             'meetingLink' => $booking->meeting_link,
-            'meetingProvider' => $this->meetingProviderLabel($booking),
-            'meetingLinkLabel' => $this->meetingLinkLabel($booking),
+            'meetingProvider' => $this->meetingPresenter->providerLabel($booking),
+            'meetingLinkLabel' => $this->meetingPresenter->linkLabel($booking),
             'meetingLinkStatus' => (string) ($booking->calendar_sync_status ?: 'not_synced'),
-            'meetingLinkStatusMessage' => $this->meetingLinkStatusMessage($booking),
+            'meetingLinkStatusMessage' => $this->meetingPresenter->statusMessage($booking),
+            'meetingState' => $this->meetingPresenter->scheduledState($booking),
+            'meetingStateLabel' => $this->meetingPresenter->scheduledStateLabel($booking),
+            'attendanceStatus' => $this->meetingPresenter->attendanceStatus($booking),
+            'attendanceLabel' => $this->meetingPresenter->attendanceLabel($booking),
+            'feedbackAllowed' => $this->meetingPresenter->feedbackAllowed($booking),
+            'feedbackUnlockReason' => $this->meetingPresenter->feedbackUnlockReason($booking),
             'status' => $booking->status,
-            'isUpcoming' => $sessionAt ? $sessionAt->isFuture() : false,
+            'isUpcoming' => $this->meetingPresenter->scheduledState($booking) !== 'ended',
             'isTodayOrFuture' => $sessionAt ? $sessionAt->greaterThanOrEqualTo(now()->startOfDay()) : false,
             'canCancel' => in_array((string) $booking->status, ['pending', 'confirmed'], true)
                 && $booking->isSelfCancellationWindowOpen(),
@@ -260,57 +268,5 @@ class BookingController extends Controller
             'other', null, '' => null,
             default => str_replace('_', ' ', ucfirst((string) $programType)),
         };
-    }
-
-    private function meetingLinkStatusMessage(Booking $booking): string
-    {
-        if ($booking->meeting_link) {
-            return $this->isGoogleMeetLink($booking)
-                ? 'Google Meet link is ready.'
-                : ($booking->calendar_provider === 'google_calendar'
-                    ? 'Google Calendar event link is ready.'
-                    : 'Meeting link is ready.');
-        }
-
-        return match ((string) $booking->calendar_sync_status) {
-            'synced' => $booking->calendar_provider === 'google_calendar'
-                ? 'Google Calendar event is ready.'
-                : 'Meeting link is ready.',
-            'failed' => 'Meeting link could not be generated automatically yet.',
-            'skipped' => 'Meeting link has not been generated for this booking yet.',
-            default => 'Meeting link will be shared soon.',
-        };
-    }
-
-    private function meetingProviderLabel(Booking $booking): string
-    {
-        if ($this->isGoogleMeetLink($booking)) {
-            return 'Google Meet';
-        }
-
-        if ($booking->calendar_provider === 'google_calendar') {
-            return 'Google Calendar';
-        }
-
-        return 'Meeting Link';
-    }
-
-    private function meetingLinkLabel(Booking $booking): string
-    {
-        if ($this->isGoogleMeetLink($booking)) {
-            return 'Join Google Meet';
-        }
-
-        if ($booking->calendar_provider === 'google_calendar') {
-            return 'Open Calendar Event';
-        }
-
-        return 'Open Meeting Link';
-    }
-
-    private function isGoogleMeetLink(Booking $booking): bool
-    {
-        return $booking->meeting_type === 'google_meet'
-            || str_contains((string) $booking->meeting_link, 'meet.google.com');
     }
 }

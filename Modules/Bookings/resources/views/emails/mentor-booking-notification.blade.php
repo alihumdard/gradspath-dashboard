@@ -14,7 +14,7 @@
                         <td style="padding:32px 32px 24px; background:linear-gradient(135deg, #5b3df5 0%, #7c5cff 100%); color:#ffffff;">
                             <div style="font-size:12px; letter-spacing:1.6px; text-transform:uppercase; opacity:0.88;">Grads Paths</div>
                             <h1 style="margin:14px 0 10px; font-size:28px; line-height:1.2;">A new booking was made with you</h1>
-                            <p style="margin:0; font-size:16px; line-height:1.6;">Hi {{ $recipientName }}, {{ $booking['booker_name'] }} has confirmed a session with you. A Google Calendar invite should be sent when calendar sync is available.</p>
+                            <p style="margin:0; font-size:16px; line-height:1.6;">Hi {{ $recipientName }}, {{ $booking['booker_name'] }} has confirmed a session with you. Your Zoom meeting link is included below and will remain available on your bookings page.</p>
                         </td>
                     </tr>
 
@@ -80,7 +80,7 @@
 
                     <tr>
                         <td style="padding:8px 32px 32px;">
-                            <p style="margin:0; font-size:14px; line-height:1.7; color:#4b5563;">Please review the details above and use the meeting link or Google Calendar invite at session time. If anything changes, we recommend handling updates through the platform rather than sharing personal contact details by email.</p>
+                            <p style="margin:0; font-size:14px; line-height:1.7; color:#4b5563;">Please review the details above and use the Zoom meeting link at session time. If anything changes, we recommend handling updates through the platform rather than sharing personal contact details by email.</p>
                             <p style="margin:22px 0 0; font-size:14px; line-height:1.7; color:#4b5563;">Thanks,<br><strong>Grads Paths</strong></p>
                         </td>
                     </tr>

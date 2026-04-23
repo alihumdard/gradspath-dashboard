@@ -23,14 +23,6 @@ class RegisterRequest extends FormRequest
                 'required',
                 'email',
                 'max:255',
-                function (string $attribute, mixed $value, \Closure $fail): void {
-                    $email = mb_strtolower((string) $value);
-                    $domain = str_contains($email, '@') ? explode('@', $email, 2)[1] : '';
-
-                    if (!str_contains($domain, '.edu')) {
-                        $fail('Please use a valid .edu email address.');
-                    }
-                },
                 'unique:users,email',
             ],
             'password' => ['required', 'confirmed', Password::min(8)->letters()],

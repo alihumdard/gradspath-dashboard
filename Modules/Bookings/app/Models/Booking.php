@@ -6,11 +6,9 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Auth\app\Models\User;
-use Modules\Bookings\app\Models\MentorAvailabilitySlot;
-use Modules\Bookings\app\Models\BookingParticipant;
-use Modules\Bookings\app\Models\Chat;
 use Modules\Feedback\app\Models\Feedback;
 use Modules\Feedback\app\Models\MentorFeedback;
 use Modules\OfficeHours\app\Models\OfficeHourSession;
@@ -48,7 +46,18 @@ class Booking extends Model
         'cancelled_at',
         'cancel_reason',
         'cancelled_by',
+        'completed_at',
+        'completion_source',
+        'session_outcome',
+        'session_outcome_note',
+        'attendance_status',
+        'actual_started_at',
+        'actual_ended_at',
+        'host_joined_at',
+        'first_attendee_joined_at',
+        'attendance_overlap_minutes',
         'feedback_due_at',
+        'feedback_unlocked_at',
         'student_feedback_done',
         'mentor_feedback_done',
         'is_group_payer',
@@ -57,12 +66,19 @@ class Booking extends Model
 
     protected $casts = [
         'cancelled_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'actual_started_at' => 'datetime',
+        'actual_ended_at' => 'datetime',
+        'host_joined_at' => 'datetime',
+        'first_attendee_joined_at' => 'datetime',
         'feedback_due_at' => 'datetime',
+        'feedback_unlocked_at' => 'datetime',
         'student_feedback_done' => 'boolean',
         'mentor_feedback_done' => 'boolean',
         'is_group_payer' => 'boolean',
         'credits_charged' => 'integer',
         'requested_group_size' => 'integer',
+        'attendance_overlap_minutes' => 'integer',
         'amount_charged' => 'decimal:2',
         'pricing_snapshot' => 'array',
     ];
@@ -82,11 +98,22 @@ class Booking extends Model
 
     public function sessionAtInTimezone(?string $timezone = null): ?Carbon
     {
-        if (!$this->session_at) {
+        if (! $this->session_at) {
             return null;
         }
 
         return $this->session_at->copy()->setTimezone($timezone ?: ($this->session_timezone ?: config('app.timezone', 'UTC')));
+    }
+
+    public function scheduledEndAt(): ?Carbon
+    {
+        return $this->session_at?->copy()->addMinutes(max((int) $this->duration_minutes, 1));
+    }
+
+    public function feedbackUnlocked(): bool
+    {
+        return $this->attendance_status === 'attended'
+            || ($this->feedback_unlocked_at !== null && $this->feedback_unlocked_at->lessThanOrEqualTo(now()));
     }
 
     public function student(): BelongsTo
@@ -124,7 +151,12 @@ class Booking extends Model
         return $this->belongsTo(OfficeHourSession::class, 'office_hour_session_id');
     }
 
-    public function participants(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function meetingEvents(): HasMany
+    {
+        return $this->hasMany(BookingMeetingEvent::class, 'booking_id');
+    }
+
+    public function participants(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'booking_participants')
             ->withPivot(['participant_role', 'is_primary'])

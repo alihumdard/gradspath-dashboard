@@ -44,6 +44,20 @@ return [
         'booking_cancel_url' => env('STRIPE_BOOKING_CANCEL_URL'),
     ],
 
+    'zoom' => [
+        'enabled' => env('ZOOM_ENABLED', false),
+        'account_id' => env('ZOOM_ACCOUNT_ID'),
+        'client_id' => env('ZOOM_CLIENT_ID'),
+        'client_secret' => env('ZOOM_CLIENT_SECRET'),
+        'api_base' => env('ZOOM_API_BASE', 'https://api.zoom.us/v2'),
+        'webhook_secret_token' => env('ZOOM_WEBHOOK_SECRET_TOKEN'),
+        'attendance' => [
+            'no_show_grace_minutes' => (int) env('ZOOM_ATTENDANCE_NO_SHOW_GRACE_MINUTES', 15),
+            'feedback_fallback_grace_minutes' => (int) env('ZOOM_ATTENDANCE_FEEDBACK_FALLBACK_GRACE_MINUTES', 60),
+            'minimum_overlap_minutes' => (int) env('ZOOM_ATTENDANCE_MINIMUM_OVERLAP_MINUTES', 5),
+        ],
+    ],
+
     'google_calendar' => [
         'enabled' => env('GOOGLE_CALENDAR_ENABLED', false),
         'calendar_id' => env('GOOGLE_CALENDAR_ID'),

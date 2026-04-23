@@ -1,17 +1,19 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
-uses(RefreshDatabase::class);
+uses(DatabaseTransactions::class);
 
 beforeEach(function () {
     app(PermissionRegistrar::class)->forgetCachedPermissions();
 
     Role::findOrCreate('admin', 'web');
+    Role::findOrCreate('student', 'web');
+    Role::findOrCreate('mentor', 'web');
 });
 
 function createAdminNavigationUser(): User

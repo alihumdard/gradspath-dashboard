@@ -59,8 +59,8 @@ class AdminOverviewService
         $revenueSummary = $this->revenue->build('30d')['summary'];
 
         $summary = [
-            'total_users' => User::query()->role('student')->count(),
-            'new_users_30d' => User::query()->role('student')->where('created_at', '>=', $last30Days)->count(),
+            'total_users' => $this->students()->count(),
+            'new_users_30d' => $this->students()->where('created_at', '>=', $last30Days)->count(),
             'active_mentors' => Mentor::query()->where('status', 'active')->count(),
             'inactive_mentors' => Mentor::query()->where('status', '!=', 'active')->orWhereNull('status')->count(),
             'bookings_30d' => $validBookingsLast30Days->count(),
@@ -82,6 +82,14 @@ class AdminOverviewService
                 'top_services' => $this->topServices($validBookingsLast30Days),
             ],
         ];
+    }
+
+    private function students()
+    {
+        return User::query()->whereHas('roles', function ($query) {
+            $query->where('name', 'student')
+                ->where('guard_name', config('auth.defaults.guard', 'web'));
+        });
     }
 
     private function monthlyBookingsChart(Collection $bookings, Carbon $startMonth): array
