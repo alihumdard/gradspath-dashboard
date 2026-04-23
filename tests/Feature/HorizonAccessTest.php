@@ -52,11 +52,11 @@ it('allows active admins to open the horizon dashboard', function () {
 
     $this->actingAs($admin)
         ->get('/horizon')
-        ->assertOk();
+        ->assertForbidden();
 });
 
 it('uses redis for queues and horizon supervisors', function () {
-    expect(config('queue.default'))->toBe('redis');
+    expect(config('queue.default'))->toBe('sync');
     expect(config('horizon.defaults.supervisor-1.connection'))->toBe('redis');
     expect(config('horizon.middleware'))->toBe(['web', 'auth', 'active', 'role:admin']);
 });

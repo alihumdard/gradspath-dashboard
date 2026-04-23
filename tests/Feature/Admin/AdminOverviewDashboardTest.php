@@ -119,7 +119,7 @@ it('builds dynamic admin overview data and renders the live overview page', func
         'grad_school_display' => 'Inactive School',
         'mentor_type' => 'graduate',
         'program_type' => 'law',
-        'status' => 'inactive',
+        'status' => 'paused',
     ]);
 
     $service = ServiceConfig::query()->create([

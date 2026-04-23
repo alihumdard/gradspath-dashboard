@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Modules\Bookings\app\Exceptions\BookingException;
 use Modules\Bookings\app\Http\Requests\CancelBookingRequest;
 use Modules\Bookings\app\Http\Requests\CreateBookingRequest;
@@ -75,7 +76,7 @@ class BookingController extends Controller
     public function cancel(CancelBookingRequest $request, int $id): RedirectResponse
     {
         $booking = Booking::query()->findOrFail($id);
-        $this->authorize('cancel', $booking);
+        Gate::authorize('cancel', $booking);
 
         try {
             $this->bookings->cancelBooking($booking, Auth::user(), $request->validated()['reason'] ?? null);

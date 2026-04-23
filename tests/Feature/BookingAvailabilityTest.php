@@ -1,5 +1,6 @@
 <?php
 
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -7,11 +8,15 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\User;
-use Modules\Bookings\app\Mail\BookingCancelledNotificationMail;
 use Modules\Bookings\app\Jobs\SendBookingConfirmationJob;
+use Modules\Bookings\app\Jobs\SendBookingReminderJob;
+use Modules\Bookings\app\Mail\BookingCancelledNotificationMail;
 use Modules\Bookings\app\Mail\MentorBookingNotificationMail;
 use Modules\Bookings\app\Mail\StudentBookingConfirmationMail;
 use Modules\Bookings\app\Models\Booking;
+use Modules\Bookings\app\Models\BookingMeetingEvent;
+use Modules\Feedback\app\Services\FeedbackService;
+use Modules\Bookings\app\Services\ZoomService;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Payments\app\Models\UserCredit;
 use Modules\Settings\app\Models\Mentor;
@@ -28,31 +33,27 @@ beforeEach(function () {
     Role::findOrCreate('admin', 'web');
 });
 
-function fakeGoogleCalendarSync(string $eventId = 'google-event-123', string $hangoutLink = 'https://meet.google.com/test-room'): void
+function fakeZoomApi(string $meetingId = 'zoom-meeting-123', string $joinUrl = 'https://zoom.us/j/9876543210'): void
 {
     config([
-        'services.google_calendar.enabled' => true,
-        'services.google_calendar.calendar_id' => 'calendar@example.com',
-        'services.google_calendar.service_account_email' => 'service-account@example.iam.gserviceaccount.com',
-        'services.google_calendar.private_key' => "-----BEGIN PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEApQxB9frx8aCSHksF\nX0ougzjVKmUkl0Ez0lGtCaUeMhHPzPUBEnr6MzYxbouYTKHjSnHXHENxrnySVKN4\nTUkYGQIDAQABAkBCYyjRAWx6LYU4rCJwDs2guKZ9lAtgz7hBe9rnS0RXDM+KGoIh\njO3eaBny4sNhNeKfTeiW1TxdWcmcA1mBTKhRAiEA1wnSgHmNHUrLP5LfNoguQV5W\nj5VSPaxsGGaT1nFEgT0CIQDEfLA8mSHr1La6eX6okCnUAG/YuTgpbT8mNepdauEo\nDQIhAILsEwJvfvAPopFRPZ946BiadD81HX45JRLyGR5dleTNAiBWBZDStugW62Wk\ndhRxj8wAOMC+zTg9Ssre27Pjeitg8QIgQ9tk9PrZB257H09IsYmfQW6DodFQEFtf\nldnpc0Ywzkc=\n-----END PRIVATE KEY-----",
+        'services.zoom.enabled' => true,
+        'services.zoom.account_id' => 'zoom-account-123',
+        'services.zoom.client_id' => 'zoom-client-id',
+        'services.zoom.client_secret' => 'zoom-client-secret',
+        'services.zoom.api_base' => 'https://api.zoom.us/v2',
     ]);
 
     Http::fake([
-        'https://oauth2.googleapis.com/token' => Http::response([
-            'access_token' => 'google-access-token',
+        'https://zoom.us/oauth/token' => Http::response([
+            'access_token' => 'zoom-access-token',
             'expires_in' => 3600,
             'token_type' => 'Bearer',
         ], 200),
-        'https://www.googleapis.com/calendar/v3/calendars/*?conferenceDataVersion=1' => Http::response([
-            'conferenceProperties' => [
-                'allowedConferenceSolutionTypes' => ['hangoutsMeet'],
-            ],
+        'https://api.zoom.us/v2/users/me/meetings' => Http::response([
+            'id' => $meetingId,
+            'join_url' => $joinUrl,
         ], 200),
-        'https://www.googleapis.com/calendar/v3/calendars/*/events?conferenceDataVersion=1&sendUpdates=all' => Http::response([
-            'id' => $eventId,
-            'hangoutLink' => $hangoutLink,
-        ], 200),
-        'https://www.googleapis.com/calendar/v3/calendars/*/events/*?sendUpdates=all' => Http::response([], 204),
+        'https://api.zoom.us/v2/meetings/*' => Http::response([], 204),
     ]);
 }
 
@@ -147,7 +148,13 @@ it('returns only real available slot months days and times', function () {
     $student = makeUser('student');
     $student->assignRole('student');
     $mentor = makeMentor();
-    $service = makeService();
+    $service = makeService([
+        'price_1on1' => 0,
+        'price_1on3_per_person' => 0,
+        'price_1on3_total' => 0,
+        'price_1on5_per_person' => 0,
+        'price_1on5_total' => 0,
+    ]);
 
     DB::table('mentor_services')->insert([
         'mentor_id' => $mentor->id,
@@ -284,7 +291,7 @@ it('returns recurring office-hours availability as one date with session details
     ]);
 
     $sessionDate = now()->addDays(7)->toDateString();
-    $sessionMonth = \Carbon\Carbon::parse($sessionDate)->format('Y-m');
+    $sessionMonth = Carbon::parse($sessionDate)->format('Y-m');
 
     $scheduleId = DB::table('office_hour_schedules')->insertGetId([
         'mentor_id' => $mentor->id,
@@ -365,6 +372,11 @@ it('creates a booking from a selected availability slot and reserves it', functi
     $mentor = makeMentor();
     $service = makeService([
         'service_slug' => 'program-insights-'.Str::lower(Str::random(5)),
+        'price_1on1' => 0,
+        'price_1on3_per_person' => 0,
+        'price_1on3_total' => 0,
+        'price_1on5_per_person' => 0,
+        'price_1on5_total' => 0,
     ]);
 
     DB::table('mentor_services')->insert([
@@ -432,7 +444,7 @@ it('creates a booking from a selected availability slot and reserves it', functi
 
 it('queues a confirmation job and sends booking emails for 1on1 to student and mentor', function () {
     Queue::fake();
-    fakeGoogleCalendarSync();
+    fakeZoomApi();
 
     $student = makeUser('booking-student');
     $student->assignRole('student');
@@ -442,7 +454,11 @@ it('queues a confirmation job and sends booking emails for 1on1 to student and m
     $service = makeService([
         'service_name' => 'Application Review',
         'service_slug' => 'application-review-'.Str::lower(Str::random(5)),
-        'price_1on1' => 60,
+        'price_1on1' => 0,
+        'price_1on3_per_person' => 0,
+        'price_1on3_total' => 0,
+        'price_1on5_per_person' => 0,
+        'price_1on5_total' => 0,
     ]);
 
     attachMentorService($mentor, $service);
@@ -462,10 +478,11 @@ it('queues a confirmation job and sends booking emails for 1on1 to student and m
         ->latest('id')
         ->firstOrFail();
 
-    expect($booking->meeting_link)->toBe('https://meet.google.com/test-room')
-        ->and($booking->meeting_type)->toBe('google_meet')
+    expect($booking->meeting_link)->toBe('https://zoom.us/j/9876543210')
+        ->and($booking->meeting_type)->toBe('zoom')
+        ->and($booking->calendar_provider)->toBe('zoom')
         ->and($booking->calendar_sync_status)->toBe('synced')
-        ->and($booking->external_calendar_event_id)->toBe('google-event-123');
+        ->and($booking->external_calendar_event_id)->toBe('zoom-meeting-123');
 
     Queue::assertPushed(SendBookingConfirmationJob::class, function (SendBookingConfirmationJob $job) use ($booking) {
         return $job->bookingId === $booking->id;
@@ -473,16 +490,16 @@ it('queues a confirmation job and sends booking emails for 1on1 to student and m
 
     Mail::fake();
 
-    (new SendBookingConfirmationJob($booking->id))->handle();
+    app()->call([new SendBookingConfirmationJob($booking->id), 'handle']);
 
     Mail::assertSent(StudentBookingConfirmationMail::class, function (StudentBookingConfirmationMail $mail) use ($student, $mentor, $booking) {
         return $mail->hasTo($student->email)
             && $mail->bookingDetails['counterpart_name'] === $mentor->user->name
             && $mail->bookingDetails['mentor_name'] === $mentor->user->name
-            && !array_key_exists('mentor_email', $mail->bookingDetails)
+            && ! array_key_exists('mentor_email', $mail->bookingDetails)
             && $mail->bookingDetails['session_time'] === '1:00 PM'
             && $mail->bookingDetails['meeting_link'] === $booking->meeting_link
-            && !str_contains($mail->render(), $mentor->user->email);
+            && ! str_contains($mail->render(), $mentor->user->email);
     });
 
     Mail::assertSent(MentorBookingNotificationMail::class, function (MentorBookingNotificationMail $mail) use ($mentor, $student, $booking) {
@@ -495,27 +512,23 @@ it('queues a confirmation job and sends booking emails for 1on1 to student and m
     });
 });
 
-it('keeps the booking when google calendar sync fails and still queues confirmation emails', function () {
+it('keeps the booking when zoom sync fails and still queues confirmation emails', function () {
     Queue::fake();
 
     config([
-        'services.google_calendar.enabled' => true,
-        'services.google_calendar.calendar_id' => 'calendar@example.com',
-        'services.google_calendar.service_account_email' => 'service-account@example.iam.gserviceaccount.com',
-        'services.google_calendar.private_key' => "-----BEGIN PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEApQxB9frx8aCSHksF\nX0ougzjVKmUkl0Ez0lGtCaUeMhHPzPUBEnr6MzYxbouYTKHjSnHXHENxrnySVKN4\nTUkYGQIDAQABAkBCYyjRAWx6LYU4rCJwDs2guKZ9lAtgz7hBe9rnS0RXDM+KGoIh\njO3eaBny4sNhNeKfTeiW1TxdWcmcA1mBTKhRAiEA1wnSgHmNHUrLP5LfNoguQV5W\nj5VSPaxsGGaT1nFEgT0CIQDEfLA8mSHr1La6eX6okCnUAG/YuTgpbT8mNepdauEo\nDQIhAILsEwJvfvAPopFRPZ946BiadD81HX45JRLyGR5dleTNAiBWBZDStugW62Wk\ndhRxj8wAOMC+zTg9Ssre27Pjeitg8QIgQ9tk9PrZB257H09IsYmfQW6DodFQEFtf\nldnpc0Ywzkc=\n-----END PRIVATE KEY-----",
+        'services.zoom.enabled' => true,
+        'services.zoom.account_id' => 'zoom-account-123',
+        'services.zoom.client_id' => 'zoom-client-id',
+        'services.zoom.client_secret' => 'zoom-client-secret',
+        'services.zoom.api_base' => 'https://api.zoom.us/v2',
     ]);
 
     Http::fake([
-        'https://oauth2.googleapis.com/token' => Http::response([
-            'access_token' => 'google-access-token',
+        'https://zoom.us/oauth/token' => Http::response([
+            'access_token' => 'zoom-access-token',
         ], 200),
-        'https://www.googleapis.com/calendar/v3/calendars/*?conferenceDataVersion=1' => Http::response([
-            'conferenceProperties' => [
-                'allowedConferenceSolutionTypes' => ['hangoutsMeet'],
-            ],
-        ], 200),
-        'https://www.googleapis.com/calendar/v3/calendars/*/events?conferenceDataVersion=1&sendUpdates=all' => Http::response([
-            'error' => ['message' => 'calendar create failed'],
+        'https://api.zoom.us/v2/users/me/meetings' => Http::response([
+            'message' => 'zoom create failed',
         ], 500),
     ]);
 
@@ -524,7 +537,13 @@ it('keeps the booking when google calendar sync fails and still queues confirmat
     fundStudent($student);
 
     $mentor = makeMentor();
-    $service = makeService();
+    $service = makeService([
+        'price_1on1' => 0,
+        'price_1on3_per_person' => 0,
+        'price_1on3_total' => 0,
+        'price_1on5_per_person' => 0,
+        'price_1on5_total' => 0,
+    ]);
     attachMentorService($mentor, $service);
     $slotId = createAvailabilitySlot($mentor, $service, '1on1');
 
@@ -544,56 +563,42 @@ it('keeps the booking when google calendar sync fails and still queues confirmat
     Queue::assertPushed(SendBookingConfirmationJob::class, fn (SendBookingConfirmationJob $job) => $job->bookingId === $booking->id);
 });
 
-it('uses the calendar supported conference type dynamically for google events', function () {
-    Queue::fake();
-
+it('exchanges a zoom server-to-server token when the service is configured', function () {
     config([
-        'services.google_calendar.enabled' => true,
-        'services.google_calendar.calendar_id' => 'calendar@example.com',
-        'services.google_calendar.service_account_email' => 'service-account@example.iam.gserviceaccount.com',
-        'services.google_calendar.private_key' => "-----BEGIN PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEApQxB9frx8aCSHksF\nX0ougzjVKmUkl0Ez0lGtCaUeMhHPzPUBEnr6MzYxbouYTKHjSnHXHENxrnySVKN4\nTUkYGQIDAQABAkBCYyjRAWx6LYU4rCJwDs2guKZ9lAtgz7hBe9rnS0RXDM+KGoIh\njO3eaBny4sNhNeKfTeiW1TxdWcmcA1mBTKhRAiEA1wnSgHmNHUrLP5LfNoguQV5W\nj5VSPaxsGGaT1nFEgT0CIQDEfLA8mSHr1La6eX6okCnUAG/YuTgpbT8mNepdauEo\nDQIhAILsEwJvfvAPopFRPZ946BiadD81HX45JRLyGR5dleTNAiBWBZDStugW62Wk\ndhRxj8wAOMC+zTg9Ssre27Pjeitg8QIgQ9tk9PrZB257H09IsYmfQW6DodFQEFtf\nldnpc0Ywzkc=\n-----END PRIVATE KEY-----",
+        'services.zoom.enabled' => true,
+        'services.zoom.account_id' => 'zoom-account-123',
+        'services.zoom.client_id' => 'zoom-client-id',
+        'services.zoom.client_secret' => 'zoom-client-secret',
+        'services.zoom.api_base' => 'https://api.zoom.us/v2',
     ]);
 
-    Http::fake(function (\Illuminate\Http\Client\Request $request) {
-        if ($request->url() === 'https://oauth2.googleapis.com/token') {
-            return Http::response([
-                'access_token' => 'google-access-token',
-                'expires_in' => 3600,
-                'token_type' => 'Bearer',
-            ], 200);
-        }
+    Http::fake([
+        'https://zoom.us/oauth/token' => Http::response([
+            'access_token' => 'zoom-access-token',
+            'expires_in' => 3600,
+            'token_type' => 'Bearer',
+        ], 200),
+    ]);
 
-        if (str_contains($request->url(), '/calendars/calendar%40example.com?conferenceDataVersion=1')) {
-            return Http::response([
-                'conferenceProperties' => [
-                    'allowedConferenceSolutionTypes' => ['eventHangout'],
-                ],
-            ], 200);
-        }
+    expect(app(ZoomService::class)->accessToken())->toBe('zoom-access-token');
+});
 
-        if (str_contains($request->url(), '/events?conferenceDataVersion=1&sendUpdates=all')) {
-            expect(data_get($request->data(), 'conferenceData.createRequest.conferenceSolutionKey.type'))
-                ->toBe('eventHangout');
+it('queues reminder emails for confirmed bookings in the selected reminder window', function () {
+    Queue::fake();
+    fakeZoomApi();
 
-            return Http::response([
-                'id' => 'google-event-legacy-hangout',
-                'hangoutLink' => 'https://hangouts.google.com/test-room',
-            ], 200);
-        }
-
-        if (str_contains($request->url(), '/events/') && str_contains($request->url(), 'sendUpdates=all')) {
-            return Http::response([], 204);
-        }
-
-        return Http::response([], 404);
-    });
-
-    $student = makeUser('booking-student-dynamic-google');
+    $student = makeUser('booking-student-reminder');
     $student->assignRole('student');
     fundStudent($student);
 
     $mentor = makeMentor();
-    $service = makeService();
+    $service = makeService([
+        'price_1on1' => 0,
+        'price_1on3_per_person' => 0,
+        'price_1on3_total' => 0,
+        'price_1on5_per_person' => 0,
+        'price_1on5_total' => 0,
+    ]);
     attachMentorService($mentor, $service);
     $slotId = createAvailabilitySlot($mentor, $service, '1on1');
 
@@ -608,21 +613,447 @@ it('uses the calendar supported conference type dynamically for google events', 
 
     $booking = Booking::query()->latest('id')->firstOrFail();
 
-    expect($booking->calendar_sync_status)->toBe('synced')
-        ->and($booking->meeting_link)->toBe('https://hangouts.google.com/test-room')
-        ->and($booking->external_calendar_event_id)->toBe('google-event-legacy-hangout');
+    $booking->update([
+        'session_at' => now()->utc()->addHours(24),
+        'status' => 'confirmed',
+    ]);
+
+    $this->artisan('bookings:send-reminders', ['--hours' => 24])
+        ->assertSuccessful();
+
+    Queue::assertPushed(SendBookingReminderJob::class, fn (SendBookingReminderJob $job) => $job->bookingId === $booking->id && $job->hoursUntilSession === 24);
+});
+
+it('marks confirmed bookings completed only after the scheduled end time', function () {
+    $student = makeUser('completion-student');
+    $student->assignRole('student');
+    $mentor = makeMentor();
+    $service = makeService([
+        'price_1on1' => 0,
+        'price_1on3_per_person' => 0,
+        'price_1on3_total' => 0,
+        'price_1on5_per_person' => 0,
+        'price_1on5_total' => 0,
+    ]);
+    attachMentorService($mentor, $service);
+
+    $booking = Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'session_at' => now()->subMinutes(75),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'status' => 'confirmed',
+        'approval_status' => 'not_required',
+    ]);
+
+    $futureBooking = Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'session_at' => now()->subMinutes(20),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'status' => 'confirmed',
+        'approval_status' => 'not_required',
+    ]);
+
+    $this->artisan('bookings:mark-completed')
+        ->assertSuccessful();
+
+    expect($booking->fresh()->status)->toBe('completed')
+        ->and($booking->fresh()->completion_source)->toBe('schedule')
+        ->and($booking->fresh()->session_outcome)->toBe('unknown')
+        ->and($booking->fresh()->completed_at)->not->toBeNull()
+        ->and($booking->fresh()->feedback_due_at)->not->toBeNull();
+
+    expect($futureBooking->fresh()->status)->toBe('confirmed')
+        ->and($futureBooking->fresh()->completed_at)->toBeNull();
+});
+
+it('stores zoom webhook events and does not complete unrelated bookings', function () {
+    config([
+        'services.zoom.webhook_secret_token' => 'zoom-secret-token',
+    ]);
+
+    $student = makeUser('webhook-student');
+    $student->assignRole('student');
+    $mentor = makeMentor();
+    $service = makeService([
+        'price_1on1' => 0,
+        'price_1on3_per_person' => 0,
+        'price_1on3_total' => 0,
+        'price_1on5_per_person' => 0,
+        'price_1on5_total' => 0,
+    ]);
+
+    $booking = Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'session_at' => now()->addHour(),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'external_calendar_event_id' => '85787873250',
+        'status' => 'confirmed',
+        'approval_status' => 'not_required',
+    ]);
+
+    $payload = [
+        'event' => 'meeting.ended',
+        'event_id' => 'evt_zoom_end_123',
+        'event_ts' => now()->valueOf(),
+        'payload' => [
+            'object' => [
+                'id' => '85787873250',
+                'end_time' => now()->toIso8601String(),
+            ],
+        ],
+    ];
+
+    $raw = json_encode($payload, JSON_UNESCAPED_SLASHES);
+    $timestamp = (string) now()->timestamp;
+    $signature = 'v0='.hash_hmac('sha256', sprintf('v0:%s:%s', $timestamp, $raw), 'zoom-secret-token');
+
+    $this->withHeaders([
+        'x-zm-request-timestamp' => $timestamp,
+        'x-zm-signature' => $signature,
+    ])->postJson(route('webhooks.zoom'), $payload)
+        ->assertStatus(202);
+
+    expect(BookingMeetingEvent::query()->where('provider_meeting_id', '85787873250')->exists())->toBeTrue()
+        ->and($booking->fresh()->status)->toBe('confirmed')
+        ->and($booking->fresh()->completed_at)->toBeNull()
+        ->and($booking->fresh()->attendance_status)->toBe('pending');
+});
+
+it('classifies attended bookings from zoom evidence and unlocks feedback immediately', function () {
+    config([
+        'services.zoom.webhook_secret_token' => 'zoom-secret-token',
+        'services.zoom.attendance.minimum_overlap_minutes' => 5,
+    ]);
+
+    $student = makeUser('attendance-student');
+    $student->assignRole('student');
+    $mentor = makeMentor();
+    $service = makeService();
+
+    $booking = Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'session_at' => now()->subMinutes(20),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'external_calendar_event_id' => 'attendance-meeting-1',
+        'status' => 'confirmed',
+        'approval_status' => 'not_required',
+    ]);
+
+    $baseHeaders = function (array $payload): array {
+        $raw = json_encode($payload, JSON_UNESCAPED_SLASHES);
+        $timestamp = (string) now()->timestamp;
+
+        return [
+            'x-zm-request-timestamp' => $timestamp,
+            'x-zm-signature' => 'v0='.hash_hmac('sha256', sprintf('v0:%s:%s', $timestamp, $raw), 'zoom-secret-token'),
+        ];
+    };
+
+    $startedPayload = [
+        'event' => 'meeting.started',
+        'event_id' => 'evt_start_attended',
+        'event_ts' => now()->subMinutes(12)->valueOf(),
+        'payload' => [
+            'object' => [
+                'id' => 'attendance-meeting-1',
+                'start_time' => now()->subMinutes(12)->toIso8601String(),
+            ],
+        ],
+    ];
+
+    $hostJoinedPayload = [
+        'event' => 'meeting.participant_joined',
+        'event_id' => 'evt_host_join',
+        'event_ts' => now()->subMinutes(11)->valueOf(),
+        'payload' => [
+            'object' => [
+                'id' => 'attendance-meeting-1',
+                'host_email' => 'host@example.com',
+                'participant' => [
+                    'user_name' => 'host@example.com',
+                    'host' => true,
+                ],
+            ],
+        ],
+    ];
+
+    $attendeeJoinedPayload = [
+        'event' => 'meeting.participant_joined',
+        'event_id' => 'evt_attendee_join',
+        'event_ts' => now()->subMinutes(10)->valueOf(),
+        'payload' => [
+            'object' => [
+                'id' => 'attendance-meeting-1',
+                'host_email' => 'host@example.com',
+                'participant' => [
+                    'user_name' => 'student@example.com',
+                    'host' => false,
+                ],
+            ],
+        ],
+    ];
+
+    $endedPayload = [
+        'event' => 'meeting.ended',
+        'event_id' => 'evt_end_attended',
+        'event_ts' => now()->subMinutes(2)->valueOf(),
+        'payload' => [
+            'object' => [
+                'id' => 'attendance-meeting-1',
+                'end_time' => now()->subMinutes(2)->toIso8601String(),
+            ],
+        ],
+    ];
+
+    foreach ([$startedPayload, $hostJoinedPayload, $attendeeJoinedPayload, $endedPayload] as $payload) {
+        $this->withHeaders($baseHeaders($payload))
+            ->postJson(route('webhooks.zoom'), $payload)
+            ->assertStatus(202);
+    }
+
+    $booking = $booking->fresh();
+
+    expect($booking->attendance_status)->toBe('attended')
+        ->and($booking->completion_source)->toBe('zoom_event')
+        ->and($booking->attendance_overlap_minutes)->toBeGreaterThanOrEqual(5)
+        ->and($booking->feedback_unlocked_at)->not->toBeNull();
+
+    $feedback = app(FeedbackService::class)->storeStudentFeedback($student, [
+        'booking_id' => $booking->id,
+        'stars' => 5,
+        'comment' => 'Great session.',
+        'recommend' => true,
+    ]);
+
+    expect($feedback->booking_id)->toBe($booking->id)
+        ->and($booking->fresh()->student_feedback_done)->toBeTrue();
+});
+
+it('classifies interrupted bookings conservatively when overlap is below the threshold', function () {
+    config([
+        'services.zoom.webhook_secret_token' => 'zoom-secret-token',
+        'services.zoom.attendance.minimum_overlap_minutes' => 5,
+    ]);
+
+    $student = makeUser('interrupt-student');
+    $student->assignRole('student');
+    $mentor = makeMentor();
+    $service = makeService();
+
+    $booking = Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'session_at' => now()->subMinutes(20),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'external_calendar_event_id' => 'attendance-meeting-2',
+        'status' => 'confirmed',
+        'approval_status' => 'not_required',
+    ]);
+
+    $postEvent = function (array $payload): void {
+        $raw = json_encode($payload, JSON_UNESCAPED_SLASHES);
+        $timestamp = (string) now()->timestamp;
+
+        $this->withHeaders([
+            'x-zm-request-timestamp' => $timestamp,
+            'x-zm-signature' => 'v0='.hash_hmac('sha256', sprintf('v0:%s:%s', $timestamp, $raw), 'zoom-secret-token'),
+        ])->postJson(route('webhooks.zoom'), $payload)->assertStatus(202);
+    };
+
+    $postEvent([
+        'event' => 'meeting.participant_joined',
+        'event_id' => 'evt_interrupt_host',
+        'event_ts' => now()->subMinutes(4)->valueOf(),
+        'payload' => [
+            'object' => [
+                'id' => 'attendance-meeting-2',
+                'host_email' => 'host@example.com',
+                'participant' => ['user_name' => 'host@example.com', 'host' => true],
+            ],
+        ],
+    ]);
+
+    $postEvent([
+        'event' => 'meeting.participant_joined',
+        'event_id' => 'evt_interrupt_attendee',
+        'event_ts' => now()->subMinutes(3)->valueOf(),
+        'payload' => [
+            'object' => [
+                'id' => 'attendance-meeting-2',
+                'host_email' => 'host@example.com',
+                'participant' => ['user_name' => 'student@example.com', 'host' => false],
+            ],
+        ],
+    ]);
+
+    $postEvent([
+        'event' => 'meeting.ended',
+        'event_id' => 'evt_interrupt_end',
+        'event_ts' => now()->subMinute()->valueOf(),
+        'payload' => [
+            'object' => [
+                'id' => 'attendance-meeting-2',
+                'end_time' => now()->subMinute()->toIso8601String(),
+            ],
+        ],
+    ]);
+
+    expect($booking->fresh()->attendance_status)->toBe('interrupted')
+        ->and($booking->fresh()->session_outcome)->toBe('interrupted');
+});
+
+it('records host joined time when zoom only supplies host email on earlier events', function () {
+    config([
+        'services.zoom.webhook_secret_token' => 'zoom-secret-token',
+    ]);
+
+    $student = makeUser('host-email-student');
+    $student->assignRole('student');
+    $mentor = makeMentor();
+    $service = makeService();
+
+    $booking = Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'session_at' => now()->addDays(2),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'external_calendar_event_id' => 'attendance-meeting-host-email',
+        'status' => 'confirmed',
+        'approval_status' => 'not_required',
+    ]);
+
+    $postEvent = function (array $payload): void {
+        $raw = json_encode($payload, JSON_UNESCAPED_SLASHES);
+        $timestamp = (string) now()->timestamp;
+
+        $this->withHeaders([
+            'x-zm-request-timestamp' => $timestamp,
+            'x-zm-signature' => 'v0='.hash_hmac('sha256', sprintf('v0:%s:%s', $timestamp, $raw), 'zoom-secret-token'),
+        ])->postJson(route('webhooks.zoom'), $payload)->assertStatus(202);
+    };
+
+    $postEvent([
+        'event' => 'meeting.started',
+        'event_id' => 'evt_host_email_start',
+        'event_ts' => now()->subMinute()->valueOf(),
+        'payload' => [
+            'object' => [
+                'id' => 'attendance-meeting-host-email',
+                'host_email' => 'host@example.com',
+                'start_time' => now()->subMinute()->toIso8601String(),
+            ],
+        ],
+    ]);
+
+    $postEvent([
+        'event' => 'meeting.participant_joined',
+        'event_id' => 'evt_host_email_join',
+        'event_ts' => now()->valueOf(),
+        'payload' => [
+            'object' => [
+                'id' => 'attendance-meeting-host-email',
+                'participant' => [
+                    'user_name' => 'Host Example',
+                    'email' => 'host@example.com',
+                ],
+            ],
+        ],
+    ]);
+
+    $booking = $booking->fresh();
+
+    expect($booking->host_joined_at)->not->toBeNull()
+        ->and($booking->first_attendee_joined_at)->toBeNull()
+        ->and($booking->attendance_status)->toBe('pending');
+});
+
+it('unlocks feedback after the fallback grace period even without zoom attendance evidence', function () {
+    config([
+        'services.zoom.attendance.feedback_fallback_grace_minutes' => 60,
+    ]);
+
+    $student = makeUser('fallback-student');
+    $student->assignRole('student');
+    $mentor = makeMentor();
+    $service = makeService();
+
+    $booking = Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'session_at' => now()->subHours(3),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'status' => 'confirmed',
+        'approval_status' => 'not_required',
+    ]);
+
+    $this->artisan('bookings:mark-completed')
+        ->assertSuccessful();
+
+    $booking = $booking->fresh();
+
+    expect($booking->status)->toBe('completed')
+        ->and($booking->attendance_status)->toBe('unknown')
+        ->and($booking->feedback_unlocked_at)->not->toBeNull()
+        ->and($booking->feedbackUnlocked())->toBeTrue();
+
+    $feedback = app(FeedbackService::class)->storeStudentFeedback($student, [
+        'booking_id' => $booking->id,
+        'stars' => 4,
+        'comment' => 'Fallback feedback worked.',
+        'recommend' => true,
+    ]);
+
+    expect($feedback->booking_id)->toBe($booking->id);
 });
 
 it('allows a mentor to cancel more than 24 hours ahead and sends cancellation notifications', function () {
     Mail::fake();
-    fakeGoogleCalendarSync();
+    fakeZoomApi();
 
     $student = makeUser('cancel-student');
     $student->assignRole('student');
     fundStudent($student);
 
     $mentor = makeMentor();
-    $service = makeService();
+    $service = makeService([
+        'price_1on1' => 0,
+        'price_1on3_per_person' => 0,
+        'price_1on3_total' => 0,
+        'price_1on5_per_person' => 0,
+        'price_1on5_total' => 0,
+    ]);
     attachMentorService($mentor, $service);
     $slotId = createAvailabilitySlot($mentor, $service, '1on1', 5);
 
@@ -656,22 +1087,30 @@ it('allows a mentor to cancel more than 24 hours ahead and sends cancellation no
 });
 
 it('blocks self-cancellation inside 24 hours for both students and mentors', function () {
-    fakeGoogleCalendarSync();
+    fakeZoomApi();
 
     $student = makeUser('late-cancel-student');
     $student->assignRole('student');
     fundStudent($student);
 
     $mentor = makeMentor();
-    $service = makeService();
+    $service = makeService([
+        'price_1on1' => 0,
+        'price_1on3_per_person' => 0,
+        'price_1on3_total' => 0,
+        'price_1on5_per_person' => 0,
+        'price_1on5_total' => 0,
+    ]);
     attachMentorService($mentor, $service);
+    $sessionStart = now('America/New_York')->addHours(23);
+    $sessionEnd = $sessionStart->copy()->addHour();
 
     $slotId = DB::table('mentor_availability_slots')->insertGetId([
         'mentor_id' => $mentor->id,
         'service_config_id' => $service->id,
-        'slot_date' => now()->addHours(23)->toDateString(),
-        'start_time' => now()->addHours(23)->format('H:i:s'),
-        'end_time' => now()->addDay()->format('H:i:s'),
+        'slot_date' => $sessionStart->toDateString(),
+        'start_time' => $sessionStart->format('H:i:s'),
+        'end_time' => $sessionEnd->format('H:i:s'),
         'timezone' => 'America/New_York',
         'session_type' => '1on1',
         'max_participants' => 1,
@@ -720,6 +1159,11 @@ it('queues a confirmation job and sends booking emails for 1on3 to mentor and al
     $service = makeService([
         'service_name' => 'Program Insights',
         'service_slug' => 'program-insights-'.Str::lower(Str::random(5)),
+        'price_1on1' => 0,
+        'price_1on3_per_person' => 0,
+        'price_1on3_total' => 0,
+        'price_1on5_per_person' => 0,
+        'price_1on5_total' => 0,
     ]);
 
     attachMentorService($mentor, $service);
@@ -750,7 +1194,7 @@ it('queues a confirmation job and sends booking emails for 1on3 to mentor and al
 
     Mail::fake();
 
-    (new SendBookingConfirmationJob($booking->id))->handle();
+    app()->call([new SendBookingConfirmationJob($booking->id), 'handle']);
 
     Mail::assertSent(MentorBookingNotificationMail::class, 1);
     Mail::assertSent(StudentBookingConfirmationMail::class, 3);
@@ -771,6 +1215,11 @@ it('queues a confirmation job and sends booking emails for 1on5 to mentor and al
     $service = makeService([
         'service_name' => 'Interview Prep',
         'service_slug' => 'interview-prep-'.Str::lower(Str::random(5)),
+        'price_1on1' => 0,
+        'price_1on3_per_person' => 0,
+        'price_1on3_total' => 0,
+        'price_1on5_per_person' => 0,
+        'price_1on5_total' => 0,
     ]);
 
     attachMentorService($mentor, $service);
@@ -802,7 +1251,7 @@ it('queues a confirmation job and sends booking emails for 1on5 to mentor and al
 
     Mail::fake();
 
-    (new SendBookingConfirmationJob($booking->id))->handle();
+    app()->call([new SendBookingConfirmationJob($booking->id), 'handle']);
 
     Mail::assertSent(MentorBookingNotificationMail::class, 1);
     Mail::assertSent(StudentBookingConfirmationMail::class, 5);
@@ -897,7 +1346,7 @@ it('does not send standard booking emails for office hours', function () {
 
     Mail::fake();
 
-    (new SendBookingConfirmationJob($booking->id))->handle();
+    app()->call([new SendBookingConfirmationJob($booking->id), 'handle']);
 
     Mail::assertNothingSent();
 });

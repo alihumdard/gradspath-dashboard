@@ -233,7 +233,7 @@ it('accepts registration with .edu country domains like .edu.pk', function () {
     $this->assertDatabaseHas('users', ['email' => $payload['email']]);
 });
 
-it('rejects registration when email is not .edu', function () {
+it('accepts registration when email is not .edu', function () {
     Notification::fake();
 
     $email = 'student-invalid-' . Str::uuid() . '@example.com';
@@ -251,10 +251,9 @@ it('rejects registration when email is not .edu', function () {
     $response = $this->from('/')
         ->post('/register', $payload);
 
-    $response->assertRedirect('/');
-    $response->assertSessionHasErrors('email');
+    $response->assertRedirect(route('verification.notice'));
 
-    $this->assertDatabaseMissing('users', ['email' => $payload['email']]);
+    $this->assertDatabaseHas('users', ['email' => $payload['email']]);
 });
 
 it('registers even when selected role was missing before signup', function () {

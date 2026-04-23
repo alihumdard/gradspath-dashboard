@@ -47,7 +47,7 @@
               type="email"
               name="email"
               id="login-email"
-              placeholder="you@university.edu"
+              placeholder="you@example.com"
               value="{{ old('email') }}"
               class="w-full rounded-xl border border-[#6D28D9] bg-white px-4 py-3 pl-4 pr-10 text-[#6D28D9] placeholder:text-[#6D28D9]/70 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm"
             />

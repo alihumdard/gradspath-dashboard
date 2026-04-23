@@ -291,6 +291,7 @@
       });
     });
 
+    slotList?.addEventListener("input", handleSlotFieldChange);
     slotList?.addEventListener("change", handleSlotFieldChange);
     slotList?.addEventListener("click", handleSlotListClick);
 
@@ -342,11 +343,11 @@
     }
 
     if (field === "start") {
-      block.startTime = select.value;
+      block.startTime = normalizeTimeFieldValue(select.value, block.startTime);
     }
 
     if (field === "end") {
-      block.endTime = select.value;
+      block.endTime = normalizeTimeFieldValue(select.value, block.endTime);
     }
 
     if (field === "service") {
@@ -880,15 +881,29 @@
         <div class="availability-day-slot-controls">
           <label>
             <span>Start</span>
-            <select data-slot-field="start" data-block-id="${block.id}" ${isDisabled ? "disabled" : ""}>
-              ${renderTimeOptions(block.startTime)}
-            </select>
+            <input
+              type="time"
+              data-slot-field="start"
+              data-block-id="${block.id}"
+              value="${escapeAttribute(block.startTime)}"
+              min="00:00"
+              max="23:30"
+              step="1800"
+              ${isDisabled ? "disabled" : ""}
+            />
           </label>
           <label>
             <span>End</span>
-            <select data-slot-field="end" data-block-id="${block.id}" ${isDisabled ? "disabled" : ""}>
-              ${renderTimeOptions(block.endTime)}
-            </select>
+            <input
+              type="time"
+              data-slot-field="end"
+              data-block-id="${block.id}"
+              value="${escapeAttribute(block.endTime)}"
+              min="00:00"
+              max="23:30"
+              step="1800"
+              ${isDisabled ? "disabled" : ""}
+            />
           </label>
           <label class="availability-day-slot-service">
             <span>Service</span>
@@ -902,16 +917,6 @@
         </div>
       </div>
     `;
-  }
-
-  function renderTimeOptions(selectedValue) {
-    return state.timeOptions
-      .map((option) => `
-        <option value="${escapeAttribute(option.value)}" ${option.value === selectedValue ? "selected" : ""}>
-          ${escapeHtml(option.label)}
-        </option>
-      `)
-      .join("");
   }
 
   function renderServiceOptions(selectedValue) {
@@ -1756,6 +1761,14 @@
     const hours = Math.max(0, Math.min(Number.isFinite(hourRaw) ? hourRaw : 0, 23));
     const minutes = minuteRaw >= 30 ? 30 : 0;
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  }
+
+  function normalizeTimeFieldValue(nextValue, fallbackValue = "") {
+    if (!nextValue) {
+      return fallbackValue;
+    }
+
+    return clampTime(nextValue);
   }
 
   function startOfDay(date) {

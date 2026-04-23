@@ -5,9 +5,9 @@ namespace Modules\Bookings\app\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Modules\Auth\app\Models\User;
-use Modules\Bookings\app\Exceptions\BookingException;
 use Modules\Bookings\app\Events\BookingCancelled;
 use Modules\Bookings\app\Events\BookingCreated;
+use Modules\Bookings\app\Exceptions\BookingException;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Models\MentorAvailabilitySlot;
 use Modules\OfficeHours\app\Models\OfficeHourSession;
@@ -63,7 +63,7 @@ class BookingService
                 'session_at' => $sessionAtUtc,
                 'session_timezone' => $sessionTimezone,
                 'duration_minutes' => $durationMinutes,
-                'meeting_type' => $data['meeting_type'] ?? 'google_meet',
+                'meeting_type' => $data['meeting_type'] ?? 'zoom',
                 'status' => $approvalStatus === 'pending' ? 'pending' : 'confirmed',
                 'approval_status' => $sessionType === 'office_hours' ? 'not_required' : $approvalStatus,
                 'credits_charged' => $credits,
@@ -122,19 +122,19 @@ class BookingService
         $isBooker = (int) $booking->student_id === (int) $actor->id;
         $isMentor = (int) ($booking->mentor?->user_id ?? 0) === (int) $actor->id;
 
-        if (!$isBooker && !$isMentor && !$isAdmin) {
+        if (! $isBooker && ! $isMentor && ! $isAdmin) {
             throw new BookingException('You are not allowed to cancel this booking.');
         }
 
-        if (!in_array((string) $booking->status, ['pending', 'confirmed'], true)) {
+        if (! in_array((string) $booking->status, ['pending', 'confirmed'], true)) {
             throw new BookingException('This booking can no longer be cancelled.');
         }
 
-        if (!$booking->session_at?->isFuture()) {
+        if (! $booking->session_at?->isFuture()) {
             throw new BookingException('Only upcoming bookings can be cancelled.');
         }
 
-        if (!$isAdmin && !$booking->isSelfCancellationWindowOpen()) {
+        if (! $isAdmin && ! $booking->isSelfCancellationWindowOpen()) {
             throw new BookingException('Self-service cancellation closes 24 hours before the meeting. Please contact support if you need help.');
         }
 
@@ -200,7 +200,7 @@ class BookingService
             throw new BookingException('This time slot is only available for 1 on 1 bookings.');
         }
 
-        if (!$slot->is_active || $slot->is_blocked || $slot->is_booked) {
+        if (! $slot->is_active || $slot->is_blocked || $slot->is_booked) {
             throw new BookingException('This time slot is no longer available.');
         }
 
@@ -271,7 +271,7 @@ class BookingService
 
         $session->current_occupancy = (int) $session->current_occupancy + 1;
         $session->is_full = $session->current_occupancy >= (int) $session->max_spots;
-        if (!$session->first_booker_id) {
+        if (! $session->first_booker_id) {
             $session->first_booker_id = $booker->id;
             $session->first_booked_at = now();
         }
@@ -302,7 +302,7 @@ class BookingService
             ->wherePivot('is_active', true)
             ->exists();
 
-        if (!$offersService) {
+        if (! $offersService) {
             throw new BookingException('This mentor does not currently offer the selected service.');
         }
     }

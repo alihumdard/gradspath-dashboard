@@ -34,7 +34,7 @@
         id="signup-subtitle"
         class="text-[13px] leading-snug text-[#6D28D9] mb-5"
       >
-        Tell us who you are so we can verify your school and keep this
+        Tell us who you are so we can personalize your experience and keep this
         community secure.
       </p>
 
@@ -143,7 +143,7 @@
               type="email"
               name="email"
               id="signup-email"
-              placeholder="you@university.edu"
+              placeholder="you@example.com"
               required
               value="{{ old('email') }}"
               class="w-full rounded-xl border border-[#6D28D9] bg-white px-3 py-2.5 pl-3 pr-10 text-[#6D28D9] placeholder:text-[#6D28D9]/60 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm"

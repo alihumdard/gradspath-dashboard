@@ -4,6 +4,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\AdminLog;
+use Modules\Bookings\app\Models\Booking;
 use Modules\Feedback\app\Models\Feedback;
 use Modules\Institutions\app\Models\University;
 use Modules\Payments\app\Models\ServiceConfig;
@@ -23,7 +24,7 @@ beforeEach(function () {
 function createManualActionsAdmin(): User
 {
     $user = User::factory()->create([
-        'email' => 'manual-admin-' . Str::uuid() . '@example.com',
+        'email' => 'manual-admin-'.Str::uuid().'@example.com',
         'is_active' => true,
     ]);
 
@@ -35,7 +36,7 @@ function createManualActionsAdmin(): User
 function createManualStudent(): User
 {
     $user = User::factory()->create([
-        'email' => 'manual-student-' . Str::uuid() . '@example.com',
+        'email' => 'manual-student-'.Str::uuid().'@example.com',
         'is_active' => true,
     ]);
 
@@ -47,7 +48,7 @@ function createManualStudent(): User
 function createManualUniversity(array $attributes = []): University
 {
     return University::query()->create(array_merge([
-        'name' => 'University ' . Str::random(6),
+        'name' => 'University '.Str::random(6),
         'display_name' => 'University Display',
         'country' => 'US',
         'alpha_two_code' => 'US',
@@ -60,7 +61,7 @@ function createManualUniversity(array $attributes = []): University
 function createManualMentor(?User $user = null, ?University $university = null): Mentor
 {
     $user ??= User::factory()->create([
-        'email' => 'mentor-' . Str::uuid() . '@example.com',
+        'email' => 'mentor-'.Str::uuid().'@example.com',
         'is_active' => true,
     ]);
     $university ??= createManualUniversity();
@@ -73,6 +74,22 @@ function createManualMentor(?User $user = null, ?University $university = null):
         'program_type' => 'mba',
         'description' => 'Existing mentor description',
         'status' => 'pending',
+    ]);
+}
+
+function createManualBooking(User $student, Mentor $mentor, ServiceConfig $service): Booking
+{
+    return Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'session_at' => now()->subDay(),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'status' => 'completed',
+        'approval_status' => 'not_required',
     ]);
 }
 
@@ -215,8 +232,11 @@ it('writes an admin log for feedback moderation and keeps the feedback section a
     $admin = createManualActionsAdmin();
     $student = createManualStudent();
     $mentor = createManualMentor();
+    $service = createManualService();
+    $booking = createManualBooking($student, $mentor, $service);
 
     $feedback = Feedback::query()->create([
+        'booking_id' => $booking->id,
         'student_id' => $student->id,
         'mentor_id' => $mentor->id,
         'stars' => 5,
@@ -249,6 +269,52 @@ it('writes an admin log for feedback moderation and keeps the feedback section a
         'action' => 'manual_feedback_update',
         'target_table' => 'feedback',
         'target_id' => $feedback->id,
+    ]);
+});
+
+it('writes an admin log for booking outcome updates and keeps the bookings section active', function () {
+    $admin = createManualActionsAdmin();
+    $student = createManualStudent();
+    $mentor = createManualMentor();
+    $service = createManualService();
+
+    $booking = Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'session_at' => now()->subHour(),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'status' => 'confirmed',
+        'approval_status' => 'not_required',
+    ]);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.manual-actions.bookings.outcome.update'), [
+            'booking_id' => $booking->id,
+            'session_outcome' => 'interrupted',
+            'session_outcome_note' => 'Mentor reported a network interruption.',
+            'completion_source' => 'manual',
+            'manual_section' => 'bookings',
+        ])
+        ->assertRedirect(route('admin.manual-actions'))
+        ->assertSessionHas('manual_section', 'bookings');
+
+    $this->assertDatabaseHas('bookings', [
+        'id' => $booking->id,
+        'status' => 'completed',
+        'session_outcome' => 'interrupted',
+        'completion_source' => 'manual',
+        'session_outcome_note' => 'Mentor reported a network interruption.',
+    ]);
+
+    $this->assertDatabaseHas('admin_logs', [
+        'admin_id' => $admin->id,
+        'action' => 'manual_booking_outcome_update',
+        'target_table' => 'bookings',
+        'target_id' => $booking->id,
     ]);
 });
 

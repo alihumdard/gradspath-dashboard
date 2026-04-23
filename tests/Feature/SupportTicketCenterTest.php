@@ -46,11 +46,11 @@ dataset('support portals', [
     ],
 ]);
 
-it('renders the support form for authenticated users', function (array $portal) {
-    $user = makeSupportUser($portal['role'], $portal['role']);
+it('renders the support form for authenticated users', function (string $role, string $indexRoute, string $storeRoute) {
+    $user = makeSupportUser($role, $role);
 
     $this->actingAs($user)
-        ->get(route($portal['indexRoute']))
+        ->get(route($indexRoute))
         ->assertOk()
         ->assertSee('Support')
         ->assertSee('Submit Feedback')
@@ -60,18 +60,18 @@ it('renders the support form for authenticated users', function (array $portal) 
         ->assertDontSee('Ticket Details');
 })->with('support portals');
 
-it('creates a support ticket from the form', function (array $portal) {
-    $user = makeSupportUser($portal['role'], $portal['role']);
+it('creates a support ticket from the form', function (string $role, string $indexRoute, string $storeRoute) {
+    $user = makeSupportUser($role, $role);
 
-    $response = $this->from(route($portal['indexRoute']))
+    $response = $this->from(route($indexRoute))
         ->actingAs($user)
-        ->post(route($portal['storeRoute']), [
+        ->post(route($storeRoute), [
             'subject' => 'Need help with booking reschedule',
             'message' => 'The booked session time is incorrect and I need support.',
         ]);
 
     $response
-        ->assertRedirect(route($portal['indexRoute']))
+        ->assertRedirect(route($indexRoute))
         ->assertSessionHas('success', 'Support ticket created successfully.');
 
     $ticket = SupportTicket::query()->where('user_id', $user->id)->first();
@@ -81,15 +81,15 @@ it('creates a support ticket from the form', function (array $portal) {
     expect($ticket->status)->toBe('open');
 })->with('support portals');
 
-it('validates required support ticket fields', function (array $portal) {
-    $user = makeSupportUser($portal['role'], $portal['role']);
+it('validates required support ticket fields', function (string $role, string $indexRoute, string $storeRoute) {
+    $user = makeSupportUser($role, $role);
 
-    $this->from(route($portal['indexRoute']))
+    $this->from(route($indexRoute))
         ->actingAs($user)
-        ->post(route($portal['storeRoute']), [
+        ->post(route($storeRoute), [
             'subject' => '',
             'message' => '',
         ])
-        ->assertRedirect(route($portal['indexRoute']))
+        ->assertRedirect(route($indexRoute))
         ->assertSessionHasErrors(['subject', 'message']);
 })->with('support portals');
