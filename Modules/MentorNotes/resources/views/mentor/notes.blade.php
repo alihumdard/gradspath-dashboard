@@ -29,7 +29,14 @@
                 </p>
               </div>
 
-              <form id="mentorNotesForm" novalidate>
+              @if ($errors->any())
+                <div id="notesErrorMessage" class="success-message show" aria-live="polite" data-variant="error">
+                  {{ $errors->first() }}
+                </div>
+              @endif
+
+              <form id="mentorNotesForm" method="POST" action="{{ $mentorNotesFormData['formAction'] ?? route('mentor.notes') }}" novalidate>
+                @csrf
                 <div class="form-section compact-section">
                   <div class="session-info-card">
                     <div class="session-info-header">
@@ -42,27 +49,27 @@
                     <div class="session-info-grid">
                       <div class="info-field">
                         <label for="fullName">Full Name of User</label>
-                        <input type="text" id="fullName" name="fullName" readonly />
+                        <input type="text" id="fullName" name="fullName" value="{{ $mentorNotesFormData['session']['fullName'] ?? '' }}" readonly />
                       </div>
 
                       <div class="info-field">
                         <label for="userEmail">Email of User</label>
-                        <input type="email" id="userEmail" name="userEmail" readonly />
+                        <input type="email" id="userEmail" name="userEmail" value="{{ $mentorNotesFormData['session']['email'] ?? '' }}" readonly />
                       </div>
 
                       <div class="info-field">
                         <label for="sessionDate">Date of Session</label>
-                        <input type="text" id="sessionDate" name="sessionDate" readonly />
+                        <input type="text" id="sessionDate" name="sessionDate" value="{{ $mentorNotesFormData['session']['sessionDate'] ?? '' }}" readonly />
                       </div>
 
                       <div class="info-field">
                         <label for="mentorName">Full Name of Mentor</label>
-                        <input type="text" id="mentorName" name="mentorName" readonly />
+                        <input type="text" id="mentorName" name="mentorName" value="{{ $mentorNotesFormData['session']['mentorName'] ?? '' }}" readonly />
                       </div>
 
                       <div class="info-field">
                         <label for="mentorEmail">Email of Mentor</label>
-                        <input type="email" id="mentorEmail" name="mentorEmail" readonly />
+                        <input type="email" id="mentorEmail" name="mentorEmail" value="{{ $mentorNotesFormData['session']['mentorEmail'] ?? '' }}" readonly />
                       </div>
 
                       <div class="info-field full-width">
@@ -124,7 +131,7 @@
                           </div>
                         </div>
 
-                        <input type="hidden" id="sessionType" name="sessionType" />
+                        <input type="hidden" id="sessionType" name="sessionType" value="{{ $mentorNotesFormData['session']['sessionType'] ?? '' }}" />
                       </div>
                     </div>
                   </div>
@@ -147,10 +154,10 @@
                   <div class="notes-text-wrap">
                     <textarea
                     id="sessionWork"
-                    name="sessionWork"
+                    name="worked_on"
                     rows="5"
                     placeholder="Example: We reviewed the personal statement, discussed structure, and revised the introduction..."
-                    ></textarea>
+                    >{{ old('worked_on', $note?->worked_on) }}</textarea>
                 </div>
               </div>
 
@@ -171,10 +178,10 @@
                 <div class="notes-text-wrap">
                   <textarea
                   id="nextSteps"
-                  name="nextSteps"
+                  name="next_steps"
                   rows="5"
                   placeholder="Example: The user needs help narrowing school choices and strengthening interview responses..."
-                  ></textarea>
+                  >{{ old('next_steps', $note?->next_steps) }}</textarea>
               </div>
             </div>
 
@@ -195,10 +202,10 @@
               <div class="notes-text-wrap">
                 <textarea
                 id="sessionOutcome"
-                name="sessionOutcome"
+                name="session_result"
                 rows="5"
                 placeholder="Example: The user left with a clearer application strategy and a revised draft to build from..."
-                ></textarea>
+                >{{ old('session_result', $note?->session_result) }}</textarea>
             </div>
           </div>
 
@@ -219,10 +226,10 @@
             <div class="notes-text-wrap">
               <textarea
               id="sessionReflection"
-              name="sessionReflection"
+              name="strengths_challenges"
               rows="5"
               placeholder="Example: Pro: The user was engaged and prepared. Con: Time was limited, so we could not finish mock interview practice..."
-              ></textarea>
+              >{{ old('strengths_challenges', $note?->strengths_challenges) }}</textarea>
           </div>
         </div>
 
@@ -243,10 +250,10 @@
           <div class="notes-text-wrap">
             <textarea
             id="otherNotes"
-            name="otherNotes"
+            name="other_notes"
             rows="5"
             placeholder="Example: The user responds well to direct feedback and would benefit from another session next week..."
-            ></textarea>
+            >{{ old('other_notes', $note?->other_notes) }}</textarea>
 
           <div class="char-count">
             <span id="charCount">0</span> characters
@@ -255,12 +262,9 @@
       </div>
 
         <div class="form-footer">
-          <button type="submit" class="submit-btn">Submit Mentors Notes</button>
+          <button type="submit" class="submit-btn">{{ $mentorNotesFormData['submitLabel'] ?? 'Submit Mentors Notes' }}</button>
         </div>
 
-        <div id="successMessage" class="success-message" aria-live="polite">
-          Mentor notes saved successfully.
-        </div>
       </form>
       </section>
       </main>
@@ -268,5 +272,6 @@
 @endsection
 
 @section('page_js')
+        <script id="mentorNotesFormData" type="application/json">@json($mentorNotesFormData ?? [])</script>
         <script src="{{ asset('assets/js/demo7.js') }}"></script>
 @endsection

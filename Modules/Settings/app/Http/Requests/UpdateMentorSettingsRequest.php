@@ -5,6 +5,7 @@ namespace Modules\Settings\app\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Auth\app\Models\User;
+use Modules\Settings\app\Support\TimezoneOptions;
 
 class UpdateMentorSettingsRequest extends FormRequest
 {
@@ -46,6 +47,7 @@ class UpdateMentorSettingsRequest extends FormRequest
                 },
             ],
             'calendly_link' => ['nullable', 'url:http,https', 'max:255'],
+            'timezone' => ['nullable', Rule::in(TimezoneOptions::values())],
             'service_config_ids' => ['nullable', 'array'],
             'service_config_ids.*' => [
                 'integer',

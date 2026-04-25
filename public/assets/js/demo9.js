@@ -59,9 +59,28 @@ const bookedDates = upcomingBookings.reduce((carry, booking) => {
     meetingLinkStatusMessage: booking.meetingLinkStatusMessage || "Meeting link will be shared soon.",
     meetingSize: booking.meetingSize || "1 on 1",
     duration: booking.duration || null,
+    sessionDateLabel: booking.sessionDateLabel || null,
+    mentorEmail: booking.mentorEmail || null,
+    mentorProgram: booking.mentorProgram || null,
+    mentorType: booking.mentorType || null,
+    mentorSchool: booking.mentorSchool || null,
+    mentorTitle: booking.mentorTitle || null,
+    feedbackAllowed: Boolean(booking.feedbackAllowed),
+    feedbackUnlockReason:
+      booking.feedbackUnlockReason ||
+      "Feedback will unlock after attendance is verified or the fallback window passes.",
+    feedbackSubmitted: Boolean(booking.feedbackSubmitted),
+    feedbackSubmitUrl: booking.feedbackSubmitUrl || "/student/feedback",
+    attendanceLabel: booking.attendanceLabel || "Awaiting attendance data",
     canCancel: Boolean(booking.canCancel),
     cancelUrl: booking.cancelUrl || null,
     cancelPolicyCopy: booking.cancelPolicyCopy || "",
+    mentorNotesAvailable: Boolean(booking.mentorNotesAvailable),
+    mentorNotesUrl: booking.mentorNotesUrl || null,
+    mentorNotesSubmitted: Boolean(booking.mentorNotesSubmitted),
+    mentorNotesLabel: booking.mentorNotesLabel || "Add Session Notes",
+    mentorNotesHelper:
+      booking.mentorNotesHelper || "Internal notes stay visible to mentors only.",
     chatThreadUrl: booking.chatThreadUrl || null,
     chatSendUrl: booking.chatSendUrl || null,
     chatChannel: booking.chatChannel || null,
@@ -100,12 +119,39 @@ const supportCloseBtn = document.getElementById("supportCloseBtn");
 const supportLink = document.getElementById("supportLink");
 const cancelBookingForm = document.getElementById("cancelBookingForm");
 const cancelBookingReasonInput = document.getElementById("cancelBookingReason");
+const mentorNotesBtn = document.getElementById("mentorNotesBtn");
+const mentorNotesHelperEl = document.getElementById("mentorNotesHelper");
+const feedbackModal = document.getElementById("feedbackModal");
+const openFeedbackModalBtn = document.getElementById("openFeedbackModalBtn");
+const closeFeedbackModalBtn = document.getElementById("closeFeedbackModalBtn");
 
 const chatForm = document.getElementById("chatForm");
 const chatInput = document.getElementById("chatInput");
 const chatWindow = document.getElementById("chatWindow");
 const chatStatusEl = document.getElementById("chatStatus");
 const chatTypingEl = document.getElementById("chatTyping");
+const feedbackForm = document.getElementById("feedbackForm");
+const feedbackBookingIdInput = document.getElementById("feedbackBookingId");
+const feedbackServiceTypeInput = document.getElementById("feedbackServiceType");
+const feedbackReasonEl = document.getElementById("feedbackReason");
+const feedbackHelperEl = document.getElementById("feedbackHelper");
+const feedbackStatusPillEl = document.getElementById("feedbackStatusPill");
+const feedbackSubmitBtn = document.getElementById("feedbackSubmitBtn");
+const feedbackModalHelperEl = document.getElementById("feedbackModalHelper");
+const feedbackStarsEl = document.getElementById("feedbackStars");
+const feedbackCommentEl = document.getElementById("feedbackComment");
+const feedbackMentorNameEl = document.getElementById("feedbackMentorName");
+const feedbackMentorProgramEl = document.getElementById("feedbackMentorProgram");
+const feedbackMentorTypeEl = document.getElementById("feedbackMentorType");
+const feedbackMentorEmailEl = document.getElementById("feedbackMentorEmail");
+const feedbackMentorSchoolEl = document.getElementById("feedbackMentorSchool");
+const feedbackSessionDateEl = document.getElementById("feedbackSessionDate");
+const feedbackServiceCards = document.querySelectorAll(".feedback-service-card");
+const feedbackStarButtons = document.querySelectorAll(".feedback-star");
+const feedbackRatingLabelEl = document.getElementById("feedbackRatingLabel");
+const feedbackCharCountEl = document.getElementById("feedbackCharCount");
+const feedbackScaleCards = document.querySelectorAll(".feedback-scale-card");
+const feedbackBinaryCards = document.querySelectorAll(".feedback-binary-card");
 const viewButtons = document.querySelectorAll(".view-btn");
 const themeToggle = document.getElementById("themeToggle");
 const body = document.body;
@@ -301,7 +347,9 @@ function updateMeetingInfoFromSelected() {
   mentorNameEl.textContent = booking?.mentorName || meetingData.mentorName;
   updateZoomLink(booking);
   syncCancelState(booking);
+  syncMentorNotesState(booking);
   syncSelectedService(booking);
+  syncFeedbackState(booking);
   void updateChatFromSelected(booking);
 }
 
@@ -340,6 +388,204 @@ function syncSelectedService(booking) {
     const serviceName = card.querySelector(".service-name")?.textContent || "";
     const matches = normalizeServiceValue(serviceName) === selectedValue;
     card.classList.toggle("selected", matches);
+  });
+}
+
+function syncMentorNotesState(booking) {
+  if (!mentorNotesBtn) return;
+
+  const hasBooking = Boolean(booking?.id);
+  const canOpenNotes = Boolean(booking?.mentorNotesAvailable && booking?.mentorNotesUrl);
+
+  mentorNotesBtn.disabled = !hasBooking || !canOpenNotes;
+  mentorNotesBtn.textContent = booking?.mentorNotesLabel || "Add Session Notes";
+  mentorNotesBtn.title = canOpenNotes
+    ? "Open internal mentor notes for this hosted session"
+    : booking?.mentorNotesHelper || "Mentor notes can only be added for sessions hosted by you.";
+
+  if (mentorNotesHelperEl) {
+    mentorNotesHelperEl.textContent = !hasBooking
+      ? "Select a booking to open internal mentor notes."
+      : booking?.mentorNotesHelper || "Internal notes stay visible to mentors only.";
+  }
+}
+
+function setFeedbackFieldsDisabled(disabled) {
+  [
+    feedbackStarsEl,
+    feedbackCommentEl,
+    feedbackSubmitBtn,
+  ].forEach((field) => {
+    if (field) {
+      field.disabled = disabled;
+    }
+  });
+
+  feedbackStarButtons.forEach((button) => {
+    button.disabled = disabled;
+  });
+
+  document
+    .querySelectorAll('input[name="preparedness_rating"], input[name="recommend"]')
+    .forEach((field) => {
+      field.disabled = disabled;
+    });
+}
+
+function syncFeedbackState(booking) {
+  if (!feedbackForm || !openFeedbackModalBtn) return;
+
+  const hasBooking = Boolean(booking?.id);
+  const isAllowed = Boolean(booking?.feedbackAllowed);
+  const isSubmitted = Boolean(booking?.feedbackSubmitted);
+  const shouldDisable = !hasBooking || !isAllowed || isSubmitted;
+
+  feedbackForm.action = booking?.feedbackSubmitUrl || "/student/feedback";
+
+  if (feedbackBookingIdInput) {
+    feedbackBookingIdInput.value = booking?.id || "";
+  }
+
+  if (feedbackServiceTypeInput) {
+    feedbackServiceTypeInput.value = booking?.serviceSlug || booking?.service || "";
+  }
+
+  if (feedbackReasonEl) {
+    feedbackReasonEl.textContent = booking?.feedbackUnlockReason
+      || "Feedback will unlock after attendance is verified or the fallback window passes.";
+  }
+
+  if (feedbackStatusPillEl) {
+    feedbackStatusPillEl.textContent = !hasBooking
+      ? "Unavailable"
+      : isSubmitted
+        ? "Submitted"
+        : isAllowed
+          ? "Open"
+          : "Locked";
+    feedbackStatusPillEl.classList.toggle("open", hasBooking && isAllowed && !isSubmitted);
+    feedbackStatusPillEl.classList.toggle("done", isSubmitted);
+  }
+
+  if (feedbackHelperEl) {
+    feedbackHelperEl.textContent = !hasBooking
+      ? "Select a booking to leave feedback."
+      : isSubmitted
+        ? "Feedback has already been submitted for this booking."
+        : isAllowed
+          ? `Leave feedback for ${booking.service || "this session"} with ${booking.mentorName || meetingData.mentorName}.`
+          : `${booking?.attendanceLabel || "Attendance is still pending"}. ${booking?.feedbackUnlockReason || ""}`.trim();
+  }
+
+  if (feedbackSubmitBtn) {
+    feedbackSubmitBtn.textContent = isSubmitted ? "Feedback Submitted" : "Submit Feedback";
+  }
+
+  if (feedbackModalHelperEl) {
+    feedbackModalHelperEl.textContent = feedbackHelperEl?.textContent || "";
+  }
+
+  openFeedbackModalBtn.disabled = shouldDisable;
+  openFeedbackModalBtn.textContent = isSubmitted
+    ? "Feedback Submitted"
+    : isAllowed
+      ? "Open Feedback Form"
+      : "Feedback Locked";
+
+  populateFeedbackModal(booking);
+  setFeedbackFieldsDisabled(shouldDisable);
+}
+
+function setFeedbackRating(value) {
+  const numericValue = Number(value || 0);
+
+  if (feedbackStarsEl) {
+    feedbackStarsEl.value = numericValue ? String(numericValue) : "";
+  }
+
+  feedbackStarButtons.forEach((button) => {
+    const starValue = Number(button.dataset.value || 0);
+    button.classList.toggle("active", starValue <= numericValue);
+  });
+
+  if (feedbackRatingLabelEl) {
+    feedbackRatingLabelEl.textContent = numericValue
+      ? `${numericValue} out of 5`
+      : "Select a rating";
+  }
+}
+
+function populateFeedbackModal(booking) {
+  if (!feedbackModal) return;
+
+  if (feedbackMentorNameEl) {
+    feedbackMentorNameEl.textContent = booking?.mentorName || meetingData.mentorName || "-";
+  }
+
+  if (feedbackMentorProgramEl) {
+    feedbackMentorProgramEl.textContent = booking?.mentorProgram || "-";
+  }
+
+  if (feedbackMentorTypeEl) {
+    feedbackMentorTypeEl.textContent = booking?.mentorType || "-";
+  }
+
+  if (feedbackMentorEmailEl) {
+    feedbackMentorEmailEl.textContent = booking?.mentorEmail || "-";
+  }
+
+  if (feedbackMentorSchoolEl) {
+    feedbackMentorSchoolEl.textContent = booking?.mentorSchool || "-";
+  }
+
+  if (feedbackSessionDateEl) {
+    feedbackSessionDateEl.textContent = booking?.sessionDateLabel || "Not set";
+  }
+
+  const selectedService = normalizeServiceValue(booking?.service || booking?.serviceSlug);
+  feedbackServiceCards.forEach((card) => {
+    const matches = normalizeServiceValue(card.dataset.service) === selectedService;
+    card.classList.toggle("active", matches);
+  });
+}
+
+feedbackStarButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    if (button.disabled) {
+      return;
+    }
+
+    setFeedbackRating(button.dataset.value || "");
+  });
+});
+
+feedbackScaleCards.forEach((card) => {
+  const input = card.querySelector('input[name="preparedness_rating"]');
+
+  input?.addEventListener("change", () => {
+    feedbackScaleCards.forEach((item) => item.classList.remove("selected"));
+
+    if (input.checked) {
+      card.classList.add("selected");
+    }
+  });
+});
+
+feedbackBinaryCards.forEach((card) => {
+  const input = card.querySelector('input[name="recommend"]');
+
+  input?.addEventListener("change", () => {
+    feedbackBinaryCards.forEach((item) => item.classList.remove("selected"));
+
+    if (input.checked) {
+      card.classList.add("selected");
+    }
+  });
+});
+
+if (feedbackCommentEl && feedbackCharCountEl) {
+  feedbackCommentEl.addEventListener("input", () => {
+    feedbackCharCountEl.textContent = String(feedbackCommentEl.value.length);
   });
 }
 
@@ -1349,6 +1595,37 @@ if (cancelMeetingBtn) {
   });
 }
 
+if (mentorNotesBtn) {
+  mentorNotesBtn.addEventListener("click", () => {
+    const booking = getBookingByDateKey(selectedDateKey);
+
+    if (!booking?.mentorNotesAvailable || !booking?.mentorNotesUrl) {
+      return;
+    }
+
+    window.location.assign(booking.mentorNotesUrl);
+  });
+}
+
+if (openFeedbackModalBtn) {
+  openFeedbackModalBtn.addEventListener("click", () => {
+    const booking = getBookingByDateKey(selectedDateKey);
+
+    if (!booking || !feedbackModal) {
+      return;
+    }
+
+    populateFeedbackModal(booking);
+    openModal(feedbackModal);
+  });
+}
+
+if (closeFeedbackModalBtn) {
+  closeFeedbackModalBtn.addEventListener("click", () => {
+    closeModal(feedbackModal);
+  });
+}
+
 if (cancelNo1) {
   cancelNo1.addEventListener("click", () => {
     closeModal(cancelModal);
@@ -1389,6 +1666,14 @@ if (supportCloseBtn) {
   });
 }
 
+if (feedbackModal) {
+  feedbackModal.addEventListener("click", (event) => {
+    if (event.target === feedbackModal) {
+      closeModal(feedbackModal);
+    }
+  });
+}
+
 if (supportLink) {
   supportLink.addEventListener("click", function (e) {
     if (meetingData.supportUrl) {
@@ -1404,6 +1689,27 @@ setActiveViewButton();
 renderCalendar();
 renderUpcomingAppointments();
 syncSelectedService(getBookingByDateKey(selectedDateKey));
+setFeedbackRating(feedbackStarsEl?.value || "");
+
+document
+  .querySelectorAll('input[name="preparedness_rating"]:checked')
+  .forEach((input) => {
+    input.closest(".feedback-scale-card")?.classList.add("selected");
+  });
+
+document
+  .querySelectorAll('input[name="recommend"]:checked')
+  .forEach((input) => {
+    input.closest(".feedback-binary-card")?.classList.add("selected");
+  });
+
+if (feedbackCharCountEl && feedbackCommentEl) {
+  feedbackCharCountEl.textContent = String(feedbackCommentEl.value.length);
+}
+
+if (feedbackModal && document.querySelector(".feedback-inline-alert.error.modal-alert")) {
+  openModal(feedbackModal);
+}
 // Mobile sidebar toggle
 const menuBtn = document.getElementById("mobileMenuToggle");
 const overlay = document.getElementById("sidebarOverlay");

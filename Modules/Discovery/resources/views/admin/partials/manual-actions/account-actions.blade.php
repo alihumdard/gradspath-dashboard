@@ -4,7 +4,7 @@
   $mentorStatuses = $adminManualActionsData['options']['mentor_statuses'] ?? [];
 @endphp
 
-<section class="manual-group">
+<section class="manual-group" data-section-group="mentor credits">
   <header class="manual-group__header">
     <div>
       <p class="manual-group__eyebrow">Account Actions</p>

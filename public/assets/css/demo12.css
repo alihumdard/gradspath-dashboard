@@ -2919,8 +2919,12 @@ td span {
 }
 
 .manual-group {
-  display: grid;
+  display: none;
   gap: 16px;
+}
+
+.manual-group.is-active {
+  display: grid;
 }
 
 .manual-group__header h3 {
@@ -3030,6 +3034,56 @@ td span {
   cursor: not-allowed;
   background: rgba(255, 255, 255, 0.02);
   color: rgba(245, 247, 251, 0.45);
+}
+
+.manual-university-picker {
+  position: relative;
+}
+
+.manual-picker-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #202534;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.manual-picker-option,
+.manual-picker-empty,
+.manual-picker-load {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: var(--text);
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.manual-picker-option,
+.manual-picker-load {
+  cursor: pointer;
+}
+
+.manual-picker-option:hover,
+.manual-picker-load:hover {
+  background: rgba(98, 169, 255, 0.12);
+}
+
+.manual-picker-option strong,
+.manual-picker-option small {
+  display: block;
+}
+
+.manual-picker-option small,
+.manual-picker-empty {
+  color: var(--muted);
 }
 
 .manual-check-grid {

@@ -34,6 +34,10 @@ class BookingMeetingPresenter
             return 'Feedback is available because Zoom attendance was verified.';
         }
 
+        if ($booking->scheduledEndAt()?->greaterThan(now()->utc())) {
+            return 'Feedback becomes available after the meeting has ended.';
+        }
+
         if ($booking->feedback_unlocked_at && $booking->feedback_unlocked_at->lessThanOrEqualTo(now())) {
             return 'Feedback is available because the scheduled fallback window has passed.';
         }

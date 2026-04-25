@@ -13,9 +13,11 @@ use Modules\Bookings\app\Jobs\SendBookingReminderJob;
 use Modules\Bookings\app\Mail\BookingCancelledNotificationMail;
 use Modules\Bookings\app\Mail\MentorBookingNotificationMail;
 use Modules\Bookings\app\Mail\StudentBookingConfirmationMail;
+use Modules\Bookings\app\Exceptions\BookingException;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Models\BookingMeetingEvent;
 use Modules\Feedback\app\Services\FeedbackService;
+use Modules\Bookings\app\Services\BookingService;
 use Modules\Bookings\app\Services\ZoomService;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Payments\app\Models\UserCredit;
@@ -250,9 +252,82 @@ it('returns only real available slot months days and times', function () {
         ->and($times[0]['slotId'])->toBe($openSlotId);
 });
 
+it('renders booking availability in the viewer saved timezone', function () {
+    $student = makeUser('student-timezone-viewer');
+    $student->assignRole('student');
+    DB::table('user_settings')->insert([
+        'user_id' => $student->id,
+        'theme' => 'light',
+        'email_notifications' => true,
+        'sms_notifications' => false,
+        'timezone' => 'Asia/Karachi',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $mentor = makeMentor();
+    $service = makeService();
+    attachMentorService($mentor, $service);
+
+    $slotDate = now()->addDays(8)->toDateString();
+    DB::table('mentor_availability_slots')->insertGetId([
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'slot_date' => $slotDate,
+        'start_time' => '23:00:00',
+        'end_time' => '23:30:00',
+        'timezone' => 'America/New_York',
+        'session_type' => '1on1',
+        'max_participants' => 1,
+        'booked_participants_count' => 0,
+        'is_booked' => false,
+        'is_blocked' => false,
+        'is_active' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $query = [
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+    ];
+
+    $month = Carbon::parse($slotDate.' 23:00:00', 'America/New_York')->setTimezone('Asia/Karachi')->format('Y-m');
+    $viewerDate = Carbon::parse($slotDate.' 23:00:00', 'America/New_York')->setTimezone('Asia/Karachi')->toDateString();
+
+    $days = $this->actingAs($student)
+        ->getJson(route('student.bookings.availability.days', array_merge($query, ['month' => $month])))
+        ->assertOk()
+        ->json('days');
+
+    expect($days)->toHaveCount(1)
+        ->and($days[0]['date'])->toBe($viewerDate);
+
+    $times = $this->actingAs($student)
+        ->getJson(route('student.bookings.availability.times', array_merge($query, [
+            'date' => $viewerDate,
+        ])))
+        ->assertOk()
+        ->json('times');
+
+    expect($times)->toHaveCount(1)
+        ->and($times[0]['label'])->toBe('8:00 AM')
+        ->and($times[0]['timezone'])->toBe('Asia/Karachi');
+});
+
 it('returns recurring office-hours availability as one date with session details', function () {
     $student = makeUser('student-office-hours-availability');
     $student->assignRole('student');
+    DB::table('user_settings')->insert([
+        'user_id' => $student->id,
+        'theme' => 'light',
+        'email_notifications' => true,
+        'sms_notifications' => false,
+        'timezone' => 'America/New_York',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
     $mentor = makeMentor();
     $officeHoursService = makeService([
         'service_name' => 'Office Hours',
@@ -847,6 +922,97 @@ it('classifies attended bookings from zoom evidence and unlocks feedback immedia
 
     expect($feedback->booking_id)->toBe($booking->id)
         ->and($booking->fresh()->student_feedback_done)->toBeTrue();
+});
+
+it('blocks students from creating new bookings when completed session feedback is overdue', function () {
+    $student = makeUser('overdue-feedback-student');
+    $student->assignRole('student');
+    $mentor = makeMentor();
+    $service = makeService([
+        'price_1on1' => 0,
+        'price_1on3_per_person' => 0,
+        'price_1on3_total' => 0,
+        'price_1on5_per_person' => 0,
+        'price_1on5_total' => 0,
+    ]);
+
+    Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'session_at' => now()->subDays(2),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'status' => 'completed',
+        'approval_status' => 'not_required',
+        'feedback_due_at' => now()->subHour(),
+        'student_feedback_done' => false,
+        'mentor_feedback_done' => true,
+    ]);
+
+    expect(fn () => app(BookingService::class)->createBooking($student, [
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'mentor_availability_slot_id' => 12345,
+    ], ['charge_credits' => false]))->toThrow(
+        BookingException::class,
+        'Please submit feedback for your completed session before booking another meeting.'
+    );
+});
+
+it('blocks mentors from creating or receiving new bookings when session notes are overdue', function () {
+    $mentor = makeMentor();
+    $targetMentor = makeMentor();
+    $student = makeUser('mentor-notes-lock-student');
+    $student->assignRole('student');
+    $service = makeService([
+        'price_1on1' => 0,
+        'price_1on3_per_person' => 0,
+        'price_1on3_total' => 0,
+        'price_1on5_per_person' => 0,
+        'price_1on5_total' => 0,
+    ]);
+
+    Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'session_at' => now()->subDays(2),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'status' => 'completed',
+        'approval_status' => 'not_required',
+        'feedback_due_at' => now()->subHour(),
+        'student_feedback_done' => true,
+        'mentor_feedback_done' => false,
+    ]);
+
+    $mentorUser = User::query()->findOrFail($mentor->user_id);
+
+    expect(fn () => app(BookingService::class)->createBooking($mentorUser, [
+        'mentor_id' => $targetMentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'mentor_availability_slot_id' => 12345,
+    ], ['charge_credits' => false]))->toThrow(
+        BookingException::class,
+        'This mentor has overdue session notes. New bookings are paused until those notes are completed.'
+    );
+
+    expect(fn () => app(BookingService::class)->createBooking($student, [
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'mentor_availability_slot_id' => 12345,
+    ], ['charge_credits' => false]))->toThrow(
+        BookingException::class,
+        'This mentor has overdue session notes. New bookings are paused until those notes are completed.'
+    );
 });
 
 it('classifies interrupted bookings conservatively when overlap is below the threshold', function () {

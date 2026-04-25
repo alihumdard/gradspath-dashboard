@@ -40,6 +40,7 @@ return [
         'publishable_key' => env('STRIPE_PUBLISHABLE_KEY'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
         'api_base' => env('STRIPE_API_BASE', 'https://api.stripe.com/v1'),
+        'connect_country' => env('STRIPE_CONNECT_COUNTRY', 'US'),
         'booking_success_url' => env('STRIPE_BOOKING_SUCCESS_URL'),
         'booking_cancel_url' => env('STRIPE_BOOKING_CANCEL_URL'),
     ],

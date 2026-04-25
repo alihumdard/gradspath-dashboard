@@ -84,19 +84,6 @@
       </a>
     </div>
 
-    <div class="nav-group">
-      <a href="{{ route('mentor.feedback.index') }}" @class(['nav-item single-link', 'active' => $activeNav === 'feedback'])>
-        <span class="nav-left">
-          <span class="nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
-            </svg>
-          </span>
-          <span class="nav-text">Feedback</span>
-        </span>
-      </a>
-    </div>
-
     <div class="nav-group mentor-only">
       <a href="{{ route('mentor.notes') }}" @class(['nav-item single-link', 'active' => $activeNav === 'mentor-notes'])>
         <span class="nav-left">

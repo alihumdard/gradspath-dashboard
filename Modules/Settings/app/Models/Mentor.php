@@ -14,6 +14,7 @@ use Modules\Bookings\app\Models\MentorAvailabilitySlot;
 use Modules\Feedback\app\Models\Feedback;
 use Modules\Feedback\app\Models\MentorRating;
 use Modules\Institutions\app\Models\University;
+use Modules\MentorNotes\app\Models\MentorNote;
 use Modules\OfficeHours\app\Models\OfficeHourSchedule;
 use Modules\Payments\app\Models\ServiceConfig;
 
@@ -97,6 +98,11 @@ class Mentor extends Model
     public function rating(): HasOne
     {
         return $this->hasOne(MentorRating::class);
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(MentorNote::class);
     }
 
     public function officeHourSchedules(): HasMany

@@ -1,5 +1,6 @@
 <?php
 
+use Modules\MentorNotes\app\Http\Controllers\Mentor\MentorNotesController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -9,5 +10,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
-    Route::view('/mentor/notes', 'mentor-notes::mentor.notes')->name('mentor.notes');
+    Route::get('/mentor/notes', [MentorNotesController::class, 'index'])->name('mentor.notes');
+    Route::get('/mentor/notes/bookings/{bookingId}', [MentorNotesController::class, 'edit'])->name('mentor.notes.bookings.edit');
+    Route::post('/mentor/notes/bookings/{bookingId}', [MentorNotesController::class, 'store'])->name('mentor.notes.bookings.store');
 });

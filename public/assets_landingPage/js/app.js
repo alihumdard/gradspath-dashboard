@@ -238,40 +238,55 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Institution autocomplete functionality
-    let universitiesData = [];
     const institutionInput = document.getElementById("signup-institution");
     const institutionIdInput = document.getElementById("signup-institution-id");
     const suggestionsContainer = document.getElementById(
         "institution-suggestions",
     );
+    let latestInstitutionQuery = "";
 
-    // Fetch universities from the local JSON dataset
-    async function fetchUniversities() {
-        try {
-            const response = await fetch("/university.json");
-            if (response.ok) {
-                universitiesData = await response.json();
-            }
-        } catch (error) {
-            console.log("Could not fetch universities list:", error);
-        }
+    function escapeHtml(value) {
+        const div = document.createElement("div");
+        div.textContent = value ?? "";
+        return div.innerHTML;
     }
 
-    // Initialize universities data
-    fetchUniversities();
+    async function searchUniversities(query) {
+        const response = await fetch(
+            "/universities/search?q=" + encodeURIComponent(query),
+            {
+                headers: {
+                    Accept: "application/json",
+                },
+            },
+        );
+
+        if (!response.ok) {
+            return [];
+        }
+
+        return response.json();
+    }
 
     // Filter and display suggestions
-    function showSuggestions(query) {
+    async function showSuggestions(query) {
         if (!query || query.length < 2) {
             suggestionsContainer.classList.add("hidden");
             return;
         }
 
-        const filtered = universitiesData
-            .filter((uni) =>
-                uni.name.toLowerCase().includes(query.toLowerCase()),
-            )
-            .slice(0, 10); // Show max 10 suggestions
+        latestInstitutionQuery = query;
+
+        let filtered = [];
+        try {
+            filtered = await searchUniversities(query);
+        } catch (error) {
+            console.log("Could not fetch universities list:", error);
+        }
+
+        if (latestInstitutionQuery !== query) {
+            return;
+        }
 
         if (filtered.length === 0) {
             suggestionsContainer.innerHTML =
@@ -283,9 +298,9 @@ document.addEventListener("DOMContentLoaded", () => {
         suggestionsContainer.innerHTML = filtered
             .map(
                 (uni) => `
-        <div class="p-3 cursor-pointer hover:bg-[#f5efff] border-b border-[#E9D5FF] last:border-b-0 text-sm text-[#6D28D9]" data-university-id="${uni.id ?? ""}">
-          <div class="font-semibold">${uni.name}</div>
-          <div class="text-xs text-[#9A7FD9]">${uni.country}${uni["state-province"] ? ", " + uni["state-province"] : ""}</div>
+        <div class="p-3 cursor-pointer hover:bg-[#f5efff] border-b border-[#E9D5FF] last:border-b-0 text-sm text-[#6D28D9]" data-university-id="${escapeHtml(uni.id)}">
+          <div class="font-semibold">${escapeHtml(uni.name)}</div>
+          <div class="text-xs text-[#9A7FD9]">${escapeHtml(uni.country)}${uni.state_province ? ", " + escapeHtml(uni.state_province) : ""}</div>
         </div>
       `,
             )

@@ -142,30 +142,51 @@ it('builds dynamic revenue data for the default 30 day range', function () {
     ]);
 
     DB::table('mentor_payouts')->insert([
-        [
-            'mentor_id' => $mentor->id,
-            'amount' => 40,
-            'status' => 'paid',
-            'payout_date' => now()->subDays(7),
-            'created_at' => now()->subDays(8),
-            'updated_at' => now()->subDays(7),
-        ],
-        [
-            'mentor_id' => $mentor->id,
-            'amount' => 10,
-            'status' => 'pending',
-            'payout_date' => null,
-            'created_at' => now()->subDays(4),
-            'updated_at' => now()->subDays(4),
-        ],
-        [
-            'mentor_id' => $mentor->id,
-            'amount' => 999,
-            'status' => 'paid',
-            'payout_date' => now()->subDays(90),
-            'created_at' => now()->subDays(90),
-            'updated_at' => now()->subDays(90),
-        ],
+        'mentor_id' => $mentor->id,
+        'gross_amount' => 50,
+        'mentor_share_amount' => 40,
+        'platform_fee_amount' => 10,
+        'currency' => 'USD',
+        'amount' => 40,
+        'status' => 'transferred',
+        'payout_date' => now()->subDays(7),
+        'transferred_at' => now()->subDays(7),
+        'paid_out_at' => null,
+        'eligible_at' => null,
+        'created_at' => now()->subDays(8),
+        'updated_at' => now()->subDays(7),
+    ]);
+
+    DB::table('mentor_payouts')->insert([
+        'mentor_id' => $mentor->id,
+        'gross_amount' => 20,
+        'mentor_share_amount' => 10,
+        'platform_fee_amount' => 10,
+        'currency' => 'USD',
+        'amount' => 10,
+        'status' => 'ready',
+        'payout_date' => null,
+        'transferred_at' => null,
+        'paid_out_at' => null,
+        'eligible_at' => now()->subDays(4),
+        'created_at' => now()->subDays(4),
+        'updated_at' => now()->subDays(4),
+    ]);
+
+    DB::table('mentor_payouts')->insert([
+        'mentor_id' => $mentor->id,
+        'gross_amount' => 1200,
+        'mentor_share_amount' => 999,
+        'platform_fee_amount' => 201,
+        'currency' => 'USD',
+        'amount' => 999,
+        'status' => 'paid_out',
+        'payout_date' => now()->subDays(90),
+        'transferred_at' => null,
+        'paid_out_at' => now()->subDays(90),
+        'eligible_at' => null,
+        'created_at' => now()->subDays(90),
+        'updated_at' => now()->subDays(90),
     ]);
 
     $revenue = app(\Modules\Discovery\app\Services\AdminRevenueService::class)->build();
@@ -174,6 +195,7 @@ it('builds dynamic revenue data for the default 30 day range', function () {
     expect($revenue['summary']['gross_revenue'])->toBe(150.0);
     expect($revenue['summary']['mentor_payouts_paid'])->toBe(40.0);
     expect($revenue['summary']['mentor_payouts_pending'])->toBe(10.0);
+    expect($revenue['summary']['mentor_payouts_failed'])->toBe(0.0);
     expect($revenue['summary']['mentor_payouts_total'])->toBe(50.0);
     expect($revenue['summary']['platform_revenue'])->toBe(100.0);
     expect($revenue['summary']['refund_amount'])->toBe(75.0);
@@ -214,9 +236,14 @@ it('applies alternate revenue ranges and renders the selector on the dashboard',
 
     DB::table('mentor_payouts')->insert([
         'mentor_id' => $mentor->id,
+        'gross_amount' => 25,
+        'mentor_share_amount' => 15,
+        'platform_fee_amount' => 10,
+        'currency' => 'USD',
         'amount' => 15,
-        'status' => 'pending',
+        'status' => 'ready',
         'payout_date' => null,
+        'eligible_at' => now()->subDays(35),
         'created_at' => now()->subDays(35),
         'updated_at' => now()->subDays(35),
     ]);
@@ -247,6 +274,7 @@ it('returns zeroed revenue summaries and empty chart arrays when no data matches
     expect($revenue['summary']['mentor_payouts_total'])->toBe(0.0);
     expect($revenue['summary']['mentor_payouts_paid'])->toBe(0.0);
     expect($revenue['summary']['mentor_payouts_pending'])->toBe(0.0);
+    expect($revenue['summary']['mentor_payouts_failed'])->toBe(0.0);
     expect($revenue['summary']['platform_revenue'])->toBe(0.0);
     expect($revenue['summary']['refund_amount'])->toBe(0.0);
     expect($revenue['charts']['program_revenue'])->toBe([]);

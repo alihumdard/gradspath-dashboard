@@ -228,6 +228,38 @@ it('renders the mentor availability editor page', function () {
         ->assertSee('availabilityDayPanel', false);
 });
 
+it('defaults mentor availability and office-hours timezones to utc on the availability page', function () {
+    [$mentorUser] = makePortalMentor('availability-default-utc');
+
+    $this->actingAs($mentorUser)
+        ->get(route('mentor.availability.index'))
+        ->assertOk()
+        ->assertViewHas('availabilityData', fn (array $data) => ($data['timezone'] ?? null) === 'UTC')
+        ->assertViewHas('officeHoursConfig', fn (array $data) => ($data['timezone'] ?? null) === 'UTC')
+        ->assertViewHas('schedulerPayload', fn (array $data) => ($data['timezone'] ?? null) === 'UTC');
+});
+
+it('defaults mentor availability and office-hours timezones to the saved user timezone when present', function () {
+    [$mentorUser] = makePortalMentor('availability-default-user-timezone');
+
+    DB::table('user_settings')->insert([
+        'user_id' => $mentorUser->id,
+        'theme' => 'light',
+        'email_notifications' => true,
+        'sms_notifications' => false,
+        'timezone' => 'Asia/Karachi',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $this->actingAs($mentorUser)
+        ->get(route('mentor.availability.index'))
+        ->assertOk()
+        ->assertViewHas('availabilityData', fn (array $data) => ($data['timezone'] ?? null) === 'Asia/Karachi')
+        ->assertViewHas('officeHoursConfig', fn (array $data) => ($data['timezone'] ?? null) === 'Asia/Karachi')
+        ->assertViewHas('schedulerPayload', fn (array $data) => ($data['timezone'] ?? null) === 'Asia/Karachi');
+});
+
 it('lets a mentor save recurring office hours on the availability page', function () {
     [$mentorUser, $mentor] = makePortalMentor('office-hours-save');
     $service = makePortalService(['service_name' => 'Interview Prep']);
@@ -438,6 +470,55 @@ it('rejects same-day availability slots that start in the past', function () {
         'start_time' => '09:00:00',
         'service_config_id' => $service->id,
     ]);
+
+    Carbon\Carbon::setTestNow();
+});
+
+it('allows same-day availability slots that start later in the current utc day', function () {
+    Carbon\Carbon::setTestNow(Carbon\Carbon::create(2026, 4, 20, 15, 20, 0, 'UTC'));
+
+    [$mentorUser, $mentor] = makePortalMentor('availability-future-today-utc');
+    $service = makePortalService();
+    attachServiceToMentor($mentor, $service);
+    $today = Carbon\Carbon::now('UTC')->toDateString();
+
+    $this->actingAs($mentorUser)
+        ->patchJson(route('mentor.availability.update'), [
+            'timezone' => 'UTC',
+            'date_slots_payload' => dateSlotsPayload([
+                [
+                    'date' => $today,
+                    'enabled' => true,
+                    'slots' => [
+                        ['start_time' => '15:30', 'end_time' => '16:30', 'service_config_id' => $service->id],
+                    ],
+                ],
+            ]),
+        ])
+        ->assertOk()
+        ->assertJsonPath('message', 'Mentor availability updated successfully.');
+
+    $this->assertDatabaseHas('mentor_availability_slots', [
+        'mentor_id' => $mentor->id,
+        'slot_date' => $today,
+        'start_time' => '15:30:00',
+        'end_time' => '16:30:00',
+        'service_config_id' => $service->id,
+        'timezone' => 'UTC',
+    ]);
+
+    Carbon\Carbon::setTestNow();
+});
+
+it('uses the utc date boundary for availability payloads around midnight', function () {
+    Carbon\Carbon::setTestNow(Carbon\Carbon::create(2026, 4, 20, 0, 15, 0, 'UTC'));
+
+    [$mentorUser] = makePortalMentor('availability-midnight-utc');
+
+    $this->actingAs($mentorUser)
+        ->get(route('mentor.availability.index'))
+        ->assertOk()
+        ->assertViewHas('schedulerPayload', fn (array $data) => ($data['today'] ?? null) === '2026-04-20');
 
     Carbon\Carbon::setTestNow();
 });

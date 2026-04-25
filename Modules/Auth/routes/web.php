@@ -19,6 +19,7 @@ Route::middleware(['web', 'guest'])->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->name('auth.login.post');
 
     Route::get('/register', [AuthController::class, 'showRegister'])->name('auth.register');
+    Route::get('/universities/search', [AuthController::class, 'searchUniversities'])->name('universities.search');
     Route::post('/register', [AuthController::class, 'register'])->name('auth.register.post');
 
     Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');

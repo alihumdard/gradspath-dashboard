@@ -32,7 +32,7 @@ class AuthService
 
             $user->setting()->firstOrCreate(
                 [],
-                ['theme' => 'light', 'email_notifications' => true, 'sms_notifications' => false]
+                ['theme' => 'light', 'email_notifications' => true, 'sms_notifications' => false, 'timezone' => null]
             );
 
             if ($role === 'student') {

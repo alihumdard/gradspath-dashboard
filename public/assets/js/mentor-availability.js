@@ -81,6 +81,7 @@
 
   const payload = parsePayload(payloadEl.textContent);
   const state = createState(payload);
+  autoSaveDetectedTimezone();
 
   bindEvents();
   render();
@@ -158,12 +159,14 @@
       serviceOptions: Array.isArray(input.service_options) ? input.service_options : [],
       timeOptions: Array.isArray(input.time_options) ? input.time_options : [],
       windowWeeks: Number(input.window_weeks || 12),
-      timezone: String(input.timezone || "America/New_York"),
+      timezone: String(input.timezone || "UTC"),
       effectiveFrom: String(input.effective_from || ""),
       effectiveUntil: String(input.effective_until || ""),
       dayOrder,
       days,
       serverInsights: input.insights && typeof input.insights === "object" ? input.insights : {},
+      hasSavedTimezone: Boolean(input.has_saved_timezone),
+      timezoneAutoSaveUrl: String(input.timezone_autosave_url || ""),
       dirty: Boolean(input.uses_old_input),
       saving: false,
       serverErrors: {},
@@ -191,7 +194,7 @@
       serviceConfigId: config.service_config_id ? Number(config.service_config_id) : null,
       dayOfWeek: String(config.day_of_week || "sun"),
       startTime: String(config.start_time || "20:00"),
-      timezone: String(config.timezone || "America/New_York"),
+      timezone: String(config.timezone || "UTC"),
       frequency: String(config.frequency || "weekly"),
       meetingType: String(config.meeting_type || preview.meeting_type || "Small Group Office Hours"),
       preview: {
@@ -323,6 +326,48 @@
     });
   }
 
+  async function autoSaveDetectedTimezone() {
+    if (state.hasSavedTimezone) {
+      return;
+    }
+
+    const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!detectedTimezone) {
+      return;
+    }
+
+    const supported = state.timezoneOptions.map((option) => option.value);
+    if (!supported.includes(detectedTimezone)) {
+      return;
+    }
+
+    state.timezone = detectedTimezone;
+    state.officeHours.timezone = detectedTimezone;
+    render();
+
+    if (!state.timezoneAutoSaveUrl || !csrfToken) {
+      return;
+    }
+
+    try {
+      await fetch(state.timezoneAutoSaveUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-TOKEN": csrfToken,
+          Accept: "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({ timezone: detectedTimezone }),
+      });
+
+      state.hasSavedTimezone = true;
+    } catch (error) {
+      // Leave the detected timezone selected locally even if the auto-save call fails.
+    }
+  }
+
   function handleSlotFieldChange(event) {
     const select = event.target.closest("[data-slot-field]");
     if (!select) {
@@ -334,6 +379,10 @@
     const block = getBlock(state.selectedDayKey, blockId);
 
     if (!block) {
+      return;
+    }
+
+    if (event.type === "input" && field !== "service") {
       return;
     }
 
@@ -879,7 +928,7 @@
           ${badgeLabel ? `<span class="availability-day-slot-badge">${escapeHtml(badgeLabel)}</span>` : ""}
         </div>
         <div class="availability-day-slot-controls">
-          <label>
+          <label class="availability-day-slot-field availability-day-slot-field--start">
             <span>Start</span>
             <input
               type="time"
@@ -887,12 +936,12 @@
               data-block-id="${block.id}"
               value="${escapeAttribute(block.startTime)}"
               min="00:00"
-              max="23:30"
-              step="1800"
+              max="23:59"
+              step="60"
               ${isDisabled ? "disabled" : ""}
             />
           </label>
-          <label>
+          <label class="availability-day-slot-field availability-day-slot-field--end">
             <span>End</span>
             <input
               type="time"
@@ -900,12 +949,12 @@
               data-block-id="${block.id}"
               value="${escapeAttribute(block.endTime)}"
               min="00:00"
-              max="23:30"
-              step="1800"
+              max="23:59"
+              step="60"
               ${isDisabled ? "disabled" : ""}
             />
           </label>
-          <label class="availability-day-slot-service">
+          <label class="availability-day-slot-field availability-day-slot-service">
             <span>Service</span>
             <select data-slot-field="service" data-block-id="${block.id}" ${isDisabled ? "disabled" : ""}>
               ${renderServiceOptions(block.serviceConfigId)}
@@ -1221,7 +1270,7 @@
     state.officeHours.serviceConfigId = officeHoursServiceSelect?.value ? Number(officeHoursServiceSelect.value) : null;
     state.officeHours.dayOfWeek = String(officeHoursDaySelect?.value || "sun");
     state.officeHours.startTime = String(officeHoursTimeSelect?.value || "");
-    state.officeHours.timezone = String(officeHoursTimezoneSelect?.value || "America/New_York");
+    state.officeHours.timezone = String(officeHoursTimezoneSelect?.value || "UTC");
     state.officeHours.frequency = String(officeHoursFrequencySelect?.value || "weekly");
     state.officeHours.preview = buildDraftOfficeHoursPreview();
     markDirty();
@@ -1432,7 +1481,10 @@
     const day = state.days[dayKey];
 
     const last = sortBlocks(day.blocks).at(-1);
-    const start = last ? last.endTime : defaultStartTimeForDay(dayKey);
+    const suggestedStart = defaultStartTimeForDay(dayKey);
+    const start = last
+      ? maxTimeValue(last.endTime, suggestedStart)
+      : suggestedStart;
     const end = addHour(start);
 
     if (!start || start >= "24:00" || start === "23:30" || end <= start) {
@@ -1756,10 +1808,33 @@
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
   }
 
+  function maxTimeValue(left, right) {
+    const leftValue = String(left || "");
+    const rightValue = String(right || "");
+
+    if (!leftValue) {
+      return rightValue;
+    }
+
+    if (!rightValue) {
+      return leftValue;
+    }
+
+    return leftValue >= rightValue ? leftValue : rightValue;
+  }
+
   function clampTime(value) {
     const [hourRaw, minuteRaw] = String(value).split(":").map(Number);
     const hours = Math.max(0, Math.min(Number.isFinite(hourRaw) ? hourRaw : 0, 23));
     const minutes = minuteRaw >= 30 ? 30 : 0;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  }
+
+  function normalizeExactTime(value) {
+    const [hourRaw, minuteRaw] = String(value).split(":").map(Number);
+    const hours = Math.max(0, Math.min(Number.isFinite(hourRaw) ? hourRaw : 0, 23));
+    const minutes = Math.max(0, Math.min(Number.isFinite(minuteRaw) ? minuteRaw : 0, 59));
+
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
   }
 
@@ -1768,7 +1843,7 @@
       return fallbackValue;
     }
 
-    return clampTime(nextValue);
+    return normalizeExactTime(nextValue);
   }
 
   function startOfDay(date) {

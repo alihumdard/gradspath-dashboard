@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ asset('assets/css/demo12.css') }}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/demo12.css') }}?v={{ filemtime(public_path('assets/css/demo12.css')) }}" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     @yield('admin_head')
   </head>
@@ -73,6 +73,6 @@
     </div>
 
     @yield('admin_page_data')
-    <script src="{{ asset('assets/js/demo12.js') }}"></script>
+    <script src="{{ asset('assets/js/demo12.js') }}?v={{ filemtime(public_path('assets/js/demo12.js')) }}"></script>
   </body>
 </html>

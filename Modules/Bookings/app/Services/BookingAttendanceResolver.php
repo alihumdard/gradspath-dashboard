@@ -3,10 +3,14 @@
 namespace Modules\Bookings\app\Services;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Modules\Bookings\app\Models\Booking;
+use Modules\Payments\app\Services\MentorPayoutService;
 
 class BookingAttendanceResolver
 {
+    public function __construct(private readonly MentorPayoutService $payouts) {}
+
     public function refresh(Booking $booking): Booking
     {
         $booking->loadMissing('meetingEvents');
@@ -94,12 +98,34 @@ class BookingAttendanceResolver
             }
         }
 
-        if ($attendanceStatus === 'attended' && $booking->completed_at === null && $actualEndedAt) {
-            $updates['completed_at'] = $actualEndedAt;
-            $updates['completion_source'] = 'zoom_event';
+        if ($attendanceStatus === 'attended' && $actualEndedAt) {
+            if ($booking->status === 'confirmed') {
+                $updates['status'] = 'completed';
+            }
+
+            if ($booking->completed_at === null) {
+                $updates['completed_at'] = $actualEndedAt;
+                $updates['completion_source'] = 'zoom_event';
+            }
         }
 
         $booking->forceFill($updates)->save();
+
+        if ($booking->status === 'completed') {
+            $this->payouts->releaseForCompletedBooking($booking);
+        }
+
+        Log::info('Booking attendance resolved.', [
+            'booking_id' => $booking->id,
+            'attendance_status' => $attendanceStatus,
+            'classification_deadline' => $this->classificationDeadline($booking)->toIso8601String(),
+            'actual_started_at' => optional($actualStartedAt)?->toIso8601String(),
+            'actual_ended_at' => optional($actualEndedAt)?->toIso8601String(),
+            'host_joined_at' => optional($hostJoinedAt)?->toIso8601String(),
+            'first_attendee_joined_at' => optional($firstAttendeeJoinedAt)?->toIso8601String(),
+            'attendance_overlap_minutes' => $overlapMinutes,
+            'feedback_unlocked_at' => optional($feedbackUnlockedAt)?->toIso8601String(),
+        ]);
 
         return $booking->fresh();
     }

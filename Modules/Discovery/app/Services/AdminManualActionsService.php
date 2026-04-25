@@ -14,9 +14,12 @@ class AdminManualActionsService
 {
     public function build(): array
     {
+        $institutionsCount = University::query()->count();
+
         $institutions = University::query()
             ->withCount('programs')
             ->orderByRaw('COALESCE(display_name, name)')
+            ->limit(20)
             ->get([
                 'id',
                 'name',
@@ -99,7 +102,7 @@ class AdminManualActionsService
             'summary' => [
                 'mentor_actions' => $mentors->count(),
                 'credit_accounts' => $users->count(),
-                'catalog_items' => $institutions->count() + $programs->count() + $services->count(),
+                'catalog_items' => $institutionsCount + $programs->count() + $services->count(),
                 'feedback_items' => $feedback->count(),
                 'booking_items' => $bookings->count(),
             ],

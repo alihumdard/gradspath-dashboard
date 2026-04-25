@@ -33,7 +33,7 @@ class BookingsController extends Controller
     {
         $mentor = Mentor::query()->where('user_id', Auth::id())->firstOrFail();
         $booking = Booking::query()
-            ->with(['booker:id,name,email,avatar_url', 'mentor.user:id,name,avatar_url', 'service'])
+            ->with(['booker:id,name,email,avatar_url', 'mentor.user:id,name,email,avatar_url', 'service', 'mentorNotes:id,booking_id,mentor_id,is_deleted'])
             ->findOrFail($id);
         Gate::authorize('view', $booking);
 
@@ -114,6 +114,8 @@ class BookingsController extends Controller
         $counterpartDisplay = $perspective === 'booked'
             ? trim(implode(' • ', array_filter([$hostMentorName, $hostMentorMeta])))
             : $bookerName;
+        $hasHostedMentorNote = $perspective === 'hosted'
+            && $booking->mentorNotes->contains(fn ($note) => (int) $note->mentor_id === (int) $booking->mentor_id && ! $note->is_deleted);
 
         return [
             'id' => $booking->id,
@@ -149,6 +151,15 @@ class BookingsController extends Controller
                 && $booking->isSelfCancellationWindowOpen(),
             'cancelUrl' => route('mentor.bookings.cancel', $booking->id),
             'cancelPolicyCopy' => 'Self-service cancellation is available until 24 hours before the meeting. After that, please contact support.',
+            'mentorNotesAvailable' => $perspective === 'hosted',
+            'mentorNotesUrl' => $perspective === 'hosted' ? route('mentor.notes.bookings.edit', $booking->id) : null,
+            'mentorNotesSubmitted' => $hasHostedMentorNote,
+            'mentorNotesLabel' => $perspective === 'hosted'
+                ? ($hasHostedMentorNote ? 'Edit Session Notes' : 'Add Session Notes')
+                : 'Mentor Notes Unavailable',
+            'mentorNotesHelper' => $perspective === 'hosted'
+                ? 'Internal notes stay visible to mentors only.'
+                : 'Mentor notes can only be added for sessions hosted by you.',
             'chatThreadUrl' => route('mentor.bookings.chat.index', $booking->id),
             'chatSendUrl' => route('mentor.bookings.chat.store', $booking->id),
             'chatChannel' => 'booking.'.$booking->id,
@@ -203,7 +214,7 @@ class BookingsController extends Controller
 
     private function bookingCollections(Mentor $mentor): array
     {
-        $relations = ['booker:id,name,email,avatar_url', 'mentor.user:id,name,avatar_url', 'service'];
+        $relations = ['booker:id,name,email,avatar_url', 'mentor.user:id,name,email,avatar_url', 'service', 'mentorNotes:id,booking_id,mentor_id,is_deleted'];
 
         return [
             Booking::query()

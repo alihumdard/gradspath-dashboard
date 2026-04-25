@@ -10,7 +10,8 @@ class StripeWebhookService
 {
     public function __construct(
         private readonly BookingCheckoutService $bookingCheckout,
-        private readonly CreditService $creditService
+        private readonly CreditService $creditService,
+        private readonly StripeConnectService $connect
     ) {}
 
     public function process(array $payload): StripeWebhook
@@ -61,6 +62,10 @@ class StripeWebhookService
                         }
                     }
                 }
+            } elseif ($eventType === 'account.updated') {
+                $this->connect->syncMentorFromStripeAccount(
+                    (array) data_get($payload, 'data.object', [])
+                );
             }
 
             $webhook->processed = true;

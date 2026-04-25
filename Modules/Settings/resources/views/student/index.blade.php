@@ -94,6 +94,24 @@
             <p class="error-text">{{ $viewErrors->first('institution_text') }}</p>
           </div>
 
+          <div class="field">
+            <label for="settingsTimezone">Timezone</label>
+            <div class="select-wrap">
+              <select
+                id="settingsTimezone"
+                name="timezone"
+                data-timezone-autosave-url="{{ $timezoneAutoSaveUrl }}"
+                data-has-saved-timezone="{{ $hasSavedTimezone ? 'true' : 'false' }}"
+              >
+                @foreach ($timezoneOptions as $value => $label)
+                  <option value="{{ $value }}" @selected($selectedTimezone === $value)>{{ $label }} ({{ $value }})</option>
+                @endforeach
+              </select>
+            </div>
+            <p class="helper-text">We use your timezone as the default when showing booking dates and times.</p>
+            <p class="error-text">{{ $viewErrors->first('timezone') }}</p>
+          </div>
+
           <button type="submit" class="save-btn">Save Profile</button>
         </form>
       </section>
@@ -145,6 +163,42 @@
     const overlay = document.getElementById("sidebarOverlay");
     const shell = document.querySelector(".app-shell");
     const themeToggle = document.getElementById("themeToggle");
+    const timezoneSelect = document.getElementById("settingsTimezone");
+
+    async function autoSaveDetectedTimezone() {
+      if (!timezoneSelect || timezoneSelect.dataset.hasSavedTimezone === "true") {
+        return;
+      }
+
+      const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (!detectedTimezone) {
+        return;
+      }
+
+      const supported = Array.from(timezoneSelect.options).map((option) => option.value);
+      if (!supported.includes(detectedTimezone)) {
+        return;
+      }
+
+      timezoneSelect.value = detectedTimezone;
+
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+      if (!csrfToken || !timezoneSelect.dataset.timezoneAutosaveUrl) {
+        return;
+      }
+
+      await fetch(timezoneSelect.dataset.timezoneAutosaveUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-TOKEN": csrfToken,
+          Accept: "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({ timezone: detectedTimezone }),
+      }).catch(() => {});
+    }
 
     function updateTheme(theme) {
       document.documentElement.setAttribute("data-theme", theme);
@@ -170,5 +224,7 @@
     if (overlay && shell) {
       overlay.addEventListener("click", () => shell.classList.remove("sidebar-active"));
     }
+
+    autoSaveDetectedTimezone();
   </script>
 @endsection

@@ -117,6 +117,56 @@
         </div>
       </form>
     </div>
+
+    <div class="feedback-card">
+      <h1>My Tickets</h1>
+
+      @php
+        $ticketStatusLabels = [
+          'open' => 'Open',
+          'in_progress' => 'In Progress',
+          'resolved' => 'Resolved',
+          'closed' => 'Closed',
+        ];
+      @endphp
+
+      @forelse (($supportTickets ?? collect()) as $ticket)
+        <article class="form-section">
+          <div class="question-title-row">
+            <span class="question-number">{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+            <div>
+              <h2>{{ $ticket->ticket_ref }} · {{ $ticketStatusLabels[$ticket->status] ?? ucfirst((string) $ticket->status) }}</h2>
+              <p>{{ $ticket->created_at?->format('M j, Y g:i A') }}</p>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>SUBJECT</label>
+            <p>{{ $ticket->subject }}</p>
+          </div>
+
+          <div class="form-field">
+            <label>MESSAGE</label>
+            <p>{{ $ticket->message }}</p>
+          </div>
+
+          @if ($ticket->admin_reply)
+            <div class="form-field">
+              <label>ADMIN REPLY</label>
+              <p>{{ $ticket->admin_reply }}</p>
+              <small>
+                {{ $ticket->handler?->name ?? 'Admin team' }}
+                @if ($ticket->replied_at)
+                  · {{ $ticket->replied_at->format('M j, Y g:i A') }}
+                @endif
+              </small>
+            </div>
+          @endif
+        </article>
+      @empty
+        <p class="intro-text">No support tickets yet.</p>
+      @endforelse
+    </div>
   </div>
 
 </div>

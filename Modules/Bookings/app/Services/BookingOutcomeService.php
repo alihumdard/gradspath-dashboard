@@ -4,9 +4,12 @@ namespace Modules\Bookings\app\Services;
 
 use Modules\Auth\app\Models\User;
 use Modules\Bookings\app\Models\Booking;
+use Modules\Payments\app\Services\MentorPayoutService;
 
 class BookingOutcomeService
 {
+    public function __construct(private readonly MentorPayoutService $payouts) {}
+
     public function update(Booking $booking, User $admin, array $data): Booking
     {
         $booking->fill([
@@ -21,6 +24,8 @@ class BookingOutcomeService
         }
 
         $booking->save();
+
+        $this->payouts->releaseForCompletedBooking($booking);
 
         return $booking->fresh();
     }

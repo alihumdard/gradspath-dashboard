@@ -3,7 +3,7 @@
 @section('css')
   @php($portalCssAsset = trim($__env->yieldContent('portal_css_asset')))
   @if ($portalCssAsset !== '')
-    <link rel="stylesheet" href="{{ asset($portalCssAsset) }}" />
+    <link rel="stylesheet" href="{{ asset($portalCssAsset) }}?v={{ filemtime(public_path($portalCssAsset)) }}" />
   @endif
 
   @yield('portal_css')

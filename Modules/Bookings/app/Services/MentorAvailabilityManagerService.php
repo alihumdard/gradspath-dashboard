@@ -28,7 +28,7 @@ class MentorAvailabilityManagerService
 
     private const OFFICE_HOURS_MAX_SPOTS = 3;
 
-    public function formData(Mentor $mentor): array
+    public function formData(Mentor $mentor, string $fallbackTimezone = 'UTC'): array
     {
         $slots = $this->directSlotsQuery($mentor)
             ->withCount([
@@ -42,7 +42,7 @@ class MentorAvailabilityManagerService
                     ->orderBy('session_at'),
             ])
             ->where('is_active', true)
-            ->whereDate('slot_date', '>=', now()->toDateString())
+            ->whereDate('slot_date', '>=', now('UTC')->toDateString())
             ->get()
             ->filter(fn (MentorAvailabilitySlot $slot) => !$this->isExpiredUnbookedSlot($slot))
             ->sortBy(fn (MentorAvailabilitySlot $slot) => $slot->slot_date->toDateString().' '.$slot->start_time)
@@ -51,7 +51,7 @@ class MentorAvailabilityManagerService
         $firstSlot = $slots->flatten(1)->first();
 
         return [
-            'timezone' => $firstSlot?->timezone ?: 'America/New_York',
+            'timezone' => $firstSlot?->timezone ?: $fallbackTimezone,
             'effective_from' => null,
             'effective_until' => null,
             'date_slots' => $slots
@@ -105,7 +105,7 @@ class MentorAvailabilityManagerService
     {
         $slots = $this->directSlotsQuery($mentor)
             ->where('is_active', true)
-            ->whereDate('slot_date', '>=', now()->toDateString())
+            ->whereDate('slot_date', '>=', now('UTC')->toDateString())
             ->get()
             ->filter(fn (MentorAvailabilitySlot $slot) => !$this->isExpiredUnbookedSlot($slot))
             ->sortBy(fn (MentorAvailabilitySlot $slot) => $slot->slot_date->toDateString().' '.$slot->start_time)
@@ -123,9 +123,9 @@ class MentorAvailabilityManagerService
                 return $minutes + $start->diffInMinutes($end);
             }, 0);
 
-        $windowEnd = now()->copy()->addWeeks(self::WINDOW_WEEKS)->endOfDay();
+        $windowEnd = now('UTC')->copy()->addWeeks(self::WINDOW_WEEKS)->endOfDay();
         $openSlotsQuery = $this->directSlotsQuery($mentor)
-            ->whereDate('slot_date', '>=', now()->toDateString())
+            ->whereDate('slot_date', '>=', now('UTC')->toDateString())
             ->whereDate('slot_date', '<=', $windowEnd->toDateString())
             ->where('is_active', true)
             ->where('is_blocked', false)
@@ -162,10 +162,10 @@ class MentorAvailabilityManagerService
 
     public function schedulerPayload(array $formData, array $insights, array $timezoneOptions, array $serviceOptions = []): array
     {
-        $today = now();
+        $today = now('UTC');
 
         return [
-            'timezone' => (string) ($formData['timezone'] ?? 'America/New_York'),
+            'timezone' => (string) ($formData['timezone'] ?? 'UTC'),
             'effective_from' => null,
             'effective_until' => null,
             'window_weeks' => (int) ($insights['window_weeks'] ?? self::WINDOW_WEEKS),
@@ -261,7 +261,7 @@ class MentorAvailabilityManagerService
             foreach ($payload['date_slots'] ?? [] as $dateSlot) {
                 $slotDate = isset($dateSlot['date']) ? Carbon::parse($dateSlot['date'])->startOfDay() : null;
 
-                if (!$slotDate || $slotDate->lt(now()->startOfDay())) {
+                if (!$slotDate || $slotDate->lt(now('UTC')->startOfDay())) {
                     continue;
                 }
 
@@ -289,7 +289,7 @@ class MentorAvailabilityManagerService
                         'slot_date' => $slotDate->toDateString(),
                         'start_time' => $this->normalizeTime((string) $slot['start_time']),
                         'end_time' => $this->normalizeTime((string) $slot['end_time']),
-                        'timezone' => (string) ($payload['timezone'] ?? 'America/New_York'),
+                        'timezone' => (string) ($payload['timezone'] ?? 'UTC'),
                         'session_type' => '1on1',
                         'max_participants' => 1,
                         'booked_participants_count' => 0,
@@ -303,7 +303,7 @@ class MentorAvailabilityManagerService
         });
     }
 
-    public function officeHoursConfig(Mentor $mentor): array
+    public function officeHoursConfig(Mentor $mentor, string $fallbackTimezone = 'UTC'): array
     {
         $schedule = $mentor->officeHourSchedules()
             ->with('currentService:id,service_name')
@@ -329,7 +329,7 @@ class MentorAvailabilityManagerService
             'service_name' => $schedule?->currentService?->service_name,
             'day_of_week' => (string) ($schedule?->day_of_week ?? 'sun'),
             'start_time' => $schedule?->start_time ? substr((string) $schedule->start_time, 0, 5) : '20:00',
-            'timezone' => (string) ($schedule?->timezone ?? 'America/New_York'),
+            'timezone' => (string) ($schedule?->timezone ?? $fallbackTimezone),
             'frequency' => (string) ($schedule?->frequency ?? 'weekly'),
             'max_spots' => self::OFFICE_HOURS_MAX_SPOTS,
             'meeting_type' => 'Small Group Office Hours',
@@ -361,7 +361,7 @@ class MentorAvailabilityManagerService
             ->with(['currentService:id,service_name', 'schedule'])
             ->whereHas('schedule', fn (Builder $query) => $query->where('mentor_id', $mentor->id)->where('is_active', true))
             ->where('status', 'upcoming')
-            ->whereDate('session_date', '>=', now()->toDateString())
+            ->whereDate('session_date', '>=', now('UTC')->toDateString())
             ->orderBy('session_date')
             ->orderBy('start_time')
             ->first();
@@ -390,7 +390,7 @@ class MentorAvailabilityManagerService
             ];
         }
 
-        $timezone = (string) ($config['timezone'] ?? 'America/New_York');
+        $timezone = (string) ($config['timezone'] ?? 'UTC');
         $startTime = (string) ($config['start_time'] ?? '');
         $weeklyService = (string) ($config['service_name'] ?? 'Office Hours');
         $recurringTime = 'Schedule coming soon';
@@ -440,7 +440,7 @@ class MentorAvailabilityManagerService
                 'current_service_id' => $enabled ? (int) $payload['service_config_id'] : null,
                 'day_of_week' => (string) ($payload['day_of_week'] ?? 'sun'),
                 'start_time' => $this->normalizeTime((string) ($payload['start_time'] ?? '20:00')),
-                'timezone' => (string) ($payload['timezone'] ?? 'America/New_York'),
+                'timezone' => (string) ($payload['timezone'] ?? 'UTC'),
                 'frequency' => (string) ($payload['frequency'] ?? 'weekly'),
                 'max_spots' => self::OFFICE_HOURS_MAX_SPOTS,
                 'is_active' => $enabled,
@@ -511,7 +511,7 @@ class MentorAvailabilityManagerService
 
         MentorAvailabilitySlot::query()
             ->whereIn('availability_rule_id', $ruleIds)
-            ->whereDate('slot_date', '>=', now()->toDateString())
+            ->whereDate('slot_date', '>=', now('UTC')->toDateString())
             ->whereDoesntHave('bookings', fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']))
             ->delete();
     }
@@ -521,7 +521,7 @@ class MentorAvailabilityManagerService
         $mentor->availabilitySlots()
             ->where('session_type', '1on1')
             ->where('max_participants', 1)
-            ->whereDate('slot_date', '>=', now()->toDateString())
+            ->whereDate('slot_date', '>=', now('UTC')->toDateString())
             ->whereDoesntHave('bookings', fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']))
             ->delete();
     }
@@ -634,7 +634,7 @@ class MentorAvailabilityManagerService
 
     private function formatSlotLabel(MentorAvailabilitySlot $slot): string
     {
-        $timezone = $slot->timezone ?: config('app.timezone', 'UTC');
+        $timezone = $slot->timezone ?: 'UTC';
         $startsAt = Carbon::parse($slot->slot_date->toDateString().' '.$slot->start_time, $timezone);
 
         return $startsAt->format('D, M j').' at '.$startsAt->format('g:i A').' '.$startsAt->format('T');
@@ -646,7 +646,7 @@ class MentorAvailabilityManagerService
             return false;
         }
 
-        $timezone = (string) ($slot->timezone ?: config('app.timezone', 'UTC'));
+        $timezone = 'UTC';
 
         try {
             $startsAt = Carbon::parse($slot->slot_date->toDateString().' '.$slot->start_time, $timezone);
@@ -654,7 +654,7 @@ class MentorAvailabilityManagerService
             return false;
         }
 
-        return $startsAt->lte(now($timezone));
+        return $startsAt->lte(now('UTC'));
     }
 
     private function officeHoursNote(string $serviceName, int $occupancy, bool $serviceLocked): string

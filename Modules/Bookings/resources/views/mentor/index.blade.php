@@ -18,11 +18,17 @@
             <div class="demo9-card">
               <section class="top-section">
                 <div class="booking-header-row">
-<div class="booking-header-left">
+                <div class="booking-header-left">
                   <h1>Your Session Is Booked</h1>
                   <p class="subtitle" id="bookingSubtitle">Here is your meeting information with your student.</p>
                 </div>
                 <div class="booking-header-right">
+                  <p class="cancel-copy" id="mentorNotesHelper">Internal notes stay visible to mentors only.</p>
+                  <button
+                  class="feedback-trigger-btn mentor-notes-trigger"
+                  id="mentorNotesBtn"
+                  type="button"
+                  >Add Session Notes</button>
                   <p class="cancel-copy">Want to cancel your meeting?</p>
                   <button
                   class="cancel-btn"
@@ -279,8 +285,7 @@
         <div class="modal-overlay hidden" id="cancelConfirmModal">
           <div class="modal-card">
             <h3>Are you absolutely sure?</h3>
-            <p>If you still want to cancel, you will be directed to submit a refund
-              request through support.</p>
+            <p>Eligible cancellations automatically refund the credits or payment used for this booking.</p>
             <div class="modal-actions">
               <button class="modal-btn secondary" id="cancelNo2" type="button">Go Back</button>
               <button class="modal-btn danger" id="cancelYes2" type="button">Yes, Continue</button>
@@ -289,14 +294,12 @@
         </div>
         <div class="modal-overlay hidden" id="supportModal">
           <div class="modal-card support-card">
-            <h3>Submit Refund Request</h3>
-            <p>Your meeting has been marked for cancellation. To request a refund,
-              please contact support through the link below.</p>
+            <h3>Cancellation Submitted</h3>
+            <p>Your meeting has been marked for cancellation. If the automatic refund needs admin review, support can help from the link below.</p>
             <a href="#" class="support-link" id="supportLink"
             >Contact Us / Support</a
             >
-            <div class="support-note">Include your mentor name, booked date, and session time in your refund
-              request.</div>
+            <div class="support-note">Include your mentor name, booked date, and session time if you contact support.</div>
             <div class="modal-actions single">
               <button class="modal-btn primary" id="supportCloseBtn" type="button">Done</button>
             </div>

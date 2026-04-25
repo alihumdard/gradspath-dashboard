@@ -60,6 +60,7 @@ it('renders the student profile page with student-specific fields', function () 
     $response->assertSee('STUDENT PORTAL');
     $response->assertSee('State U');
     $response->assertSee('Undergrad');
+    $response->assertSee('Timezone');
     $response->assertDontSee('Mentor Settings');
 });
 
@@ -82,6 +83,7 @@ it('updates the student profile using student_profiles instead of mentor data', 
         'institution_text' => '',
         'program_level' => 'grad',
         'program_type' => 'mba',
+        'timezone' => 'Asia/Karachi',
     ]);
 
     $response->assertRedirect(route('student.settings.index'));
@@ -95,6 +97,7 @@ it('updates the student profile using student_profiles instead of mentor data', 
     expect($profile->institution_text)->toBe('Boston College');
     expect($profile->program_level)->toBe('grad');
     expect($profile->program_type)->toBe('mba');
+    expect($student->fresh()->setting?->timezone)->toBe('Asia/Karachi');
     expect(Mentor::query()->where('user_id', $student->id)->exists())->toBeFalse();
 });
 

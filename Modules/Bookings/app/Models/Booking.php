@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Auth\app\Models\User;
 use Modules\Feedback\app\Models\Feedback;
 use Modules\Feedback\app\Models\MentorFeedback;
+use Modules\MentorNotes\app\Models\MentorNote;
 use Modules\OfficeHours\app\Models\OfficeHourSession;
 use Modules\Payments\app\Models\CreditTransaction;
 use Modules\Payments\app\Models\ServiceConfig;
@@ -112,8 +113,23 @@ class Booking extends Model
 
     public function feedbackUnlocked(): bool
     {
+        if ($this->attendance_status === 'attended' && $this->actual_ended_at !== null) {
+            return $this->actual_ended_at->lessThanOrEqualTo(now());
+        }
+
+        $scheduledEnd = $this->scheduledEndAt();
+
+        if ($scheduledEnd && $scheduledEnd->greaterThan(now()->utc())) {
+            return false;
+        }
+
         return $this->attendance_status === 'attended'
             || ($this->feedback_unlocked_at !== null && $this->feedback_unlocked_at->lessThanOrEqualTo(now()));
+    }
+
+    public function feedbackDueExpired(): bool
+    {
+        return $this->feedback_due_at !== null && $this->feedback_due_at->lessThan(now());
     }
 
     public function student(): BelongsTo
@@ -181,6 +197,11 @@ class Booking extends Model
     public function mentorFeedback(): HasMany
     {
         return $this->hasMany(MentorFeedback::class, 'booking_id');
+    }
+
+    public function mentorNotes(): HasMany
+    {
+        return $this->hasMany(MentorNote::class, 'booking_id');
     }
 
     public function transactions(): HasMany

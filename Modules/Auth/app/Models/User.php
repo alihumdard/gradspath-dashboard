@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Bookings\app\Models\Booking;
+use Modules\MentorNotes\app\Models\MentorNote;
 use Modules\Payments\app\Models\CreditTransaction;
 use Modules\Payments\app\Models\UserCredit;
 use Modules\Settings\app\Models\Mentor;
@@ -52,6 +53,11 @@ class User extends BaseUser
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class, 'student_id');
+    }
+
+    public function mentorNotes(): HasMany
+    {
+        return $this->hasMany(MentorNote::class, 'student_id');
     }
 
     public function creditTransactions(): HasMany

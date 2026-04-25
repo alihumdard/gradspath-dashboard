@@ -25,6 +25,7 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->nam
 
 Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin/manual-actions')->name('admin.manual-actions.')->group(function () {
 	Route::post('/institutions', [AdminInstitutionsController::class, 'store'])->name('institutions.store');
+	Route::get('/universities/search', [AdminUniversityProgramsController::class, 'searchUniversities'])->name('universities.search');
 	Route::post('/programs', [AdminUniversityProgramsController::class, 'store'])->name('programs.store');
 });
 

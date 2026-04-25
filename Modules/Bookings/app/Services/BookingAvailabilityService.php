@@ -13,7 +13,7 @@ use Modules\Settings\app\Models\Mentor;
 
 class BookingAvailabilityService
 {
-    public function availableMonths(int $mentorId, int $serviceConfigId, string $sessionType): array
+    public function availableMonths(int $mentorId, int $serviceConfigId, string $sessionType, string $viewerTimezone = 'UTC'): array
     {
         if ($sessionType === 'office_hours') {
             $session = $this->nextGeneratedOfficeHourSession($mentorId);
@@ -22,7 +22,7 @@ class BookingAvailabilityService
                 return [];
             }
 
-            $month = $session->session_date->copy()->startOfMonth();
+            $month = $this->sessionStartsAt($session)->setTimezone($viewerTimezone)->startOfMonth();
 
             return [[
                 'month' => $month->format('Y-m'),
@@ -30,11 +30,8 @@ class BookingAvailabilityService
             ]];
         }
 
-        return $this->baseSlotQuery($mentorId, $serviceConfigId, $sessionType)
-            ->orderBy('slot_date')
-            ->get()
-            ->pluck('slot_date')
-            ->map(fn ($date) => Carbon::parse($date)->startOfMonth())
+        return $this->availableSlotCollection($mentorId, $serviceConfigId, $sessionType)
+            ->map(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->setTimezone($viewerTimezone)->copy()->startOfMonth())
             ->unique(fn (CarbonInterface $month) => $month->format('Y-m'))
             ->values()
             ->map(fn (CarbonInterface $month) => [
@@ -44,13 +41,14 @@ class BookingAvailabilityService
             ->all();
     }
 
-    public function availableDays(int $mentorId, int $serviceConfigId, string $sessionType, string $month): array
+    public function availableDays(int $mentorId, int $serviceConfigId, string $sessionType, string $month, string $viewerTimezone = 'UTC'): array
     {
         if ($sessionType === 'office_hours') {
             $session = $this->nextGeneratedOfficeHourSession($mentorId);
             $monthStart = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+            $sessionStartsAt = $session ? $this->sessionStartsAt($session)->setTimezone($viewerTimezone) : null;
 
-            if (!$session || !$session->session_date->copy()->startOfMonth()->equalTo($monthStart)) {
+            if (!$session || $sessionStartsAt?->format('Y-m') !== $monthStart->format('Y-m')) {
                 return [
                     'month' => $monthStart->format('Y-m'),
                     'label' => $monthStart->format('F Y'),
@@ -64,10 +62,10 @@ class BookingAvailabilityService
                 'month' => $monthStart->format('Y-m'),
                 'label' => $monthStart->format('F Y'),
                 'days' => [[
-                    'date' => $session->session_date->toDateString(),
-                    'label' => $session->session_date->format('D j'),
-                    'weekday' => $session->session_date->format('D'),
-                    'day' => $session->session_date->format('j'),
+                    'date' => $sessionStartsAt->toDateString(),
+                    'label' => $sessionStartsAt->format('D j'),
+                    'weekday' => $sessionStartsAt->format('D'),
+                    'day' => $sessionStartsAt->format('j'),
                     'sessionId' => (int) $session->id,
                     'spotsFilled' => (int) $session->current_occupancy,
                     'maxSpots' => (int) $session->max_spots,
@@ -81,12 +79,10 @@ class BookingAvailabilityService
         $monthStart = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
         $monthEnd = $monthStart->copy()->endOfMonth();
 
-        $availableDates = $this->baseSlotQuery($mentorId, $serviceConfigId, $sessionType)
-            ->whereBetween('slot_date', [$monthStart->toDateString(), $monthEnd->toDateString()])
-            ->orderBy('slot_date')
-            ->get()
-            ->pluck('slot_date')
-            ->map(fn ($date) => Carbon::parse($date)->toDateString())
+        $availableDates = $this->availableSlotCollection($mentorId, $serviceConfigId, $sessionType)
+            ->map(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->setTimezone($viewerTimezone))
+            ->filter(fn (CarbonInterface $startsAt) => $startsAt->format('Y-m') === $monthStart->format('Y-m'))
+            ->map(fn (CarbonInterface $startsAt) => $startsAt->toDateString())
             ->unique()
             ->values();
 
@@ -102,13 +98,14 @@ class BookingAvailabilityService
         ];
     }
 
-    public function availableTimes(int $mentorId, int $serviceConfigId, string $sessionType, string $date): array
+    public function availableTimes(int $mentorId, int $serviceConfigId, string $sessionType, string $date, string $viewerTimezone = 'UTC'): array
     {
         if ($sessionType === 'office_hours') {
             $session = $this->nextGeneratedOfficeHourSession($mentorId);
             $selectedDate = Carbon::parse($date)->toDateString();
+            $startsAt = $session ? $this->sessionStartsAt($session)->setTimezone($viewerTimezone) : null;
 
-            if (!$session || $session->session_date->toDateString() !== $selectedDate) {
+            if (!$session || $startsAt?->toDateString() !== $selectedDate) {
                 return [
                     'date' => $selectedDate,
                     'label' => Carbon::parse($selectedDate)->format('l, F j, Y'),
@@ -117,7 +114,6 @@ class BookingAvailabilityService
             }
 
             $durationMinutes = $this->officeHoursDuration($serviceConfigId);
-            $startsAt = Carbon::parse($session->session_date->toDateString().' '.$session->start_time, $session->timezone ?: config('app.timezone'));
             $endsAt = $startsAt->copy()->addMinutes($durationMinutes);
             $remaining = max(((int) $session->max_spots) - ((int) $session->current_occupancy), 0);
             $recurrenceLabel = match ((string) ($session->schedule?->frequency ?? 'weekly')) {
@@ -145,28 +141,36 @@ class BookingAvailabilityService
             ];
         }
 
-        $slots = $this->baseSlotQuery($mentorId, $serviceConfigId, $sessionType)
-            ->whereDate('slot_date', $date)
-            ->orderBy('start_time')
-            ->get();
+        $slots = $this->availableSlotCollection($mentorId, $serviceConfigId, $sessionType)
+            ->map(function (MentorAvailabilitySlot $slot) use ($viewerTimezone) {
+                return [
+                    'slot' => $slot,
+                    'starts_at' => $this->slotStartsAt($slot)->setTimezone($viewerTimezone),
+                ];
+            })
+            ->filter(fn (array $slotData) => $slotData['starts_at']->toDateString() === Carbon::parse($date)->toDateString())
+            ->sortBy(fn (array $slotData) => $slotData['starts_at']->toIso8601String())
+            ->values();
 
         return [
             'date' => Carbon::parse($date)->toDateString(),
             'label' => Carbon::parse($date)->format('l, F j, Y'),
-            'times' => $slots->map(function (MentorAvailabilitySlot $slot) {
-                $startsAt = Carbon::parse($slot->slot_date->toDateString().' '.$slot->start_time, $slot->timezone ?: config('app.timezone'));
-
+            'times' => $slots->map(function (array $slotData) use ($viewerTimezone) {
+                /** @var MentorAvailabilitySlot $slot */
+                $slot = $slotData['slot'];
+                /** @var CarbonInterface $startsAt */
+                $startsAt = $slotData['starts_at'];
                 return [
                     'slotId' => $slot->id,
                     'label' => $startsAt->format('g:i A'),
                     'startsAt' => $startsAt->toIso8601String(),
-                    'timezone' => $slot->timezone,
+                    'timezone' => $viewerTimezone,
                 ];
             })->all(),
         ];
     }
 
-    public function nextOfficeHourSessionForMentor(Mentor $mentor): ?array
+    public function nextOfficeHourSessionForMentor(Mentor $mentor, string $viewerTimezone = 'UTC'): ?array
     {
         $session = OfficeHourSession::query()
             ->with(['schedule.mentor.user:id,name', 'currentService:id,service_name,service_slug'])
@@ -181,7 +185,7 @@ class BookingAvailabilityService
             return null;
         }
 
-        return $this->transformOfficeHourSession($mentor, $session);
+        return $this->transformOfficeHourSession($mentor, $session, $viewerTimezone);
     }
 
     public function officeHoursDirectoryMentors(): array
@@ -206,7 +210,7 @@ class BookingAvailabilityService
                     return null;
                 }
 
-                $sessionData = $this->transformOfficeHourSession($mentor, $session);
+                $sessionData = $this->transformOfficeHourSession($mentor, $session, $session->timezone ?: 'UTC');
 
                 return [
                     'id' => $mentor->id,
@@ -271,9 +275,9 @@ class BookingAvailabilityService
             ->first();
     }
 
-    private function transformOfficeHourSession(Mentor $mentor, OfficeHourSession $session): array
+    private function transformOfficeHourSession(Mentor $mentor, OfficeHourSession $session, string $viewerTimezone = 'UTC'): array
     {
-        $startsAt = Carbon::parse($session->session_date->toDateString().' '.$session->start_time, $session->timezone ?: config('app.timezone'));
+        $startsAt = $this->sessionStartsAt($session)->setTimezone($viewerTimezone);
         $remaining = max(((int) $session->max_spots) - ((int) $session->current_occupancy), 0);
 
         return [
@@ -305,15 +309,34 @@ class BookingAvailabilityService
             ->where('service_config_id', $serviceConfigId)
             ->where('is_active', true)
             ->where('is_blocked', false)
-            ->where(function (Builder $query) {
-                $query->whereDate('slot_date', '>', now()->toDateString())
-                    ->orWhere(function (Builder $todayQuery) {
-                        $todayQuery->whereDate('slot_date', now()->toDateString())
-                            ->whereTime('start_time', '>', now()->format('H:i:s'));
-                    });
-            })
             ->whereDoesntHave('bookings', fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']))
             ->where('is_booked', false);
+    }
+
+    private function availableSlotCollection(int $mentorId, int $serviceConfigId, string $sessionType): Collection
+    {
+        return $this->baseSlotQuery($mentorId, $serviceConfigId, $sessionType)
+            ->orderBy('slot_date')
+            ->orderBy('start_time')
+            ->get()
+            ->filter(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->utc()->isFuture())
+            ->values();
+    }
+
+    private function slotStartsAt(MentorAvailabilitySlot $slot): Carbon
+    {
+        return Carbon::parse(
+            $slot->slot_date->toDateString().' '.$slot->start_time,
+            $slot->timezone ?: config('app.timezone', 'UTC')
+        );
+    }
+
+    private function sessionStartsAt(OfficeHourSession $session): Carbon
+    {
+        return Carbon::parse(
+            $session->session_date->toDateString().' '.$session->start_time,
+            $session->timezone ?: config('app.timezone', 'UTC')
+        );
     }
 
     private function officeHoursNote(OfficeHourSession $session): string

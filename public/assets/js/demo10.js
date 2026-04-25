@@ -19,6 +19,7 @@ const officeHours = document.getElementById("officeHours");
 const calendlyLink = document.getElementById("calendlyLink");
 const bio = document.getElementById("bio");
 const description = document.getElementById("description");
+const settingsTimezone = document.getElementById("settingsTimezone");
 
 const nameError = document.getElementById("nameError");
 const eduEmailError = document.getElementById("eduEmailError");
@@ -26,6 +27,7 @@ const calendlyError = document.getElementById("calendlyError");
 const payoutError = document.getElementById("payoutError");
 const enablePayoutsBtn = document.getElementById("enablePayoutsBtn");
 const payoutStatus = document.getElementById("payoutStatus");
+const payoutSummary = document.getElementById("payoutSummary");
 
 function updateTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
@@ -152,17 +154,72 @@ if (description) {
   });
 }
 
+function applyPayoutStatus(payload) {
+  if (payoutStatus) {
+    payoutStatus.textContent = payload.status_label || "Not enabled";
+    payoutStatus.classList.toggle("enabled", Boolean(payload.payouts_enabled));
+  }
+
+  if (payoutSummary) {
+    payoutSummary.textContent = payload.summary_label || "Not enabled yet";
+  }
+
+  if (enablePayoutsBtn && payload.button_label) {
+    enablePayoutsBtn.textContent = payload.button_label;
+  }
+}
+
+async function syncPayoutStatus() {
+  if (!enablePayoutsBtn?.dataset.statusUrl) {
+    return false;
+  }
+
+  const response = await fetch(enablePayoutsBtn.dataset.statusUrl, {
+    headers: {
+      Accept: "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    credentials: "same-origin",
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to refresh payout status.");
+  }
+
+  const payload = await response.json();
+  applyPayoutStatus(payload);
+
+  return Boolean(payload.payouts_enabled);
+}
+
 if (enablePayoutsBtn) {
   enablePayoutsBtn.addEventListener("click", () => {
-    showError(
-      payoutError,
-      "Payout onboarding is not connected on this page yet. Your profile can still be saved."
-    );
-
-    if (payoutStatus && !payoutStatus.classList.contains("enabled")) {
-      payoutStatus.textContent = "Not enabled";
-    }
+    clearError(payoutError);
+    enablePayoutsBtn.disabled = true;
+    window.location.assign(enablePayoutsBtn.dataset.connectUrl);
   });
+
+  if (enablePayoutsBtn.dataset.stripeReturn === "true") {
+    let attempts = 0;
+    const interval = window.setInterval(async () => {
+      attempts += 1;
+
+      try {
+        const payoutsEnabled = await syncPayoutStatus();
+        if (payoutsEnabled || attempts >= 10) {
+          window.clearInterval(interval);
+        }
+      } catch (error) {
+        if (attempts >= 10) {
+          window.clearInterval(interval);
+          showError(
+            payoutError,
+            "We could not confirm your Stripe status yet. Refresh this page in a moment."
+          );
+        }
+      }
+    }, 2000);
+  }
 }
 
 if (mentorForm) {
@@ -174,3 +231,40 @@ if (mentorForm) {
     }
   });
 }
+
+async function autoSaveDetectedTimezone() {
+  if (!settingsTimezone || settingsTimezone.dataset.hasSavedTimezone === "true") {
+    return;
+  }
+
+  const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (!detectedTimezone) {
+    return;
+  }
+
+  const supported = Array.from(settingsTimezone.options).map((option) => option.value);
+  if (!supported.includes(detectedTimezone)) {
+    return;
+  }
+
+  settingsTimezone.value = detectedTimezone;
+
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+  if (!csrfToken || !settingsTimezone.dataset.timezoneAutosaveUrl) {
+    return;
+  }
+
+  await fetch(settingsTimezone.dataset.timezoneAutosaveUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-TOKEN": csrfToken,
+      Accept: "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    credentials: "same-origin",
+    body: JSON.stringify({ timezone: detectedTimezone }),
+  }).catch(() => {});
+}
+
+autoSaveDetectedTimezone();

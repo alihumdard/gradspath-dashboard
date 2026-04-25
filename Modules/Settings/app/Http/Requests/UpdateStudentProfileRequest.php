@@ -4,6 +4,7 @@ namespace Modules\Settings\app\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\Settings\app\Support\TimezoneOptions;
 
 class UpdateStudentProfileRequest extends FormRequest
 {
@@ -24,6 +25,7 @@ class UpdateStudentProfileRequest extends FormRequest
             'institution_text' => ['nullable', 'string', 'max:255', 'required_without:university_id'],
             'program_level' => ['nullable', Rule::in(['undergrad', 'grad', 'professional'])],
             'program_type' => ['nullable', Rule::in(['mba', 'law', 'therapy', 'cmhc', 'mft', 'msw', 'clinical_psy', 'other'])],
+            'timezone' => ['nullable', Rule::in(TimezoneOptions::values())],
         ];
     }
 }

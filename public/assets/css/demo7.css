@@ -676,6 +676,12 @@ textarea::placeholder {
   display: block;
 }
 
+.success-message[data-variant="error"] {
+  background: #fff1f2;
+  color: #be123c;
+  border-color: #fecdd3;
+}
+
 @media (max-width: 900px) {
   .notes-card {
     max-width: 760px;

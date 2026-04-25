@@ -810,9 +810,14 @@ button,
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
+  text-align: center;
   font-weight: 700;
   color: var(--text);
   font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  text-decoration: none;
   cursor: pointer;
 }
 

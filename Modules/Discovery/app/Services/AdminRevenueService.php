@@ -48,17 +48,32 @@ class AdminRevenueService
             ->get(['amount_charged']);
 
         $payouts = collect(DB::table('mentor_payouts')
-            ->whereIn('status', ['paid', 'pending'])
-            ->get(['amount', 'status', 'payout_date', 'created_at']))
+            ->whereIn('status', ['pending', 'paid', 'pending_release', 'ready', 'transferred', 'paid_out', 'failed'])
+            ->get([
+                'amount',
+                'mentor_share_amount',
+                'gross_amount',
+                'platform_fee_amount',
+                'status',
+                'payout_date',
+                'eligible_at',
+                'transferred_at',
+                'paid_out_at',
+                'failed_at',
+                'failure_reason',
+                'created_at',
+            ]))
             ->filter(fn ($payout) => $this->payoutFallsInRange($payout, $startDate))
             ->values();
 
         $grossRevenue = $this->sumMoney($revenueBookings->pluck('amount_charged'));
         $mentorPayoutsPaid = $this->sumMoney(
-            $payouts->where('status', 'paid')->pluck('amount')
+            $payouts->filter(fn ($payout) => in_array($payout->status, ['paid', 'transferred', 'paid_out'], true))
+                ->map(fn ($payout) => $this->payoutAmount($payout))
         );
         $mentorPayoutsPending = $this->sumMoney(
-            $payouts->where('status', 'pending')->pluck('amount')
+            $payouts->filter(fn ($payout) => in_array($payout->status, ['pending', 'pending_release', 'ready', 'failed'], true))
+                ->map(fn ($payout) => $this->payoutAmount($payout))
         );
         $mentorPayoutsTotal = round($mentorPayoutsPaid + $mentorPayoutsPending, 2);
         $refundAmount = $this->sumMoney($refundBookings->pluck('amount_charged'));
@@ -77,6 +92,9 @@ class AdminRevenueService
                 'mentor_payouts_total' => $mentorPayoutsTotal,
                 'mentor_payouts_paid' => $mentorPayoutsPaid,
                 'mentor_payouts_pending' => $mentorPayoutsPending,
+                'mentor_payouts_failed' => $this->sumMoney(
+                    $payouts->where('status', 'failed')->map(fn ($payout) => $this->payoutAmount($payout))
+                ),
                 'platform_revenue' => round($grossRevenue - $mentorPayoutsTotal, 2),
                 'refund_amount' => $refundAmount,
                 'timeframe_label' => self::AVAILABLE_RANGES[$selectedRange],
@@ -85,6 +103,7 @@ class AdminRevenueService
                 'program_revenue' => $this->programRevenueChart($revenueBookings),
                 'top_mentors' => $this->topMentorsChart($revenueBookings),
             ],
+            'recent_payouts' => $this->recentPayouts($selectedRange, $startDate),
         ];
     }
 
@@ -113,9 +132,15 @@ class AdminRevenueService
             return true;
         }
 
-        $referenceDate = $payout->status === 'paid'
-            ? ($payout->payout_date ?: $payout->created_at)
-            : $payout->created_at;
+        $referenceDate = in_array($payout->status, ['paid', 'transferred', 'paid_out'], true)
+            ? ($payout->paid_out_at ?: $payout->payout_date ?: $payout->transferred_at ?: $payout->created_at)
+            : (
+                $payout->transferred_at
+                ?: $payout->paid_out_at
+                ?: $payout->eligible_at
+                ?: $payout->failed_at
+                ?: $payout->created_at
+            );
 
         if ($referenceDate === null) {
             return false;
@@ -183,5 +208,54 @@ class AdminRevenueService
             ),
             2
         );
+    }
+
+    private function payoutAmount(object $payout): float
+    {
+        return round((float) ($payout->mentor_share_amount ?? $payout->amount ?? 0), 2);
+    }
+
+    private function recentPayouts(string $selectedRange, ?Carbon $startDate): array
+    {
+        return collect(DB::table('mentor_payouts')
+            ->leftJoin('mentors', 'mentor_payouts.mentor_id', '=', 'mentors.id')
+            ->leftJoin('users', 'mentors.user_id', '=', 'users.id')
+            ->when($startDate, function ($query) use ($startDate) {
+                $query->where(function ($inner) use ($startDate) {
+                    $inner->where('mentor_payouts.created_at', '>=', $startDate)
+                        ->orWhere('mentor_payouts.transferred_at', '>=', $startDate)
+                        ->orWhere('mentor_payouts.paid_out_at', '>=', $startDate)
+                        ->orWhere('mentor_payouts.eligible_at', '>=', $startDate)
+                        ->orWhere('mentor_payouts.failed_at', '>=', $startDate);
+                });
+            })
+            ->orderByDesc(DB::raw('COALESCE(mentor_payouts.paid_out_at, mentor_payouts.transferred_at, mentor_payouts.failed_at, mentor_payouts.eligible_at, mentor_payouts.created_at)'))
+            ->limit($selectedRange === 'all' ? 20 : 10)
+            ->get([
+                'mentor_payouts.id',
+                'mentor_payouts.status',
+                'mentor_payouts.amount',
+                'mentor_payouts.gross_amount',
+                'mentor_payouts.mentor_share_amount',
+                'mentor_payouts.platform_fee_amount',
+                'mentor_payouts.currency',
+                'mentor_payouts.failure_reason',
+                'mentor_payouts.transferred_at',
+                'mentor_payouts.paid_out_at',
+                'mentor_payouts.eligible_at',
+                'mentor_payouts.failed_at',
+                'users.name as mentor_name',
+            ]))
+            ->map(fn (object $row): array => [
+                'mentor_name' => $row->mentor_name ?: 'Unknown',
+                'status' => (string) $row->status,
+                'gross_amount' => round((float) ($row->gross_amount ?? 0), 2),
+                'mentor_share_amount' => $this->payoutAmount($row),
+                'platform_fee_amount' => round((float) ($row->platform_fee_amount ?? 0), 2),
+                'currency' => strtoupper((string) ($row->currency ?? 'USD')),
+                'failure_reason' => $row->failure_reason,
+                'reference_at' => $row->paid_out_at ?: $row->transferred_at ?: $row->failed_at ?: $row->eligible_at,
+            ])
+            ->all();
     }
 }

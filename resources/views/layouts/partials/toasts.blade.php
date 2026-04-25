@@ -1,5 +1,6 @@
 @php
     $toastItems = collect();
+    $viewErrors = $errors ?? new \Illuminate\Support\ViewErrorBag();
 
     if (session('success')) {
         $toastItems->push([
@@ -33,11 +34,11 @@
         ]);
     }
 
-    if ($errors->any()) {
+    if ($viewErrors->any()) {
         $toastItems->push([
             'type' => 'error',
             'title' => 'Something went wrong',
-            'message' => $errors->first() ?: 'Please review the highlighted fields and try again.',
+            'message' => $viewErrors->first() ?: 'Please review the highlighted fields and try again.',
         ]);
     }
 @endphp

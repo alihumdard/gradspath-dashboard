@@ -3,7 +3,6 @@
 namespace Modules\Support\app\Services;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Modules\Auth\app\Models\User;
 use Modules\Support\app\Events\SupportTicketCreated;
 use Modules\Support\app\Models\SupportTicket;
@@ -12,21 +11,23 @@ class SupportTicketService
 {
     public function create(User $user, array $data): SupportTicket
     {
-        $raw = trim($data['message']);
-        $sanitized = strip_tags($raw);
+        return DB::transaction(function () use ($user, $data): SupportTicket {
+            $raw = trim($data['message']);
+            $sanitized = strip_tags($raw);
 
-        $ticket = SupportTicket::create([
-            'user_id' => $user->id,
-            'ticket_ref' => $this->generateTicketRef(),
-            'subject' => trim($data['subject']),
-            'message' => $sanitized,
-            'message_raw' => $raw,
-            'status' => 'open',
-        ]);
+            $ticket = SupportTicket::create([
+                'user_id' => $user->id,
+                'ticket_ref' => $this->generateTicketRef(),
+                'subject' => trim($data['subject']),
+                'message' => $sanitized,
+                'message_raw' => $raw,
+                'status' => 'open',
+            ]);
 
-        event(new SupportTicketCreated($ticket));
+            event(new SupportTicketCreated($ticket));
 
-        return $ticket;
+            return $ticket;
+        });
     }
 
     public function reply(SupportTicket $ticket, User $admin, string $reply, string $status = 'in_progress'): SupportTicket
@@ -45,10 +46,11 @@ class SupportTicketService
 
     private function generateTicketRef(): string
     {
-        do {
-            $ref = 'SUP-' . strtoupper(Str::random(6));
-        } while (SupportTicket::query()->where('ticket_ref', $ref)->exists());
+        $latest = SupportTicket::query()
+            ->lockForUpdate()
+            ->orderByDesc('id')
+            ->first(['id']);
 
-        return $ref;
+        return sprintf('SUP-%05d', ((int) ($latest?->id ?? 0)) + 1);
     }
 }

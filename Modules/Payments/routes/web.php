@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\Payments\app\Http\Controllers\Admin\ManualActionsController;
 use Modules\Payments\app\Http\Controllers\Admin\ServicesController;
+use Modules\Payments\app\Http\Controllers\Mentor\MentorPayoutController;
 use Modules\Payments\app\Http\Controllers\Payments\StripeWebhookController;
 use Modules\Payments\app\Http\Controllers\Student\BookingCheckoutController;
 use Modules\Payments\app\Http\Controllers\Student\CreditsController;
@@ -20,6 +21,10 @@ Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () 
 Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
 	Route::post('/mentor/bookings/checkout', [BookingCheckoutController::class, 'store'])->name('mentor.bookings.checkout.store');
 	Route::get('/mentor/bookings/checkout/success', [BookingCheckoutController::class, 'success'])->name('mentor.bookings.checkout.success');
+	Route::get('/mentor/payouts/connect', [MentorPayoutController::class, 'connect'])->name('mentor.payouts.connect');
+	Route::get('/mentor/payouts/refresh', [MentorPayoutController::class, 'refresh'])->name('mentor.payouts.refresh');
+	Route::get('/mentor/payouts/return', [MentorPayoutController::class, 'return'])->name('mentor.payouts.return');
+	Route::get('/mentor/payouts/status', [MentorPayoutController::class, 'status'])->name('mentor.payouts.status');
 });
 
 Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');

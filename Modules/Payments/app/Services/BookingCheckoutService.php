@@ -17,6 +17,7 @@ class BookingCheckoutService
     public function __construct(
         private readonly BookingService $bookings,
         private readonly StripeClient $stripe,
+        private readonly MentorPayoutService $payouts,
     ) {}
 
     public function createCheckoutSession(User $booker, array $data): BookingPayment
@@ -145,7 +146,10 @@ class BookingCheckoutService
             $payment = BookingPayment::query()->lockForUpdate()->findOrFail($payment->id);
 
             if ($payment->booking_id) {
-                return Booking::query()->findOrFail($payment->booking_id);
+                $booking = Booking::query()->findOrFail($payment->booking_id);
+                $this->payouts->recordBookingEarning($booking, $payment);
+
+                return $booking;
             }
 
             if ((string) data_get($session, 'payment_status') !== 'paid') {
@@ -183,6 +187,8 @@ class BookingCheckoutService
                 'status' => 'booking_created',
                 'booking_created_at' => now(),
             ])->save();
+
+            $this->payouts->recordBookingEarning($booking, $payment);
 
             return $booking;
         });

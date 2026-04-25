@@ -1,4 +1,9 @@
-const mentorData = [
+const feedbackPageDataEl = document.getElementById("feedbackPageData");
+const feedbackPageData = feedbackPageDataEl
+  ? JSON.parse(feedbackPageDataEl.textContent || "{}")
+  : {};
+
+const fallbackMentorData = [
   {
     id: 1,
     name: "Dr. Sarah Jenkin",
@@ -712,6 +717,12 @@ const mentorData = [
     reviewList: [],
   },
 ];
+
+const mentorData = feedbackPageData.hasDynamicData
+  ? Array.isArray(feedbackPageData.mentors)
+    ? feedbackPageData.mentors
+    : []
+  : fallbackMentorData;
 
 const categoryConfig = [
   {

@@ -10,6 +10,9 @@
   $selectedIds = collect(old('service_config_ids', $selectedServiceIds ?? []))
       ->map(fn ($id) => (int) $id)
       ->all();
+  $payoutButtonLabel = $mentor->payouts_enabled || $mentor->stripe_onboarding_complete
+      ? 'Update payout details'
+      : ($mentor->stripe_account_id ? 'Continue payout setup' : 'Enable Payouts');
 @endphp
 
 @section('page_topbar_left')
@@ -144,6 +147,24 @@
                 </div>
 
                 <div class="field">
+                  <label for="settingsTimezone">Timezone</label>
+                  <div class="select-wrap">
+                    <select
+                      id="settingsTimezone"
+                      name="timezone"
+                      data-timezone-autosave-url="{{ $timezoneAutoSaveUrl }}"
+                      data-has-saved-timezone="{{ $hasSavedTimezone ? 'true' : 'false' }}"
+                    >
+                      @foreach ($timezoneOptions as $value => $label)
+                        <option value="{{ $value }}" @selected($selectedTimezone === $value)>{{ $label }} ({{ $value }})</option>
+                      @endforeach
+                    </select>
+                  </div>
+                  <p class="helper-text">We use your timezone as the default for scheduling and booking display.</p>
+                  <p class="error-text">{{ $viewErrors->first('timezone') }}</p>
+                </div>
+
+                <div class="field">
                   <label for="isFeatured">Featured Mentor</label>
                   <div class="slack-box settings-inline-toggle">
                     <div>
@@ -204,14 +225,21 @@
                   <label>Payouts</label>
                   <div class="payout-box">
                     <p class="payout-text">
-                      Payout onboarding is separate from profile save in this first version.
+                      Complete Stripe onboarding to receive payouts, then return here any time to update your bank or identity details.
                     </p>
                     <p class="payout-text">
                       Current status:
-                      <strong>{{ $mentor->payouts_enabled ? 'Enabled' : 'Not enabled yet' }}</strong>
+                      <strong id="payoutSummary">{{ $mentor->payouts_enabled ? 'Enabled' : 'Not enabled yet' }}</strong>
                     </p>
                     <div class="payout-actions">
-                      <button type="button" class="primary-btn" id="enablePayoutsBtn">Enable Payouts</button>
+                      <button
+                        type="button"
+                        class="primary-btn"
+                        id="enablePayoutsBtn"
+                        data-connect-url="{{ route('mentor.payouts.connect') }}"
+                        data-status-url="{{ route('mentor.payouts.status') }}"
+                        data-stripe-return="{{ $stripeReturn ? 'true' : 'false' }}"
+                      >{{ $payoutButtonLabel }}</button>
                       <span class="payout-status{{ $mentor->payouts_enabled ? ' enabled' : '' }}" id="payoutStatus">
                         {{ $mentor->payouts_enabled ? 'Enabled' : 'Not enabled' }}
                       </span>

@@ -15,6 +15,7 @@ class UserSetting extends Model
         'theme',
         'email_notifications',
         'sms_notifications',
+        'timezone',
     ];
 
     protected $casts = [

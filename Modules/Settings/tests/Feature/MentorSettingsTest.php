@@ -5,6 +5,7 @@ use Illuminate\Support\Str;
 use Modules\Auth\app\Models\User;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
+use Modules\Settings\app\Models\UserSetting;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -68,6 +69,7 @@ it('renders mentor settings with saved profile data', function () {
     $response->assertSee('Wharton');
     $response->assertSee('Program Insights');
     $response->assertSee('Focused on admissions strategy.');
+    $response->assertSee('Timezone');
 });
 
 it('updates mentor settings and syncs active services', function () {
@@ -116,6 +118,7 @@ it('updates mentor settings and syncs active services', function () {
         'edu_email' => 'mentor@yale.edu',
         'calendly_link' => 'https://calendly.com/mentor-example',
         'is_featured' => '1',
+        'timezone' => 'Asia/Karachi',
         'service_config_ids' => [$serviceB->id, $serviceA->id],
     ]);
 
@@ -133,6 +136,7 @@ it('updates mentor settings and syncs active services', function () {
     expect($mentor->office_hours_schedule)->toBe('Mondays at 7 PM EST');
     expect($mentor->edu_email)->toBe('mentor@yale.edu');
     expect($mentor->is_featured)->toBeTrue();
+    expect($mentorUser->fresh()->setting?->timezone)->toBe('Asia/Karachi');
 
     $this->assertDatabaseHas('mentor_services', [
         'mentor_id' => $mentor->id,
@@ -161,4 +165,59 @@ it('requires a .edu email for graduate mentors', function () {
     $response->assertSessionHasErrors('edu_email');
 
     expect(Mentor::query()->where('user_id', $mentorUser->id)->exists())->toBeFalse();
+});
+
+it('auto-saves a detected supported timezone when the user has no saved timezone', function () {
+    $mentorUser = createSettingsUser('mentor');
+    UserSetting::query()->create([
+        'user_id' => $mentorUser->id,
+        'theme' => 'light',
+        'email_notifications' => true,
+        'sms_notifications' => false,
+        'timezone' => null,
+    ]);
+
+    $this->withoutMiddleware()
+        ->actingAs($mentorUser)
+        ->postJson(route('settings.timezone.store'), [
+            'timezone' => 'Asia/Karachi',
+        ])
+        ->assertOk()
+        ->assertJsonPath('timezone', 'Asia/Karachi');
+
+    expect($mentorUser->fresh()->setting?->timezone)->toBe('Asia/Karachi');
+});
+
+it('does not overwrite a saved timezone from the detection endpoint', function () {
+    $mentorUser = createSettingsUser('mentor');
+    UserSetting::query()->create([
+        'user_id' => $mentorUser->id,
+        'theme' => 'light',
+        'email_notifications' => true,
+        'sms_notifications' => false,
+        'timezone' => 'UTC',
+    ]);
+
+    $this->withoutMiddleware()
+        ->actingAs($mentorUser)
+        ->postJson(route('settings.timezone.store'), [
+            'timezone' => 'Asia/Karachi',
+        ])
+        ->assertOk()
+        ->assertJsonPath('timezone', 'UTC');
+
+    expect($mentorUser->fresh()->setting?->timezone)->toBe('UTC');
+});
+
+it('rejects unsupported detected timezones', function () {
+    $mentorUser = createSettingsUser('mentor');
+
+    $this->withoutMiddleware()
+        ->actingAs($mentorUser)
+        ->postJson(route('settings.timezone.store'), [
+            'timezone' => 'Asia/Dubai',
+        ])
+        ->assertStatus(422);
+
+    expect($mentorUser->fresh()->setting?->timezone)->toBeNull();
 });

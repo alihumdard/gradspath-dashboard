@@ -1114,12 +1114,24 @@
 
 .availability-day-slot-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "start end"
+    "service action";
   gap: 10px;
   align-items: end;
 }
 
+.availability-day-slot-field--start {
+  grid-area: start;
+}
+
+.availability-day-slot-field--end {
+  grid-area: end;
+}
+
 .availability-day-slot-service {
+  grid-area: service;
   min-width: 0;
 }
 
@@ -1134,6 +1146,8 @@
 }
 
 .availability-danger-text-btn {
+  grid-area: action;
+  align-self: end;
   height: 46px;
   padding: 0 14px;
   border-radius: 16px;
@@ -1141,6 +1155,7 @@
   color: var(--availability-danger);
   font-size: 13px;
   font-weight: 700;
+  justify-self: stretch;
 }
 
 .availability-day-error {

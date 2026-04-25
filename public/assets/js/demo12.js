@@ -17,6 +17,15 @@ function readJsonScript(id) {
     }
 }
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
 const adminRevenueData = readJsonScript("adminRevenueData");
 const adminOverviewData = readJsonScript("adminOverviewData");
 const overviewBookingsChartData = Array.isArray(
@@ -2258,6 +2267,9 @@ function initializeManualActionsHub() {
     const panels = Array.from(
         app.querySelectorAll("[data-section-panel]"),
     );
+    const groups = Array.from(
+        app.querySelectorAll("[data-section-group]"),
+    );
 
     function setSection(section) {
         buttons.forEach((button) => {
@@ -2272,6 +2284,14 @@ function initializeManualActionsHub() {
                 "is-active",
                 panel.dataset.sectionPanel === section,
             );
+        });
+
+        groups.forEach((group) => {
+            const sections = (group.dataset.sectionGroup || "")
+                .split(/\s+/)
+                .filter(Boolean);
+
+            group.classList.toggle("is-active", sections.includes(section));
         });
     }
 
@@ -2392,6 +2412,149 @@ function initializeManualActionsHub() {
     userSelect?.addEventListener("change", syncUserSummary);
     pricingSelect?.addEventListener("change", syncPricingSummary);
     feedbackSelect?.addEventListener("change", syncFeedbackSummary);
+
+    function initializeUniversityPicker() {
+        const picker = app.querySelector("[data-university-picker]");
+        const searchInput = picker?.querySelector("[data-university-search]");
+        const idInput = picker?.querySelector("[data-university-id]");
+        const results = picker?.querySelector("[data-university-results]");
+        const searchUrl = picker?.dataset.searchUrl;
+
+        if (!picker || !searchInput || !idInput || !results || !searchUrl) {
+            return;
+        }
+
+        let currentQuery = "";
+        let nextPage = null;
+        let selectedLabel = "";
+        let requestToken = 0;
+        let debounceTimer = null;
+
+        function hideResults() {
+            results.hidden = true;
+        }
+
+        function showResults() {
+            results.hidden = false;
+        }
+
+        function universityMeta(university) {
+            return [university.country, university.state_province]
+                .filter(Boolean)
+                .join(" · ");
+        }
+
+        function renderUniversities(universities, append = false) {
+            const html = universities.length
+                ? universities
+                      .map(
+                          (university) => `
+                            <button class="manual-picker-option" type="button" data-university-option="${escapeHtml(university.id)}" data-university-label="${escapeHtml(university.label)}">
+                                <strong>${escapeHtml(university.label)}</strong>
+                                <small>${escapeHtml(universityMeta(university))}</small>
+                            </button>
+                        `,
+                      )
+                      .join("")
+                : '<div class="manual-picker-empty">No universities found</div>';
+
+            results.innerHTML = append ? results.innerHTML + html : html;
+
+            if (nextPage) {
+                results.insertAdjacentHTML(
+                    "beforeend",
+                    '<button class="manual-picker-load" type="button" data-university-load-more>Load more universities</button>',
+                );
+            }
+
+            showResults();
+        }
+
+        async function fetchUniversities({ query = "", page = 1, selectedId = "" } = {}) {
+            const token = ++requestToken;
+            const url = new URL(searchUrl, window.location.origin);
+
+            if (query) url.searchParams.set("q", query);
+            if (page > 1) url.searchParams.set("page", String(page));
+            if (selectedId) url.searchParams.set("selected_id", selectedId);
+
+            const response = await fetch(url.toString(), {
+                headers: { Accept: "application/json" },
+            });
+
+            if (!response.ok || token !== requestToken) {
+                return null;
+            }
+
+            return response.json();
+        }
+
+        async function searchUniversities(query = "", page = 1, append = false) {
+            currentQuery = query;
+            const payload = await fetchUniversities({ query, page });
+
+            if (!payload) return;
+
+            nextPage = payload.next_page;
+            renderUniversities(Array.isArray(payload.data) ? payload.data : [], append);
+        }
+
+        async function hydrateSelectedUniversity() {
+            if (!idInput.value) return;
+
+            const payload = await fetchUniversities({ selectedId: idInput.value });
+            const university = payload?.data?.[0];
+
+            if (!university) return;
+
+            selectedLabel = university.label;
+            searchInput.value = university.label;
+        }
+
+        searchInput.addEventListener("focus", () => {
+            searchUniversities(searchInput.value.trim());
+        });
+
+        searchInput.addEventListener("input", () => {
+            if (searchInput.value !== selectedLabel) {
+                selectedLabel = "";
+                idInput.value = "";
+            }
+
+            window.clearTimeout(debounceTimer);
+            debounceTimer = window.setTimeout(() => {
+                searchUniversities(searchInput.value.trim());
+            }, 220);
+        });
+
+        results.addEventListener("click", (event) => {
+            const option = event.target.closest("[data-university-option]");
+            const loadMore = event.target.closest("[data-university-load-more]");
+
+            if (option) {
+                idInput.value = option.dataset.universityOption || "";
+                selectedLabel = option.dataset.universityLabel || "";
+                searchInput.value = selectedLabel;
+                hideResults();
+                return;
+            }
+
+            if (loadMore && nextPage) {
+                loadMore.remove();
+                searchUniversities(currentQuery, nextPage, true);
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!picker.contains(event.target)) {
+                hideResults();
+            }
+        });
+
+        hydrateSelectedUniversity();
+    }
+
+    initializeUniversityPicker();
 
     const serviceCreateForm = document.getElementById("manualServiceCreateForm");
 

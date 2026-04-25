@@ -16,7 +16,7 @@
   $hasOldInput = session()->getOldInput() !== [];
 
   $initialSchedulerPayload['save_url'] = route('mentor.availability.update');
-  $initialSchedulerPayload['timezone'] = old('timezone', $initialSchedulerPayload['timezone'] ?? ($availabilityData['timezone'] ?? 'America/New_York'));
+  $initialSchedulerPayload['timezone'] = old('timezone', $initialSchedulerPayload['timezone'] ?? ($availabilityData['timezone'] ?? 'UTC'));
   $initialSchedulerPayload['uses_old_input'] = $hasOldInput;
   $initialSchedulerPayload['date_slots'] = collect(
       $hasOldInput ? (json_decode((string) old('date_slots_payload', '[]'), true) ?: []) : ($initialSchedulerPayload['date_slots'] ?? [])
@@ -60,7 +60,7 @@
   $selectedOfficeHoursServiceId = old('office_hours.service_config_id', $officeHoursConfigData['service_config_id'] ?? '');
   $selectedOfficeHoursDay = old('office_hours.day_of_week', $officeHoursConfigData['day_of_week'] ?? 'sun');
   $selectedOfficeHoursTime = old('office_hours.start_time', $officeHoursConfigData['start_time'] ?? '20:00');
-  $selectedOfficeHoursTimezone = old('office_hours.timezone', $officeHoursConfigData['timezone'] ?? 'America/New_York');
+  $selectedOfficeHoursTimezone = old('office_hours.timezone', $officeHoursConfigData['timezone'] ?? 'UTC');
   $selectedOfficeHoursFrequency = old('office_hours.frequency', $officeHoursConfigData['frequency'] ?? 'weekly');
   if ($hasOldInput) {
       $officeHoursConfigData['enabled'] = $officeHoursEnabled;
@@ -299,7 +299,7 @@
             <label for="availabilityTimezone">Timezone</label>
             <select id="availabilityTimezone" name="timezone">
               @foreach ($timezoneOptions as $value => $label)
-                <option value="{{ $value }}" @selected(old('timezone', $availabilityData['timezone'] ?? 'America/New_York') === $value)>
+                <option value="{{ $value }}" @selected(old('timezone', $availabilityData['timezone'] ?? 'UTC') === $value)>
                   {{ $label }} ({{ $value }})
                 </option>
               @endforeach

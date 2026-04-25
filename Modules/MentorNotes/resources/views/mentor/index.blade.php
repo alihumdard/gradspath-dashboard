@@ -162,5 +162,6 @@
 @endsection
 
 @section('page_js')
+  <script id="mentorNotesData" type="application/json">@json($mentorNotesPageData ?? [])</script>
   <script src="{{ asset('assets/js/demo8.js') }}"></script>
 @endsection

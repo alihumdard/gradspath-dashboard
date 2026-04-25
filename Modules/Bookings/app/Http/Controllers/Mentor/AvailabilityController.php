@@ -14,6 +14,7 @@ use Modules\Bookings\app\Services\MentorAvailabilityManagerService;
 use Modules\OfficeHours\app\Models\OfficeHourSchedule;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
+use Modules\Settings\app\Support\TimezoneOptions;
 
 class AvailabilityController extends Controller
 {
@@ -87,12 +88,12 @@ class AvailabilityController extends Controller
 
             $officeHours = (array) $request->input('office_hours', []);
             $officeHoursEnabled = filter_var($officeHours['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
-            $scheduleTimezone = (string) ($request->input('timezone') ?: config('app.timezone', 'UTC'));
+            $scheduleTimezone = (string) ($request->input('timezone') ?: TimezoneOptions::fallback());
 
             try {
                 $scheduleNow = now($scheduleTimezone);
             } catch (\Throwable) {
-                $scheduleTimezone = (string) config('app.timezone', 'UTC');
+                $scheduleTimezone = TimezoneOptions::fallback();
                 $scheduleNow = now($scheduleTimezone);
             }
 
@@ -306,24 +307,12 @@ class AvailabilityController extends Controller
             ->with('success', 'Mentor availability updated successfully.');
     }
 
-    private function timezoneOptions(): array
-    {
-        return [
-            'America/New_York' => 'Eastern Time',
-            'America/Chicago' => 'Central Time',
-            'America/Denver' => 'Mountain Time',
-            'America/Los_Angeles' => 'Pacific Time',
-            'Europe/London' => 'London',
-            'Asia/Karachi' => 'Karachi',
-            'UTC' => 'UTC',
-        ];
-    }
-
     private function pageData(Mentor $mentor): array
     {
-        $formData = $this->availability->formData($mentor);
+        $preferredTimezone = TimezoneOptions::preferredFor(Auth::user()?->loadMissing('setting'));
+        $formData = $this->availability->formData($mentor, $preferredTimezone);
         $insights = $this->availability->insights($mentor);
-        $timezoneOptions = $this->timezoneOptions();
+        $timezoneOptions = TimezoneOptions::all();
         $serviceOptions = $mentor->services()
             ->where('services_config.is_active', true)
             ->where('services_config.is_office_hours', false)
@@ -336,13 +325,15 @@ class AvailabilityController extends Controller
             ])
             ->values()
             ->all();
-        $officeHoursConfig = $this->availability->officeHoursConfig($mentor);
+        $officeHoursConfig = $this->availability->officeHoursConfig($mentor, $preferredTimezone);
         $officeHoursPreview = $this->availability->officeHoursPreview($mentor, $officeHoursConfig);
         $schedulerPayload = $this->availability->schedulerPayload($formData, $insights, $timezoneOptions, $serviceOptions);
         $schedulerPayload['office_hours'] = [
             'config' => $officeHoursConfig,
             'preview' => $officeHoursPreview,
         ];
+        $schedulerPayload['has_saved_timezone'] = filled(Auth::user()?->setting?->timezone);
+        $schedulerPayload['timezone_autosave_url'] = route('settings.timezone.store');
 
         return [
             'availabilityData' => $formData,

@@ -189,6 +189,11 @@ class BookingController extends Controller
             'counterpartName' => $mentorName,
             'mentorName' => $mentorName,
             'mentorDisplay' => trim(implode(' • ', array_filter([$mentorName, $mentorMeta]))),
+            'mentorEmail' => $booking->mentor?->user?->email,
+            'mentorProgram' => $this->programLabel($booking->mentor?->program_type),
+            'mentorType' => $this->mentorTypeLabel($booking->mentor?->mentor_type),
+            'mentorSchool' => $booking->mentor?->grad_school_display,
+            'mentorTitle' => $booking->mentor?->title,
             'serviceName' => $booking->service?->service_name ?? 'Service',
             'serviceSlug' => $booking->service?->service_slug ?? null,
             'meetingType' => $booking->meeting_type,
@@ -209,6 +214,8 @@ class BookingController extends Controller
             'attendanceLabel' => $this->meetingPresenter->attendanceLabel($booking),
             'feedbackAllowed' => $this->meetingPresenter->feedbackAllowed($booking),
             'feedbackUnlockReason' => $this->meetingPresenter->feedbackUnlockReason($booking),
+            'feedbackSubmitted' => (bool) $booking->student_feedback_done,
+            'feedbackSubmitUrl' => route('student.feedback.store'),
             'status' => $booking->status,
             'isUpcoming' => $this->meetingPresenter->scheduledState($booking) !== 'ended',
             'isTodayOrFuture' => $sessionAt ? $sessionAt->greaterThanOrEqualTo(now()->startOfDay()) : false,
@@ -267,6 +274,15 @@ class BookingController extends Controller
             'therapy' => 'Therapy',
             'other', null, '' => null,
             default => str_replace('_', ' ', ucfirst((string) $programType)),
+        };
+    }
+
+    private function mentorTypeLabel(?string $mentorType): ?string
+    {
+        return match ($mentorType) {
+            'graduate' => 'Graduate Mentor',
+            'professional' => 'Professional Mentor',
+            default => null,
         };
     }
 }

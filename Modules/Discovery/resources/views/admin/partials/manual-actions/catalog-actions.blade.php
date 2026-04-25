@@ -6,7 +6,7 @@
   $programTiers = $adminManualActionsData['options']['program_tiers'] ?? [];
 @endphp
 
-<section class="manual-group">
+<section class="manual-group" data-section-group="institutions programs services pricing">
   <header class="manual-group__header">
     <div>
       <p class="manual-group__eyebrow">Catalog Actions</p>
@@ -116,14 +116,18 @@
         @csrf
         <input type="hidden" name="manual_section" value="programs" />
 
-        <label class="manual-field">
+        <label class="manual-field manual-university-picker" data-university-picker data-search-url="{{ route('admin.manual-actions.universities.search') }}">
           <span>University</span>
-          <select name="university_id" required>
-            <option value="">Select a university</option>
-            @foreach ($institutions as $institution)
-              <option value="{{ $institution['id'] }}" @selected((string) old('university_id') === (string) $institution['id'])>{{ $institution['label'] }}</option>
-            @endforeach
-          </select>
+          <input
+            id="manualUniversitySearch"
+            type="text"
+            value=""
+            placeholder="Search universities..."
+            autocomplete="off"
+            data-university-search
+          />
+          <input name="university_id" type="hidden" value="{{ old('university_id') }}" data-university-id required />
+          <div class="manual-picker-results" data-university-results hidden></div>
           @error('university_id')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror

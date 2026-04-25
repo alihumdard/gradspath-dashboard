@@ -8,6 +8,7 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,7 @@ use Modules\Auth\app\Http\Requests\LoginRequest;
 use Modules\Auth\app\Http\Requests\RegisterRequest;
 use Modules\Auth\app\Http\Requests\ResetPasswordRequest;
 use Modules\Auth\app\Services\AuthService;
+use Modules\Institutions\app\Models\University;
 use Throwable;
 
 class AuthController extends Controller
@@ -62,6 +64,30 @@ class AuthController extends Controller
     public function showRegister(): View
     {
         return $this->renderLandingAuth('signup');
+    }
+
+    public function searchUniversities(Request $request): JsonResponse
+    {
+        $query = trim((string) $request->query('q', ''));
+
+        if (mb_strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        $universities = University::query()
+            ->where('is_active', true)
+            ->where('name', 'like', '%'.$query.'%')
+            ->orderByRaw('COALESCE(display_name, name)')
+            ->limit(10)
+            ->get(['id', 'name', 'display_name', 'country', 'state_province'])
+            ->map(fn (University $university): array => [
+                'id' => $university->id,
+                'name' => $university->display_name ?: $university->name,
+                'country' => $university->country,
+                'state_province' => $university->state_province,
+            ]);
+
+        return response()->json($universities);
     }
 
     public function showForgotPassword(): View

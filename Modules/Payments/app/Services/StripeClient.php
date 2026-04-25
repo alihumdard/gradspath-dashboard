@@ -3,35 +3,59 @@
 namespace Modules\Payments\app\Services;
 
 use Illuminate\Http\Client\Factory as HttpFactory;
-use Illuminate\Support\Arr;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Http;
 
 class StripeClient
 {
     public function __construct(private readonly HttpFactory $http) {}
 
+    public function createConnectedAccount(array $payload): array
+    {
+        return $this->post('/accounts', $payload);
+    }
+
+    public function retrieveConnectedAccount(string $accountId): array
+    {
+        return $this->get('/accounts/'.$accountId);
+    }
+
+    public function createAccountLink(array $payload): array
+    {
+        return $this->post('/account_links', $payload);
+    }
+
     public function createCheckoutSession(array $payload): array
     {
-        $response = $this->request()->withBody(
-            http_build_query($this->normalize($payload)),
-            'application/x-www-form-urlencoded'
-        )->post($this->endpoint('/checkout/sessions'));
+        return $this->post('/checkout/sessions', $payload);
+    }
 
-        $data = $response->throw()->json();
+    public function createTransfer(array $payload): array
+    {
+        return $this->post('/transfers', $payload);
+    }
 
-        return is_array($data) ? $data : [];
+    public function createTransferReversal(string $transferId, array $payload): array
+    {
+        return $this->post('/transfers/'.$transferId.'/reversals', $payload);
+    }
+
+    public function createRefund(array $payload): array
+    {
+        return $this->post('/refunds', $payload);
+    }
+
+    public function retrieveTransfer(string $transferId): array
+    {
+        return $this->get('/transfers/'.$transferId);
     }
 
     public function retrieveCheckoutSession(string $sessionId): array
     {
-        $response = $this->request()->get($this->endpoint('/checkout/sessions/'.$sessionId), [
+        return $this->get('/checkout/sessions/'.$sessionId, [
             'expand' => ['payment_intent'],
         ]);
-
-        $data = $response->throw()->json();
-
-        return is_array($data) ? $data : [];
     }
 
     public function verifyWebhookSignature(string $payload, ?string $signatureHeader): void
@@ -71,7 +95,7 @@ class StripeClient
         }
     }
 
-    private function request()
+    private function request(): PendingRequest
     {
         $secret = (string) config('services.stripe.secret_key');
 
@@ -85,13 +109,44 @@ class StripeClient
             ->acceptJson();
     }
 
+    private function get(string $path, array $query = []): array
+    {
+        return $this->json(
+            $this->request()->get($this->endpoint($path), $this->normalizeForStripe($query))
+        );
+    }
+
+    private function post(string $path, array $payload): array
+    {
+        return $this->json(
+            $this->request()->post($this->endpoint($path), $this->normalizeForStripe($payload))
+        );
+    }
+
+    private function json(Response $response): array
+    {
+        return $response->throw()->json();
+    }
+
     private function endpoint(string $path): string
     {
         return rtrim((string) config('services.stripe.api_base'), '/').$path;
     }
 
-    private function normalize(array $payload): array
+    private function normalizeForStripe(mixed $value): mixed
     {
-        return Arr::undot(Arr::dot($payload));
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        foreach ($value as $key => $item) {
+            $value[$key] = $this->normalizeForStripe($item);
+        }
+
+        return $value;
     }
 }

@@ -3849,7 +3849,7 @@
 
     @include('auth::user.register')
 
-    <script src="{{ asset('assets_landingPage/js/app.js') }}"></script>
+    <script src="{{ asset('assets_landingPage/js/app.js') }}?v={{ filemtime(public_path('assets_landingPage/js/app.js')) }}"></script>
     <script src="{{ asset('assets_landingPage/js/script.js') }}"></script>
     <script>
       (function () {

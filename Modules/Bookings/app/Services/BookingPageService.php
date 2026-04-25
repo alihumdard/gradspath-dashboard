@@ -6,6 +6,7 @@ use Illuminate\Support\Str;
 use Modules\Auth\app\Models\User;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
+use Modules\Settings\app\Support\TimezoneOptions;
 
 class BookingPageService
 {
@@ -48,7 +49,8 @@ class BookingPageService
 
         $mentorName = $mentor->user?->name ?? 'Mentor';
         $programLabel = $this->programLabel($mentor->program_type);
-        $officeHours = $this->availability->nextOfficeHourSessionForMentor($mentor) ?? [
+        $viewerTimezone = TimezoneOptions::preferredFor($viewer?->loadMissing('setting'));
+        $officeHours = $this->availability->nextOfficeHourSessionForMentor($mentor, $viewerTimezone) ?? [
             'sessionId' => null,
             'mentorName' => $mentorName,
             'mentorMeta' => trim($programLabel.' • '.$school, ' •'),
@@ -89,6 +91,8 @@ class BookingPageService
                 'name' => $viewer?->name,
                 'email' => $viewer?->email,
                 'portal' => $portal,
+                'timezone' => $viewerTimezone,
+                'hasSavedTimezone' => filled($viewer?->setting?->timezone),
             ],
             'services' => $services,
             'officeHours' => $allowOfficeHours ? $officeHours : null,
@@ -105,6 +109,7 @@ class BookingPageService
             'officeHoursDirectoryUrl' => $portal === 'student'
                 ? route('student.office-hours')
                 : route('mentor.office-hours'),
+            'timezoneAutoSaveUrl' => route('settings.timezone.store'),
         ];
     }
 

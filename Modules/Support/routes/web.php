@@ -7,12 +7,12 @@ use Modules\Support\app\Http\Controllers\Student\TicketsController as StudentTic
 
 Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
 	Route::get('/student/support', [StudentTicketsController::class, 'index'])->name('student.support.index');
-	Route::post('/student/support', [StudentTicketsController::class, 'store'])->name('student.support.store');
+	Route::post('/student/support', [StudentTicketsController::class, 'store'])->middleware('throttle:5,60')->name('student.support.store');
 });
 
 Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
 	Route::get('/mentor/support', [MentorTicketsController::class, 'index'])->name('mentor.support.index');
-	Route::post('/mentor/support', [MentorTicketsController::class, 'store'])->name('mentor.support.store');
+	Route::post('/mentor/support', [MentorTicketsController::class, 'store'])->middleware('throttle:5,60')->name('mentor.support.store');
 });
 
 Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->name('admin.support.')->group(function () {

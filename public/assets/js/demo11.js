@@ -28,6 +28,7 @@ const officeHoursData = bookingPageData?.officeHours || null;
 const availabilityRoutes = bookingPageData?.availabilityRoutes || {};
 const bookingCheckoutUrl = bookingPageData?.bookingCheckoutUrl || "";
 const creditBalanceUrl = bookingPageData?.creditBalanceUrl || "";
+const timezoneAutoSaveUrl = bookingPageData?.timezoneAutoSaveUrl || "";
 
 const state = {
   selectedServiceId: bookingPageData?.selectedServiceId || services[0]?.id || null,
@@ -42,6 +43,8 @@ const state = {
   selectedOfficeHourSessionId: null,
   selectedOfficeHoursDetails: null,
 };
+
+autoSaveDetectedTimezone();
 
 const serviceGrid = document.getElementById("serviceGrid");
 const meetingSizeGrid = document.getElementById("meetingSizeGrid");
@@ -261,6 +264,39 @@ async function fetchAvailability(url, params) {
   }
 
   return response.json();
+}
+
+async function autoSaveDetectedTimezone() {
+  if (bookingPageData?.viewer?.hasSavedTimezone) {
+    return;
+  }
+
+  const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (!detectedTimezone || !timezoneAutoSaveUrl) {
+    return;
+  }
+
+  const supported = ["UTC", "Asia/Karachi", "Europe/London", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles"];
+  if (!supported.includes(detectedTimezone)) {
+    return;
+  }
+
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+  if (!csrfToken) {
+    return;
+  }
+
+  await fetch(timezoneAutoSaveUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-TOKEN": csrfToken,
+      Accept: "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    credentials: "same-origin",
+    body: JSON.stringify({ timezone: detectedTimezone }),
+  }).catch(() => {});
 }
 
 function currentAvailabilityParams() {

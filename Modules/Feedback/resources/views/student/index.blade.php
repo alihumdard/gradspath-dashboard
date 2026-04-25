@@ -31,18 +31,20 @@
     <section class="overview-grid">
       <div class="overview-card">
         <div class="overview-label">Average Rating</div>
-        <div class="overview-value">4.9</div>
-        <div class="overview-sub">Across 214 completed sessions</div>
+        <div class="overview-value">{{ number_format((float) ($feedbackSummary['averageRating'] ?? 0), 1) }}</div>
+        <div class="overview-sub">Across {{ (int) ($feedbackSummary['completedSessions'] ?? 0) }} completed sessions</div>
       </div>
       <div class="overview-card">
         <div class="overview-label">Recommend Rate</div>
-        <div class="overview-value">96%</div>
+        <div class="overview-value">{{ (int) ($feedbackSummary['recommendRate'] ?? 0) }}%</div>
         <div class="overview-sub">Students would book again</div>
       </div>
       <div class="overview-card">
         <div class="overview-label">Most Mentioned</div>
-        <div class="overview-value small-value">Clear advice</div>
-        <div class="overview-sub">Also: honest, strategic, supportive</div>
+        <div class="overview-value small-value">{{ $feedbackSummary['topMentioned'] ?? 'No feedback yet' }}</div>
+        <div class="overview-sub">
+          {{ !empty($feedbackSummary['topMentionedOthers']) ? 'Also: '.implode(', ', $feedbackSummary['topMentionedOthers']) : 'More feedback themes will appear here.' }}
+        </div>
       </div>
     </section>
 
@@ -92,5 +94,6 @@
 @endsection
 
 @section('page_js')
+  <script id="feedbackPageData" type="application/json">@json($feedbackPageData ?? [])</script>
   <script src="{{ asset('assets/js/demo5.js') }}"></script>
 @endsection

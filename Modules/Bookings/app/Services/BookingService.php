@@ -31,6 +31,9 @@ class BookingService
         $amountCharged = $this->amountCharged($service, $sessionType);
         $pricingSnapshot = $this->pricingSnapshot($service, $sessionType, $credits, $amountCharged);
         $guestParticipants = $this->guestParticipants($data['guest_participants'] ?? []);
+        $this->assertUserHasNoOverdueFeedback($booker);
+        $this->assertBookerMentorHasNoOverdueSessionNotes($booker);
+        $this->assertMentorHasNoOverdueSessionNotes($mentor);
         $this->assertBookerCanBookMentor($booker, $mentor);
         $this->assertMentorOffersService($mentor, $service);
 
@@ -231,6 +234,49 @@ class BookingService
             $slot->id,
             null,
         ];
+    }
+
+    private function assertUserHasNoOverdueFeedback(User $user): void
+    {
+        $hasOverdueFeedback = Booking::query()
+            ->where('student_id', $user->id)
+            ->whereNotNull('feedback_due_at')
+            ->where('feedback_due_at', '<', now())
+            ->where('student_feedback_done', false)
+            ->whereIn('status', ['completed'])
+            ->exists();
+
+        if ($hasOverdueFeedback) {
+            throw new BookingException('Please submit feedback for your completed session before booking another meeting.');
+        }
+    }
+
+    private function assertMentorHasNoOverdueSessionNotes(Mentor $mentor): void
+    {
+        $hasOverdueNotes = Booking::query()
+            ->where('mentor_id', $mentor->id)
+            ->whereNotNull('feedback_due_at')
+            ->where('feedback_due_at', '<', now())
+            ->where('mentor_feedback_done', false)
+            ->whereIn('status', ['completed'])
+            ->exists();
+
+        if ($hasOverdueNotes) {
+            throw new BookingException('This mentor has overdue session notes. New bookings are paused until those notes are completed.');
+        }
+    }
+
+    private function assertBookerMentorHasNoOverdueSessionNotes(User $booker): void
+    {
+        $mentor = Mentor::query()
+            ->where('user_id', $booker->id)
+            ->first();
+
+        if (! $mentor) {
+            return;
+        }
+
+        $this->assertMentorHasNoOverdueSessionNotes($mentor);
     }
 
     private function reserveOfficeHourSession(User $booker, Mentor $mentor, ServiceConfig $service, array $data): array

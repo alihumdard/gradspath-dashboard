@@ -3,6 +3,7 @@
 namespace Modules\Institutions\app\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -32,6 +33,39 @@ class UniversityProgramsController extends Controller
         return view('discovery::admin.admin', [
             'programUniversities' => $universities,
             'universityPrograms' => $programs,
+        ]);
+    }
+
+    public function searchUniversities(Request $request): JsonResponse
+    {
+        $query = trim((string) $request->query('q', ''));
+        $selectedId = $request->integer('selected_id');
+        $perPage = min(max((int) $request->integer('per_page', 20), 1), 50);
+
+        $universities = University::query()
+            ->where('is_active', true)
+            ->when($selectedId > 0, fn ($builder) => $builder->where('id', $selectedId))
+            ->when($selectedId === 0 && $query !== '', function ($builder) use ($query): void {
+                $builder->where(function ($inner) use ($query): void {
+                    $inner
+                        ->where('name', 'like', '%'.$query.'%')
+                        ->orWhere('display_name', 'like', '%'.$query.'%');
+                });
+            })
+            ->orderByRaw('COALESCE(display_name, name)')
+            ->paginate($perPage, ['id', 'name', 'display_name', 'country', 'state_province']);
+
+        return response()->json([
+            'data' => $universities->getCollection()
+                ->map(fn (University $university): array => [
+                    'id' => $university->id,
+                    'label' => $university->display_name ?: $university->name,
+                    'name' => $university->name,
+                    'country' => $university->country,
+                    'state_province' => $university->state_province,
+                ])
+                ->values(),
+            'next_page' => $universities->hasMorePages() ? $universities->currentPage() + 1 : null,
         ]);
     }
 

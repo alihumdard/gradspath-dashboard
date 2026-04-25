@@ -4,7 +4,7 @@
   $bookingOutcomes = $adminManualActionsData['options']['booking_outcomes'] ?? [];
 @endphp
 
-<section class="manual-group">
+<section class="manual-group" data-section-group="feedback">
   <header class="manual-group__header">
     <div>
       <p class="manual-group__eyebrow">Moderation Actions</p>
@@ -76,7 +76,7 @@
   </div>
 </section>
 
-<section class="manual-group">
+<section class="manual-group" data-section-group="bookings">
   <header class="manual-group__header">
     <div>
       <p class="manual-group__eyebrow">Meeting Outcomes</p>

@@ -10,12 +10,13 @@ use Illuminate\View\View;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Http\Requests\UpdateMentorSettingsRequest;
 use Modules\Settings\app\Models\Mentor;
+use Modules\Settings\app\Support\TimezoneOptions;
 
 class MentorSettingsController extends Controller
 {
     public function index(): View
     {
-        $user = Auth::user()->loadMissing('mentor.services');
+        $user = Auth::user()->loadMissing('mentor.services', 'setting');
         $mentor = $user->mentor ?? new Mentor([
             'mentor_type' => 'graduate',
         ]);
@@ -31,12 +32,17 @@ class MentorSettingsController extends Controller
             'selectedServiceIds' => $mentor->exists
                 ? $mentor->services->pluck('id')->all()
                 : [],
+            'timezoneOptions' => TimezoneOptions::all(),
+            'selectedTimezone' => old('timezone', $user->setting?->timezone ?? TimezoneOptions::fallback()),
+            'hasSavedTimezone' => filled($user->setting?->timezone),
+            'timezoneAutoSaveUrl' => route('settings.timezone.store'),
+            'stripeReturn' => request()->boolean('stripe_return'),
         ]);
     }
 
     public function update(UpdateMentorSettingsRequest $request): RedirectResponse
     {
-        $user = Auth::user()->loadMissing('mentor.services');
+        $user = Auth::user()->loadMissing('mentor.services', 'setting');
         $data = $request->validated();
 
         DB::transaction(function () use ($user, $data): void {
@@ -44,6 +50,13 @@ class MentorSettingsController extends Controller
                 'name' => $data['name'],
                 'email' => $data['email'],
             ])->save();
+
+            $user->setting()->updateOrCreate([], [
+                'theme' => $user->setting?->theme ?? 'light',
+                'email_notifications' => $user->setting?->email_notifications ?? true,
+                'sms_notifications' => $user->setting?->sms_notifications ?? false,
+                'timezone' => $data['timezone'] ?? null,
+            ]);
 
             $mentor = $user->mentor ?? new Mentor([
                 'user_id' => $user->id,

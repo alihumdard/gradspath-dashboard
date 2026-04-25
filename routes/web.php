@@ -3,10 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
-Route::get('/university.json', function () {
-    return response()->file(base_path('university.json'));
-});
-
 Route::get('/', function () {
     $user = Auth::user();
 

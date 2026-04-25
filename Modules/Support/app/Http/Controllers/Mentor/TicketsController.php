@@ -15,7 +15,9 @@ class TicketsController extends Controller
 
     public function index(): View
     {
-        return view('support::mentor.create');
+        return view('support::mentor.create', [
+            'supportTickets' => $this->ticketsForCurrentUser(),
+        ]);
     }
 
     public function store(CreateSupportTicketRequest $request): RedirectResponse
@@ -23,5 +25,15 @@ class TicketsController extends Controller
         $this->tickets->create(Auth::user(), $request->validated());
 
         return back()->with('success', 'Support ticket created successfully.');
+    }
+
+    private function ticketsForCurrentUser()
+    {
+        return Auth::user()
+            ->supportTickets()
+            ->with('handler:id,name,email')
+            ->latest()
+            ->limit(20)
+            ->get();
     }
 }
