@@ -22,8 +22,8 @@ class CreditsController extends Controller
     {
         return view('payments::student.store', [
             'creditBalance' => $this->credits->getBalance(Auth::user()),
-            'creditPackPrice' => 200,
-            'creditPackCredits' => 5,
+            'creditPackPrice' => (float) config('payments.office_hours.credit_pack_price', 200),
+            'creditPackCredits' => (int) config('payments.office_hours.credit_pack_credits', 5),
         ]);
     }
 

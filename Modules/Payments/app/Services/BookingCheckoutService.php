@@ -250,8 +250,8 @@ class BookingCheckoutService
     private function amountFor(ServiceConfig $service, string $sessionType): float
     {
         return match ($sessionType) {
-            '1on3' => (float) ($service->price_1on3_per_person ?? 0) * 3,
-            '1on5' => (float) ($service->price_1on5_per_person ?? 0) * 5,
+            '1on3' => (float) ($service->price_1on3_total ?? ((float) ($service->price_1on3_per_person ?? 0) * 3)),
+            '1on5' => (float) ($service->price_1on5_total ?? ((float) ($service->price_1on5_per_person ?? 0) * 5)),
             'office_hours' => 0.0,
             default => (float) ($service->price_1on1 ?? 0),
         };

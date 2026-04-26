@@ -21,9 +21,7 @@ Some older checklist entries are now stale. In particular, mentor notes saving, 
 - Build the automatic weekly/biweekly rotation engine.
 - Confirm recurring session generation is fully automated by schedule, not only manually configured.
 - Finish first-student service choice workflow for office hours.
-- Confirm final office-hours payout rule.
-  - Current payout logic is percent-based.
-  - Original plan mentions a fixed mentor amount per attendee for office hours.
+- Office-hours payout rule is admin-managed, seeded at `$15` mentor payout per completed attendee booking.
 
 ### 2. Mentor Notes Completion
 
@@ -170,7 +168,7 @@ Remaining:
   - connected-account events
   - queue worker requirement
   - scheduled retry command requirement
-- Confirm final payout policy for office hours.
+- Production-check Office Hours payout reporting against real Stripe/credit activity.
 - Decide whether to keep current Express Connect flow or later migrate new Stripe work toward the latest Accounts/controller-properties approach.
 - Admin workflow for refunds that land in `cancelled_pending_refund` / admin review.
 
@@ -192,4 +190,3 @@ Remaining:
 5. Feedback analytics and review browsing polish.
 6. Settings polish: avatars, payout copy, optional provider settings.
 7. Production runbooks for Stripe, queues, scheduler, and webhooks.
-

@@ -26,11 +26,7 @@ class CreditService
             return 1;
         }
 
-        return match ($meetingSize) {
-            '1on3' => (int) $service->credit_cost_1on3,
-            '1on5' => (int) $service->credit_cost_1on5,
-            default => (int) $service->credit_cost_1on1,
-        };
+        return 0;
     }
 
     public function deduct(User $user, int $amount, ?Booking $booking = null, ?string $description = null): UserCredit

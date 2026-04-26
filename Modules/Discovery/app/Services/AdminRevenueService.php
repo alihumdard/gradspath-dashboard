@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Bookings\app\Models\Booking;
+use Modules\Payments\app\Models\CreditTransaction;
 
 class AdminRevenueService
 {
@@ -66,7 +67,9 @@ class AdminRevenueService
             ->filter(fn ($payout) => $this->payoutFallsInRange($payout, $startDate))
             ->values();
 
-        $grossRevenue = $this->sumMoney($revenueBookings->pluck('amount_charged'));
+        $bookingRevenue = $this->sumMoney($revenueBookings->pluck('amount_charged'));
+        $officeHoursRevenue = $this->officeHoursCreditRevenue($startDate);
+        $grossRevenue = round($bookingRevenue + $officeHoursRevenue, 2);
         $mentorPayoutsPaid = $this->sumMoney(
             $payouts->filter(fn ($payout) => in_array($payout->status, ['paid', 'transferred', 'paid_out'], true))
                 ->map(fn ($payout) => $this->payoutAmount($payout))
@@ -208,6 +211,20 @@ class AdminRevenueService
             ),
             2
         );
+    }
+
+    private function officeHoursCreditRevenue(?Carbon $startDate): float
+    {
+        $officeHoursConfig = config('payments.office_hours', []);
+        $packPrice = (float) ($officeHoursConfig['credit_pack_price'] ?? 200);
+        $packCredits = max((int) ($officeHoursConfig['credit_pack_credits'] ?? 5), 1);
+
+        $creditsPurchased = CreditTransaction::query()
+            ->where('type', 'purchase')
+            ->when($startDate, fn ($query) => $query->where('created_at', '>=', $startDate))
+            ->sum('amount');
+
+        return round(((int) $creditsPurchased / $packCredits) * $packPrice, 2);
     }
 
     private function payoutAmount(object $payout): float

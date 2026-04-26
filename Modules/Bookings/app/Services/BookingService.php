@@ -13,11 +13,15 @@ use Modules\Bookings\app\Models\MentorAvailabilitySlot;
 use Modules\OfficeHours\app\Models\OfficeHourSession;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Payments\app\Services\CreditService;
+use Modules\Payments\app\Services\MentorPayoutService;
 use Modules\Settings\app\Models\Mentor;
 
 class BookingService
 {
-    public function __construct(private readonly CreditService $creditService) {}
+    public function __construct(
+        private readonly CreditService $creditService,
+        private readonly MentorPayoutService $payouts,
+    ) {}
 
     public function createBooking(User $booker, array $data, array $options = []): Booking
     {
@@ -115,6 +119,10 @@ class BookingService
         });
 
         event(new BookingCreated($booking));
+
+        if ($booking->session_type === 'office_hours') {
+            $this->payouts->recordOfficeHoursEarning($booking);
+        }
 
         return $booking->fresh(['mentor.user', 'service', 'booker']);
     }
@@ -365,8 +373,8 @@ class BookingService
     private function amountCharged(ServiceConfig $service, string $sessionType): float
     {
         return match ($sessionType) {
-            '1on3' => (float) ($service->price_1on3_total ?? 0),
-            '1on5' => (float) ($service->price_1on5_total ?? 0),
+            '1on3' => (float) ($service->price_1on3_total ?? ((float) ($service->price_1on3_per_person ?? 0) * 3)),
+            '1on5' => (float) ($service->price_1on5_total ?? ((float) ($service->price_1on5_per_person ?? 0) * 5)),
             'office_hours' => 0.0,
             default => (float) ($service->price_1on1 ?? 0),
         };

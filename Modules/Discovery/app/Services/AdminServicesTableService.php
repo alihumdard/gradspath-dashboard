@@ -115,12 +115,14 @@ class AdminServicesTableService
 
         if ($service->price_1on3_per_person !== null) {
             $perPerson = (float) $service->price_1on3_per_person;
-            $parts[] = '1:3 $' . $this->formatDecimal($perPerson) . ' pp / $' . $this->formatDecimal($perPerson * 3) . ' total';
+            $total = $service->price_1on3_total !== null ? (float) $service->price_1on3_total : $perPerson * 3;
+            $parts[] = '1:3 $' . $this->formatDecimal($perPerson) . ' pp / $' . $this->formatDecimal($total) . ' total';
         }
 
         if ($service->price_1on5_per_person !== null) {
             $perPerson = (float) $service->price_1on5_per_person;
-            $parts[] = '1:5 $' . $this->formatDecimal($perPerson) . ' pp / $' . $this->formatDecimal($perPerson * 5) . ' total';
+            $total = $service->price_1on5_total !== null ? (float) $service->price_1on5_total : $perPerson * 5;
+            $parts[] = '1:5 $' . $this->formatDecimal($perPerson) . ' pp / $' . $this->formatDecimal($total) . ' total';
         }
 
         return $parts === [] ? '-' : implode(' • ', $parts);
@@ -130,8 +132,8 @@ class AdminServicesTableService
     {
         return match ($booking->session_type) {
             '1on1' => $service->price_1on1 !== null ? (float) $service->price_1on1 : null,
-            '1on3' => $service->price_1on3_per_person !== null ? (float) $service->price_1on3_per_person * 3 : null,
-            '1on5' => $service->price_1on5_per_person !== null ? (float) $service->price_1on5_per_person * 5 : null,
+            '1on3' => $service->price_1on3_total !== null ? (float) $service->price_1on3_total : ($service->price_1on3_per_person !== null ? (float) $service->price_1on3_per_person * 3 : null),
+            '1on5' => $service->price_1on5_total !== null ? (float) $service->price_1on5_total : ($service->price_1on5_per_person !== null ? (float) $service->price_1on5_per_person * 5 : null),
             'office_hours' => $service->office_hours_subscription_price !== null ? (float) $service->office_hours_subscription_price : null,
             default => null,
         };

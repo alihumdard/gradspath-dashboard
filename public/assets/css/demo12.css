@@ -2981,6 +2981,12 @@ td span {
   grid-column: 1 / -1;
 }
 
+.manual-split-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
 .manual-field span,
 .manual-fieldset legend {
   font-size: 12px;
@@ -3026,7 +3032,8 @@ td span {
   box-shadow: 0 0 0 3px rgba(98, 169, 255, 0.14);
 }
 
-.manual-field.is-disabled {
+.manual-field.is-disabled,
+.manual-split-row.is-disabled {
   opacity: 0.48;
 }
 
@@ -3168,6 +3175,10 @@ td span {
 
 @media (max-width: 720px) {
   .manual-form {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-split-row {
     grid-template-columns: 1fr;
   }
 

@@ -76,11 +76,18 @@ function makeService(array $overrides = []): ServiceConfig
         'duration_minutes' => 60,
         'is_active' => true,
         'price_1on1' => 70,
+        'platform_fee_1on1' => 27,
+        'mentor_payout_1on1' => 43,
         'price_1on3_per_person' => 60,
         'price_1on3_total' => 180,
+        'platform_fee_1on3' => 80,
+        'mentor_payout_1on3' => 100,
         'price_1on5_per_person' => 50,
         'price_1on5_total' => 250,
+        'platform_fee_1on5' => 110,
+        'mentor_payout_1on5' => 140,
         'is_office_hours' => false,
+        'office_hours_mentor_payout_per_attendee' => null,
         'credit_cost_1on1' => 1,
         'credit_cost_1on3' => 1,
         'credit_cost_1on5' => 1,
@@ -340,6 +347,7 @@ it('returns recurring office-hours availability as one date with session details
         'price_1on5_per_person' => null,
         'price_1on5_total' => null,
         'office_hours_subscription_price' => 200,
+        'office_hours_mentor_payout_per_attendee' => 15,
     ]);
     $focusService = makeService([
         'service_name' => 'Interview Prep',
@@ -1445,6 +1453,7 @@ it('does not send standard booking emails for office hours', function () {
         'price_1on5_per_person' => null,
         'price_1on5_total' => null,
         'office_hours_subscription_price' => 200,
+        'office_hours_mentor_payout_per_attendee' => 15,
     ]);
     $supportService = makeService([
         'service_name' => 'Interview Prep',
@@ -1531,6 +1540,7 @@ it('renders dynamic office hours data from upcoming sessions', function () {
         'price_1on5_per_person' => null,
         'price_1on5_total' => null,
         'office_hours_subscription_price' => 200,
+        'office_hours_mentor_payout_per_attendee' => 15,
     ]);
     $supportService = makeService([
         'service_name' => 'Interview Prep',

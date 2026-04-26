@@ -47,7 +47,7 @@ Notes:
 
 - `[x]` Stripe Checkout session creation for paid bookings
 - `[x]` Booking finalization after successful payment webhook
-- `[-]` Clear separation between credit-based bookings and cash-paid bookings across all user flows
+- `[x]` Clear separation between credit-based Office Hours bookings and cash-paid service bookings across all user flows
 
 Notes:
 
@@ -117,8 +117,9 @@ Notes:
 - If the mentor has a connected account and `payouts_enabled`, completion attempts a Stripe Transfer.
 - If mentor onboarding is incomplete, the payout moves to `ready` and can be retried after onboarding completes.
 - Failed transfer attempts are stored with a failure reason and retried by the scheduled `payments:retry-mentor-payouts` command.
-- Current default split is percent-based through `MENTOR_PAYOUT_PERCENT_DEFAULT`, defaulting to `70`.
-- Office Hours payout rules from the original plan, such as `$15` per attendee, are not yet represented as a distinct payout calculation rule.
+- Service/session split rules are now editable from admin pricing and stored on `services_config`.
+- `config/payments.php` no longer contains service payout fallbacks; paid service splits must be configured in admin/database.
+- Office Hours creates a mentor payout per completed attendee booking using the service's admin-managed per-attendee amount, seeded at `$15`.
 
 ## 7. Refunds And Credits
 
@@ -147,9 +148,9 @@ Notes:
 
 ## Recommended Next Stripe Work
 
-1. Confirm the final mentor payout policy:
-   - current code uses percent-of-gross payouts
-   - original Office Hours plan describes `$15` per attendee
+1. Production-check the final mentor payout policy:
+   - admin-managed service/session splits are the only live payout source
+   - Office Hours per-attendee mentor payout is admin-managed and seeded at `$15`
 2. Improve mentor settings UI copy:
    - `Onboarding opened`
    - `Pending Stripe review`
@@ -185,7 +186,7 @@ Office Hours automation
 
 Rotation engine is still the main missing piece.
 Need automatic weekly session/service rotation.
-Need final Office Hours payout rule: plan says mentor gets $15 per attendee, but current payout code uses 70% of paid booking gross.
+Office Hours payout rule is implemented from admin pricing: mentor gets the configured per-attendee amount after completion.
 Refunds
 
 Credit refund method exists, but cancellation flow still looks support/manual-oriented.

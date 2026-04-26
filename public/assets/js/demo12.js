@@ -2370,18 +2370,21 @@ function initializeManualActionsHub() {
 
         renderSummary(pricingSummary, [
             { label: "Service", value: service.name },
-            { label: "1 on 1", value: money(service.price_1on1) },
+            {
+                label: "1 on 1",
+                value: `${money(service.price_1on1)} | Admin ${money(service.platform_fee_1on1)} | Mentor ${money(service.mentor_payout_1on1)}`,
+            },
             {
                 label: "1 on 3",
-                value: money(service.price_1on3_per_person),
+                value: `${money(service.price_1on3_total)} | Admin ${money(service.platform_fee_1on3)} | Mentor ${money(service.mentor_payout_1on3)}`,
             },
             {
                 label: "1 on 5",
-                value: money(service.price_1on5_per_person),
+                value: `${money(service.price_1on5_total)} | Admin ${money(service.platform_fee_1on5)} | Mentor ${money(service.mentor_payout_1on5)}`,
             },
             {
                 label: "Office hours",
-                value: money(service.office_hours_subscription_price),
+                value: `${money(service.office_hours_subscription_price)} | Mentor ${money(service.office_hours_mentor_payout_per_attendee)} / attendee`,
             },
         ]);
     }

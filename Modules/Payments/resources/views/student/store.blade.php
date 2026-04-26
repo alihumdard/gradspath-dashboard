@@ -138,7 +138,7 @@
         </li>
         <li>45 minutes per meeting with small-group access</li>
         <li>First come, first serve booking</li>
-        <li>Maximum of 5 people per meeting</li>
+        <li>Maximum of 3 people per meeting</li>
         <li>Use credits across MBA, Law, or Therapy office hours</li>
         <li>
           One-time purchase with Stripe Checkout
@@ -214,4 +214,3 @@
     </section>
   </section>
 @endsection
-

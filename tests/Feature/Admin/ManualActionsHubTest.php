@@ -102,12 +102,21 @@ function createManualService(): ServiceConfig
         'is_active' => true,
         'price_1on1' => 80,
         'price_1on3_per_person' => 55,
+        'price_1on3_total' => 165,
         'price_1on5_per_person' => 40,
+        'price_1on5_total' => 200,
+        'platform_fee_1on1' => 30,
+        'mentor_payout_1on1' => 50,
+        'platform_fee_1on3' => 70,
+        'mentor_payout_1on3' => 95,
+        'platform_fee_1on5' => 90,
+        'mentor_payout_1on5' => 110,
         'is_office_hours' => true,
         'office_hours_subscription_price' => 25,
-        'credit_cost_1on1' => 2,
-        'credit_cost_1on3' => 1,
-        'credit_cost_1on5' => 1,
+        'office_hours_mentor_payout_per_attendee' => 15,
+        'credit_cost_1on1' => 0,
+        'credit_cost_1on3' => 0,
+        'credit_cost_1on5' => 0,
         'sort_order' => 0,
     ]);
 }
@@ -125,7 +134,10 @@ it('renders the manual actions hub with grouped sections', function () {
         ->assertSee('Amend mentor account')
         ->assertSee('Adjust user credits')
         ->assertSee('Update service pricing')
-        ->assertSee('Update feedback');
+        ->assertSee('Update feedback')
+        ->assertDontSee('1 on 1 credits')
+        ->assertDontSee('1 on 3 credits')
+        ->assertDontSee('1 on 5 credits');
 });
 
 it('writes an admin log for credit adjustments and returns to the credits section', function () {
@@ -204,9 +216,16 @@ it('writes admin logs for institution and service pricing actions', function () 
         ->patch(route('admin.manual-actions.services.pricing.update'), [
             'service_id' => $service->id,
             'price_1on1' => 95,
-            'price_1on3_per_person' => 65,
-            'price_1on5_per_person' => 45,
+            'platform_fee_1on1' => 40,
+            'mentor_payout_1on1' => 55,
+            'price_1on3_total' => 195,
+            'platform_fee_1on3' => 80,
+            'mentor_payout_1on3' => 115,
+            'price_1on5_total' => 225,
+            'platform_fee_1on5' => 100,
+            'mentor_payout_1on5' => 125,
             'office_hours_subscription_price' => 30,
+            'office_hours_mentor_payout_per_attendee' => 18,
             'notes' => 'Seasonal pricing update.',
             'manual_section' => 'pricing',
         ])
@@ -221,11 +240,40 @@ it('writes admin logs for institution and service pricing actions', function () 
     $this->assertDatabaseHas('services_config', [
         'id' => $service->id,
         'price_1on1' => 95,
+        'platform_fee_1on1' => 40,
+        'mentor_payout_1on1' => 55,
+        'price_1on3_total' => 195,
+        'platform_fee_1on3' => 80,
+        'mentor_payout_1on3' => 115,
+        'price_1on5_total' => 225,
+        'platform_fee_1on5' => 100,
+        'mentor_payout_1on5' => 125,
         'office_hours_subscription_price' => 30,
+        'office_hours_mentor_payout_per_attendee' => 18,
     ]);
 
     expect(AdminLog::query()->where('action', 'manual_institution_create')->exists())->toBeTrue();
     expect(AdminLog::query()->where('action', 'manual_service_update')->exists())->toBeTrue();
+});
+
+it('rejects service pricing updates when admin and mentor splits do not equal the student price', function () {
+    $admin = createManualActionsAdmin();
+    $service = createManualService();
+
+    $this->actingAs($admin)
+        ->from(route('admin.manual-actions'))
+        ->patch(route('admin.manual-actions.services.pricing.update'), [
+            'service_id' => $service->id,
+            'price_1on1' => 95,
+            'platform_fee_1on1' => 40,
+            'mentor_payout_1on1' => 40,
+            'notes' => 'Invalid split update.',
+            'manual_section' => 'pricing',
+        ])
+        ->assertRedirect(route('admin.manual-actions'))
+        ->assertSessionHasErrors(['platform_fee_1on1', 'mentor_payout_1on1']);
+
+    expect((float) $service->fresh()->price_1on1)->toBe(80.0);
 });
 
 it('writes an admin log for feedback moderation and keeps the feedback section active', function () {

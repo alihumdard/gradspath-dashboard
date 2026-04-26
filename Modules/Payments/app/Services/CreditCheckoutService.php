@@ -13,12 +13,14 @@ class CreditCheckoutService
 
     public function createCheckoutSession(User $user, int $credits, ?string $program = null): array
     {
-        if ($credits !== 5) {
+        $packCredits = (int) config('payments.office_hours.credit_pack_credits', 5);
+
+        if ($credits !== $packCredits) {
             throw new \RuntimeException('Only the 5-credit pack is available right now.');
         }
 
         $program = in_array($program, ['mba', 'law', 'therapy'], true) ? $program : 'mba';
-        $amount = 20000;
+        $amount = (int) round((float) config('payments.office_hours.credit_pack_price', 200) * 100);
 
         return $this->stripe->createCheckoutSession([
             'mode' => 'payment',

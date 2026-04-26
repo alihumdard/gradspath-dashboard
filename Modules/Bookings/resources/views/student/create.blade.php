@@ -222,7 +222,7 @@
             </div>
             <h2 id="officeHoursTitle">Office Hours</h2>
             <div class="modal-price">$200</div>
-            <div class="modal-price-sub">USD / month</div>
+            <div class="modal-price-sub">USD one-time</div>
             <p class="modal-summary-text">Flexible office hour access for students who want consistent support, better value, and simpler monthly booking.</p>
             <div class="program-box">
               <h3>Choose Your Program</h3>
@@ -235,10 +235,10 @@
             </div>
             <button class="office-hours-subscribe-btn" type="button">Subscribe to Office Hours</button>
             <ul class="benefits-list">
-              <li>5 credits per month to use across MBA, Law, or Therapy office hours</li>
+              <li>5 credits to use across MBA, Law, or Therapy office hours</li>
               <li>45 minutes per meeting with small-group access</li>
               <li>First come, first serve booking</li>
-              <li>Maximum of 5 people per meeting</li>
+              <li>Maximum of 3 people per meeting</li>
               <li>Sessions happen every other week</li>
               <li>Better value for students who want more meetings at a lower per-session cost</li>
             </ul>

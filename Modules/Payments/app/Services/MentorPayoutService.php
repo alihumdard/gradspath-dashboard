@@ -59,6 +59,51 @@ class MentorPayoutService
         });
     }
 
+    public function recordOfficeHoursEarning(Booking $booking): ?MentorPayout
+    {
+        if ($booking->session_type !== 'office_hours') {
+            return null;
+        }
+
+        return DB::transaction(function () use ($booking) {
+            $booking->loadMissing(['mentor', 'officeHourSession']);
+
+            $payout = MentorPayout::query()
+                ->lockForUpdate()
+                ->firstOrNew(['booking_id' => $booking->id]);
+
+            $calculation = $this->calculator->forOfficeHoursBooking($booking);
+
+            $payout->fill([
+                'mentor_id' => $booking->mentor_id,
+                'booking_payment_id' => null,
+                'student_id' => $booking->student_id,
+                'stripe_account_id' => $booking->mentor?->stripe_account_id,
+                'amount' => $calculation['mentor_share_amount'],
+                'gross_amount' => $calculation['gross_amount'],
+                'mentor_share_amount' => $calculation['mentor_share_amount'],
+                'platform_fee_amount' => $calculation['platform_fee_amount'],
+                'currency' => $calculation['currency'],
+                'calculation_rule' => $calculation['calculation_rule'],
+            ]);
+
+            if (! in_array((string) $payout->status, [
+                MentorPayout::STATUS_TRANSFERRED,
+                MentorPayout::STATUS_PAID_OUT,
+                MentorPayout::STATUS_REVERSED,
+            ], true)) {
+                $payout->status = MentorPayout::STATUS_PENDING_RELEASE;
+                $payout->eligible_at = null;
+                $payout->failure_reason = null;
+                $payout->failed_at = null;
+            }
+
+            $payout->save();
+
+            return $payout->fresh();
+        });
+    }
+
     public function releaseForCompletedBooking(Booking $booking): ?MentorPayout
     {
         if ($booking->status !== 'completed') {

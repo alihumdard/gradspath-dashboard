@@ -25,7 +25,7 @@
                 <span class="currency">$</span>
                 <span class="price">200</span>
               </div>
-              <div class="billing">USD / month</div>
+              <div class="billing">USD one-time</div>
             </div>
             <p class="card-subtitle">Flexible office hour access for students who want consistent
               support, better value, and simpler monthly booking.</p>
@@ -95,11 +95,11 @@
     </div>
       <button type="button" class="primary-cta" id="subscribeButton">Subscribe to Office Hours</button>
       <ul class="feature-list">
-        <li>5 credits per month to use across MBA, Law, or Therapy office
+        <li>5 credits to use across MBA, Law, or Therapy office
           hours</li>
         <li>45 minutes per meeting with small-group access</li>
         <li>First come, first serve booking</li>
-        <li>Maximum of 5 people per meeting</li>
+        <li>Maximum of 3 people per meeting</li>
         <li>Sessions happen every other week</li>
         <li>Better value for students who want more meetings at a lower
           per-session cost</li>
@@ -133,7 +133,7 @@
           </div>
           <div class="summary-row total-row">
             <span>Total</span>
-            <span>$200/month</span>
+            <span>$200 one-time</span>
           </div>
         </div>
         <div class="payment-fields">
@@ -156,7 +156,7 @@
             <div class="fake-input">Full name</div>
           </div>
         </div>
-        <button type="button" class="pay-button" id="payButton">Pay $200/month</button>
+        <button type="button" class="pay-button" id="payButton">Pay $200</button>
         <p class="checkout-note">Credits are flexible across all office hours. Your selected
           program is only used for internal tracking and analytics.</p>
       </section>
@@ -167,4 +167,3 @@
       <script src="{{ asset('assets/js/demo2.js') }}">
       </script>
 @endsection
-

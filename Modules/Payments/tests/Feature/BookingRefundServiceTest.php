@@ -30,7 +30,6 @@ beforeEach(function () {
 
     config()->set('services.stripe.secret_key', 'sk_test_fake');
     config()->set('services.stripe.api_base', 'https://api.stripe.com/v1');
-    config()->set('payments.mentor_payout_percent_default', 70);
 });
 
 function createRefundUser(string $role): User
@@ -64,6 +63,8 @@ function createRefundBookingContext(float $price = 120, int $credits = 0): array
         'duration_minutes' => 60,
         'is_active' => true,
         'price_1on1' => $price,
+        'platform_fee_1on1' => $price > 0 ? round($price * 0.3, 2) : null,
+        'mentor_payout_1on1' => $price > 0 ? round($price * 0.7, 2) : null,
         'credit_cost_1on1' => $credits,
         'credit_cost_1on3' => 0,
         'credit_cost_1on5' => 0,
@@ -141,13 +142,45 @@ function createRefundPaidPayment(array $context, string $paymentIntent = 'pi_ref
 
 it('automatically refunds credits when a credit booking is cancelled', function () {
     $context = createRefundBookingContext(price: 0, credits: 1);
+    $context['service']->forceFill([
+        'is_office_hours' => true,
+        'office_hours_subscription_price' => 200,
+        'office_hours_mentor_payout_per_attendee' => 15,
+    ])->save();
+
+    $scheduleId = DB::table('office_hour_schedules')->insertGetId([
+        'mentor_id' => $context['mentor']->id,
+        'day_of_week' => 'tue',
+        'start_time' => '10:00:00',
+        'timezone' => 'UTC',
+        'frequency' => 'weekly',
+        'max_spots' => 3,
+        'is_active' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $sessionId = DB::table('office_hour_sessions')->insertGetId([
+        'schedule_id' => $scheduleId,
+        'current_service_id' => $context['service']->id,
+        'session_date' => now()->addDays(4)->toDateString(),
+        'start_time' => '10:00:00',
+        'timezone' => 'UTC',
+        'max_spots' => 3,
+        'current_occupancy' => 0,
+        'is_full' => false,
+        'status' => 'upcoming',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
     app(CreditService::class)->purchase($context['student'], 1, 'pi_credit_seed', 'evt_credit_seed');
 
     $booking = app(BookingService::class)->createBooking($context['student'], [
         'mentor_id' => $context['mentor']->id,
         'service_config_id' => $context['service']->id,
-        'session_type' => '1on1',
-        'mentor_availability_slot_id' => $context['slot']->id,
+        'session_type' => 'office_hours',
+        'office_hour_session_id' => $sessionId,
         'meeting_type' => 'zoom',
         'guest_participants' => [],
     ]);

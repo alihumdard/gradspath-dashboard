@@ -217,7 +217,7 @@
   <div class="manual-panel" id="manual-section-services" data-section-panel="services">
     <div class="manual-panel__copy">
       <h4>Create service</h4>
-      <p>Add a new service with supported session types and credit costs.</p>
+      <p>Add a new service with supported session types and payout splits.</p>
     </div>
 
     <div class="manual-panel__grid">
@@ -262,45 +262,82 @@
           @enderror
         </fieldset>
 
-        <label class="manual-field" data-session-field="1on1">
-          <span>1 on 1 price</span>
-          <input name="price_1on1" type="number" min="0" step="0.01" value="{{ old('price_1on1') }}" data-session-input="1on1" />
-          @error('price_1on1')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-        <label class="manual-field" data-session-field="1on1">
-          <span>1 on 1 credits</span>
-          <input name="credit_cost_1on1" type="number" min="0" step="1" value="{{ old('credit_cost_1on1') }}" data-session-input="1on1" />
-          @error('credit_cost_1on1')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-        <label class="manual-field" data-session-field="1on3">
-          <span>1 on 3 price</span>
-          <input name="price_1on3_per_person" type="number" min="0" step="0.01" value="{{ old('price_1on3_per_person') }}" data-session-input="1on3" />
-          @error('price_1on3_per_person')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-        <label class="manual-field" data-session-field="1on3">
-          <span>1 on 3 credits</span>
-          <input name="credit_cost_1on3" type="number" min="0" step="1" value="{{ old('credit_cost_1on3') }}" data-session-input="1on3" />
-          @error('credit_cost_1on3')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-        <label class="manual-field" data-session-field="1on5">
-          <span>1 on 5 price</span>
-          <input name="price_1on5_per_person" type="number" min="0" step="0.01" value="{{ old('price_1on5_per_person') }}" data-session-input="1on5" />
-          @error('price_1on5_per_person')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-        <label class="manual-field" data-session-field="1on5">
-          <span>1 on 5 credits</span>
-          <input name="credit_cost_1on5" type="number" min="0" step="1" value="{{ old('credit_cost_1on5') }}" data-session-input="1on5" />
-          @error('credit_cost_1on5')
+        <div class="manual-split-row manual-field--full" data-session-field="1on1">
+          <label class="manual-field">
+            <span>1 on 1 student price</span>
+            <input name="price_1on1" type="number" min="0" step="0.01" value="{{ old('price_1on1') }}" data-session-input="1on1" />
+            @error('price_1on1')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+          <label class="manual-field">
+            <span>1 on 1 admin gets</span>
+            <input name="platform_fee_1on1" type="number" min="0" step="0.01" value="{{ old('platform_fee_1on1') }}" data-session-input="1on1" />
+            @error('platform_fee_1on1')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+          <label class="manual-field">
+            <span>1 on 1 mentor gets</span>
+            <input name="mentor_payout_1on1" type="number" min="0" step="0.01" value="{{ old('mentor_payout_1on1') }}" data-session-input="1on1" />
+            @error('mentor_payout_1on1')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+        </div>
+
+        <div class="manual-split-row manual-field--full" data-session-field="1on3">
+          <label class="manual-field">
+            <span>1 on 3 student price total</span>
+            <input name="price_1on3_total" type="number" min="0" step="0.01" value="{{ old('price_1on3_total') }}" data-session-input="1on3" />
+            @error('price_1on3_total')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+          <label class="manual-field">
+            <span>1 on 3 admin gets total</span>
+            <input name="platform_fee_1on3" type="number" min="0" step="0.01" value="{{ old('platform_fee_1on3') }}" data-session-input="1on3" />
+            @error('platform_fee_1on3')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+          <label class="manual-field">
+            <span>1 on 3 mentor gets total</span>
+            <input name="mentor_payout_1on3" type="number" min="0" step="0.01" value="{{ old('mentor_payout_1on3') }}" data-session-input="1on3" />
+            @error('mentor_payout_1on3')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+        </div>
+
+        <div class="manual-split-row manual-field--full" data-session-field="1on5">
+          <label class="manual-field">
+            <span>1 on 5 student price total</span>
+            <input name="price_1on5_total" type="number" min="0" step="0.01" value="{{ old('price_1on5_total') }}" data-session-input="1on5" />
+            @error('price_1on5_total')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+          <label class="manual-field">
+            <span>1 on 5 admin gets total</span>
+            <input name="platform_fee_1on5" type="number" min="0" step="0.01" value="{{ old('platform_fee_1on5') }}" data-session-input="1on5" />
+            @error('platform_fee_1on5')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+          <label class="manual-field">
+            <span>1 on 5 mentor gets total</span>
+            <input name="mentor_payout_1on5" type="number" min="0" step="0.01" value="{{ old('mentor_payout_1on5') }}" data-session-input="1on5" />
+            @error('mentor_payout_1on5')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+        </div>
+
+        <label class="manual-field">
+          <span>Office hours mentor payout per attendee</span>
+          <input name="office_hours_mentor_payout_per_attendee" type="number" min="0" step="0.01" value="{{ old('office_hours_mentor_payout_per_attendee') }}" />
+          @error('office_hours_mentor_payout_per_attendee')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror
         </label>
@@ -382,34 +419,96 @@
           @enderror
         </label>
 
-        <label class="manual-field">
-          <span>1 on 1 price</span>
-          <input name="price_1on1" type="number" min="0" step="0.01" value="{{ old('price_1on1') }}" />
-          @error('price_1on1')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
+        <div class="manual-split-row manual-field--full">
+          <label class="manual-field">
+            <span>1 on 1 student price</span>
+            <input name="price_1on1" type="number" min="0" step="0.01" value="{{ old('price_1on1') }}" />
+            @error('price_1on1')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
 
-        <label class="manual-field">
-          <span>1 on 3 price</span>
-          <input name="price_1on3_per_person" type="number" min="0" step="0.01" value="{{ old('price_1on3_per_person') }}" />
-          @error('price_1on3_per_person')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
+          <label class="manual-field">
+            <span>1 on 1 admin gets</span>
+            <input name="platform_fee_1on1" type="number" min="0" step="0.01" value="{{ old('platform_fee_1on1') }}" />
+            @error('platform_fee_1on1')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
 
-        <label class="manual-field">
-          <span>1 on 5 price</span>
-          <input name="price_1on5_per_person" type="number" min="0" step="0.01" value="{{ old('price_1on5_per_person') }}" />
-          @error('price_1on5_per_person')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
+          <label class="manual-field">
+            <span>1 on 1 mentor gets</span>
+            <input name="mentor_payout_1on1" type="number" min="0" step="0.01" value="{{ old('mentor_payout_1on1') }}" />
+            @error('mentor_payout_1on1')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+        </div>
+
+        <div class="manual-split-row manual-field--full">
+          <label class="manual-field">
+            <span>1 on 3 student price total</span>
+            <input name="price_1on3_total" type="number" min="0" step="0.01" value="{{ old('price_1on3_total') }}" />
+            @error('price_1on3_total')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+
+          <label class="manual-field">
+            <span>1 on 3 admin gets total</span>
+            <input name="platform_fee_1on3" type="number" min="0" step="0.01" value="{{ old('platform_fee_1on3') }}" />
+            @error('platform_fee_1on3')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+
+          <label class="manual-field">
+            <span>1 on 3 mentor gets total</span>
+            <input name="mentor_payout_1on3" type="number" min="0" step="0.01" value="{{ old('mentor_payout_1on3') }}" />
+            @error('mentor_payout_1on3')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+        </div>
+
+        <div class="manual-split-row manual-field--full">
+          <label class="manual-field">
+            <span>1 on 5 student price total</span>
+            <input name="price_1on5_total" type="number" min="0" step="0.01" value="{{ old('price_1on5_total') }}" />
+            @error('price_1on5_total')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+
+          <label class="manual-field">
+            <span>1 on 5 admin gets total</span>
+            <input name="platform_fee_1on5" type="number" min="0" step="0.01" value="{{ old('platform_fee_1on5') }}" />
+            @error('platform_fee_1on5')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+
+          <label class="manual-field">
+            <span>1 on 5 mentor gets total</span>
+            <input name="mentor_payout_1on5" type="number" min="0" step="0.01" value="{{ old('mentor_payout_1on5') }}" />
+            @error('mentor_payout_1on5')
+              <small class="manual-field__error">{{ $message }}</small>
+            @enderror
+          </label>
+        </div>
 
         <label class="manual-field">
           <span>Office hours price</span>
           <input name="office_hours_subscription_price" type="number" min="0" step="0.01" value="{{ old('office_hours_subscription_price') }}" />
           @error('office_hours_subscription_price')
+            <small class="manual-field__error">{{ $message }}</small>
+          @enderror
+        </label>
+
+        <label class="manual-field">
+          <span>Office hours mentor payout per attendee</span>
+          <input name="office_hours_mentor_payout_per_attendee" type="number" min="0" step="0.01" value="{{ old('office_hours_mentor_payout_per_attendee') }}" />
+          @error('office_hours_mentor_payout_per_attendee')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror
         </label>
