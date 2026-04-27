@@ -79,6 +79,32 @@ class ZoomService
         ]);
     }
 
+    public function getMeeting(string $meetingId): array
+    {
+        Log::info('Zoom meeting retrieve request prepared.', [
+            'meeting_id' => $meetingId,
+            'api_base' => $this->apiBase(),
+        ]);
+
+        $response = Http::withToken($this->accessToken())
+            ->acceptJson()
+            ->get($this->apiBase().'/meetings/'.$meetingId)
+            ->throw();
+
+        $meeting = $response->json();
+
+        Log::info('Zoom meeting retrieve response received.', [
+            'meeting_id' => data_get($meeting, 'id') ?: $meetingId,
+            'status' => $response->status(),
+            'start_url_present' => filled(data_get($meeting, 'start_url')),
+            'join_url_present' => filled(data_get($meeting, 'join_url')),
+            'host_email_present' => filled(data_get($meeting, 'host_email')),
+            'response_keys' => array_keys(is_array($meeting) ? $meeting : []),
+        ]);
+
+        return is_array($meeting) ? $meeting : [];
+    }
+
     public function accessToken(): string
     {
         if (! $this->isConfigured()) {

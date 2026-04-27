@@ -168,6 +168,51 @@ function fakeStripeCheckoutSession(string $sessionId = 'cs_test_mentor_booking',
     ]);
 }
 
+function fakeZoomMeetingStartApi(string $meetingId = 'zoom-start-123', string $startUrl = 'https://zoom.us/s/start-token', string $joinUrl = 'https://zoom.us/j/zoom-start-123'): void
+{
+    config([
+        'services.zoom.enabled' => true,
+        'services.zoom.account_id' => 'zoom-account-123',
+        'services.zoom.client_id' => 'zoom-client-id',
+        'services.zoom.client_secret' => 'zoom-client-secret',
+        'services.zoom.api_base' => 'https://api.zoom.us/v2',
+    ]);
+
+    Http::fake([
+        'https://zoom.us/oauth/token' => Http::response([
+            'access_token' => 'zoom-access-token',
+            'expires_in' => 3600,
+            'token_type' => 'Bearer',
+        ], 200),
+        'https://api.zoom.us/v2/meetings/'.$meetingId => Http::response([
+            'id' => $meetingId,
+            'start_url' => $startUrl,
+            'join_url' => $joinUrl,
+        ], 200),
+    ]);
+}
+
+function makeSyncedZoomBooking(Mentor $hostMentor, User $bookerUser, ServiceConfig $service, array $overrides = []): Booking
+{
+    return Booking::query()->create(array_merge([
+        'student_id' => $bookerUser->id,
+        'mentor_id' => $hostMentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'requested_group_size' => 1,
+        'session_at' => now()->addHour(),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_link' => 'https://zoom.us/j/zoom-start-123',
+        'meeting_type' => 'zoom',
+        'external_calendar_event_id' => 'zoom-start-123',
+        'calendar_provider' => 'zoom',
+        'calendar_sync_status' => 'synced',
+        'status' => 'confirmed',
+        'approval_status' => 'approved',
+    ], $overrides));
+}
+
 it('lets a mentor save date-specific availability and generates service-specific 1on1 slots', function () {
     [$mentorUser, $mentor] = makePortalMentor('availability-host');
     $firstService = makePortalService(['service_name' => 'Program Insights']);
@@ -751,4 +796,77 @@ it('allows either mentor participant to cancel a mentor-booked session before 24
         ->assertRedirect(route('mentor.bookings.index'));
 
     expect($booking->fresh()->status)->toBe('cancelled');
+});
+
+it('shows hosted mentors the backend start zoom meeting route instead of the participant join url', function () {
+    [$hostUser, $hostMentor] = makePortalMentor('zoom-host', 'professional');
+    $bookerUser = makePortalUser('zoom-student', 'student');
+    $service = makePortalService();
+    $booking = makeSyncedZoomBooking($hostMentor, $bookerUser, $service);
+
+    $this->actingAs($hostUser)
+        ->get(route('mentor.bookings.index'))
+        ->assertOk()
+        ->assertViewHas('bookingPageData', function (array $data) use ($booking) {
+            $hostedGroup = collect($data['bookingGroups'] ?? [])->firstWhere('key', 'hosted');
+            $hostedItem = collect($hostedGroup['items'] ?? [])->firstWhere('id', $booking->id);
+
+            return $hostedItem !== null
+                && $hostedItem['meetingLink'] === route('mentor.bookings.start-meeting', $booking->id)
+                && $hostedItem['meetingLinkLabel'] === 'Start Zoom Meeting';
+        });
+});
+
+it('redirects the host mentor to a fresh zoom start url', function () {
+    [$hostUser, $hostMentor] = makePortalMentor('zoom-start-host', 'professional');
+    $bookerUser = makePortalUser('zoom-start-student', 'student');
+    $service = makePortalService();
+    $booking = makeSyncedZoomBooking($hostMentor, $bookerUser, $service);
+    fakeZoomMeetingStartApi('zoom-start-123', 'https://zoom.us/s/fresh-host-start');
+
+    $this->actingAs($hostUser)
+        ->get(route('mentor.bookings.start-meeting', $booking->id))
+        ->assertRedirect('https://zoom.us/s/fresh-host-start');
+});
+
+it('blocks a non-host mentor from starting another mentors zoom meeting', function () {
+    [$hostUser, $hostMentor] = makePortalMentor('zoom-owner', 'professional');
+    [$bookerUser] = makePortalMentor('zoom-booker', 'graduate');
+    $service = makePortalService();
+    $booking = makeSyncedZoomBooking($hostMentor, $bookerUser, $service, [
+        'student_id' => $bookerUser->id,
+    ]);
+
+    expect($hostUser->id)->not->toBe($bookerUser->id);
+
+    $this->actingAs($bookerUser)
+        ->get(route('mentor.bookings.start-meeting', $booking->id))
+        ->assertForbidden();
+});
+
+it('blocks students from the mentor zoom start route', function () {
+    [$hostUser, $hostMentor] = makePortalMentor('zoom-student-block-host', 'professional');
+    $studentUser = makePortalUser('zoom-student-block', 'student');
+    $service = makePortalService();
+    $booking = makeSyncedZoomBooking($hostMentor, $studentUser, $service);
+
+    expect($hostUser->id)->not->toBe($studentUser->id);
+
+    $this->actingAs($studentUser)
+        ->get(route('mentor.bookings.start-meeting', $booking->id))
+        ->assertForbidden();
+});
+
+it('returns safely when zoom does not provide a host start url', function () {
+    [$hostUser, $hostMentor] = makePortalMentor('zoom-missing-start-host', 'professional');
+    $bookerUser = makePortalUser('zoom-missing-start-student', 'student');
+    $service = makePortalService();
+    $booking = makeSyncedZoomBooking($hostMentor, $bookerUser, $service);
+    fakeZoomMeetingStartApi('zoom-start-123', '');
+
+    $this->actingAs($hostUser)
+        ->from(route('mentor.bookings.index'))
+        ->get(route('mentor.bookings.start-meeting', $booking->id))
+        ->assertRedirect(route('mentor.bookings.index'))
+        ->assertSessionHas('error', 'Zoom did not return a host start link.');
 });

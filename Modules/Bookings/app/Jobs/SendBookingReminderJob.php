@@ -28,7 +28,7 @@ class SendBookingReminderJob implements ShouldQueue
             return;
         }
 
-        $details = [
+        $baseDetails = [
             'booking_id' => $booking->id,
             'service_name' => $booking->service?->service_name ?? 'Service',
             'session_type_label' => match ($booking->session_type) {
@@ -70,6 +70,13 @@ class SendBookingReminderJob implements ShouldQueue
             ->values();
 
         foreach ($recipients as $recipient) {
+            $details = $baseDetails;
+
+            if (($recipient['role'] ?? null) === 'mentor' && $this->isSyncedZoomBooking($booking)) {
+                $details['meeting_link'] = route('mentor.bookings.start-meeting', $booking->id);
+                $details['meeting_link_label'] = 'Start Zoom Meeting';
+            }
+
             Mail::to($recipient['email'])->send(new BookingReminderMail(
                 $details,
                 $recipient['name'],
@@ -84,5 +91,12 @@ class SendBookingReminderJob implements ShouldQueue
         $normalized = strtolower(trim((string) $email));
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    private function isSyncedZoomBooking(Booking $booking): bool
+    {
+        return $booking->calendar_provider === 'zoom'
+            && $booking->calendar_sync_status === 'synced'
+            && filled($booking->external_calendar_event_id);
     }
 }

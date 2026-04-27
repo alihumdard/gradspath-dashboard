@@ -4,17 +4,23 @@ namespace Modules\Bookings\app\Http\Controllers\Mentor;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Services\BookingMeetingPresenter;
+use Modules\Bookings\app\Services\ZoomService;
 use Modules\Settings\app\Models\Mentor;
 
 class BookingsController extends Controller
 {
-    public function __construct(private readonly BookingMeetingPresenter $meetingPresenter) {}
+    public function __construct(
+        private readonly BookingMeetingPresenter $meetingPresenter,
+        private readonly ZoomService $zoom,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -44,6 +50,70 @@ class BookingsController extends Controller
             'selectedBooking' => $booking,
             'bookingPageData' => $this->buildBookingDetailsPayload($mentor, $hostedBookings, $bookedBookings, $booking),
         ]);
+    }
+
+    public function startMeeting(int $id): RedirectResponse
+    {
+        $mentor = Mentor::query()->where('user_id', Auth::id())->firstOrFail();
+        $booking = Booking::query()->findOrFail($id);
+
+        if ((int) $booking->mentor_id !== (int) $mentor->id) {
+            Log::warning('Blocked non-host mentor from starting Zoom meeting.', [
+                'booking_id' => $booking->id,
+                'auth_user_id' => Auth::id(),
+                'auth_mentor_id' => $mentor->id,
+                'booking_mentor_id' => $booking->mentor_id,
+            ]);
+
+            abort(403);
+        }
+
+        if (! $this->isSyncedZoomBooking($booking)) {
+            Log::warning('Mentor Zoom start route rejected unsynced booking.', [
+                'booking_id' => $booking->id,
+                'calendar_provider' => $booking->calendar_provider,
+                'calendar_sync_status' => $booking->calendar_sync_status,
+                'external_calendar_event_id' => $booking->external_calendar_event_id,
+            ]);
+
+            return back()->with('error', 'Zoom meeting is not ready yet.');
+        }
+
+        if (! $this->zoom->isConfigured()) {
+            Log::warning('Mentor Zoom start route rejected because Zoom is not configured.', [
+                'booking_id' => $booking->id,
+                'meeting_id' => $booking->external_calendar_event_id,
+            ]);
+
+            return back()->with('error', 'Zoom is not configured right now.');
+        }
+
+        try {
+            $meeting = $this->zoom->getMeeting((string) $booking->external_calendar_event_id);
+            $startUrl = trim((string) data_get($meeting, 'start_url', ''));
+
+            Log::info('Mentor Zoom start route fetched meeting details.', [
+                'booking_id' => $booking->id,
+                'meeting_id' => $booking->external_calendar_event_id,
+                'start_url_present' => $startUrl !== '',
+                'join_url_present' => filled(data_get($meeting, 'join_url')),
+            ]);
+
+            if ($startUrl === '') {
+                return back()->with('error', 'Zoom did not return a host start link.');
+            }
+
+            return redirect()->away($startUrl);
+        } catch (\Throwable $exception) {
+            Log::warning('Mentor Zoom start route failed.', [
+                'booking_id' => $booking->id,
+                'meeting_id' => $booking->external_calendar_event_id,
+                'exception_class' => $exception::class,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return back()->with('error', 'Unable to start Zoom meeting right now.');
+        }
     }
 
     private function buildBookingDetailsPayload(Mentor $mentor, Collection $hostedBookings, Collection $bookedBookings, ?Booking $selectedBooking): array
@@ -131,9 +201,9 @@ class BookingsController extends Controller
             'sessionDateLabel' => $sessionAt?->format('l, F j, Y'),
             'sessionTimeLabel' => $sessionAt?->format('g:i A'),
             'sessionMonthLabel' => $sessionAt?->format('F Y'),
-            'meetingLink' => $booking->meeting_link,
+            'meetingLink' => $this->meetingLinkForPerspective($booking, $perspective),
             'meetingProvider' => $this->meetingPresenter->providerLabel($booking),
-            'meetingLinkLabel' => $this->meetingPresenter->linkLabel($booking),
+            'meetingLinkLabel' => $this->meetingLinkLabelForPerspective($booking, $perspective),
             'meetingLinkStatus' => (string) ($booking->calendar_sync_status ?: 'not_synced'),
             'meetingLinkStatusMessage' => $this->meetingPresenter->statusMessage($booking),
             'meetingState' => $this->meetingPresenter->scheduledState($booking),
@@ -245,5 +315,30 @@ class BookingsController extends Controller
     private function bookingPerspective(Booking $booking, Mentor $mentor): string
     {
         return (int) $booking->mentor_id === (int) $mentor->id ? 'hosted' : 'booked';
+    }
+
+    private function meetingLinkForPerspective(Booking $booking, string $perspective): ?string
+    {
+        if ($perspective === 'hosted' && $this->isSyncedZoomBooking($booking)) {
+            return route('mentor.bookings.start-meeting', $booking->id);
+        }
+
+        return $booking->meeting_link;
+    }
+
+    private function meetingLinkLabelForPerspective(Booking $booking, string $perspective): string
+    {
+        if ($perspective === 'hosted' && $this->isSyncedZoomBooking($booking)) {
+            return 'Start Zoom Meeting';
+        }
+
+        return $this->meetingPresenter->linkLabel($booking);
+    }
+
+    private function isSyncedZoomBooking(Booking $booking): bool
+    {
+        return $booking->calendar_provider === 'zoom'
+            && $booking->calendar_sync_status === 'synced'
+            && filled($booking->external_calendar_event_id);
     }
 }

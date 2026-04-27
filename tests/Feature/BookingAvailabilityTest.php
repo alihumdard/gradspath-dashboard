@@ -590,7 +590,8 @@ it('queues a confirmation job and sends booking emails for 1on1 to student and m
             && $mail->bookingDetails['counterpart_name'] === $student->name
             && $mail->bookingDetails['student_email'] === $student->email
             && $mail->bookingDetails['session_time'] === '1:00 PM'
-            && $mail->bookingDetails['meeting_link'] === $booking->meeting_link
+            && $mail->bookingDetails['meeting_link'] === route('mentor.bookings.start-meeting', $booking->id)
+            && $mail->bookingDetails['meeting_link_label'] === 'Start Zoom Meeting'
             && str_contains($mail->render(), $student->email);
     });
 });

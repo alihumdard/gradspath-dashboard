@@ -36,6 +36,7 @@ Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
     Route::get('/mentor/mentor/{id}/book', [MentorBookingController::class, 'create'])->name('mentor.mentor.book');
     Route::post('/mentor/bookings', [MentorBookingController::class, 'store'])->name('mentor.bookings.store');
     Route::get('/mentor/bookings', [BookingsController::class, 'index'])->name('mentor.bookings.index');
+    Route::get('/mentor/bookings/{id}/start-meeting', [BookingsController::class, 'startMeeting'])->middleware('booking.participant')->name('mentor.bookings.start-meeting');
     Route::get('/mentor/bookings/{id}', [BookingsController::class, 'show'])->middleware('booking.participant')->name('mentor.bookings.show');
     Route::patch('/mentor/bookings/{id}/cancel', [MentorBookingController::class, 'cancel'])->middleware('booking.participant')->name('mentor.bookings.cancel');
     Route::get('/mentor/bookings/{id}/chat', [BookingChatController::class, 'index'])->middleware('booking.participant')->name('mentor.bookings.chat.index');

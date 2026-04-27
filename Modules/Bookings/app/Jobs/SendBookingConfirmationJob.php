@@ -67,7 +67,7 @@ class SendBookingConfirmationJob implements ShouldQueue
         $mentorName = $booking->mentor?->user?->name ?? 'Mentor';
         $sessionAt = $booking->sessionAtInTimezone();
 
-        return [
+        $details = [
             'booking_id' => $booking->id,
             'service_name' => $booking->service?->service_name ?? 'Service',
             'session_type_label' => $this->sessionTypeLabel($booking->session_type),
@@ -87,6 +87,13 @@ class SendBookingConfirmationJob implements ShouldQueue
             'booker_label' => $bookerLabel,
             'mentor_name' => $mentorName,
         ];
+
+        if ($recipientType === 'mentor' && $this->isSyncedZoomBooking($booking)) {
+            $details['meeting_link'] = route('mentor.bookings.start-meeting', $booking->id);
+            $details['meeting_link_label'] = 'Start Zoom Meeting';
+        }
+
+        return $details;
     }
 
     private function sessionTypeLabel(?string $sessionType): string
@@ -103,5 +110,12 @@ class SendBookingConfirmationJob implements ShouldQueue
         $normalized = strtolower(trim((string) $email));
 
         return $normalized === '' ? null : $normalized;
+    }
+
+    private function isSyncedZoomBooking(Booking $booking): bool
+    {
+        return $booking->calendar_provider === 'zoom'
+            && $booking->calendar_sync_status === 'synced'
+            && filled($booking->external_calendar_event_id);
     }
 }
