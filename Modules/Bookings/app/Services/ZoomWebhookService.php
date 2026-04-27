@@ -49,6 +49,14 @@ class ZoomWebhookService
             'event_type' => $eventType,
             'event_id' => $eventId !== '' ? $eventId : null,
             'meeting_id' => $meetingId,
+            'object_id' => data_get($payload, 'payload.object.id'),
+            'object_uuid_present' => filled(data_get($payload, 'payload.object.uuid')),
+            'object_meeting_id' => data_get($payload, 'payload.object.meeting_id'),
+            'host_email_present' => filled(data_get($payload, 'payload.object.host_email')),
+            'participant_id' => data_get($payload, 'payload.object.participant.id'),
+            'participant_host_flag' => data_get($payload, 'payload.object.participant.host'),
+            'participant_email_present' => filled(data_get($payload, 'payload.object.participant.email'))
+                || filled(data_get($payload, 'payload.object.participant.user_email')),
         ]);
 
         return DB::transaction(function () use ($payload, $eventType, $eventId, $meetingId, $payloadHash) {
@@ -99,6 +107,10 @@ class ZoomWebhookService
                 'event_type' => $eventType,
                 'meeting_id' => $meetingId,
                 'occurred_at' => optional($event->occurred_at)?->toIso8601String(),
+                'meeting_started_at' => optional($event->meeting_started_at)?->toIso8601String(),
+                'meeting_ended_at' => optional($event->meeting_ended_at)?->toIso8601String(),
+                'host_joined_at' => optional($event->host_joined_at)?->toIso8601String(),
+                'first_participant_joined_at' => optional($event->first_participant_joined_at)?->toIso8601String(),
             ]);
 
             if ($booking) {
@@ -187,6 +199,19 @@ class ZoomWebhookService
         $isHost = (bool) data_get($payload, 'payload.object.participant.host', false)
             || ($participantIdentity !== null && $hostIdentity !== null && $participantIdentity === $hostIdentity);
 
+        Log::info('Evaluated Zoom participant host status.', [
+            'booking_id' => $booking?->id,
+            'meeting_id' => $meetingId,
+            'participant_identity_present' => $participantIdentity !== null,
+            'host_identity_present' => $hostIdentity !== null,
+            'participant_host_flag' => data_get($payload, 'payload.object.participant.host'),
+            'matched_host_identity' => $participantIdentity !== null && $hostIdentity !== null && $participantIdentity === $hostIdentity,
+            'is_host' => $isHost,
+            'join_time' => data_get($payload, 'payload.object.participant.join_time')
+                ?? data_get($payload, 'payload.object.start_time')
+                ?? data_get($payload, 'event_ts'),
+        ]);
+
         return $isHost ? $this->occurredAt($payload, $eventType) : null;
     }
 
@@ -211,6 +236,11 @@ class ZoomWebhookService
         $hostIdentity = $this->normalizeIdentity(data_get($payload, 'payload.object.host_email'));
 
         if ($hostIdentity !== null) {
+            Log::debug('Resolved Zoom host identity from current webhook payload.', [
+                'booking_id' => $booking?->id,
+                'meeting_id' => $meetingId,
+            ]);
+
             return $hostIdentity;
         }
 
@@ -229,6 +259,12 @@ class ZoomWebhookService
             ->get()
             ->map(fn (BookingMeetingEvent $event) => $this->normalizeIdentity(data_get($event->payload, 'payload.object.host_email')))
             ->first(fn (?string $value) => $value !== null);
+
+        Log::debug('Resolved Zoom host identity from recent stored webhook events.', [
+            'booking_id' => $booking?->id,
+            'meeting_id' => $meetingId,
+            'host_identity_found' => $recentHostIdentity !== null,
+        ]);
 
         return $recentHostIdentity;
     }

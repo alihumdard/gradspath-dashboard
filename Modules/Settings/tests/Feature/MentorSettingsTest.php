@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\User;
+use Modules\Institutions\app\Models\University;
+use Modules\Institutions\app\Models\UniversityProgram;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
 use Modules\Settings\app\Models\UserSetting;
@@ -34,9 +36,23 @@ function createSettingsUser(string $role = 'mentor'): User
 
 it('renders mentor settings with saved profile data', function () {
     $mentorUser = createSettingsUser('mentor');
+    $university = University::query()->create([
+        'name' => 'University of Pennsylvania',
+        'display_name' => 'Wharton',
+        'country' => 'US',
+        'is_active' => true,
+    ]);
+    UniversityProgram::query()->create([
+        'university_id' => $university->id,
+        'program_name' => 'MBA (Wharton School)',
+        'program_type' => 'mba',
+        'tier' => 'elite',
+        'is_active' => true,
+    ]);
 
     $mentor = Mentor::query()->create([
         'user_id' => $mentorUser->id,
+        'university_id' => $university->id,
         'mentor_type' => 'graduate',
         'title' => 'MBA Mentor',
         'program_type' => 'mba',
@@ -67,6 +83,7 @@ it('renders mentor settings with saved profile data', function () {
     $response->assertSee($mentorUser->email);
     $response->assertSee('MBA Mentor');
     $response->assertSee('Wharton');
+    $response->assertSee('MBA (Wharton School)');
     $response->assertSee('Program Insights');
     $response->assertSee('Focused on admissions strategy.');
     $response->assertSee('Timezone');
@@ -74,9 +91,23 @@ it('renders mentor settings with saved profile data', function () {
 
 it('updates mentor settings and syncs active services', function () {
     $mentorUser = createSettingsUser('mentor');
+    $university = University::query()->create([
+        'name' => 'Yale University',
+        'display_name' => 'Yale Law',
+        'country' => 'US',
+        'is_active' => true,
+    ]);
+    $program = UniversityProgram::query()->create([
+        'university_id' => $university->id,
+        'program_name' => 'JD (Yale School of Law)',
+        'program_type' => 'law',
+        'tier' => 'elite',
+        'is_active' => true,
+    ]);
 
     $mentor = Mentor::query()->create([
         'user_id' => $mentorUser->id,
+        'university_id' => $university->id,
         'mentor_type' => 'graduate',
         'status' => 'active',
     ]);
@@ -110,7 +141,8 @@ it('updates mentor settings and syncs active services', function () {
         'email' => 'mentor@example.com',
         'mentor_type' => 'graduate',
         'title' => 'Law Mentor',
-        'program_type' => 'law',
+        'university_id' => $university->id,
+        'university_program_id' => $program->id,
         'grad_school_display' => 'Yale Law',
         'bio' => 'Helping students sharpen essays and interviews.',
         'description' => 'Longer mentoring profile copy for expanded views.',
@@ -130,6 +162,8 @@ it('updates mentor settings and syncs active services', function () {
     $mentor->refresh();
 
     expect($mentor->title)->toBe('Law Mentor');
+    expect($mentor->university_id)->toBe($university->id);
+    expect($mentor->university_program_id)->toBe($program->id);
     expect($mentor->program_type)->toBe('law');
     expect($mentor->grad_school_display)->toBe('Yale Law');
     expect($mentor->bio)->toBe('Helping students sharpen essays and interviews.');
@@ -149,6 +183,241 @@ it('updates mentor settings and syncs active services', function () {
         'service_config_id' => $serviceA->id,
         'sort_order' => 1,
     ]);
+});
+
+it('rejects mentor program selections outside the mentor university', function () {
+    $mentorUser = createSettingsUser('mentor');
+    $mentorUniversity = University::query()->create([
+        'name' => 'University of Lahore',
+        'country' => 'PK',
+        'is_active' => true,
+    ]);
+    $otherUniversity = University::query()->create([
+        'name' => 'Yale University',
+        'country' => 'US',
+        'is_active' => true,
+    ]);
+    $otherProgram = UniversityProgram::query()->create([
+        'university_id' => $otherUniversity->id,
+        'program_name' => 'JD (Yale School of Law)',
+        'program_type' => 'law',
+        'tier' => 'elite',
+        'is_active' => true,
+    ]);
+
+    Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'university_id' => $mentorUniversity->id,
+        'mentor_type' => 'graduate',
+        'status' => 'active',
+    ]);
+
+    $response = $this->actingAs($mentorUser)->from(route('mentor.settings.index'))->patch(route('mentor.settings.update'), [
+        'name' => 'Mentor Example',
+        'email' => 'mentor@example.com',
+        'mentor_type' => 'graduate',
+        'university_id' => $mentorUniversity->id,
+        'university_program_id' => $otherProgram->id,
+        'edu_email' => 'mentor@uol.edu',
+    ]);
+
+    $response->assertRedirect(route('mentor.settings.index'));
+    $response->assertSessionHasErrors('university_program_id');
+});
+
+it('updates mentor university and selected related program from settings', function () {
+    $mentorUser = createSettingsUser('mentor');
+    $oldUniversity = University::query()->create([
+        'name' => 'Yale University',
+        'country' => 'US',
+        'is_active' => true,
+    ]);
+    $newUniversity = University::query()->create([
+        'name' => 'University of Lahore',
+        'display_name' => 'UOL',
+        'country' => 'PK',
+        'is_active' => true,
+    ]);
+    $newProgram = UniversityProgram::query()->create([
+        'university_id' => $newUniversity->id,
+        'program_name' => 'MBA',
+        'program_type' => 'mba',
+        'tier' => 'regional',
+        'is_active' => true,
+    ]);
+
+    $mentor = Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'university_id' => $oldUniversity->id,
+        'mentor_type' => 'graduate',
+        'program_type' => 'law',
+        'grad_school_display' => 'Yale',
+        'status' => 'active',
+    ]);
+
+    $response = $this->actingAs($mentorUser)->patch(route('mentor.settings.update'), [
+        'name' => 'Mentor Example',
+        'email' => 'mentor@example.com',
+        'mentor_type' => 'graduate',
+        'university_id' => $newUniversity->id,
+        'university_program_id' => $newProgram->id,
+        'grad_school_display' => '',
+        'edu_email' => 'mentor@uol.edu',
+    ]);
+
+    $response->assertRedirect(route('mentor.settings.index'));
+
+    $mentor->refresh();
+
+    expect($mentor->university_id)->toBe($newUniversity->id);
+    expect($mentor->university_program_id)->toBe($newProgram->id);
+    expect($mentor->program_type)->toBe('mba');
+    expect($mentor->grad_school_display)->toBe('UOL');
+});
+
+it('clears the old selected program when mentor changes university without selecting a program', function () {
+    $mentorUser = createSettingsUser('mentor');
+    $oldUniversity = University::query()->create([
+        'name' => 'Yale University',
+        'country' => 'US',
+        'is_active' => true,
+    ]);
+    $oldProgram = UniversityProgram::query()->create([
+        'university_id' => $oldUniversity->id,
+        'program_name' => 'JD',
+        'program_type' => 'law',
+        'tier' => 'elite',
+        'is_active' => true,
+    ]);
+    $newUniversity = University::query()->create([
+        'name' => 'University of Lahore',
+        'country' => 'PK',
+        'is_active' => true,
+    ]);
+
+    $mentor = Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'university_id' => $oldUniversity->id,
+        'university_program_id' => $oldProgram->id,
+        'mentor_type' => 'graduate',
+        'program_type' => 'law',
+        'status' => 'active',
+    ]);
+
+    $response = $this->actingAs($mentorUser)->patch(route('mentor.settings.update'), [
+        'name' => 'Mentor Example',
+        'email' => 'mentor@example.com',
+        'mentor_type' => 'graduate',
+        'university_id' => $newUniversity->id,
+        'university_program_id' => '',
+        'edu_email' => 'mentor@uol.edu',
+    ]);
+
+    $response->assertRedirect(route('mentor.settings.index'));
+
+    $mentor->refresh();
+
+    expect($mentor->university_id)->toBe($newUniversity->id);
+    expect($mentor->university_program_id)->toBeNull();
+    expect($mentor->program_type)->toBeNull();
+});
+
+it('rejects inactive university and inactive program selections', function () {
+    $mentorUser = createSettingsUser('mentor');
+    $activeUniversity = University::query()->create([
+        'name' => 'University of Lahore',
+        'country' => 'PK',
+        'is_active' => true,
+    ]);
+    $inactiveUniversity = University::query()->create([
+        'name' => 'Inactive University',
+        'country' => 'PK',
+        'is_active' => false,
+    ]);
+    $inactiveProgram = UniversityProgram::query()->create([
+        'university_id' => $activeUniversity->id,
+        'program_name' => 'Inactive MBA',
+        'program_type' => 'mba',
+        'tier' => 'regional',
+        'is_active' => false,
+    ]);
+
+    Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'university_id' => $activeUniversity->id,
+        'mentor_type' => 'graduate',
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($mentorUser)->from(route('mentor.settings.index'))->patch(route('mentor.settings.update'), [
+        'name' => 'Mentor Example',
+        'email' => 'mentor@example.com',
+        'mentor_type' => 'graduate',
+        'university_id' => $inactiveUniversity->id,
+        'edu_email' => 'mentor@uol.edu',
+    ])->assertSessionHasErrors('university_id');
+
+    $this->actingAs($mentorUser)->from(route('mentor.settings.index'))->patch(route('mentor.settings.update'), [
+        'name' => 'Mentor Example',
+        'email' => 'mentor@example.com',
+        'mentor_type' => 'graduate',
+        'university_id' => $activeUniversity->id,
+        'university_program_id' => $inactiveProgram->id,
+        'edu_email' => 'mentor@uol.edu',
+    ])->assertSessionHasErrors('university_program_id');
+});
+
+it('returns only active programs for active universities from the mentor settings endpoint', function () {
+    $mentorUser = createSettingsUser('mentor');
+    $university = University::query()->create([
+        'name' => 'University of Lahore',
+        'country' => 'PK',
+        'is_active' => true,
+    ]);
+    $inactiveUniversity = University::query()->create([
+        'name' => 'Inactive University',
+        'country' => 'PK',
+        'is_active' => false,
+    ]);
+    $activeProgram = UniversityProgram::query()->create([
+        'university_id' => $university->id,
+        'program_name' => 'MBA',
+        'program_type' => 'mba',
+        'tier' => 'regional',
+        'is_active' => true,
+    ]);
+    UniversityProgram::query()->create([
+        'university_id' => $university->id,
+        'program_name' => 'Inactive Law',
+        'program_type' => 'law',
+        'tier' => 'regional',
+        'is_active' => false,
+    ]);
+    UniversityProgram::query()->create([
+        'university_id' => $inactiveUniversity->id,
+        'program_name' => 'Hidden MBA',
+        'program_type' => 'mba',
+        'tier' => 'regional',
+        'is_active' => true,
+    ]);
+
+    Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'university_id' => $university->id,
+        'mentor_type' => 'graduate',
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($mentorUser)
+        ->getJson(route('mentor.settings.university-programs', ['university_id' => $university->id]))
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $activeProgram->id)
+        ->assertJsonCount(1, 'data');
+
+    $this->actingAs($mentorUser)
+        ->getJson(route('mentor.settings.university-programs', ['university_id' => $inactiveUniversity->id]))
+        ->assertOk()
+        ->assertJsonCount(0, 'data');
 });
 
 it('requires a .edu email for graduate mentors', function () {

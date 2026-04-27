@@ -76,7 +76,11 @@ class AuthController extends Controller
 
         $universities = University::query()
             ->where('is_active', true)
-            ->where('name', 'like', '%'.$query.'%')
+            ->where(function ($builder) use ($query): void {
+                $builder
+                    ->where('name', 'like', '%'.$query.'%')
+                    ->orWhere('display_name', 'like', '%'.$query.'%');
+            })
             ->orderByRaw('COALESCE(display_name, name)')
             ->limit(10)
             ->get(['id', 'name', 'display_name', 'country', 'state_province'])

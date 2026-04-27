@@ -14,6 +14,7 @@ use Modules\Bookings\app\Models\MentorAvailabilitySlot;
 use Modules\Feedback\app\Models\Feedback;
 use Modules\Feedback\app\Models\MentorRating;
 use Modules\Institutions\app\Models\University;
+use Modules\Institutions\app\Models\UniversityProgram;
 use Modules\MentorNotes\app\Models\MentorNote;
 use Modules\OfficeHours\app\Models\OfficeHourSchedule;
 use Modules\Payments\app\Models\ServiceConfig;
@@ -25,6 +26,7 @@ class Mentor extends Model
     protected $fillable = [
         'user_id',
         'university_id',
+        'university_program_id',
         'title',
         'grad_school_display',
         'mentor_type',
@@ -66,6 +68,11 @@ class Mentor extends Model
     public function university(): BelongsTo
     {
         return $this->belongsTo(University::class);
+    }
+
+    public function universityProgram(): BelongsTo
+    {
+        return $this->belongsTo(UniversityProgram::class);
     }
 
     public function services(): BelongsToMany

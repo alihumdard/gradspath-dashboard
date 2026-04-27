@@ -4,7 +4,6 @@ namespace Modules\Settings\app\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Modules\Auth\app\Models\User;
 use Modules\Settings\app\Support\TimezoneOptions;
 
 class UpdateMentorSettingsRequest extends FormRequest
@@ -16,7 +15,6 @@ class UpdateMentorSettingsRequest extends FormRequest
 
     public function rules(): array
     {
-        /** @var User|null $user */
         $user = $this->user();
 
         return [
@@ -29,6 +27,24 @@ class UpdateMentorSettingsRequest extends FormRequest
             ],
             'mentor_type' => ['required', Rule::in(['graduate', 'professional'])],
             'title' => ['nullable', 'string', 'max:255'],
+            'university_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('universities', 'id')->where(fn ($query) => $query->where('is_active', true)),
+            ],
+            'university_program_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('university_programs', 'id')->where(function ($query) {
+                    $query->where('is_active', true);
+
+                    if ($this->filled('university_id')) {
+                        $query->where('university_id', (int) $this->input('university_id'));
+                    } else {
+                        $query->whereRaw('1 = 0');
+                    }
+                }),
+            ],
             'program_type' => ['nullable', Rule::in(['mba', 'law', 'therapy', 'cmhc', 'mft', 'msw', 'clinical_psy', 'other'])],
             'grad_school_display' => ['nullable', 'string', 'max:255'],
             'bio' => ['nullable', 'string', 'max:1000'],

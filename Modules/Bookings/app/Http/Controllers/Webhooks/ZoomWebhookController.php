@@ -20,11 +20,19 @@ class ZoomWebhookController extends Controller
         Log::info('Zoom webhook received.', [
             'event' => is_array($decoded) ? ($decoded['event'] ?? null) : null,
             'event_id' => is_array($decoded) ? ($decoded['event_id'] ?? null) : null,
+            'payload_bytes' => strlen($payload),
+            'signature_present' => filled($request->header('x-zm-signature')),
+            'timestamp_present' => filled($request->header('x-zm-request-timestamp')),
             'meeting_id' => is_array($decoded)
                 ? (data_get($decoded, 'payload.object.id')
                     ?? data_get($decoded, 'payload.object.uuid')
                     ?? data_get($decoded, 'payload.object.meeting_id'))
                 : null,
+            'host_email_present' => is_array($decoded) && filled(data_get($decoded, 'payload.object.host_email')),
+            'participant_email_present' => is_array($decoded) && (
+                filled(data_get($decoded, 'payload.object.participant.email'))
+                || filled(data_get($decoded, 'payload.object.participant.user_email'))
+            ),
         ]);
 
         try {
@@ -48,7 +56,9 @@ class ZoomWebhookController extends Controller
         }
 
         if ((string) ($decoded['event'] ?? '') === 'endpoint.url_validation') {
-            Log::info('Zoom webhook endpoint validation requested.');
+            Log::info('Zoom webhook endpoint validation requested.', [
+                'plain_token_present' => filled(data_get($decoded, 'payload.plainToken')),
+            ]);
 
             return response()->json($this->webhooks->validationResponse($decoded));
         }

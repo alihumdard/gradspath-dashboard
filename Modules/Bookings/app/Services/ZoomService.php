@@ -5,6 +5,7 @@ namespace Modules\Bookings\app\Services;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Modules\Bookings\app\Models\Booking;
 
 class ZoomService
@@ -19,20 +20,63 @@ class ZoomService
 
     public function createMeeting(Booking $booking): array
     {
+        $payload = $this->meetingPayload($booking);
+
+        Log::info('Zoom meeting create request prepared.', [
+            'booking_id' => $booking->id,
+            'mentor_id' => $booking->mentor_id,
+            'student_id' => $booking->student_id,
+            'service_config_id' => $booking->service_config_id,
+            'session_type' => $booking->session_type,
+            'session_at_utc' => optional($booking->session_at)?->toIso8601String(),
+            'session_timezone' => $booking->session_timezone,
+            'duration_minutes' => $booking->duration_minutes,
+            'topic' => $payload['topic'] ?? null,
+            'start_time' => $payload['start_time'] ?? null,
+            'timezone' => $payload['timezone'] ?? null,
+            'settings' => $payload['settings'] ?? [],
+            'api_base' => $this->apiBase(),
+        ]);
+
         $response = Http::withToken($this->accessToken())
             ->acceptJson()
-            ->post($this->apiBase().'/users/me/meetings', $this->meetingPayload($booking))
+            ->post($this->apiBase().'/users/me/meetings', $payload)
             ->throw();
 
-        return $response->json();
+        $meeting = $response->json();
+
+        Log::info('Zoom meeting create response received.', [
+            'booking_id' => $booking->id,
+            'status' => $response->status(),
+            'meeting_id' => data_get($meeting, 'id'),
+            'uuid_present' => filled(data_get($meeting, 'uuid')),
+            'host_id_present' => filled(data_get($meeting, 'host_id')),
+            'host_email_present' => filled(data_get($meeting, 'host_email')),
+            'start_url_present' => filled(data_get($meeting, 'start_url')),
+            'join_url_present' => filled(data_get($meeting, 'join_url')),
+            'join_url_host' => parse_url((string) data_get($meeting, 'join_url'), PHP_URL_HOST),
+            'response_keys' => array_keys(is_array($meeting) ? $meeting : []),
+        ]);
+
+        return $meeting;
     }
 
     public function cancelMeeting(string $meetingId): void
     {
-        Http::withToken($this->accessToken())
+        Log::info('Zoom meeting cancellation request prepared.', [
+            'meeting_id' => $meetingId,
+            'api_base' => $this->apiBase(),
+        ]);
+
+        $response = Http::withToken($this->accessToken())
             ->acceptJson()
             ->delete($this->apiBase().'/meetings/'.$meetingId)
             ->throw();
+
+        Log::info('Zoom meeting cancellation response received.', [
+            'meeting_id' => $meetingId,
+            'status' => $response->status(),
+        ]);
     }
 
     public function accessToken(): string
@@ -45,8 +89,17 @@ class ZoomService
         $cached = Cache::get($cacheKey);
 
         if (is_string($cached) && $cached !== '') {
+            Log::debug('Using cached Zoom server-to-server access token.', [
+                'cache_key' => $cacheKey,
+            ]);
+
             return $cached;
         }
+
+        Log::info('Requesting Zoom server-to-server access token.', [
+            'account_id_present' => $this->accountId() !== null,
+            'client_id_present' => $this->clientId() !== null,
+        ]);
 
         $response = Http::asForm()
             ->withBasicAuth((string) $this->clientId(), (string) $this->clientSecret())
@@ -66,6 +119,12 @@ class ZoomService
 
         $ttlSeconds = max(((int) ($response['expires_in'] ?? 3600)) - 60, 60);
         Cache::put($cacheKey, $token, now()->addSeconds($ttlSeconds));
+
+        Log::info('Stored Zoom server-to-server access token in cache.', [
+            'cache_key' => $cacheKey,
+            'ttl_seconds' => $ttlSeconds,
+            'scope_present' => filled($response['scope'] ?? null),
+        ]);
 
         return $token;
     }
@@ -87,6 +146,11 @@ class ZoomService
         if (! hash_equals($expected, $signature)) {
             throw new \RuntimeException('Invalid Zoom webhook signature.');
         }
+
+        Log::debug('Zoom webhook signature verified.', [
+            'timestamp' => $timestamp,
+            'payload_bytes' => strlen($payload),
+        ]);
     }
 
     public function webhookValidationToken(string $plainToken): string

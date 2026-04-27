@@ -13,6 +13,13 @@ class GenerateMeetingLinkListener
 
     public function handle(BookingCreated $event): void
     {
+        Log::info('Generate meeting link listener handling booking.', [
+            'booking_id' => $event->booking->id,
+            'status' => $event->booking->status,
+            'meeting_type' => $event->booking->meeting_type,
+            'session_type' => $event->booking->session_type,
+        ]);
+
         try {
             $booking = $this->meetingSync->syncCreatedBooking($event->booking);
         } catch (\Throwable $exception) {
@@ -23,6 +30,14 @@ class GenerateMeetingLinkListener
 
             $booking = $event->booking->fresh(['booker', 'mentor.user', 'participantRecords', 'service']) ?? $event->booking;
         }
+
+        Log::info('Dispatching booking confirmation after meeting sync.', [
+            'booking_id' => $booking->id,
+            'calendar_provider' => $booking->calendar_provider,
+            'calendar_sync_status' => $booking->calendar_sync_status,
+            'meeting_link_present' => filled($booking->meeting_link),
+            'external_calendar_event_id' => $booking->external_calendar_event_id,
+        ]);
 
         SendBookingConfirmationJob::dispatch($booking->id);
     }

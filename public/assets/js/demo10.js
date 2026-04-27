@@ -20,6 +20,11 @@ const calendlyLink = document.getElementById("calendlyLink");
 const bio = document.getElementById("bio");
 const description = document.getElementById("description");
 const settingsTimezone = document.getElementById("settingsTimezone");
+const universityPicker = document.querySelector("[data-mentor-university-picker]");
+const universitySearch = universityPicker?.querySelector("[data-university-search]");
+const universityIdInput = universityPicker?.querySelector("[data-university-id]");
+const universityResults = universityPicker?.querySelector("[data-university-results]");
+const universityProgramSelect = document.querySelector("[data-program-select]");
 
 const nameError = document.getElementById("nameError");
 const eduEmailError = document.getElementById("eduEmailError");
@@ -66,6 +71,12 @@ function clearError(element) {
   if (element) {
     element.textContent = "";
   }
+}
+
+function escapeHtml(value) {
+  const div = document.createElement("div");
+  div.textContent = value ?? "";
+  return div.innerHTML;
 }
 
 function validateName() {
@@ -153,6 +164,185 @@ if (description) {
     // Keep the field reactive for future enhancements without localStorage persistence.
   });
 }
+
+function initializeMentorUniversityPicker() {
+  if (
+    !universityPicker ||
+    !universitySearch ||
+    !universityIdInput ||
+    !universityResults ||
+    !universityPicker.dataset.searchUrl ||
+    !universityPicker.dataset.programsUrl
+  ) {
+    return;
+  }
+
+  let selectedLabel = universitySearch.value || "";
+  let debounceTimer = null;
+  let searchToken = 0;
+  let programToken = 0;
+
+  function hideResults() {
+    universityResults.hidden = true;
+  }
+
+  function showResults() {
+    universityResults.hidden = false;
+  }
+
+  function universityMeta(university) {
+    return [university.country, university.state_province].filter(Boolean).join(" · ");
+  }
+
+  function normalizeUniversities(payload) {
+    const universities = Array.isArray(payload?.data)
+      ? payload.data
+      : Array.isArray(payload)
+        ? payload
+        : [];
+
+    return universities.map((university) => ({
+      id: university.id,
+      label: university.label || university.name || "",
+      country: university.country || "",
+      state_province: university.state_province || "",
+    }));
+  }
+
+  function renderUniversities(universities) {
+    universityResults.innerHTML = universities.length
+      ? universities
+          .map(
+            (university) => `
+              <button class="settings-picker-option" type="button" data-university-option="${escapeHtml(university.id)}" data-university-label="${escapeHtml(university.label)}">
+                <strong>${escapeHtml(university.label)}</strong>
+                <small>${escapeHtml(universityMeta(university))}</small>
+              </button>
+            `
+          )
+          .join("")
+      : '<div class="settings-picker-empty">No universities found</div>';
+
+    showResults();
+  }
+
+  function renderPrograms(programs, selectedProgramId = "") {
+    if (!universityProgramSelect) {
+      return;
+    }
+
+    universityProgramSelect.innerHTML = '<option value="">Select a program</option>';
+
+    programs.forEach((program) => {
+      const option = document.createElement("option");
+      option.value = String(program.id);
+      option.textContent = program.program_name;
+      option.selected = String(program.id) === String(selectedProgramId);
+      universityProgramSelect.appendChild(option);
+    });
+
+    universityProgramSelect.disabled = programs.length === 0;
+    universityProgramSelect.dataset.selectedProgramId = selectedProgramId || "";
+  }
+
+  async function fetchUniversities(query) {
+    const token = ++searchToken;
+    const url = new URL(universityPicker.dataset.searchUrl, window.location.origin);
+    url.searchParams.set("q", query);
+
+    const response = await fetch(url.toString(), {
+      headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+      credentials: "same-origin",
+    });
+
+    if (!response.ok || token !== searchToken) {
+      return;
+    }
+
+    renderUniversities(normalizeUniversities(await response.json()));
+  }
+
+  async function loadPrograms(universityId, selectedProgramId = "") {
+    const token = ++programToken;
+
+    if (!universityId) {
+      renderPrograms([]);
+      return;
+    }
+
+    const url = new URL(universityPicker.dataset.programsUrl, window.location.origin);
+    url.searchParams.set("university_id", universityId);
+
+    const response = await fetch(url.toString(), {
+      headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+      credentials: "same-origin",
+    });
+
+    if (!response.ok || token !== programToken) {
+      return;
+    }
+
+    const payload = await response.json();
+    renderPrograms(Array.isArray(payload.data) ? payload.data : [], selectedProgramId);
+  }
+
+  universitySearch.addEventListener("focus", () => {
+    const query = universitySearch.value.trim();
+    if (query.length >= 2) {
+      fetchUniversities(query);
+    }
+  });
+
+  universitySearch.addEventListener("input", () => {
+    if (universitySearch.value !== selectedLabel) {
+      selectedLabel = "";
+      universityIdInput.value = "";
+      if (school) {
+        school.value = "";
+      }
+      renderPrograms([]);
+    }
+
+    window.clearTimeout(debounceTimer);
+    debounceTimer = window.setTimeout(() => {
+      const query = universitySearch.value.trim();
+      if (query.length < 2) {
+        hideResults();
+        return;
+      }
+
+      fetchUniversities(query);
+    }, 220);
+  });
+
+  universityResults.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-university-option]");
+    if (!option) {
+      return;
+    }
+
+    universityIdInput.value = option.dataset.universityOption || "";
+    selectedLabel = option.dataset.universityLabel || "";
+    universitySearch.value = selectedLabel;
+    if (school) {
+      school.value = selectedLabel;
+    }
+    hideResults();
+    loadPrograms(universityIdInput.value);
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!universityPicker.contains(event.target)) {
+      hideResults();
+    }
+  });
+
+  if (universityIdInput.value && universityProgramSelect?.dataset.selectedProgramId) {
+    loadPrograms(universityIdInput.value, universityProgramSelect.dataset.selectedProgramId);
+  }
+}
+
+initializeMentorUniversityPicker();
 
 function applyPayoutStatus(payload) {
   if (payoutStatus) {

@@ -79,22 +79,63 @@
                     <p class="error-text" id="programError">{{ $viewErrors->first('title') }}</p>
                   </div>
 
+                  <div
+                    class="field settings-university-picker"
+                    data-mentor-university-picker
+                    data-search-url="{{ route('universities.search') }}"
+                    data-programs-url="{{ route('mentor.settings.university-programs') }}"
+                  >
+                    <label for="mentorUniversitySearch">University</label>
+                    <input
+                      type="text"
+                      id="mentorUniversitySearch"
+                      value="{{ old('university_label', $selectedUniversity?->display_name ?: $selectedUniversity?->name ?: '') }}"
+                      placeholder="Search universities..."
+                      autocomplete="off"
+                      data-university-search
+                    />
+                    <input
+                      type="hidden"
+                      name="university_id"
+                      value="{{ old('university_id', $selectedUniversityId ?? '') }}"
+                      data-university-id
+                    />
+                    <div class="settings-picker-results" data-university-results hidden></div>
+                    <p class="helper-text">Choose the school your public profile should be linked to.</p>
+                    <p class="error-text">{{ $viewErrors->first('university_id') }}</p>
+                  </div>
+                </div>
+
+                <div class="field-row">
                   <div class="field">
-                    <label for="programType">Program Type</label>
+                    <label for="universityProgram">Program</label>
                     <div class="select-wrap">
-                      <select id="programType" name="program_type">
+                      <select
+                        id="universityProgram"
+                        name="university_program_id"
+                        data-program-select
+                        data-selected-program-id="{{ $selectedUniversityProgramId ?? '' }}"
+                        @disabled(($universityPrograms ?? collect())->isEmpty())
+                      >
                         <option value="">Select a program</option>
-                        <option value="mba" @selected(old('program_type', $mentor->program_type) === 'mba')>MBA</option>
-                        <option value="law" @selected(old('program_type', $mentor->program_type) === 'law')>Law</option>
-                        <option value="therapy" @selected(old('program_type', $mentor->program_type) === 'therapy')>Therapy</option>
-                        <option value="cmhc" @selected(old('program_type', $mentor->program_type) === 'cmhc')>Counseling</option>
-                        <option value="mft" @selected(old('program_type', $mentor->program_type) === 'mft')>Marriage & Family Therapy</option>
-                        <option value="msw" @selected(old('program_type', $mentor->program_type) === 'msw')>Social Work</option>
-                        <option value="clinical_psy" @selected(old('program_type', $mentor->program_type) === 'clinical_psy')>Clinical Psychology</option>
-                        <option value="other" @selected(old('program_type', $mentor->program_type) === 'other')>Other</option>
+                        @foreach (($universityPrograms ?? collect()) as $universityProgram)
+                          <option
+                            value="{{ $universityProgram->id }}"
+                            @selected((string) ($selectedUniversityProgramId ?? '') === (string) $universityProgram->id)
+                          >
+                            {{ $universityProgram->program_name }}
+                          </option>
+                        @endforeach
                       </select>
                     </div>
-                    <p class="error-text">{{ $viewErrors->first('program_type') }}</p>
+                    <p class="helper-text">
+                      @if ($selectedUniversity)
+                        Showing active programs for {{ $selectedUniversity->display_name ?: $selectedUniversity->name }}.
+                      @else
+                        Select a university first to load related programs.
+                      @endif
+                    </p>
+                    <p class="error-text">{{ $viewErrors->first('university_program_id') }}</p>
                   </div>
                 </div>
 
