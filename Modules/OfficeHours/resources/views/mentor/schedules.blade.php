@@ -63,7 +63,7 @@
             </div>
           </div>
           <div class="control-card">
-            <div class="control-icon-box text-icon">ÃƒÆ’Ã‚Â¢Ãƒâ€¹Ã…â€œÃƒâ€šÃ‚Â°</div>
+            <div class="control-icon-box text-icon" aria-hidden="true">&bull;</div>
             <div class="control-content">
               <h3>Program Type</h3>
               <p>Filter by mentor category</p>
@@ -97,7 +97,7 @@
           <div class="search-card">
             <label for="mentorSearch">Search Mentor</label>
             <div class="search-input-wrap">
-              <span class="search-icon">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬â„¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢</span>
+              <span class="search-icon" aria-hidden="true">&#128269;</span>
               <input
               type="text"
               id="mentorSearch"
@@ -108,7 +108,7 @@
           <div class="search-card">
             <label for="schoolSearch">Search School</label>
             <div class="search-input-wrap">
-              <span class="search-icon">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬â„¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢</span>
+              <span class="search-icon" aria-hidden="true">&#128269;</span>
               <input
               type="text"
               id="schoolSearch"
@@ -119,9 +119,9 @@
         </div>
         <!-- RESULTS BAR -->
         <div class="results-bar">
-          <div class="results-chip" id="resultsSummary">Graduates ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ All ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ All Mentors ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ All Schools</div>
+          <div class="results-chip" id="resultsSummary">Graduates &bull; All &bull; All Mentors &bull; All Schools</div>
           <div class="results-count">
-            <span id="mentorCount">0</span>mentors shown</div>
+            <span id="mentorCount">0</span> mentors shown</div>
         </div>
         <!-- MENTOR GRID -->
         <div id="mentorGrid" class="mentor-grid">
@@ -134,4 +134,3 @@
         <script src="{{ asset('assets/js/demo13.js') }}">
         </script>
 @endsection
-
