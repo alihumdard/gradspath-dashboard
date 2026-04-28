@@ -47,9 +47,11 @@ return [
 
     'zoom' => [
         'enabled' => env('ZOOM_ENABLED', false),
-        'account_id' => env('ZOOM_ACCOUNT_ID'),
         'client_id' => env('ZOOM_CLIENT_ID'),
         'client_secret' => env('ZOOM_CLIENT_SECRET'),
+        'redirect_uri' => env('ZOOM_REDIRECT_URI'),
+        'authorize_url' => env('ZOOM_AUTHORIZE_URL', 'https://zoom.us/oauth/authorize'),
+        'token_url' => env('ZOOM_TOKEN_URL', 'https://zoom.us/oauth/token'),
         'api_base' => env('ZOOM_API_BASE', 'https://api.zoom.us/v2'),
         'webhook_secret_token' => env('ZOOM_WEBHOOK_SECRET_TOKEN'),
         'attendance' => [

@@ -21,6 +21,8 @@ class BookingService
     public function __construct(
         private readonly CreditService $creditService,
         private readonly MentorPayoutService $payouts,
+        private readonly BookingMeetingSyncService $meetingSync,
+        private readonly ZoomService $zoom,
     ) {}
 
     public function createBooking(User $booker, array $data, array $options = []): Booking
@@ -40,6 +42,7 @@ class BookingService
         $this->assertMentorHasNoOverdueSessionNotes($mentor);
         $this->assertBookerCanBookMentor($booker, $mentor);
         $this->assertMentorOffersService($mentor, $service);
+        $this->assertMentorCanHostZoomMeeting($mentor, $data, $sessionType);
 
         $booking = DB::transaction(function () use (
             $booker,
@@ -80,6 +83,17 @@ class BookingService
                 'is_group_payer' => $requestedGroupSize > 1,
                 'group_payer_id' => $requestedGroupSize > 1 ? $booker->id : null,
             ]);
+
+            $booking = $this->meetingSync->syncCreatedBooking($booking->fresh(['booker', 'mentor.user', 'participantRecords', 'service']));
+
+            if (
+                ($data['meeting_type'] ?? 'zoom') === 'zoom'
+                && $sessionType !== 'office_hours'
+                && (string) $booking->status === 'confirmed'
+                && (string) $booking->calendar_sync_status !== 'synced'
+            ) {
+                throw new BookingException($booking->calendar_last_error ?: 'Unable to create the Zoom meeting right now.');
+            }
 
             DB::table('booking_participants')->insert([
                 'booking_id' => $booking->id,
@@ -256,6 +270,21 @@ class BookingService
 
         if ($hasOverdueFeedback) {
             throw new BookingException('Please submit feedback for your completed session before booking another meeting.');
+        }
+    }
+
+    private function assertMentorCanHostZoomMeeting(Mentor $mentor, array $data, string $sessionType): void
+    {
+        if (($data['meeting_type'] ?? 'zoom') !== 'zoom' || $sessionType === 'office_hours') {
+            return;
+        }
+
+        if (! $this->zoom->isConfigured()) {
+            throw new BookingException('Zoom booking is not configured right now.');
+        }
+
+        if (! $this->zoom->hasConnectedMentor($mentor)) {
+            throw new BookingException('This mentor must connect Zoom before students can book Zoom meetings.');
         }
     }
 

@@ -4,6 +4,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Modules\Auth\app\Models\OauthToken;
 use Modules\Auth\app\Models\User;
 use Modules\Bookings\app\Events\ChatMessageSent;
 use Modules\Bookings\app\Models\Booking;
@@ -22,6 +23,14 @@ beforeEach(function () {
     Role::findOrCreate('student', 'web');
     Role::findOrCreate('mentor', 'web');
     Role::findOrCreate('admin', 'web');
+
+    config([
+        'services.zoom.enabled' => true,
+        'services.zoom.client_id' => 'zoom-client-id',
+        'services.zoom.client_secret' => 'zoom-client-secret',
+        'services.zoom.redirect_uri' => 'https://gradspath.test/mentor/settings/zoom/callback',
+        'services.zoom.api_base' => 'https://api.zoom.us/v2',
+    ]);
 });
 
 function makePortalUser(string $prefix, string $role): User
@@ -40,6 +49,15 @@ function makePortalUser(string $prefix, string $role): User
 function makePortalMentor(string $prefix, string $mentorType = 'graduate'): array
 {
     $user = makePortalUser($prefix, 'mentor');
+
+    OauthToken::query()->create([
+        'user_id' => $user->id,
+        'provider' => 'zoom',
+        'provider_user_id' => 'zoom-user-'.$user->id,
+        'access_token' => 'mentor-access-token-'.$user->id,
+        'refresh_token' => 'mentor-refresh-token-'.$user->id,
+        'token_expires_at' => now()->addHour(),
+    ]);
 
     $mentor = Mentor::query()->create([
         'user_id' => $user->id,
@@ -165,25 +183,18 @@ function fakeStripeCheckoutSession(string $sessionId = 'cs_test_mentor_booking',
             'payment_status' => 'paid',
             'payment_intent' => $paymentIntent,
         ], 200),
+        'https://api.zoom.us/v2/users/me/meetings' => Http::response([
+            'id' => 'zoom-mentor-paid-booking',
+            'join_url' => 'https://zoom.us/j/zoom-mentor-paid-booking',
+            'start_url' => 'https://zoom.us/s/zoom-mentor-paid-booking',
+        ], 200),
+        'https://api.zoom.us/v2/meetings/*' => Http::response([], 204),
     ]);
 }
 
 function fakeZoomMeetingStartApi(string $meetingId = 'zoom-start-123', string $startUrl = 'https://zoom.us/s/start-token', string $joinUrl = 'https://zoom.us/j/zoom-start-123'): void
 {
-    config([
-        'services.zoom.enabled' => true,
-        'services.zoom.account_id' => 'zoom-account-123',
-        'services.zoom.client_id' => 'zoom-client-id',
-        'services.zoom.client_secret' => 'zoom-client-secret',
-        'services.zoom.api_base' => 'https://api.zoom.us/v2',
-    ]);
-
     Http::fake([
-        'https://zoom.us/oauth/token' => Http::response([
-            'access_token' => 'zoom-access-token',
-            'expires_in' => 3600,
-            'token_type' => 'Bearer',
-        ], 200),
         'https://api.zoom.us/v2/meetings/'.$meetingId => Http::response([
             'id' => $meetingId,
             'start_url' => $startUrl,

@@ -8,7 +8,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Modules\Bookings\app\Services\ZoomService;
 use Modules\Institutions\app\Models\University;
 use Modules\Institutions\app\Models\UniversityProgram;
 use Modules\Payments\app\Models\ServiceConfig;
@@ -18,6 +20,8 @@ use Modules\Settings\app\Support\TimezoneOptions;
 
 class MentorSettingsController extends Controller
 {
+    public function __construct(private readonly ZoomService $zoom) {}
+
     public function index(): View
     {
         $user = Auth::user()->loadMissing('mentor.services', 'mentor.university', 'setting');
@@ -56,6 +60,11 @@ class MentorSettingsController extends Controller
             'hasSavedTimezone' => filled($user->setting?->timezone),
             'timezoneAutoSaveUrl' => route('settings.timezone.store'),
             'stripeReturn' => request()->boolean('stripe_return'),
+            'zoomConfigured' => $this->zoom->isConfigured(),
+            'zoomConnectionStatus' => $this->zoom->connectionStatusForUser($user),
+            'zoomConnectUrl' => route('mentor.settings.zoom.connect'),
+            'zoomDisconnectUrl' => route('mentor.settings.zoom.disconnect'),
+            'zoomConnectedAccount' => $this->zoom->oauthTokenForUser($user)?->provider_user_id,
         ]);
     }
 
@@ -148,6 +157,60 @@ class MentorSettingsController extends Controller
         return redirect()
             ->route('mentor.settings.index')
             ->with('success', 'Mentor profile updated successfully.');
+    }
+
+    public function connectZoom(Request $request): RedirectResponse
+    {
+        if (! $this->zoom->isConfigured()) {
+            return redirect()
+                ->route('mentor.settings.index')
+                ->withErrors(['zoom' => 'Zoom OAuth is not configured right now.']);
+        }
+
+        $state = Str::random(40);
+        $request->session()->put('mentor_zoom_oauth_state', $state);
+
+        return redirect()->away($this->zoom->authorizationUrl($state));
+    }
+
+    public function handleZoomCallback(Request $request): RedirectResponse
+    {
+        $expectedState = (string) $request->session()->pull('mentor_zoom_oauth_state', '');
+        $receivedState = (string) $request->query('state', '');
+
+        if ($expectedState === '' || ! hash_equals($expectedState, $receivedState)) {
+            return redirect()
+                ->route('mentor.settings.index')
+                ->withErrors(['zoom' => 'Zoom authorization could not be verified. Please try again.']);
+        }
+
+        $code = trim((string) $request->query('code', ''));
+        if ($code === '') {
+            return redirect()
+                ->route('mentor.settings.index')
+                ->withErrors(['zoom' => 'Zoom did not return an authorization code.']);
+        }
+
+        try {
+            $this->zoom->connectUser(Auth::user(), $code);
+        } catch (\Throwable $exception) {
+            return redirect()
+                ->route('mentor.settings.index')
+                ->withErrors(['zoom' => $exception->getMessage()]);
+        }
+
+        return redirect()
+            ->route('mentor.settings.index')
+            ->with('success', 'Zoom connected successfully.');
+    }
+
+    public function disconnectZoom(): RedirectResponse
+    {
+        $this->zoom->disconnectUser(Auth::user());
+
+        return redirect()
+            ->route('mentor.settings.index')
+            ->with('success', 'Zoom disconnected successfully.');
     }
 
     private function universityProgramsForUniversityId(?int $universityId)

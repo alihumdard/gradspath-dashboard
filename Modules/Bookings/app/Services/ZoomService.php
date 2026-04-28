@@ -2,29 +2,116 @@
 
 namespace Modules\Bookings\app\Services;
 
+use App\Models\User;
 use Carbon\CarbonInterface;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Modules\Auth\app\Models\OauthToken;
 use Modules\Bookings\app\Models\Booking;
+use Modules\Settings\app\Models\Mentor;
 
 class ZoomService
 {
     public function isConfigured(): bool
     {
         return (bool) config('services.zoom.enabled', false)
-            && $this->accountId() !== null
             && $this->clientId() !== null
-            && $this->clientSecret() !== null;
+            && $this->clientSecret() !== null
+            && $this->redirectUri() !== null;
+    }
+
+    public function authorizationUrl(string $state): string
+    {
+        if (! $this->isConfigured()) {
+            throw new \RuntimeException('Zoom OAuth is not fully configured.');
+        }
+
+        return $this->authorizeUrl().'?'.http_build_query([
+            'response_type' => 'code',
+            'client_id' => $this->clientId(),
+            'redirect_uri' => $this->redirectUri(),
+            'state' => $state,
+        ]);
+    }
+
+    public function connectUser(User $user, string $code): OauthToken
+    {
+        if (! $this->isConfigured()) {
+            throw new \RuntimeException('Zoom OAuth is not fully configured.');
+        }
+
+        Log::info('Exchanging Zoom authorization code for user token.', [
+            'user_id' => $user->id,
+        ]);
+
+        $payload = $this->tokenRequest([
+            'grant_type' => 'authorization_code',
+            'code' => $code,
+            'redirect_uri' => $this->redirectUri(),
+        ]);
+
+        $profile = $this->retrieveCurrentUserProfile((string) ($payload['access_token'] ?? ''));
+
+        return $this->storeUserToken($user, $payload, $profile);
+    }
+
+    public function disconnectUser(User $user): void
+    {
+        OauthToken::query()
+            ->where('user_id', $user->id)
+            ->where('provider', 'zoom')
+            ->delete();
+    }
+
+    public function oauthTokenForUser(User $user): ?OauthToken
+    {
+        return OauthToken::query()
+            ->where('user_id', $user->id)
+            ->where('provider', 'zoom')
+            ->first();
+    }
+
+    public function connectionStatusForUser(User $user): string
+    {
+        $token = $this->oauthTokenForUser($user);
+
+        if (! $token) {
+            return 'not_connected';
+        }
+
+        if (trim((string) $token->access_token) === '' && trim((string) $token->refresh_token) === '') {
+            return 'error';
+        }
+
+        return 'connected';
+    }
+
+    public function hasConnectedUser(User $user): bool
+    {
+        $token = $this->oauthTokenForUser($user);
+
+        if (! $token) {
+            return false;
+        }
+
+        return trim((string) $token->access_token) !== '' || trim((string) $token->refresh_token) !== '';
+    }
+
+    public function hasConnectedMentor(?Mentor $mentor): bool
+    {
+        return $mentor?->user ? $this->hasConnectedUser($mentor->user) : false;
     }
 
     public function createMeeting(Booking $booking): array
     {
+        $mentorUser = $this->mentorUserForBooking($booking);
         $payload = $this->meetingPayload($booking);
 
         Log::info('Zoom meeting create request prepared.', [
             'booking_id' => $booking->id,
             'mentor_id' => $booking->mentor_id,
+            'mentor_user_id' => $mentorUser->id,
             'student_id' => $booking->student_id,
             'service_config_id' => $booking->service_config_id,
             'session_type' => $booking->session_type,
@@ -38,7 +125,7 @@ class ZoomService
             'api_base' => $this->apiBase(),
         ]);
 
-        $response = Http::withToken($this->accessToken())
+        $response = Http::withToken($this->accessTokenForUser($mentorUser))
             ->acceptJson()
             ->post($this->apiBase().'/users/me/meetings', $payload)
             ->throw();
@@ -47,6 +134,7 @@ class ZoomService
 
         Log::info('Zoom meeting create response received.', [
             'booking_id' => $booking->id,
+            'mentor_user_id' => $mentorUser->id,
             'status' => $response->status(),
             'meeting_id' => data_get($meeting, 'id'),
             'uuid_present' => filled(data_get($meeting, 'uuid')),
@@ -61,32 +149,44 @@ class ZoomService
         return $meeting;
     }
 
-    public function cancelMeeting(string $meetingId): void
+    public function cancelMeeting(Booking $booking): void
     {
+        $mentorUser = $this->mentorUserForBooking($booking);
+        $meetingId = (string) $booking->external_calendar_event_id;
+
         Log::info('Zoom meeting cancellation request prepared.', [
+            'booking_id' => $booking->id,
+            'mentor_user_id' => $mentorUser->id,
             'meeting_id' => $meetingId,
             'api_base' => $this->apiBase(),
         ]);
 
-        $response = Http::withToken($this->accessToken())
+        $response = Http::withToken($this->accessTokenForUser($mentorUser))
             ->acceptJson()
             ->delete($this->apiBase().'/meetings/'.$meetingId)
             ->throw();
 
         Log::info('Zoom meeting cancellation response received.', [
+            'booking_id' => $booking->id,
+            'mentor_user_id' => $mentorUser->id,
             'meeting_id' => $meetingId,
             'status' => $response->status(),
         ]);
     }
 
-    public function getMeeting(string $meetingId): array
+    public function getMeeting(Booking $booking): array
     {
+        $mentorUser = $this->mentorUserForBooking($booking);
+        $meetingId = (string) $booking->external_calendar_event_id;
+
         Log::info('Zoom meeting retrieve request prepared.', [
+            'booking_id' => $booking->id,
+            'mentor_user_id' => $mentorUser->id,
             'meeting_id' => $meetingId,
             'api_base' => $this->apiBase(),
         ]);
 
-        $response = Http::withToken($this->accessToken())
+        $response = Http::withToken($this->accessTokenForUser($mentorUser))
             ->acceptJson()
             ->get($this->apiBase().'/meetings/'.$meetingId)
             ->throw();
@@ -94,6 +194,8 @@ class ZoomService
         $meeting = $response->json();
 
         Log::info('Zoom meeting retrieve response received.', [
+            'booking_id' => $booking->id,
+            'mentor_user_id' => $mentorUser->id,
             'meeting_id' => data_get($meeting, 'id') ?: $meetingId,
             'status' => $response->status(),
             'start_url_present' => filled(data_get($meeting, 'start_url')),
@@ -105,54 +207,64 @@ class ZoomService
         return is_array($meeting) ? $meeting : [];
     }
 
-    public function accessToken(): string
+    public function accessTokenForUser(User $user): string
     {
         if (! $this->isConfigured()) {
-            throw new \RuntimeException('Zoom is not fully configured.');
+            throw new \RuntimeException('Zoom OAuth is not fully configured.');
         }
 
-        $cacheKey = 'zoom.server_to_server_access_token';
-        $cached = Cache::get($cacheKey);
+        $token = $this->oauthTokenForUser($user);
 
-        if (is_string($cached) && $cached !== '') {
-            Log::debug('Using cached Zoom server-to-server access token.', [
-                'cache_key' => $cacheKey,
-            ]);
-
-            return $cached;
+        if (! $token) {
+            throw new \RuntimeException('This mentor has not connected Zoom.');
         }
 
-        Log::info('Requesting Zoom server-to-server access token.', [
-            'account_id_present' => $this->accountId() !== null,
-            'client_id_present' => $this->clientId() !== null,
-        ]);
+        if ($token->token_expires_at?->isPast() || trim((string) $token->access_token) === '') {
+            $token = $this->refreshToken($token);
+        }
 
-        $response = Http::asForm()
-            ->withBasicAuth((string) $this->clientId(), (string) $this->clientSecret())
-            ->acceptJson()
-            ->post('https://zoom.us/oauth/token', [
-                'grant_type' => 'account_credentials',
-                'account_id' => $this->accountId(),
-            ])
-            ->throw()
-            ->json();
+        $accessToken = trim((string) $token->access_token);
 
-        $token = trim((string) ($response['access_token'] ?? ''));
-
-        if ($token === '') {
+        if ($accessToken === '') {
             throw new \RuntimeException('Zoom did not return an access token.');
         }
 
-        $ttlSeconds = max(((int) ($response['expires_in'] ?? 3600)) - 60, 60);
-        Cache::put($cacheKey, $token, now()->addSeconds($ttlSeconds));
+        return $accessToken;
+    }
 
-        Log::info('Stored Zoom server-to-server access token in cache.', [
-            'cache_key' => $cacheKey,
-            'ttl_seconds' => $ttlSeconds,
-            'scope_present' => filled($response['scope'] ?? null),
+    public function refreshToken(OauthToken $token): OauthToken
+    {
+        $refreshToken = trim((string) $token->refresh_token);
+
+        if ($refreshToken === '') {
+            throw new \RuntimeException('Zoom refresh token is missing. Please reconnect Zoom.');
+        }
+
+        Log::info('Refreshing Zoom OAuth token for user.', [
+            'user_id' => $token->user_id,
+            'provider_user_id' => $token->provider_user_id,
         ]);
 
-        return $token;
+        try {
+            $payload = $this->tokenRequest([
+                'grant_type' => 'refresh_token',
+                'refresh_token' => $refreshToken,
+            ]);
+        } catch (\Throwable $exception) {
+            $token->forceFill([
+                'access_token' => '',
+                'refresh_token' => '',
+                'token_expires_at' => now()->subMinute(),
+            ])->save();
+
+            throw new \RuntimeException('Zoom connection expired or refresh failed. Please reconnect Zoom.', 0, $exception);
+        }
+
+        return $this->storeUserToken(
+            User::query()->findOrFail($token->user_id),
+            array_merge($payload, ['refresh_token' => $payload['refresh_token'] ?? $refreshToken]),
+            ['id' => $token->provider_user_id]
+        );
     }
 
     public function verifyWebhookSignature(string $payload, string $signature, string $timestamp): void
@@ -248,13 +360,6 @@ class ZoomService
         return rtrim((string) config('services.zoom.api_base', 'https://api.zoom.us/v2'), '/');
     }
 
-    private function accountId(): ?string
-    {
-        $value = trim((string) config('services.zoom.account_id', ''));
-
-        return $value === '' ? null : $value;
-    }
-
     private function clientId(): ?string
     {
         $value = trim((string) config('services.zoom.client_id', ''));
@@ -269,10 +374,97 @@ class ZoomService
         return $value === '' ? null : $value;
     }
 
+    private function redirectUri(): ?string
+    {
+        $value = trim((string) config('services.zoom.redirect_uri', ''));
+
+        return $value === '' ? null : $value;
+    }
+
+    private function authorizeUrl(): string
+    {
+        return rtrim((string) config('services.zoom.authorize_url', 'https://zoom.us/oauth/authorize'), '/');
+    }
+
+    private function tokenUrl(): string
+    {
+        return rtrim((string) config('services.zoom.token_url', 'https://zoom.us/oauth/token'), '/');
+    }
+
     private function webhookSecretToken(): ?string
     {
         $value = trim((string) config('services.zoom.webhook_secret_token', ''));
 
         return $value === '' ? null : $value;
+    }
+
+    private function tokenRequest(array $payload): array
+    {
+        $response = Http::asForm()
+            ->withBasicAuth((string) $this->clientId(), (string) $this->clientSecret())
+            ->acceptJson()
+            ->post($this->tokenUrl(), $payload)
+            ->throw()
+            ->json();
+
+        if (! is_array($response)) {
+            throw new \RuntimeException('Zoom token response was malformed.');
+        }
+
+        return $response;
+    }
+
+    private function retrieveCurrentUserProfile(string $accessToken): array
+    {
+        $response = Http::withToken($accessToken)
+            ->acceptJson()
+            ->get($this->apiBase().'/users/me')
+            ->throw()
+            ->json();
+
+        if (! is_array($response)) {
+            throw new \RuntimeException('Zoom user profile response was malformed.');
+        }
+
+        return $response;
+    }
+
+    private function storeUserToken(User $user, array $payload, array $profile): OauthToken
+    {
+        $providerUserId = trim((string) (Arr::get($profile, 'id') ?: Arr::get($profile, 'email')));
+        $accessToken = trim((string) ($payload['access_token'] ?? ''));
+        $refreshToken = trim((string) ($payload['refresh_token'] ?? ''));
+
+        if ($providerUserId === '') {
+            throw new \RuntimeException('Zoom did not return a user identifier.');
+        }
+
+        if ($accessToken === '') {
+            throw new \RuntimeException('Zoom did not return an access token.');
+        }
+
+        return OauthToken::query()->updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'provider' => 'zoom',
+            ],
+            [
+                'provider_user_id' => $providerUserId,
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshToken,
+                'token_expires_at' => now()->addSeconds(max((int) ($payload['expires_in'] ?? 3600) - 60, 60)),
+            ]
+        );
+    }
+
+    private function mentorUserForBooking(Booking $booking): User
+    {
+        $user = $booking->mentor?->user;
+
+        if (! $user) {
+            throw new \RuntimeException('The booking mentor user could not be resolved.');
+        }
+
+        return $user;
     }
 }

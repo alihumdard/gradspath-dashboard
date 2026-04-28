@@ -5,12 +5,9 @@ namespace Modules\Bookings\app\Listeners;
 use Illuminate\Support\Facades\Log;
 use Modules\Bookings\app\Events\BookingCreated;
 use Modules\Bookings\app\Jobs\SendBookingConfirmationJob;
-use Modules\Bookings\app\Services\BookingMeetingSyncService;
 
 class GenerateMeetingLinkListener
 {
-    public function __construct(private readonly BookingMeetingSyncService $meetingSync) {}
-
     public function handle(BookingCreated $event): void
     {
         Log::info('Generate meeting link listener handling booking.', [
@@ -20,25 +17,14 @@ class GenerateMeetingLinkListener
             'session_type' => $event->booking->session_type,
         ]);
 
-        try {
-            $booking = $this->meetingSync->syncCreatedBooking($event->booking);
-        } catch (\Throwable $exception) {
-            Log::warning('Booking created but meeting sync failed unexpectedly.', [
-                'booking_id' => $event->booking->id,
-                'error' => $exception->getMessage(),
-            ]);
-
-            $booking = $event->booking->fresh(['booker', 'mentor.user', 'participantRecords', 'service']) ?? $event->booking;
-        }
-
         Log::info('Dispatching booking confirmation after meeting sync.', [
-            'booking_id' => $booking->id,
-            'calendar_provider' => $booking->calendar_provider,
-            'calendar_sync_status' => $booking->calendar_sync_status,
-            'meeting_link_present' => filled($booking->meeting_link),
-            'external_calendar_event_id' => $booking->external_calendar_event_id,
+            'booking_id' => $event->booking->id,
+            'calendar_provider' => $event->booking->calendar_provider,
+            'calendar_sync_status' => $event->booking->calendar_sync_status,
+            'meeting_link_present' => filled($event->booking->meeting_link),
+            'external_calendar_event_id' => $event->booking->external_calendar_event_id,
         ]);
 
-        SendBookingConfirmationJob::dispatch($booking->id);
+        SendBookingConfirmationJob::dispatch($event->booking->id);
     }
 }

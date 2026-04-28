@@ -29,6 +29,7 @@
         <p class="subtitle">
           Update the profile details and services students see across discovery and booking.
         </p>
+        <div class="availability-alert availability-alert--error" id="mentorFormAlert" hidden></div>
         <form id="mentorForm" method="POST" action="{{ route('mentor.settings.update') }}" novalidate>
           @csrf
           @method('PATCH')
@@ -230,6 +231,51 @@
 
               <section class="settings-card">
                 <div class="field">
+                  <label>Zoom Host Connection</label>
+                  <div class="payout-box">
+                    <p class="payout-text">
+                      Connect your own Zoom account so every booked meeting is created with you as the host and your Zoom name appears to students.
+                    </p>
+                    <p class="payout-text">
+                      Current status:
+                      <strong>
+                        @if (! $zoomConfigured)
+                          Zoom OAuth not configured
+                        @elseif ($zoomConnectionStatus === 'connected')
+                          Connected
+                        @elseif ($zoomConnectionStatus === 'error')
+                          Reconnect required
+                        @else
+                          Not connected
+                        @endif
+                      </strong>
+                    </p>
+                    @if ($zoomConnectedAccount)
+                      <p class="helper-text" style="margin-top: 0;">Connected Zoom account: {{ $zoomConnectedAccount }}</p>
+                    @endif
+                    <div class="payout-actions">
+                      @if ($zoomConnectionStatus === 'connected')
+                        <button
+                          type="submit"
+                          form="zoomDisconnectForm"
+                          class="primary-btn"
+                        >
+                          Disconnect Zoom
+                        </button>
+                      @else
+                        <a href="{{ $zoomConnectUrl }}" class="primary-btn{{ $zoomConfigured ? '' : ' is-disabled' }}" @if (! $zoomConfigured) aria-disabled="true" @endif>
+                          {{ $zoomConnectionStatus === 'error' ? 'Reconnect Zoom' : 'Connect Zoom' }}
+                        </a>
+                      @endif
+                    </div>
+                  </div>
+                  <p class="helper-text">Students cannot complete new Zoom bookings with you until this connection is active.</p>
+                  <p class="error-text">{{ $viewErrors->first('zoom') }}</p>
+                </div>
+              </section>
+
+              <section class="settings-card">
+                <div class="field">
                   <label>Services Offered</label>
                   <div class="services-panel">
                     <div class="services-panel-head">
@@ -292,6 +338,10 @@
             </div>
           </div>
           <button type="submit" class="save-btn">Save Changes</button>
+        </form>
+        <form id="zoomDisconnectForm" method="POST" action="{{ $zoomDisconnectUrl }}">
+          @csrf
+          @method('DELETE')
         </form>
       </section>
     </div>

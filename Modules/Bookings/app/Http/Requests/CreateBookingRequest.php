@@ -4,6 +4,8 @@ namespace Modules\Bookings\app\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use Modules\Bookings\app\Services\ZoomService;
+use Modules\Settings\app\Models\Mentor;
 
 class CreateBookingRequest extends FormRequest
 {
@@ -97,6 +99,20 @@ class CreateBookingRequest extends FormRequest
 
             if ($this->user()?->email && $emails->contains(strtolower((string) $this->user()->email))) {
                 $validator->errors()->add('guest_participants', 'Do not enter your own email in the additional applicant fields.');
+            }
+
+            if (
+                (string) $this->input('meeting_type', 'zoom') === 'zoom'
+                && $sessionType !== 'office_hours'
+            ) {
+                $mentor = Mentor::query()->with('user')->find((int) $this->input('mentor_id'));
+                $zoom = app(ZoomService::class);
+
+                if (! $zoom->isConfigured()) {
+                    $validator->errors()->add('booking', 'Zoom booking is not configured right now.');
+                } elseif (! $mentor || ! $zoom->hasConnectedMentor($mentor)) {
+                    $validator->errors()->add('booking', 'This mentor must connect Zoom before students can book Zoom meetings.');
+                }
             }
         });
     }

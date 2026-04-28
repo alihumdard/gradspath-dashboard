@@ -53,7 +53,16 @@ class BookingMeetingSyncService
                 'booking_id' => $booking->id,
             ]);
 
-            return $this->markSkipped($booking, 'Zoom is not configured.');
+            return $this->markFailed($booking, 'Zoom booking is not configured.');
+        }
+
+        if (! $this->zoom->hasConnectedMentor($booking->mentor)) {
+            Log::warning('Booking meeting sync skipped because mentor has not connected Zoom.', [
+                'booking_id' => $booking->id,
+                'mentor_id' => $booking->mentor_id,
+            ]);
+
+            return $this->markFailed($booking, 'This mentor must connect Zoom before students can book Zoom meetings.');
         }
 
         try {
@@ -130,14 +139,23 @@ class BookingMeetingSyncService
         if (! $this->zoom->isConfigured()) {
             $booking->forceFill([
                 'calendar_sync_status' => 'cancel_pending',
-                'calendar_last_error' => 'Zoom is not configured for cancellation sync.',
+                'calendar_last_error' => 'Zoom booking is not configured for cancellation sync.',
+            ])->save();
+
+            return $booking;
+        }
+
+        if (! $this->zoom->hasConnectedMentor($booking->mentor)) {
+            $booking->forceFill([
+                'calendar_sync_status' => 'cancel_pending',
+                'calendar_last_error' => 'The mentor Zoom connection is no longer active for cancellation sync.',
             ])->save();
 
             return $booking;
         }
 
         try {
-            $this->zoom->cancelMeeting((string) $booking->external_calendar_event_id);
+            $this->zoom->cancelMeeting($booking);
 
             $booking->forceFill([
                 'calendar_sync_status' => 'cancelled',
@@ -176,6 +194,22 @@ class BookingMeetingSyncService
         $booking->forceFill([
             'calendar_provider' => 'zoom',
             'calendar_sync_status' => 'skipped',
+            'calendar_last_error' => $reason,
+        ])->save();
+
+        return $booking->fresh();
+    }
+
+    private function markFailed(Booking $booking, string $reason): Booking
+    {
+        Log::warning('Booking meeting sync marked as failed.', [
+            'booking_id' => $booking->id,
+            'reason' => $reason,
+        ]);
+
+        $booking->forceFill([
+            'calendar_provider' => 'zoom',
+            'calendar_sync_status' => 'failed',
             'calendar_last_error' => $reason,
         ])->save();
 

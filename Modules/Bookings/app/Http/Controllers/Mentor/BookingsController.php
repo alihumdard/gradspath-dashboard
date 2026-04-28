@@ -85,11 +85,21 @@ class BookingsController extends Controller
                 'meeting_id' => $booking->external_calendar_event_id,
             ]);
 
-            return back()->with('error', 'Zoom is not configured right now.');
+            return back()->with('error', 'Zoom booking is not configured right now.');
+        }
+
+        if (! $this->zoom->hasConnectedMentor($booking->mentor)) {
+            Log::warning('Mentor Zoom start route rejected because mentor Zoom is not connected.', [
+                'booking_id' => $booking->id,
+                'meeting_id' => $booking->external_calendar_event_id,
+                'mentor_id' => $booking->mentor_id,
+            ]);
+
+            return back()->with('error', 'Please reconnect Zoom to start this meeting.');
         }
 
         try {
-            $meeting = $this->zoom->getMeeting((string) $booking->external_calendar_event_id);
+            $meeting = $this->zoom->getMeeting($booking);
             $startUrl = trim((string) data_get($meeting, 'start_url', ''));
 
             Log::info('Mentor Zoom start route fetched meeting details.', [

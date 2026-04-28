@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
+use Modules\Auth\app\Models\OauthToken;
 use Modules\Auth\app\Models\User;
 use Modules\Bookings\app\Jobs\SendBookingConfirmationJob;
 use Modules\Bookings\app\Jobs\SendBookingReminderJob;
@@ -33,24 +34,19 @@ beforeEach(function () {
     Role::findOrCreate('student', 'web');
     Role::findOrCreate('mentor', 'web');
     Role::findOrCreate('admin', 'web');
+
+    config([
+        'services.zoom.enabled' => true,
+        'services.zoom.client_id' => 'zoom-client-id',
+        'services.zoom.client_secret' => 'zoom-client-secret',
+        'services.zoom.redirect_uri' => 'https://gradspath.test/mentor/settings/zoom/callback',
+        'services.zoom.api_base' => 'https://api.zoom.us/v2',
+    ]);
 });
 
 function fakeZoomApi(string $meetingId = 'zoom-meeting-123', string $joinUrl = 'https://zoom.us/j/9876543210'): void
 {
-    config([
-        'services.zoom.enabled' => true,
-        'services.zoom.account_id' => 'zoom-account-123',
-        'services.zoom.client_id' => 'zoom-client-id',
-        'services.zoom.client_secret' => 'zoom-client-secret',
-        'services.zoom.api_base' => 'https://api.zoom.us/v2',
-    ]);
-
     Http::fake([
-        'https://zoom.us/oauth/token' => Http::response([
-            'access_token' => 'zoom-access-token',
-            'expires_in' => 3600,
-            'token_type' => 'Bearer',
-        ], 200),
         'https://api.zoom.us/v2/users/me/meetings' => Http::response([
             'id' => $meetingId,
             'join_url' => $joinUrl,
@@ -99,6 +95,15 @@ function makeMentor(): Mentor
 {
     $mentorUser = makeUser('mentor');
     $mentorUser->assignRole('mentor');
+
+    OauthToken::query()->create([
+        'user_id' => $mentorUser->id,
+        'provider' => 'zoom',
+        'provider_user_id' => 'zoom-user-'.$mentorUser->id,
+        'access_token' => 'mentor-access-token-'.$mentorUser->id,
+        'refresh_token' => 'mentor-refresh-token-'.$mentorUser->id,
+        'token_expires_at' => now()->addHour(),
+    ]);
 
     return Mentor::query()->create([
         'user_id' => $mentorUser->id,
@@ -596,21 +601,10 @@ it('queues a confirmation job and sends booking emails for 1on1 to student and m
     });
 });
 
-it('keeps the booking when zoom sync fails and still queues confirmation emails', function () {
+it('blocks the booking when zoom meeting creation fails', function () {
     Queue::fake();
 
-    config([
-        'services.zoom.enabled' => true,
-        'services.zoom.account_id' => 'zoom-account-123',
-        'services.zoom.client_id' => 'zoom-client-id',
-        'services.zoom.client_secret' => 'zoom-client-secret',
-        'services.zoom.api_base' => 'https://api.zoom.us/v2',
-    ]);
-
     Http::fake([
-        'https://zoom.us/oauth/token' => Http::response([
-            'access_token' => 'zoom-access-token',
-        ], 200),
         'https://api.zoom.us/v2/users/me/meetings' => Http::response([
             'message' => 'zoom create failed',
         ], 500),
@@ -632,39 +626,41 @@ it('keeps the booking when zoom sync fails and still queues confirmation emails'
     $slotId = createAvailabilitySlot($mentor, $service, '1on1');
 
     $this->actingAs($student)
+        ->from(route('student.bookings.index'))
         ->post(route('student.bookings.store'), [
             'mentor_id' => $mentor->id,
             'service_config_id' => $service->id,
             'session_type' => '1on1',
             'mentor_availability_slot_id' => $slotId,
         ])
-        ->assertRedirect();
+        ->assertRedirect(route('student.bookings.index'))
+        ->assertSessionHasErrors('booking');
 
-    $booking = Booking::query()->latest('id')->firstOrFail();
-
-    expect($booking->calendar_sync_status)->toBe('failed');
-
-    Queue::assertPushed(SendBookingConfirmationJob::class, fn (SendBookingConfirmationJob $job) => $job->bookingId === $booking->id);
+    expect(Booking::query()->count())->toBe(0);
+    Queue::assertNothingPushed();
 });
 
-it('exchanges a zoom server-to-server token when the service is configured', function () {
-    config([
-        'services.zoom.enabled' => true,
-        'services.zoom.account_id' => 'zoom-account-123',
-        'services.zoom.client_id' => 'zoom-client-id',
-        'services.zoom.client_secret' => 'zoom-client-secret',
-        'services.zoom.api_base' => 'https://api.zoom.us/v2',
-    ]);
+it('refreshes a mentor zoom oauth token when it has expired', function () {
+    $mentor = makeMentor();
+    $mentorUser = User::query()->findOrFail($mentor->user_id);
+    $token = OauthToken::query()->where('user_id', $mentorUser->id)->where('provider', 'zoom')->firstOrFail();
+    $token->forceFill([
+        'access_token' => 'expired-access-token',
+        'refresh_token' => 'refresh-token-123',
+        'token_expires_at' => now()->subMinute(),
+    ])->save();
 
     Http::fake([
         'https://zoom.us/oauth/token' => Http::response([
             'access_token' => 'zoom-access-token',
+            'refresh_token' => 'zoom-refresh-token',
             'expires_in' => 3600,
             'token_type' => 'Bearer',
         ], 200),
     ]);
 
-    expect(app(ZoomService::class)->accessToken())->toBe('zoom-access-token');
+    expect(app(ZoomService::class)->accessTokenForUser($mentorUser))->toBe('zoom-access-token');
+    expect($token->fresh()->refresh_token)->toBe('zoom-refresh-token');
 });
 
 it('queues reminder emails for confirmed bookings in the selected reminder window', function () {

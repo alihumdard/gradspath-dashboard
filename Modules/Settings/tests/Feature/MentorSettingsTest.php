@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Modules\Auth\app\Models\OauthToken;
 use Modules\Auth\app\Models\User;
 use Modules\Institutions\app\Models\University;
 use Modules\Institutions\app\Models\UniversityProgram;
@@ -489,4 +491,82 @@ it('rejects unsupported detected timezones', function () {
         ->assertStatus(422);
 
     expect($mentorUser->fresh()->setting?->timezone)->toBeNull();
+});
+
+it('starts the mentor zoom oauth flow from settings', function () {
+    $mentorUser = createSettingsUser('mentor');
+
+    config([
+        'services.zoom.enabled' => true,
+        'services.zoom.client_id' => 'zoom-client-id',
+        'services.zoom.client_secret' => 'zoom-client-secret',
+        'services.zoom.redirect_uri' => 'https://gradspath.test/mentor/settings/zoom/callback',
+    ]);
+
+    $response = $this->actingAs($mentorUser)->get(route('mentor.settings.zoom.connect'));
+
+    $response->assertRedirect();
+    expect($response->headers->get('Location'))->toContain('https://zoom.us/oauth/authorize');
+    expect(session('mentor_zoom_oauth_state'))->not->toBeEmpty();
+});
+
+it('stores the mentor zoom token after a successful oauth callback', function () {
+    $mentorUser = createSettingsUser('mentor');
+
+    config([
+        'services.zoom.enabled' => true,
+        'services.zoom.client_id' => 'zoom-client-id',
+        'services.zoom.client_secret' => 'zoom-client-secret',
+        'services.zoom.redirect_uri' => 'https://gradspath.test/mentor/settings/zoom/callback',
+        'services.zoom.api_base' => 'https://api.zoom.us/v2',
+    ]);
+
+    Http::fake([
+        'https://zoom.us/oauth/token' => Http::response([
+            'access_token' => 'zoom-access-token',
+            'refresh_token' => 'zoom-refresh-token',
+            'expires_in' => 3600,
+            'token_type' => 'Bearer',
+        ], 200),
+        'https://api.zoom.us/v2/users/me' => Http::response([
+            'id' => 'zoom-user-123',
+            'email' => 'mentor.zoom@example.com',
+        ], 200),
+    ]);
+
+    $this->actingAs($mentorUser)
+        ->withSession(['mentor_zoom_oauth_state' => 'zoom-state-123'])
+        ->get(route('mentor.settings.zoom.callback', [
+            'code' => 'zoom-auth-code',
+            'state' => 'zoom-state-123',
+        ]))
+        ->assertRedirect(route('mentor.settings.index'));
+
+    $this->assertDatabaseHas('oauth_tokens', [
+        'user_id' => $mentorUser->id,
+        'provider' => 'zoom',
+        'provider_user_id' => 'zoom-user-123',
+    ]);
+});
+
+it('disconnects the mentor zoom token from settings', function () {
+    $mentorUser = createSettingsUser('mentor');
+
+    OauthToken::query()->create([
+        'user_id' => $mentorUser->id,
+        'provider' => 'zoom',
+        'provider_user_id' => 'zoom-user-123',
+        'access_token' => 'zoom-access-token',
+        'refresh_token' => 'zoom-refresh-token',
+        'token_expires_at' => now()->addHour(),
+    ]);
+
+    $this->actingAs($mentorUser)
+        ->delete(route('mentor.settings.zoom.disconnect'))
+        ->assertRedirect(route('mentor.settings.index'));
+
+    $this->assertDatabaseMissing('oauth_tokens', [
+        'user_id' => $mentorUser->id,
+        'provider' => 'zoom',
+    ]);
 });

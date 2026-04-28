@@ -7,6 +7,7 @@ use Modules\Auth\app\Models\User;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Models\MentorAvailabilitySlot;
 use Modules\Bookings\app\Services\BookingService;
+use Modules\Bookings\app\Services\ZoomService;
 use Modules\OfficeHours\app\Models\OfficeHourSession;
 use Modules\Payments\app\Models\BookingPayment;
 use Modules\Payments\app\Models\ServiceConfig;
@@ -18,6 +19,7 @@ class BookingCheckoutService
         private readonly BookingService $bookings,
         private readonly StripeClient $stripe,
         private readonly MentorPayoutService $payouts,
+        private readonly ZoomService $zoom,
     ) {}
 
     public function createCheckoutSession(User $booker, array $data): BookingPayment
@@ -208,6 +210,16 @@ class BookingCheckoutService
 
         if (!$offersService) {
             throw new \RuntimeException('This mentor does not currently offer the selected service.');
+        }
+
+        if (($data['meeting_type'] ?? 'zoom') === 'zoom') {
+            if (! $this->zoom->isConfigured()) {
+                throw new \RuntimeException('Zoom booking is not configured right now.');
+            }
+
+            if (! $this->zoom->hasConnectedMentor($mentor)) {
+                throw new \RuntimeException('This mentor must connect Zoom before students can book Zoom meetings.');
+            }
         }
 
         if ($sessionType === 'office_hours') {

@@ -5,6 +5,7 @@
 })();
 
 const mentorForm = document.getElementById("mentorForm");
+const mentorFormAlert = document.getElementById("mentorFormAlert");
 const themeToggle = document.getElementById("themeToggle");
 const menuBtn = document.getElementById("mobileMenuToggle");
 const overlay = document.getElementById("sidebarOverlay");
@@ -73,6 +74,24 @@ function clearError(element) {
   }
 }
 
+function showFormAlert(message) {
+  if (!mentorFormAlert) {
+    return;
+  }
+
+  mentorFormAlert.textContent = message;
+  mentorFormAlert.hidden = false;
+}
+
+function clearFormAlert() {
+  if (!mentorFormAlert) {
+    return;
+  }
+
+  mentorFormAlert.textContent = "";
+  mentorFormAlert.hidden = true;
+}
+
 function escapeHtml(value) {
   const div = document.createElement("div");
   div.textContent = value ?? "";
@@ -84,11 +103,6 @@ function validateName() {
 
   if (!value) {
     showError(nameError, "Enter your full name.");
-    return false;
-  }
-
-  if (value.split(/\s+/).filter(Boolean).length < 2) {
-    showError(nameError, "Enter at least a first and last name.");
     return false;
   }
 
@@ -131,9 +145,8 @@ function validateCalendly() {
 
   try {
     const parsed = new URL(calendlyLink.value.trim());
-
-    if (!parsed.hostname.includes("calendly.com")) {
-      showError(calendlyError, "Enter a valid Calendly URL.");
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      showError(calendlyError, "Enter a valid URL.");
       return false;
     }
   } catch (error) {
@@ -414,10 +427,19 @@ if (enablePayoutsBtn) {
 
 if (mentorForm) {
   mentorForm.addEventListener("submit", (event) => {
+    clearFormAlert();
+
     const isValid = [validateName(), validateEduEmail(), validateCalendly()].every(Boolean);
 
     if (!isValid) {
       event.preventDefault();
+      showFormAlert("Please fix the highlighted fields before saving your mentor settings.");
+
+      const firstError = [nameError, eduEmailError, calendlyError].find(
+        (element) => element && element.textContent.trim() !== ""
+      );
+
+      firstError?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   });
 }
