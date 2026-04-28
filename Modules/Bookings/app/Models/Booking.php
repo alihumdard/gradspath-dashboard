@@ -111,6 +111,80 @@ class Booking extends Model
         return $this->session_at?->copy()->addMinutes(max((int) $this->duration_minutes, 1));
     }
 
+    public function meetingAccessAllowed(): bool
+    {
+        if (! $this->session_at) {
+            return false;
+        }
+
+        return now()->utc()->greaterThanOrEqualTo($this->session_at);
+    }
+
+    public function meetingAccessOpensAt(?string $timezone = null): ?Carbon
+    {
+        return $this->sessionAtInTimezone($timezone);
+    }
+
+    public function meetingAccessMessage(?string $timezone = null): string
+    {
+        $opensAt = $this->meetingAccessOpensAt($timezone);
+
+        if (! $opensAt) {
+            return 'Meeting access will be enabled once the session start time is available.';
+        }
+
+        if ($this->meetingAccessAllowed()) {
+            return 'Meeting access is enabled now.';
+        }
+
+        return sprintf(
+            'Meeting access will be enabled at %s on %s.',
+            $opensAt->format('g:i A'),
+            $opensAt->format('F j, Y')
+        );
+    }
+
+    public function mentorNotesAllowed(): bool
+    {
+        $scheduledEnd = $this->scheduledEndAt();
+
+        if (! $scheduledEnd) {
+            return false;
+        }
+
+        return now()->utc()->greaterThanOrEqualTo($scheduledEnd);
+    }
+
+    public function mentorNotesAvailableAt(?string $timezone = null): ?Carbon
+    {
+        $scheduledEnd = $this->scheduledEndAt();
+
+        if (! $scheduledEnd) {
+            return null;
+        }
+
+        return $scheduledEnd->copy()->setTimezone($timezone ?: ($this->session_timezone ?: config('app.timezone', 'UTC')));
+    }
+
+    public function mentorNotesMessage(?string $timezone = null): string
+    {
+        $availableAt = $this->mentorNotesAvailableAt($timezone);
+
+        if (! $availableAt) {
+            return 'Mentor notes will be available once the booking completion time is available.';
+        }
+
+        if ($this->mentorNotesAllowed()) {
+            return 'Mentor notes are available for this completed booking.';
+        }
+
+        return sprintf(
+            'Mentor notes will be enabled after this booking ends at %s on %s.',
+            $availableAt->format('g:i A'),
+            $availableAt->format('F j, Y')
+        );
+    }
+
     public function feedbackUnlocked(): bool
     {
         if ($this->attendance_status === 'attended' && $this->actual_ended_at !== null) {

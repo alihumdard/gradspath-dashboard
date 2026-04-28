@@ -65,6 +65,7 @@
           <th>Gap Year Planning</th>
           <th>Office Hours</th>
           <th>Last Active</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -75,7 +76,7 @@
             </td>
             <td>{{ $adminStudent['program'] ?: '-' }}</td>
             <td>{{ $adminStudent['institution'] ?: '-' }}</td>
-            <td>{{ $adminStudent['total_meetings'] }}</td>
+            <td><span data-booking-count-cell>{{ $adminStudent['total_meetings'] }}</span></td>
             <td>{{ $formatAdminMoney($adminStudent['total_spent']) }}</td>
             <td>{{ $adminStudent['free_consult'] }}</td>
             <td>{{ $adminStudent['tutoring'] }}</td>
@@ -85,9 +86,32 @@
             <td>{{ $adminStudent['gap_year_planning'] }}</td>
             <td>{{ $adminStudent['office_hours'] }}</td>
             <td>{{ $adminStudent['last_active'] ?: '-' }}</td>
+            <td>
+              <div class="admin-bookings-actions">
+                <button
+                  class="ghost-btn admin-bookings-trigger admin-bookings-trigger--danger"
+                  type="button"
+                  data-entity-type="user"
+                  data-entity-id="{{ $adminStudent['id'] }}"
+                  data-entity-label="{{ $adminStudent['name'] ?? $adminStudent['email'] }}"
+                  data-booking-count="{{ $adminStudent['booking_count'] }}"
+                  data-booking-mode="delete"
+                  data-direct-delete-url="{{ route('admin.users.destroy', $adminStudent['id']) }}"
+                  data-direct-delete-kind="user"
+                >
+                  Delete
+                </button>
+              </div>
+            </td>
           </tr>
         @endforeach
       </tbody>
     </table>
   </div>
+
+  @include('discovery::admin.partials.bookings-manager-modal')
+@endsection
+
+@section('admin_page_data')
+  @include('discovery::admin.partials.bookings-manager-page-data')
 @endsection

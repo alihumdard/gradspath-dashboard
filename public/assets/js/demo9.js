@@ -43,10 +43,18 @@ const meetingData = {
   viewerId: bookingDetailsData.viewerId || null,
 };
 
+const bookingsById = upcomingBookings.reduce((carry, booking) => {
+  if (booking?.id != null) {
+    carry[String(booking.id)] = booking;
+  }
+
+  return carry;
+}, {});
+
 const bookedDates = upcomingBookings.reduce((carry, booking) => {
   if (!booking.sessionDateKey) return carry;
 
-  carry[booking.sessionDateKey] = {
+  const normalizedBooking = {
     id: booking.id,
     time: booking.sessionTimeLabel || "Not set",
     service: booking.serviceName || "Service",
@@ -57,6 +65,9 @@ const bookedDates = upcomingBookings.reduce((carry, booking) => {
     meetingLinkLabel: booking.meetingLinkLabel || "Open Meeting Link",
     meetingLinkStatus: booking.meetingLinkStatus || "not_synced",
     meetingLinkStatusMessage: booking.meetingLinkStatusMessage || "Meeting link will be shared soon.",
+    meetingAccessAllowed: Boolean(booking.meetingAccessAllowed),
+    meetingAccessMessage: booking.meetingAccessMessage || "Meeting access is not available yet.",
+    meetingAccessOpensAt: booking.meetingAccessOpensAt || null,
     meetingSize: booking.meetingSize || "1 on 1",
     duration: booking.duration || null,
     sessionDateLabel: booking.sessionDateLabel || null,
@@ -85,6 +96,10 @@ const bookedDates = upcomingBookings.reduce((carry, booking) => {
     chatSendUrl: booking.chatSendUrl || null,
     chatChannel: booking.chatChannel || null,
   };
+
+  if (!carry[booking.sessionDateKey]) {
+    carry[booking.sessionDateKey] = normalizedBooking;
+  }
 
   return carry;
 }, {});
@@ -215,6 +230,7 @@ const todayKey = formatDateKey(
 let currentDate = new Date(today.getFullYear(), today.getMonth(), 1);
 let currentView = "month";
 let selectedDateKey = getDefaultSelectedDateKey();
+let selectedBookingId = selectedBooking?.id ?? null;
 let chatClient = null;
 let activeChatBookingId = null;
 let activeChatChannel = null;
@@ -260,7 +276,24 @@ function normalizeServiceValue(value) {
 }
 
 function getBookingByDateKey(key) {
+  const selectedBookingForDate = selectedBookingId != null
+    ? bookingsById[String(selectedBookingId)]
+    : null;
+
+  if (selectedBookingForDate?.sessionDateKey === key) {
+    return {
+      ...bookedDates[key],
+      ...selectedBookingForDate,
+      time: selectedBookingForDate.sessionTimeLabel || bookedDates[key]?.time || "Not set",
+      service: selectedBookingForDate.serviceName || bookedDates[key]?.service || "Service",
+    };
+  }
+
   return bookedDates[key] || null;
+}
+
+function getSelectedBooking() {
+  return selectedDateKey ? getBookingByDateKey(selectedDateKey) : null;
 }
 
 function updateZoomLink(booking) {
@@ -270,23 +303,37 @@ function updateZoomLink(booking) {
     meetingProviderLabelEl.textContent = booking?.meetingProvider || "Meeting Link";
   }
 
-  if (booking?.meetingLink) {
+  const hasMeetingLink = Boolean(booking?.meetingLink);
+  const accessAllowed = Boolean(booking?.meetingAccessAllowed);
+
+  if (hasMeetingLink && accessAllowed) {
     zoomLinkEl.href = booking.meetingLink;
     zoomLinkEl.textContent = booking?.meetingLinkLabel || "Open Meeting Link";
     zoomLinkEl.removeAttribute("aria-disabled");
     if (meetingLinkStatusTextEl) {
-      meetingLinkStatusTextEl.textContent = booking?.meetingLinkStatusMessage || "Meeting link is ready.";
+      meetingLinkStatusTextEl.textContent =
+        booking?.meetingLinkStatusMessage || "Meeting link is ready.";
     }
   } else {
     zoomLinkEl.href = "#";
-    zoomLinkEl.textContent = booking?.meetingLinkStatus === "failed"
-      ? "Meeting link pending"
+    zoomLinkEl.textContent = hasMeetingLink
+      ? booking?.meetingLinkLabel || "Open Meeting Link"
       : "Meeting link pending";
     zoomLinkEl.setAttribute("aria-disabled", "true");
     if (meetingLinkStatusTextEl) {
-      meetingLinkStatusTextEl.textContent = booking?.meetingLinkStatusMessage || "Meeting link will be shared soon.";
+      meetingLinkStatusTextEl.textContent = hasMeetingLink
+        ? booking?.meetingAccessMessage || "Meeting access is not available yet."
+        : booking?.meetingLinkStatusMessage || "Meeting link will be shared soon.";
     }
   }
+}
+
+if (zoomLinkEl) {
+  zoomLinkEl.addEventListener("click", (event) => {
+    if (zoomLinkEl.getAttribute("aria-disabled") === "true") {
+      event.preventDefault();
+    }
+  });
 }
 
 function getInitials(name) {
@@ -339,7 +386,7 @@ function formatFullDate(dateObj) {
 }
 
 function updateMeetingInfoFromSelected() {
-  const booking = getBookingByDateKey(selectedDateKey);
+  const booking = getSelectedBooking();
   const dateObj = selectedDateKey ? parseDateKey(selectedDateKey) : null;
 
   meetingDateEl.textContent = dateObj ? formatFullDate(dateObj) : "Not set";
@@ -1039,6 +1086,9 @@ function renderMonthView() {
 
       cell.addEventListener("click", () => {
         selectedDateKey = key;
+        if (getBookingByDateKey(key)?.id != null) {
+          selectedBookingId = getBookingByDateKey(key).id;
+        }
         updateMeetingInfoFromSelected();
         renderCalendar();
         renderUpcomingAppointments();
@@ -1129,6 +1179,9 @@ function renderWeekView() {
       currentDate = new Date(dayDate);
       if (booking) {
         selectedDateKey = key;
+        if (getBookingByDateKey(key)?.id != null) {
+          selectedBookingId = getBookingByDateKey(key).id;
+        }
         updateMeetingInfoFromSelected();
         renderUpcomingAppointments();
       }
@@ -1188,6 +1241,9 @@ function renderDayView() {
 
     event.addEventListener("click", () => {
       selectedDateKey = key;
+      if (getBookingByDateKey(key)?.id != null) {
+        selectedBookingId = getBookingByDateKey(key).id;
+      }
       updateMeetingInfoFromSelected();
       renderCalendar();
       renderUpcomingAppointments();
@@ -1375,7 +1431,11 @@ function createUpcomingItem(booking, key, dateObj) {
   const serviceText = booking.service || booking.serviceName || "Service";
 
   if (key === selectedDateKey) {
-    item.classList.add("active");
+    if (booking?.id != null && selectedBookingId != null && booking.id !== selectedBookingId) {
+      item.classList.remove("active");
+    } else {
+      item.classList.add("active");
+    }
   }
 
   const relationshipText = booking.relationshipLabel
@@ -1395,6 +1455,7 @@ function createUpcomingItem(booking, key, dateObj) {
 
   item.addEventListener("click", () => {
     selectedDateKey = key;
+    selectedBookingId = booking?.id ?? null;
     currentDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
     updateMeetingInfoFromSelected();
     renderCalendar();
@@ -1688,7 +1749,7 @@ updateMeetingInfoFromSelected();
 setActiveViewButton();
 renderCalendar();
 renderUpcomingAppointments();
-syncSelectedService(getBookingByDateKey(selectedDateKey));
+syncSelectedService(getSelectedBooking());
 setFeedbackRating(feedbackStarsEl?.value || "");
 
 document

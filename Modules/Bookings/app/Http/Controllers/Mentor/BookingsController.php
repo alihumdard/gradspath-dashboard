@@ -79,6 +79,18 @@ class BookingsController extends Controller
             return back()->with('error', 'Zoom meeting is not ready yet.');
         }
 
+        if (! $booking->meetingAccessAllowed()) {
+            Log::info('Mentor Zoom start route rejected before scheduled start time.', [
+                'booking_id' => $booking->id,
+                'meeting_id' => $booking->external_calendar_event_id,
+                'session_at' => optional($booking->session_at)->toIso8601String(),
+            ]);
+
+            return redirect()
+                ->route('mentor.bookings.show', $booking->id)
+                ->with('error', $booking->meetingAccessMessage());
+        }
+
         if (! $this->zoom->isConfigured()) {
             Log::warning('Mentor Zoom start route rejected because Zoom is not configured.', [
                 'booking_id' => $booking->id,
@@ -196,6 +208,7 @@ class BookingsController extends Controller
             : $bookerName;
         $hasHostedMentorNote = $perspective === 'hosted'
             && $booking->mentorNotes->contains(fn ($note) => (int) $note->mentor_id === (int) $booking->mentor_id && ! $note->is_deleted);
+        $mentorNotesAllowed = $perspective === 'hosted' && $booking->mentorNotesAllowed();
 
         return [
             'id' => $booking->id,
@@ -216,6 +229,9 @@ class BookingsController extends Controller
             'meetingLinkLabel' => $this->meetingLinkLabelForPerspective($booking, $perspective),
             'meetingLinkStatus' => (string) ($booking->calendar_sync_status ?: 'not_synced'),
             'meetingLinkStatusMessage' => $this->meetingPresenter->statusMessage($booking),
+            'meetingAccessAllowed' => $this->meetingPresenter->accessAllowed($booking),
+            'meetingAccessMessage' => $this->meetingPresenter->accessMessage($booking),
+            'meetingAccessOpensAt' => $this->meetingPresenter->accessOpensAt($booking),
             'meetingState' => $this->meetingPresenter->scheduledState($booking),
             'meetingStateLabel' => $this->meetingPresenter->scheduledStateLabel($booking),
             'attendanceStatus' => $this->meetingPresenter->attendanceStatus($booking),
@@ -231,14 +247,14 @@ class BookingsController extends Controller
                 && $booking->isSelfCancellationWindowOpen(),
             'cancelUrl' => route('mentor.bookings.cancel', $booking->id),
             'cancelPolicyCopy' => 'Self-service cancellation is available until 24 hours before the meeting. After that, please contact support.',
-            'mentorNotesAvailable' => $perspective === 'hosted',
-            'mentorNotesUrl' => $perspective === 'hosted' ? route('mentor.notes.bookings.edit', $booking->id) : null,
+            'mentorNotesAvailable' => $mentorNotesAllowed,
+            'mentorNotesUrl' => $mentorNotesAllowed ? route('mentor.notes.bookings.edit', $booking->id) : null,
             'mentorNotesSubmitted' => $hasHostedMentorNote,
             'mentorNotesLabel' => $perspective === 'hosted'
                 ? ($hasHostedMentorNote ? 'Edit Session Notes' : 'Add Session Notes')
                 : 'Mentor Notes Unavailable',
             'mentorNotesHelper' => $perspective === 'hosted'
-                ? 'Internal notes stay visible to mentors only.'
+                ? ($mentorNotesAllowed ? 'Internal notes stay visible to mentors only.' : $booking->mentorNotesMessage())
                 : 'Mentor notes can only be added for sessions hosted by you.',
             'chatThreadUrl' => route('mentor.bookings.chat.index', $booking->id),
             'chatSendUrl' => route('mentor.bookings.chat.store', $booking->id),

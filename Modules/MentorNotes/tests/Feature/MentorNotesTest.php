@@ -104,7 +104,9 @@ it('loads the mentor notes form for a hosted booking and saves the note', functi
     [$mentorUser, $mentor] = createMentorUser('hosted-notes');
     $student = createStudentUser('notes-student');
     $service = createService();
-    $booking = createBookingForMentor($mentor, $student, $service);
+    $booking = createBookingForMentor($mentor, $student, $service, [
+        'session_at' => now()->subHours(3)->utc()->toDateTimeString(),
+    ]);
 
     $this->actingAs($mentorUser)
         ->get(route('mentor.notes.bookings.edit', $booking->id))
@@ -138,7 +140,9 @@ it('updates the existing mentor note instead of creating a duplicate for the sam
     [$mentorUser, $mentor] = createMentorUser('update-notes');
     $student = createStudentUser('update-student');
     $service = createService('Interview Prep', 'interview_prep');
-    $booking = createBookingForMentor($mentor, $student, $service);
+    $booking = createBookingForMentor($mentor, $student, $service, [
+        'session_at' => now()->subHours(3)->utc()->toDateTimeString(),
+    ]);
 
     MentorNote::query()->create([
         'mentor_id' => $mentor->id,
@@ -178,7 +182,9 @@ it('forbids mentors from creating or editing notes for bookings they do not host
     [, $hostMentor] = createMentorUser('host');
     $student = createStudentUser('protected-student');
     $service = createService();
-    $booking = createBookingForMentor($hostMentor, $student, $service);
+    $booking = createBookingForMentor($hostMentor, $student, $service, [
+        'session_at' => now()->subHours(3)->utc()->toDateTimeString(),
+    ]);
 
     $this->actingAs($viewerUser)
         ->get(route('mentor.notes.bookings.edit', $booking->id))
@@ -196,6 +202,36 @@ it('forbids mentors from creating or editing notes for bookings they do not host
 
     $this->assertDatabaseMissing('mentor_notes', [
         'mentor_id' => $viewerMentor->id,
+        'booking_id' => $booking->id,
+    ]);
+});
+
+it('blocks mentors from opening or saving notes before the specific booking is complete', function () {
+    [$mentorUser, $mentor] = createMentorUser('notes-locked');
+    $student = createStudentUser('notes-locked-student');
+    $service = createService();
+    $booking = createBookingForMentor($mentor, $student, $service, [
+        'session_at' => now()->addMinutes(30)->utc()->toDateTimeString(),
+    ]);
+
+    $this->actingAs($mentorUser)
+        ->get(route('mentor.notes.bookings.edit', $booking->id))
+        ->assertRedirect(route('mentor.bookings.show', $booking->id))
+        ->assertSessionHas('error');
+
+    $this->actingAs($mentorUser)
+        ->post(route('mentor.notes.bookings.store', $booking->id), [
+            'worked_on' => 'Should not save.',
+            'next_steps' => 'Should not save.',
+            'session_result' => 'Should not save.',
+            'strengths_challenges' => 'Should not save.',
+            'other_notes' => 'Should not save.',
+        ])
+        ->assertRedirect(route('mentor.bookings.show', $booking->id))
+        ->assertSessionHas('error');
+
+    $this->assertDatabaseMissing('mentor_notes', [
+        'mentor_id' => $mentor->id,
         'booking_id' => $booking->id,
     ]);
 });

@@ -75,6 +75,9 @@ class SendBookingReminderJob implements ShouldQueue
             if (($recipient['role'] ?? null) === 'mentor' && $this->isSyncedZoomBooking($booking)) {
                 $details['meeting_link'] = route('mentor.bookings.start-meeting', $booking->id);
                 $details['meeting_link_label'] = 'Start Zoom Meeting';
+            } elseif ($this->isSyncedZoomBooking($booking)) {
+                $details['meeting_link'] = route('student.bookings.join-meeting', $booking->id);
+                $details['meeting_link_label'] = 'Join Zoom Meeting';
             }
 
             Mail::to($recipient['email'])->send(new BookingReminderMail(

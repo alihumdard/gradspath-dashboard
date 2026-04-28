@@ -68,6 +68,7 @@
           <th>Refunds</th>
           <th>Rating</th>
           <th>Status</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -78,7 +79,7 @@
             </td>
             <td>{{ $adminMentor['program'] ?: '-' }}</td>
             <td>{{ $adminMentor['school'] ?: '-' }}</td>
-            <td>{{ $adminMentor['total_meetings'] }}</td>
+            <td><span data-booking-count-cell>{{ $adminMentor['total_meetings'] }}</span></td>
             <td>{{ $formatAdminMoney($adminMentor['total_revenue']) }}</td>
             <td>{{ $adminMentor['free_consult'] }}</td>
             <td>{{ $adminMentor['tutoring'] }}</td>
@@ -91,9 +92,32 @@
             <td>{{ $adminMentor['refunds'] }}</td>
             <td>{{ $adminMentor['rating'] ?: '-' }}</td>
             <td>{{ $adminMentor['status'] ?: '-' }}</td>
+            <td>
+              <div class="admin-bookings-actions">
+                <button
+                  class="ghost-btn admin-bookings-trigger admin-bookings-trigger--danger"
+                  type="button"
+                  data-entity-type="mentor"
+                  data-entity-id="{{ $adminMentor['id'] }}"
+                  data-entity-label="{{ $adminMentor['name'] ?? $adminMentor['email'] }}"
+                  data-booking-count="{{ $adminMentor['booking_count'] }}"
+                  data-booking-mode="delete"
+                  data-direct-delete-url="{{ route('admin.mentors.destroy', $adminMentor['id']) }}"
+                  data-direct-delete-kind="mentor"
+                >
+                  Delete
+                </button>
+              </div>
+            </td>
           </tr>
         @endforeach
       </tbody>
     </table>
   </div>
+
+  @include('discovery::admin.partials.bookings-manager-modal')
+@endsection
+
+@section('admin_page_data')
+  @include('discovery::admin.partials.bookings-manager-page-data')
 @endsection

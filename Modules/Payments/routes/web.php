@@ -33,6 +33,7 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->nam
 	Route::get('/services', [ServicesController::class, 'index'])->name('services.index');
 	Route::post('/services', [ServicesController::class, 'store'])->name('services.store');
 	Route::patch('/services/{id}', [ServicesController::class, 'update'])->name('services.update');
+	Route::delete('/services/{id}', [ServicesController::class, 'destroy'])->name('services.destroy');
 
 	Route::prefix('manual-actions')->name('manual-actions.')->group(function () {
 		Route::post('/credits/adjust', [ManualActionsController::class, 'adjustCredits'])->name('credits.adjust');

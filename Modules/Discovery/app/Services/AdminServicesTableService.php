@@ -37,6 +37,7 @@ class AdminServicesTableService
                 'format' => $this->formatServiceFormat($service),
                 'set_price' => $this->formatSetPrice($service),
                 'bookings' => $bookings->count(),
+                'booking_count' => $bookings->count(),
                 'revenue' => $bookingAmounts === [] ? null : array_sum($bookingAmounts),
                 'mentors_offering' => $this->countActiveMentorsOffering($service->id),
             ];

@@ -194,6 +194,7 @@ function initializeMentorUniversityPicker() {
   let debounceTimer = null;
   let searchToken = 0;
   let programToken = 0;
+  let latestUniversities = [];
 
   function hideResults() {
     universityResults.hidden = true;
@@ -223,6 +224,7 @@ function initializeMentorUniversityPicker() {
   }
 
   function renderUniversities(universities) {
+    latestUniversities = universities;
     universityResults.innerHTML = universities.length
       ? universities
           .map(
@@ -263,16 +265,26 @@ function initializeMentorUniversityPicker() {
     const url = new URL(universityPicker.dataset.searchUrl, window.location.origin);
     url.searchParams.set("q", query);
 
-    const response = await fetch(url.toString(), {
-      headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
-      credentials: "same-origin",
-    });
+    try {
+      const response = await fetch(url.toString(), {
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+        credentials: "same-origin",
+      });
 
-    if (!response.ok || token !== searchToken) {
-      return;
+      if (!response.ok || token !== searchToken) {
+        return;
+      }
+
+      renderUniversities(normalizeUniversities(await response.json()));
+    } catch (error) {
+      if (token !== searchToken) {
+        return;
+      }
+
+      latestUniversities = [];
+      universityResults.innerHTML = '<div class="settings-picker-empty">Unable to load universities</div>';
+      showResults();
     }
-
-    renderUniversities(normalizeUniversities(await response.json()));
   }
 
   async function loadPrograms(universityId, selectedProgramId = "") {
@@ -301,9 +313,23 @@ function initializeMentorUniversityPicker() {
 
   universitySearch.addEventListener("focus", () => {
     const query = universitySearch.value.trim();
-    if (query.length >= 2) {
-      fetchUniversities(query);
+    if (latestUniversities.length > 0) {
+      renderUniversities(latestUniversities);
+      return;
     }
+
+    fetchUniversities(query);
+  });
+
+  universitySearch.addEventListener("click", () => {
+    const query = universitySearch.value.trim();
+
+    if (latestUniversities.length > 0) {
+      renderUniversities(latestUniversities);
+      return;
+    }
+
+    fetchUniversities(query);
   });
 
   universitySearch.addEventListener("input", () => {
@@ -319,11 +345,6 @@ function initializeMentorUniversityPicker() {
     window.clearTimeout(debounceTimer);
     debounceTimer = window.setTimeout(() => {
       const query = universitySearch.value.trim();
-      if (query.length < 2) {
-        hideResults();
-        return;
-      }
-
       fetchUniversities(query);
     }, 220);
   });
@@ -353,6 +374,7 @@ function initializeMentorUniversityPicker() {
   if (universityIdInput.value && universityProgramSelect?.dataset.selectedProgramId) {
     loadPrograms(universityIdInput.value, universityProgramSelect.dataset.selectedProgramId);
   }
+
 }
 
 initializeMentorUniversityPicker();

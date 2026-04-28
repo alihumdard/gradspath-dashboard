@@ -2610,3 +2610,652 @@ function initializeManualActionsHub() {
 }
 
 initializeManualActionsHub();
+
+(function initializeAdminBookingButtons() {
+    const modal = document.getElementById("adminBookingsModal");
+    const triggers = document.querySelectorAll(".admin-bookings-trigger");
+
+    if (!modal || triggers.length === 0) {
+        return;
+    }
+
+    const titleEl = document.getElementById("adminBookingsModalTitle");
+    const subtitleEl = document.getElementById("adminBookingsModalSubtitle");
+    const statusEl = document.getElementById("adminBookingsModalStatus");
+    const closeBtn = document.getElementById("adminBookingsModalClose");
+    const loadingEl = document.getElementById("adminBookingsLoading");
+    const errorEl = document.getElementById("adminBookingsError");
+    const emptyEl = document.getElementById("adminBookingsEmpty");
+    const listEl = document.getElementById("adminBookingsList");
+    const listView = document.getElementById("adminBookingsListView");
+    const editView = document.getElementById("adminBookingEditView");
+    const deleteView = document.getElementById("adminBookingDeleteView");
+    const editLabelEl = document.getElementById("adminBookingEditLabel");
+    const deleteLabelEl = document.getElementById("adminBookingDeleteLabel");
+    const editForm = document.getElementById("adminBookingEditForm");
+    const deleteForm = document.getElementById("adminBookingDeleteForm");
+    const deleteReasonField = document.getElementById(
+        "adminBookingDeleteReasonField",
+    );
+    const editBackBtn = document.getElementById("adminBookingEditBack");
+    const deleteBackBtn = document.getElementById("adminBookingDeleteBack");
+    const editCancelBtn = document.getElementById("adminBookingEditCancel");
+    const deleteCancelBtn = document.getElementById("adminBookingDeleteCancel");
+    const sessionAtInput = document.getElementById("adminBookingSessionAt");
+    const timezoneInput = document.getElementById("adminBookingSessionTimezone");
+    const durationInput = document.getElementById("adminBookingDuration");
+    const meetingTypeInput = document.getElementById("adminBookingMeetingType");
+    const meetingLinkInput = document.getElementById("adminBookingMeetingLink");
+    const statusInput = document.getElementById("adminBookingStatusField");
+    const approvalStatusInput = document.getElementById(
+        "adminBookingApprovalStatus",
+    );
+    const outcomeInput = document.getElementById("adminBookingOutcome");
+    const completionSourceInput = document.getElementById(
+        "adminBookingCompletionSource",
+    );
+    const outcomeNoteInput = document.getElementById("adminBookingOutcomeNote");
+    const adminNoteInput = document.getElementById("adminBookingAdminNote");
+    const deleteReasonInput = document.getElementById("adminBookingDeleteReason");
+    const csrfToken =
+        document.querySelector('meta[name="csrf-token"]')?.content || "";
+
+    if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+    }
+
+    const state = {
+        trigger: null,
+        entityType: "",
+        entityId: "",
+        entityLabel: "",
+        preferredMode: "edit",
+        directDeleteUrl: "",
+        directDeleteKind: "",
+        selectedBookingId: null,
+        options: {},
+        bookings: [],
+    };
+
+    function replaceTokens(template, values) {
+        return Object.entries(values).reduce(
+            (carry, [token, value]) => carry.replaceAll(token, String(value)),
+            template,
+        );
+    }
+
+    function routeFromTemplate(templateName, values) {
+        const template = modal.dataset[templateName] || "";
+        return replaceTokens(template, values);
+    }
+
+    function titleCaseKind(kind) {
+        if (!kind) {
+            return "Item";
+        }
+
+        return String(kind).charAt(0).toUpperCase() + String(kind).slice(1);
+    }
+
+    function setStatus(message = "", type = "success") {
+        if (!statusEl) {
+            return;
+        }
+
+        if (!message) {
+            statusEl.textContent = "";
+            statusEl.className = "admin-bookings-modal__status hidden";
+            return;
+        }
+
+        statusEl.textContent = message;
+        statusEl.className = `admin-bookings-modal__status admin-bookings-modal__status--${type}`;
+    }
+
+    function setError(message = "") {
+        if (!errorEl) {
+            return;
+        }
+
+        errorEl.textContent = message;
+        errorEl.classList.toggle("hidden", !message);
+    }
+
+    function setLoading(isLoading) {
+        loadingEl?.classList.toggle("hidden", !isLoading);
+    }
+
+    function setModalOpen(isOpen) {
+        if (typeof modal.showModal === "function") {
+            if (isOpen && !modal.open) {
+                modal.showModal();
+            } else if (!isOpen && modal.open) {
+                modal.close();
+            }
+        }
+
+        modal.hidden = !isOpen;
+        modal.classList.toggle("hidden", !isOpen);
+        modal.classList.toggle("open", isOpen);
+        modal.style.display = isOpen ? "flex" : "none";
+        document.body.classList.toggle("admin-modal-open", isOpen);
+    }
+
+    function showView(name) {
+        listView?.classList.toggle("hidden", name !== "list");
+        editView?.classList.toggle("hidden", name !== "edit");
+        deleteView?.classList.toggle("hidden", name !== "delete");
+    }
+
+    function clearFormErrors(form) {
+        form?.querySelectorAll("[data-error-for]").forEach((node) => {
+            node.textContent = "";
+        });
+    }
+
+    function applyFormErrors(form, errors = {}) {
+        Object.entries(errors).forEach(([field, messages]) => {
+            const target = form?.querySelector(`[data-error-for="${field}"]`);
+            if (target) {
+                target.textContent = Array.isArray(messages)
+                    ? messages[0]
+                    : String(messages || "");
+            }
+        });
+    }
+
+    function renderSelectOptions(select, options, selectedValue) {
+        if (!select) {
+            return;
+        }
+
+        select.innerHTML = Object.entries(options || {})
+            .map(
+                ([value, label]) =>
+                    `<option value="${escapeHtml(value)}"${String(selectedValue) === String(value) ? " selected" : ""}>${escapeHtml(label)}</option>`,
+            )
+            .join("");
+    }
+
+    function bookingById(bookingId) {
+        return state.bookings.find(
+            (booking) => Number(booking.id) === Number(bookingId),
+        );
+    }
+
+    function updateRowCounts() {
+        if (!state.trigger) {
+            return;
+        }
+
+        const count = state.bookings.length;
+        const row = state.trigger.closest("tr");
+
+        row?.querySelectorAll("[data-booking-count-cell]").forEach((node) => {
+            node.textContent = String(count);
+        });
+
+        row?.querySelectorAll("[data-booking-count-label]").forEach((node) => {
+            node.textContent = String(count);
+        });
+
+        row?.querySelectorAll(".admin-bookings-trigger").forEach((button) => {
+            button.dataset.bookingCount = String(count);
+            button.disabled = count < 1;
+        });
+    }
+
+    function renderList() {
+        if (!listEl || !emptyEl) {
+            return;
+        }
+
+        if (state.bookings.length < 1) {
+            listEl.innerHTML = "";
+            emptyEl.classList.remove("hidden");
+            return;
+        }
+
+        emptyEl.classList.add("hidden");
+        listEl.innerHTML = state.bookings
+            .map(
+                (booking) => `
+                    <article class="admin-bookings-item" data-booking-id="${escapeHtml(booking.id)}">
+                        <div class="admin-bookings-item__content">
+                            <div class="admin-bookings-item__title-row">
+                                <h4>#${escapeHtml(booking.id)} · ${escapeHtml(booking.service_name)}</h4>
+                                <div class="admin-bookings-item__chips">
+                                    <span class="admin-bookings-chip">${escapeHtml(booking.status_label)}</span>
+                                    <span class="admin-bookings-chip admin-bookings-chip--muted">${escapeHtml(booking.session_outcome_label)}</span>
+                                </div>
+                            </div>
+                            <p>${escapeHtml(booking.student_name)} · ${escapeHtml(booking.mentor_name)}</p>
+                            <p>${escapeHtml(booking.session_at_display)} · ${escapeHtml(booking.session_timezone)}</p>
+                        </div>
+                        <div class="admin-bookings-item__actions">
+                            <button class="ghost-btn admin-bookings-item__button" type="button" data-booking-edit="${escapeHtml(booking.id)}"${booking.can_edit ? "" : " disabled"}>Edit</button>
+                            <button class="ghost-btn admin-bookings-item__button admin-bookings-item__button--danger" type="button" data-booking-delete="${escapeHtml(booking.id)}"${booking.can_cancel ? "" : " disabled"}>Delete</button>
+                        </div>
+                    </article>
+                `,
+            )
+            .join("");
+    }
+
+    function populateEditForm(booking) {
+        if (!booking) {
+            return;
+        }
+
+        if (editLabelEl) {
+            editLabelEl.textContent = `Update booking #${booking.id} for ${booking.student_name} with ${booking.mentor_name}.`;
+        }
+
+        sessionAtInput.value = booking.session_at_input || "";
+        timezoneInput.value = booking.session_timezone || "";
+        durationInput.value = String(booking.duration_minutes ?? 60);
+        meetingLinkInput.value = booking.meeting_link || "";
+        outcomeNoteInput.value = booking.session_outcome_note || "";
+        adminNoteInput.value = "";
+
+        renderSelectOptions(
+            meetingTypeInput,
+            state.options.meeting_types,
+            booking.meeting_type,
+        );
+        renderSelectOptions(statusInput, state.options.statuses, booking.status);
+        renderSelectOptions(
+            approvalStatusInput,
+            state.options.approval_statuses,
+            booking.approval_status,
+        );
+        renderSelectOptions(
+            outcomeInput,
+            state.options.session_outcomes,
+            booking.session_outcome,
+        );
+        renderSelectOptions(
+            completionSourceInput,
+            state.options.completion_sources,
+            booking.completion_source,
+        );
+    }
+
+    function openEditView(bookingId) {
+        const booking = bookingById(bookingId);
+        if (!booking) {
+            return;
+        }
+
+        state.selectedBookingId = booking.id;
+        clearFormErrors(editForm);
+        populateEditForm(booking);
+        setStatus("");
+        showView("edit");
+    }
+
+    function openDeleteView(bookingId) {
+        if (!bookingId && state.directDeleteUrl) {
+            state.selectedBookingId = null;
+            clearFormErrors(deleteForm);
+            deleteReasonInput.value = "";
+            deleteReasonInput.required = false;
+            deleteReasonField?.classList.add("hidden");
+
+            if (deleteLabelEl) {
+                deleteLabelEl.textContent = `Delete ${state.entityLabel} and all related data. This action cannot be undone.`;
+            }
+
+            const deleteHeading = deleteView?.querySelector("h4");
+            if (deleteHeading) {
+                deleteHeading.textContent = `Delete ${state.directDeleteKind || "item"}`;
+            }
+
+            setStatus("");
+            showView("delete");
+            return;
+        }
+
+        const booking = bookingById(bookingId);
+        if (!booking) {
+            return;
+        }
+
+        state.selectedBookingId = booking.id;
+        clearFormErrors(deleteForm);
+        deleteReasonInput.value = "";
+        deleteReasonInput.required = true;
+        deleteReasonField?.classList.remove("hidden");
+
+        if (deleteLabelEl) {
+            deleteLabelEl.textContent = `Cancel booking #${booking.id} for ${booking.student_name} with ${booking.mentor_name}.`;
+        }
+
+        const deleteHeading = deleteView?.querySelector("h4");
+        if (deleteHeading) {
+            deleteHeading.textContent = "Delete booking";
+        }
+
+        setStatus("");
+        showView("delete");
+    }
+
+    async function loadBookings(trigger) {
+        state.trigger = trigger;
+        state.entityType = trigger.dataset.entityType || "";
+        state.entityId = trigger.dataset.entityId || "";
+        state.entityLabel = trigger.dataset.entityLabel || "this row";
+        state.preferredMode = trigger.dataset.bookingMode || "edit";
+        state.directDeleteUrl = trigger.dataset.directDeleteUrl || "";
+        state.directDeleteKind = trigger.dataset.directDeleteKind || "";
+        state.selectedBookingId = null;
+        state.bookings = [];
+
+        if (state.preferredMode === "delete" && state.directDeleteUrl) {
+            if (titleEl) {
+                titleEl.textContent = `Delete ${state.directDeleteKind || "item"}`;
+            }
+
+            if (subtitleEl) {
+                subtitleEl.textContent = `Confirm deletion for ${state.entityLabel}.`;
+            }
+
+            setStatus("");
+            setError("");
+            renderList();
+            showView("list");
+            setModalOpen(true);
+            openDeleteView(null);
+            return;
+        }
+
+        if (titleEl) {
+            titleEl.textContent =
+                state.preferredMode === "delete"
+                    ? "Delete Bookings"
+                    : "Edit Bookings";
+        }
+
+        if (subtitleEl) {
+            subtitleEl.textContent = `Loading bookings for ${state.entityLabel}…`;
+        }
+
+        setStatus("");
+        setError("");
+        setLoading(true);
+        renderList();
+        showView("list");
+        setModalOpen(true);
+
+        try {
+            const response = await fetch(
+                routeFromTemplate("relatedUrlTemplate", {
+                    "__ENTITY_TYPE__": state.entityType,
+                    "__ENTITY_ID__": state.entityId,
+                }),
+                {
+                    headers: {
+                        Accept: "application/json",
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                    credentials: "same-origin",
+                },
+            );
+            const payload = await response.json();
+
+            if (!response.ok) {
+                throw new Error(payload.message || "Unable to load bookings.");
+            }
+
+            state.options = payload.options || {};
+            state.bookings = Array.isArray(payload.bookings)
+                ? payload.bookings
+                : [];
+
+            if (titleEl) {
+                titleEl.textContent = `${
+                    state.preferredMode === "delete"
+                        ? "Delete Bookings"
+                        : "Edit Bookings"
+                } · ${payload.entity?.label || state.entityLabel}`;
+            }
+
+            if (subtitleEl) {
+                const count = state.bookings.length;
+                subtitleEl.textContent = `${count} related booking${count === 1 ? "" : "s"} ready to manage.`;
+            }
+
+            renderList();
+            updateRowCounts();
+
+            if (state.bookings.length === 1) {
+                const booking = state.bookings[0];
+                if (state.preferredMode === "delete") {
+                    openDeleteView(booking.id);
+                } else {
+                    openEditView(booking.id);
+                }
+            }
+        } catch (error) {
+            setError(error.message || "Unable to load bookings.");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function submitEdit(event) {
+        event.preventDefault();
+
+        if (!state.selectedBookingId) {
+            return;
+        }
+
+        clearFormErrors(editForm);
+        setStatus("");
+
+        const submitButton = document.getElementById("adminBookingEditSubmit");
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+
+        try {
+            const response = await fetch(
+                routeFromTemplate("updateUrlTemplate", {
+                    "__BOOKING_ID__": state.selectedBookingId,
+                }),
+                {
+                    method: "PATCH",
+                    headers: {
+                        Accept: "application/json",
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrfToken,
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                    credentials: "same-origin",
+                    body: JSON.stringify({
+                        session_at: sessionAtInput.value,
+                        session_timezone: timezoneInput.value,
+                        duration_minutes: durationInput.value,
+                        meeting_link: meetingLinkInput.value,
+                        meeting_type: meetingTypeInput.value,
+                        status: statusInput.value,
+                        approval_status: approvalStatusInput.value,
+                        session_outcome: outcomeInput.value,
+                        completion_source: completionSourceInput.value,
+                        session_outcome_note: outcomeNoteInput.value,
+                        admin_note: adminNoteInput.value,
+                    }),
+                },
+            );
+            const payload = await response.json();
+
+            if (!response.ok) {
+                if (response.status === 422) {
+                    applyFormErrors(editForm, payload.errors || {});
+                }
+
+                throw new Error(payload.message || "Unable to update booking.");
+            }
+
+            state.bookings = state.bookings.map((booking) =>
+                Number(booking.id) === Number(payload.booking?.id)
+                    ? payload.booking
+                    : booking,
+            );
+            renderList();
+            updateRowCounts();
+            showView("list");
+            setStatus(payload.message || "Booking updated successfully.");
+        } catch (error) {
+            if (!editForm.querySelector("[data-error-for]:not(:empty)")) {
+                setStatus(
+                    error.message || "Unable to update booking.",
+                    "error",
+                );
+            }
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+        }
+    }
+
+    async function submitDelete(event) {
+        event.preventDefault();
+
+        if (!state.directDeleteUrl && !state.selectedBookingId) {
+            return;
+        }
+
+        clearFormErrors(deleteForm);
+        setStatus("");
+
+        const submitButton = document.getElementById("adminBookingDeleteSubmit");
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+
+        try {
+            const url = state.directDeleteUrl
+                ? state.directDeleteUrl
+                : routeFromTemplate("destroyUrlTemplate", {
+                      "__BOOKING_ID__": state.selectedBookingId,
+                  });
+            const response = await fetch(
+                url,
+                {
+                    method: "DELETE",
+                    headers: {
+                        Accept: "application/json",
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrfToken,
+                        "X-Requested-With": "XMLHttpRequest",
+                    },
+                    credentials: "same-origin",
+                    body: JSON.stringify(
+                        state.directDeleteUrl
+                            ? {}
+                            : {
+                                  reason: deleteReasonInput.value,
+                              },
+                    ),
+                },
+            );
+            const payload = await response.json();
+
+            if (!response.ok) {
+                if (response.status === 422) {
+                    applyFormErrors(deleteForm, payload.errors || {});
+                }
+
+                throw new Error(payload.message || "Unable to delete booking.");
+            }
+
+            if (state.directDeleteUrl) {
+                state.trigger?.closest("tr")?.remove();
+                setModalOpen(false);
+                window.setTimeout(() => {
+                    window.AppToast?.show({
+                        type: "success",
+                        title: `${titleCaseKind(state.directDeleteKind)} deleted`,
+                        message:
+                            payload.message ||
+                                `${state.entityLabel} and related data were deleted successfully.`,
+                    });
+                }, 40);
+                return;
+            }
+
+            state.bookings = state.bookings.filter(
+                (booking) => Number(booking.id) !== Number(payload.booking?.id),
+            );
+            renderList();
+            updateRowCounts();
+
+            if (subtitleEl) {
+                const count = state.bookings.length;
+                subtitleEl.textContent = `${count} related booking${count === 1 ? "" : "s"} ready to manage.`;
+            }
+
+            showView("list");
+            setStatus(payload.message || "Booking cancelled successfully.");
+            window.setTimeout(() => {
+                window.AppToast?.show({
+                    type: "success",
+                    title: "Booking deleted",
+                    message:
+                        payload.message || "Booking deleted successfully.",
+                });
+            }, 40);
+        } catch (error) {
+            if (!deleteForm.querySelector("[data-error-for]:not(:empty)")) {
+                setStatus(
+                    error.message || "Unable to delete booking.",
+                    "error",
+                );
+            }
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+        }
+    }
+
+    triggers.forEach((trigger) => {
+        trigger.addEventListener("click", () => loadBookings(trigger));
+    });
+
+    listEl?.addEventListener("click", (event) => {
+        const editTrigger = event.target.closest("[data-booking-edit]");
+        if (editTrigger) {
+            openEditView(editTrigger.dataset.bookingEdit);
+            return;
+        }
+
+        const deleteTrigger = event.target.closest("[data-booking-delete]");
+        if (deleteTrigger) {
+            openDeleteView(deleteTrigger.dataset.bookingDelete);
+        }
+    });
+
+    [editBackBtn, deleteBackBtn, editCancelBtn, deleteCancelBtn].forEach(
+        (button) => {
+            button?.addEventListener("click", () => showView("list"));
+        },
+    );
+
+    closeBtn?.addEventListener("click", () => setModalOpen(false));
+    modal.addEventListener("click", (event) => {
+        if (event.target === modal) {
+            setModalOpen(false);
+        }
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && modal.classList.contains("open")) {
+            setModalOpen(false);
+        }
+    });
+
+    editForm?.addEventListener("submit", submitEdit);
+    deleteForm?.addEventListener("submit", submitDelete);
+})();

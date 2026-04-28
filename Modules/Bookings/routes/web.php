@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Bookings\app\Http\Controllers\Admin\BookingManagementController;
 use Modules\Bookings\app\Http\Controllers\Admin\BookingOutcomeController;
 use Modules\Bookings\app\Http\Controllers\BookingChatController;
 use Modules\Bookings\app\Http\Controllers\Mentor\AvailabilityController as MentorAvailabilityController;
@@ -21,6 +22,7 @@ Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () 
     Route::get('/student/book-mentor/{id}', [BookingController::class, 'create'])->name('student.book-mentor');
     Route::get('/student/mentor/{id}/book', [BookingController::class, 'create'])->name('student.mentor.book');
     Route::post('/student/bookings', [BookingController::class, 'store'])->name('student.bookings.store');
+    Route::get('/student/bookings/{id}/join-meeting', [BookingController::class, 'joinMeeting'])->middleware('booking.participant')->name('student.bookings.join-meeting');
     Route::get('/student/bookings/{id}', [BookingController::class, 'show'])->middleware('booking.participant')->name('student.bookings.show');
     Route::patch('/student/bookings/{id}/cancel', [BookingController::class, 'cancel'])->middleware('booking.participant')->name('student.bookings.cancel');
     Route::get('/student/bookings/{id}/chat', [BookingChatController::class, 'index'])->middleware('booking.participant')->name('student.bookings.chat.index');
@@ -47,4 +49,10 @@ Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
 
 Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin/manual-actions')->name('admin.manual-actions.')->group(function () {
     Route::patch('/bookings/outcome', [BookingOutcomeController::class, 'update'])->name('bookings.outcome.update');
+});
+
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin/bookings')->name('admin.bookings.')->group(function () {
+    Route::get('/related/{entityType}/{entityId}', [BookingManagementController::class, 'related'])->name('related');
+    Route::patch('/{booking}', [BookingManagementController::class, 'update'])->name('update');
+    Route::delete('/{booking}', [BookingManagementController::class, 'destroy'])->name('destroy');
 });

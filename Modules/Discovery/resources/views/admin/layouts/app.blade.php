@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
     <title>@yield('admin_title', 'Admin Dashboard') - Grads Paths</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -72,6 +73,7 @@
       </section>
     </div>
 
+    @include('layouts.partials.toasts')
     @yield('admin_page_data')
     <script src="{{ asset('assets/js/demo12.js') }}?v={{ filemtime(public_path('assets/js/demo12.js')) }}"></script>
   </body>

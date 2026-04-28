@@ -461,7 +461,7 @@ body {
 
 .settings-columns {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.92fr);
+  grid-template-columns: 1fr;
   gap: 22px;
   align-items: start;
 }
@@ -470,6 +470,18 @@ body {
   display: grid;
   gap: 18px;
   align-content: start;
+}
+
+.settings-flex-row {
+  display: flex;
+  gap: 18px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.settings-flex-card {
+  flex: 1 1 320px;
+  min-width: 0;
 }
 
 .settings-card {
@@ -539,13 +551,17 @@ body {
 }
 
 .settings-university-picker {
+  overflow: visible;
+}
+
+.settings-picker-anchor {
   position: relative;
 }
 
 .settings-picker-results {
   position: absolute;
-  z-index: 30;
-  top: calc(100% - 24px);
+  z-index: 120;
+  top: calc(100% + 8px);
   left: 0;
   right: 0;
   max-height: 260px;
@@ -1184,6 +1200,10 @@ body {
   .field-row {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+
+  .settings-flex-row {
+    flex-direction: column;
   }
 
   .service-options {

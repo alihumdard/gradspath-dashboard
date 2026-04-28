@@ -42,6 +42,7 @@
           <th>Revenue</th>
           <th>Mentors Offering</th>
           <th>Popularity Rank</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -50,10 +51,27 @@
             <td><strong>{{ $adminService['service_name'] ?: '-' }}</strong></td>
             <td>{{ $adminService['format'] ?: '-' }}</td>
             <td>{{ $adminService['set_price'] ?: '-' }}</td>
-            <td>{{ $adminService['bookings'] }}</td>
+            <td><span data-booking-count-cell>{{ $adminService['bookings'] }}</span></td>
             <td>{{ $formatAdminMoney($adminService['revenue']) }}</td>
             <td>{{ $adminService['mentors_offering'] }}</td>
             <td>{{ $adminService['popularity_rank'] }}</td>
+            <td>
+              <div class="admin-bookings-actions">
+                <button
+                  class="ghost-btn admin-bookings-trigger admin-bookings-trigger--danger"
+                  type="button"
+                  data-entity-type="service"
+                  data-entity-id="{{ $adminService['id'] }}"
+                  data-entity-label="{{ $adminService['service_name'] }}"
+                  data-booking-count="{{ $adminService['booking_count'] }}"
+                  data-booking-mode="delete"
+                  data-direct-delete-url="{{ route('admin.services.destroy', $adminService['id']) }}"
+                  data-direct-delete-kind="service"
+                >
+                  Delete
+                </button>
+              </div>
+            </td>
           </tr>
         @endforeach
       </tbody>
@@ -69,4 +87,10 @@
       <canvas id="servicesChart"></canvas>
     </div>
   </div>
+
+  @include('discovery::admin.partials.bookings-manager-modal')
+@endsection
+
+@section('admin_page_data')
+  @include('discovery::admin.partials.bookings-manager-page-data')
 @endsection

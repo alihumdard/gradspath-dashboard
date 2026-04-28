@@ -82,12 +82,14 @@ class AdminMentorsTableService
                 : '-';
 
             return [
+                'id' => $mentor->id,
                 'name' => $mentor->user?->name ?: '-',
                 'email' => $mentor->user?->email ?: '-',
                 'program' => $programLabel,
                 'program_filter' => $programLabel !== '-' ? $programLabel : '',
                 'school' => $schoolLabel,
                 'total_meetings' => $countableBookings->count(),
+                'booking_count' => $countableBookings->count(),
                 'total_revenue' => $knownBookingAmounts === [] ? null : array_sum($knownBookingAmounts),
                 'free_consult' => $serviceCounts['Free Consultation'],
                 'tutoring' => $serviceCounts['Tutoring'],

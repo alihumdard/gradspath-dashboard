@@ -119,6 +119,26 @@ class BookingController extends Controller
         ]);
     }
 
+    public function joinMeeting(int $id): RedirectResponse
+    {
+        $booking = Booking::query()->findOrFail($id);
+        Gate::authorize('view', $booking);
+
+        if (! $booking->meetingAccessAllowed()) {
+            return redirect()
+                ->route('student.bookings.show', $booking->id)
+                ->with('error', $booking->meetingAccessMessage());
+        }
+
+        if (! filled($booking->meeting_link)) {
+            return redirect()
+                ->route('student.bookings.show', $booking->id)
+                ->with('error', 'Meeting link is not ready yet.');
+        }
+
+        return redirect()->away($booking->meeting_link);
+    }
+
     public function cancel(CancelBookingRequest $request, int $id): RedirectResponse
     {
         $booking = Booking::query()->findOrFail($id);
@@ -203,11 +223,14 @@ class BookingController extends Controller
             'sessionDateLabel' => $sessionAt?->format('l, F j, Y'),
             'sessionTimeLabel' => $sessionAt?->format('g:i A'),
             'sessionMonthLabel' => $sessionAt?->format('F Y'),
-            'meetingLink' => $booking->meeting_link,
+            'meetingLink' => $this->meetingLinkForBooking($booking),
             'meetingProvider' => $this->meetingPresenter->providerLabel($booking),
             'meetingLinkLabel' => $this->meetingPresenter->linkLabel($booking),
             'meetingLinkStatus' => (string) ($booking->calendar_sync_status ?: 'not_synced'),
             'meetingLinkStatusMessage' => $this->meetingPresenter->statusMessage($booking),
+            'meetingAccessAllowed' => $this->meetingPresenter->accessAllowed($booking),
+            'meetingAccessMessage' => $this->meetingPresenter->accessMessage($booking),
+            'meetingAccessOpensAt' => $this->meetingPresenter->accessOpensAt($booking),
             'meetingState' => $this->meetingPresenter->scheduledState($booking),
             'meetingStateLabel' => $this->meetingPresenter->scheduledStateLabel($booking),
             'attendanceStatus' => $this->meetingPresenter->attendanceStatus($booking),
@@ -284,5 +307,21 @@ class BookingController extends Controller
             'professional' => 'Professional Mentor',
             default => null,
         };
+    }
+
+    private function meetingLinkForBooking(Booking $booking): ?string
+    {
+        if ($this->isSyncedZoomBooking($booking)) {
+            return route('student.bookings.join-meeting', $booking->id);
+        }
+
+        return $booking->meeting_link;
+    }
+
+    private function isSyncedZoomBooking(Booking $booking): bool
+    {
+        return $booking->calendar_provider === 'zoom'
+            && $booking->calendar_sync_status === 'synced'
+            && filled($booking->external_calendar_event_id);
     }
 }

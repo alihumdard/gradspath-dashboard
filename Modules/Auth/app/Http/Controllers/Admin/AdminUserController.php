@@ -3,12 +3,14 @@
 namespace Modules\Auth\app\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Modules\Auth\app\Models\User;
+use Modules\Settings\app\Models\Mentor;
 
 class AdminUserController extends Controller
 {
@@ -32,15 +34,51 @@ class AdminUserController extends Controller
         return view('discovery::admin.admin', compact('user'));
     }
 
-    public function destroy(int $id): RedirectResponse
+    public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
     {
         $user = User::findOrFail($id);
+        abort_if((int) $user->id === (int) Auth::id(), 422, 'You cannot delete your own admin account.');
+        $before = $user->toArray();
         $user->delete();
 
-        $this->logAction('delete_user', 'users', $id, $user->toArray(), null);
+        $this->logAction('delete_user', 'users', $id, $before, null);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => "User {$before['name']} deleted successfully.",
+            ]);
+        }
 
         return redirect()->route('admin.users.index')
-            ->with('success', "User {$user->name} deleted.");
+            ->with('success', "User {$before['name']} deleted.");
+    }
+
+    public function destroyMentor(Request $request, int $id): RedirectResponse|JsonResponse
+    {
+        $mentor = Mentor::query()->with('user')->findOrFail($id);
+        $mentorName = $mentor->user?->name ?: "Mentor #{$mentor->id}";
+        $before = [
+            'mentor' => $mentor->toArray(),
+            'user' => $mentor->user?->toArray(),
+        ];
+
+        if ($mentor->user) {
+            abort_if((int) $mentor->user->id === (int) Auth::id(), 422, 'You cannot delete your own admin account.');
+            $mentor->user->delete();
+        } else {
+            $mentor->delete();
+        }
+
+        $this->logAction('delete_mentor', 'mentors', $id, $before, null);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => "Mentor {$mentorName} deleted successfully.",
+            ]);
+        }
+
+        return redirect()->route('admin.mentors')
+            ->with('success', "Mentor {$mentorName} deleted.");
     }
 
     public function toggleActive(int $id): RedirectResponse

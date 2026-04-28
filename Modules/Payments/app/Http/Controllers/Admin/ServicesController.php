@@ -3,6 +3,7 @@
 namespace Modules\Payments\app\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -142,6 +143,38 @@ class ServicesController extends Controller
         );
 
         return $this->redirectToManualActions('pricing', 'Service updated successfully.');
+    }
+
+    public function destroy(Request $request, int $id): RedirectResponse|JsonResponse
+    {
+        $service = ServiceConfig::query()->findOrFail($id);
+        $before = $service->toArray();
+        $serviceName = $service->service_name;
+
+        \DB::transaction(function () use ($service) {
+            $service->bookings()->delete();
+            $service->delete();
+        });
+
+        $this->audit->log(
+            Auth::user(),
+            'manual_service_delete',
+            'services_config',
+            $id,
+            $before,
+            null,
+            "Deleted service {$serviceName} and related bookings."
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => "Service {$serviceName} deleted successfully.",
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.services')
+            ->with('success', "Service {$serviceName} deleted successfully.");
     }
 
     private function generateUniqueSlug(string $serviceName): string

@@ -4,6 +4,7 @@ namespace Modules\MentorNotes\app\Http\Controllers\Mentor;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -45,6 +46,7 @@ class MentorNotesController extends Controller
     {
         $mentor = $this->currentMentor();
         $booking = $this->resolveHostedBooking($mentor, $bookingId);
+        $this->ensureMentorNotesAllowed($booking);
         $note = $this->findMentorBookingNote($mentor, $booking);
 
         return view('mentor-notes::mentor.notes', [
@@ -65,6 +67,7 @@ class MentorNotesController extends Controller
     {
         $mentor = $this->currentMentor();
         $booking = $this->resolveHostedBooking($mentor, $bookingId);
+        $this->ensureMentorNotesAllowed($booking);
 
         $note = MentorNote::query()->updateOrCreate(
             [
@@ -124,6 +127,19 @@ class MentorNotesController extends Controller
             ->where('booking_id', $booking->id)
             ->where('is_deleted', false)
             ->first();
+    }
+
+    private function ensureMentorNotesAllowed(Booking $booking): void
+    {
+        if ($booking->mentorNotesAllowed()) {
+            return;
+        }
+
+        throw new HttpResponseException(
+            redirect()
+                ->route('mentor.bookings.show', $booking->id)
+                ->with('error', $booking->mentorNotesMessage())
+        );
     }
 
     private function transformUsers(Collection $notes): array

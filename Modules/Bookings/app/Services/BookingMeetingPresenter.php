@@ -6,6 +6,21 @@ use Modules\Bookings\app\Models\Booking;
 
 class BookingMeetingPresenter
 {
+    public function accessAllowed(Booking $booking): bool
+    {
+        return $booking->meetingAccessAllowed();
+    }
+
+    public function accessMessage(Booking $booking): string
+    {
+        return $booking->meetingAccessMessage();
+    }
+
+    public function accessOpensAt(Booking $booking): ?string
+    {
+        return $booking->meetingAccessOpensAt()?->toIso8601String();
+    }
+
     public function attendanceStatus(Booking $booking): string
     {
         return $booking->attendance_status ?: 'pending';

@@ -70,19 +70,17 @@ class AuthController extends Controller
     {
         $query = trim((string) $request->query('q', ''));
 
-        if (mb_strlen($query) < 2) {
-            return response()->json([]);
-        }
-
         $universities = University::query()
             ->where('is_active', true)
-            ->where(function ($builder) use ($query): void {
-                $builder
-                    ->where('name', 'like', '%'.$query.'%')
-                    ->orWhere('display_name', 'like', '%'.$query.'%');
+            ->when($query !== '', function ($builder) use ($query): void {
+                $builder->where(function ($queryBuilder) use ($query): void {
+                    $queryBuilder
+                        ->where('name', 'like', '%'.$query.'%')
+                        ->orWhere('display_name', 'like', '%'.$query.'%');
+                });
             })
             ->orderByRaw('COALESCE(display_name, name)')
-            ->limit(10)
+            ->limit(5)
             ->get(['id', 'name', 'display_name', 'country', 'state_province'])
             ->map(fn (University $university): array => [
                 'id' => $university->id,

@@ -79,6 +79,7 @@ class AdminUsersTableService
                 ->first()?->session_at;
 
             return [
+                'id' => $student->id,
                 'name' => $student->name,
                 'email' => $student->email,
                 'program' => $programLabel,
@@ -86,6 +87,7 @@ class AdminUsersTableService
                 'institution' => $institutionLabel,
                 'institution_filter' => $institutionLabel !== '-' ? $institutionLabel : '',
                 'total_meetings' => $bookings->count(),
+                'booking_count' => $bookings->count(),
                 'total_spent' => $knownBookingAmounts === [] ? null : array_sum($knownBookingAmounts),
                 'free_consult' => $serviceCounts['Free Consultation'],
                 'tutoring' => $serviceCounts['Tutoring'],

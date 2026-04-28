@@ -38,38 +38,50 @@
               <section class="settings-card">
                 <div class="settings-card-head">
                   <h2>Profile Basics</h2>
-                  <p>Your public identity and academic details.</p>
+                  <p>Your account identity and verification details.</p>
                 </div>
 
-                <div class="field">
-                  <label for="fullName">Full Name</label>
-                  <input type="text" id="fullName" name="name" value="{{ old('name', $user->name ?? '') }}" placeholder="Enter your full name" />
-                  <p class="error-text" id="nameError">{{ $viewErrors->first('name') }}</p>
-                </div>
-
-                <div class="field">
-                  <label for="email">Email</label>
-                  <input type="email" id="email" name="email" value="{{ old('email', $user->email ?? '') }}" placeholder="Enter your email address" />
-                  <p class="helper-text">This is your main account email.</p>
-                  <p class="error-text" id="emailError">{{ $viewErrors->first('email') }}</p>
-                </div>
-
-                <div class="field">
-                  <label for="mentorType">Mentor Type</label>
-                  <div class="select-wrap">
-                    <select id="mentorType" name="mentor_type">
-                      <option value="graduate" @selected(old('mentor_type', $mentor->mentor_type ?? 'graduate') === 'graduate')>Grad Mentor</option>
-                      <option value="professional" @selected(old('mentor_type', $mentor->mentor_type ?? 'graduate') === 'professional')>Professional</option>
-                    </select>
+                <div class="field-row">
+                  <div class="field">
+                    <label for="fullName">Full Name</label>
+                    <input type="text" id="fullName" name="name" value="{{ old('name', $user->name ?? '') }}" placeholder="Enter your full name" />
+                    <p class="error-text" id="nameError">{{ $viewErrors->first('name') }}</p>
                   </div>
-                  <p class="helper-text">Graduate mentors must provide a .edu email for verification.</p>
-                  <p class="error-text" id="mentorTypeError">{{ $viewErrors->first('mentor_type') }}</p>
+
+                  <div class="field">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" value="{{ old('email', $user->email ?? '') }}" placeholder="Enter your email address" />
+                    <p class="helper-text">This is your main account email.</p>
+                    <p class="error-text" id="emailError">{{ $viewErrors->first('email') }}</p>
+                  </div>
                 </div>
 
-                <div class="field">
-                  <label for="eduEmail">School / Verification Email</label>
-                  <input type="email" id="eduEmail" name="edu_email" value="{{ old('edu_email', $mentor->edu_email ?? '') }}" placeholder="name@school.edu" />
-                  <p class="error-text" id="eduEmailError">{{ $viewErrors->first('edu_email') }}</p>
+                <div class="field-row">
+                  <div class="field">
+                    <label for="mentorType">Mentor Type</label>
+                    <div class="select-wrap">
+                      <select id="mentorType" name="mentor_type">
+                        <option value="graduate" @selected(old('mentor_type', $mentor->mentor_type ?? 'graduate') === 'graduate')>Grad Mentor</option>
+                        <option value="professional" @selected(old('mentor_type', $mentor->mentor_type ?? 'graduate') === 'professional')>Professional</option>
+                      </select>
+                    </div>
+                    <p class="helper-text">Graduate mentors must provide a .edu email for verification.</p>
+                    <p class="error-text" id="mentorTypeError">{{ $viewErrors->first('mentor_type') }}</p>
+                  </div>
+
+                  <div class="field">
+                    <label for="eduEmail">School / Verification Email</label>
+                    <input type="email" id="eduEmail" name="edu_email" value="{{ old('edu_email', $mentor->edu_email ?? '') }}" placeholder="name@school.edu" />
+                    <p class="error-text" id="eduEmailError">{{ $viewErrors->first('edu_email') }}</p>
+                  </div>
+                </div>
+
+              </section>
+
+              <section class="settings-card">
+                <div class="settings-card-head">
+                  <h2>Academic Profile</h2>
+                  <p>Your academic background and how students see your school context.</p>
                 </div>
 
                 <div class="field-row">
@@ -87,21 +99,23 @@
                     data-programs-url="{{ route('mentor.settings.university-programs') }}"
                   >
                     <label for="mentorUniversitySearch">University</label>
-                    <input
-                      type="text"
-                      id="mentorUniversitySearch"
-                      value="{{ old('university_label', $selectedUniversity?->display_name ?: $selectedUniversity?->name ?: '') }}"
-                      placeholder="Search universities..."
-                      autocomplete="off"
-                      data-university-search
-                    />
-                    <input
-                      type="hidden"
-                      name="university_id"
-                      value="{{ old('university_id', $selectedUniversityId ?? '') }}"
-                      data-university-id
-                    />
-                    <div class="settings-picker-results" data-university-results hidden></div>
+                    <div class="settings-picker-anchor">
+                      <input
+                        type="text"
+                        id="mentorUniversitySearch"
+                        value="{{ old('university_label', $selectedUniversity?->display_name ?: $selectedUniversity?->name ?: '') }}"
+                        placeholder="Search universities..."
+                        autocomplete="off"
+                        data-university-search
+                      />
+                      <input
+                        type="hidden"
+                        name="university_id"
+                        value="{{ old('university_id', $selectedUniversityId ?? '') }}"
+                        data-university-id
+                      />
+                      <div class="settings-picker-results" data-university-results hidden></div>
+                    </div>
                     <p class="helper-text">Choose the school your public profile should be linked to.</p>
                     <p class="error-text">{{ $viewErrors->first('university_id') }}</p>
                   </div>
@@ -138,12 +152,13 @@
                     </p>
                     <p class="error-text">{{ $viewErrors->first('university_program_id') }}</p>
                   </div>
-                </div>
 
-                <div class="field">
-                  <label for="school">Grad School</label>
-                  <input type="text" id="school" name="grad_school_display" value="{{ old('grad_school_display', $mentor->grad_school_display ?? '') }}" placeholder="Harvard, Wharton, Yale Law..." />
-                  <p class="error-text" id="schoolError">{{ $viewErrors->first('grad_school_display') }}</p>
+                  <div class="field">
+                    <label for="school">Grad School</label>
+                    <input type="text" id="school" name="grad_school_display" value="{{ old('grad_school_display', $mentor->grad_school_display ?? '') }}" placeholder="Harvard, Wharton, Yale Law..." />
+                    <p class="helper-text">This is the school name shown on your profile.</p>
+                    <p class="error-text" id="schoolError">{{ $viewErrors->first('grad_school_display') }}</p>
+                  </div>
                 </div>
               </section>
 
@@ -176,56 +191,60 @@
                   <p>Availability details and links students use to book.</p>
                 </div>
 
-                <div class="field">
-                  <label for="officeHours">Office Hours</label>
-                  <input type="text" id="officeHours" name="office_hours_schedule" value="{{ old('office_hours_schedule', $mentor->office_hours_schedule ?? '') }}" placeholder="Every Tuesday at 5 PM EST" />
-                  <p class="error-text" id="officeHoursError">{{ $viewErrors->first('office_hours_schedule') }}</p>
-                </div>
-
-                <div class="field">
-                  <label for="calendlyLink">Calendly Link</label>
-                  <input type="url" id="calendlyLink" name="calendly_link" value="{{ old('calendly_link', $mentor->calendly_link ?? '') }}" placeholder="https://calendly.com/your-link" />
-                  <p class="error-text" id="calendlyError">{{ $viewErrors->first('calendly_link') }}</p>
-                </div>
-
-                <div class="field">
-                  <label for="settingsTimezone">Timezone</label>
-                  <div class="select-wrap">
-                    <select
-                      id="settingsTimezone"
-                      name="timezone"
-                      data-timezone-autosave-url="{{ $timezoneAutoSaveUrl }}"
-                      data-has-saved-timezone="{{ $hasSavedTimezone ? 'true' : 'false' }}"
-                    >
-                      @foreach ($timezoneOptions as $value => $label)
-                        <option value="{{ $value }}" @selected($selectedTimezone === $value)>{{ $label }} ({{ $value }})</option>
-                      @endforeach
-                    </select>
+                <div class="field-row">
+                  <div class="field">
+                    <label for="officeHours">Office Hours</label>
+                    <input type="text" id="officeHours" name="office_hours_schedule" value="{{ old('office_hours_schedule', $mentor->office_hours_schedule ?? '') }}" placeholder="Every Tuesday at 5 PM EST" />
+                    <p class="error-text" id="officeHoursError">{{ $viewErrors->first('office_hours_schedule') }}</p>
                   </div>
-                  <p class="helper-text">We use your timezone as the default for scheduling and booking display.</p>
-                  <p class="error-text">{{ $viewErrors->first('timezone') }}</p>
+
+                  <div class="field">
+                    <label for="calendlyLink">Calendly Link</label>
+                    <input type="url" id="calendlyLink" name="calendly_link" value="{{ old('calendly_link', $mentor->calendly_link ?? '') }}" placeholder="https://calendly.com/your-link" />
+                    <p class="error-text" id="calendlyError">{{ $viewErrors->first('calendly_link') }}</p>
+                  </div>
                 </div>
 
-                <div class="field">
-                  <label for="isFeatured">Featured Mentor</label>
-                  <div class="slack-box settings-inline-toggle">
-                    <div>
-                      <p class="slack-text" style="margin-bottom: 4px;">Show this mentor in featured sections across discovery.</p>
-                      <p class="helper-text" style="margin: 0;">Turn this on to mark the profile as featured.</p>
+                <div class="field-row">
+                  <div class="field">
+                    <label for="settingsTimezone">Timezone</label>
+                    <div class="select-wrap">
+                      <select
+                        id="settingsTimezone"
+                        name="timezone"
+                        data-timezone-autosave-url="{{ $timezoneAutoSaveUrl }}"
+                        data-has-saved-timezone="{{ $hasSavedTimezone ? 'true' : 'false' }}"
+                      >
+                        @foreach ($timezoneOptions as $value => $label)
+                          <option value="{{ $value }}" @selected($selectedTimezone === $value)>{{ $label }} ({{ $value }})</option>
+                        @endforeach
+                      </select>
                     </div>
-                    <label for="isFeatured" class="settings-switch-label">
-                      <input type="hidden" name="is_featured" value="0" />
-                      <input
-                        type="checkbox"
-                        id="isFeatured"
-                        name="is_featured"
-                        value="1"
-                        @checked((bool) old('is_featured', $mentor->is_featured))
-                      />
-                      <span>{{ old('is_featured', $mentor->is_featured) ? 'Enabled' : 'Disabled' }}</span>
-                    </label>
+                    <p class="helper-text">We use your timezone as the default for scheduling and booking display.</p>
+                    <p class="error-text">{{ $viewErrors->first('timezone') }}</p>
                   </div>
-                  <p class="error-text">{{ $viewErrors->first('is_featured') }}</p>
+
+                  <div class="field">
+                    <label for="isFeatured">Featured Mentor</label>
+                    <div class="slack-box settings-inline-toggle">
+                      <div>
+                        <p class="slack-text" style="margin-bottom: 4px;">Show this mentor in featured sections across discovery.</p>
+                        <p class="helper-text" style="margin: 0;">Turn this on to mark the profile as featured.</p>
+                      </div>
+                      <label for="isFeatured" class="settings-switch-label">
+                        <input type="hidden" name="is_featured" value="0" />
+                        <input
+                          type="checkbox"
+                          id="isFeatured"
+                          name="is_featured"
+                          value="1"
+                          @checked((bool) old('is_featured', $mentor->is_featured))
+                        />
+                        <span>{{ old('is_featured', $mentor->is_featured) ? 'Enabled' : 'Disabled' }}</span>
+                      </label>
+                    </div>
+                    <p class="error-text">{{ $viewErrors->first('is_featured') }}</p>
+                  </div>
                 </div>
               </section>
 

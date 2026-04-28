@@ -84,6 +84,7 @@ it('renders mentor settings with saved profile data', function () {
     $response->assertSee('Mentor Settings');
     $response->assertSee($mentorUser->email);
     $response->assertSee('MBA Mentor');
+    $response->assertSee('Academic Profile');
     $response->assertSee('Wharton');
     $response->assertSee('MBA (Wharton School)');
     $response->assertSee('Program Insights');
