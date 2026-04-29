@@ -625,6 +625,57 @@ it('stores the mentor zoom token after a successful oauth callback', function ()
     ]);
 });
 
+it('moves an existing zoom token to the reconnecting mentor instead of duplicating it', function () {
+    $oldMentorUser = createSettingsUser('mentor');
+    $newMentorUser = createSettingsUser('mentor');
+
+    OauthToken::query()->create([
+        'user_id' => $oldMentorUser->id,
+        'provider' => 'zoom',
+        'provider_user_id' => 'zoom-user-123',
+        'access_token' => 'old-zoom-access-token',
+        'refresh_token' => 'old-zoom-refresh-token',
+        'token_expires_at' => now()->addHour(),
+    ]);
+
+    config([
+        'services.zoom.enabled' => true,
+        'services.zoom.client_id' => 'zoom-client-id',
+        'services.zoom.client_secret' => 'zoom-client-secret',
+        'services.zoom.redirect_uri' => 'https://gradspath.test/mentor/settings/zoom/callback',
+        'services.zoom.api_base' => 'https://api.zoom.us/v2',
+    ]);
+
+    Http::fake([
+        'https://zoom.us/oauth/token' => Http::response([
+            'access_token' => 'new-zoom-access-token',
+            'refresh_token' => 'new-zoom-refresh-token',
+            'expires_in' => 3600,
+            'token_type' => 'Bearer',
+        ], 200),
+        'https://api.zoom.us/v2/users/me' => Http::response([
+            'id' => 'zoom-user-123',
+            'email' => 'mentor.zoom@example.com',
+        ], 200),
+    ]);
+
+    $this->actingAs($newMentorUser)
+        ->withSession(['mentor_zoom_oauth_state' => 'zoom-state-123'])
+        ->get(route('mentor.settings.zoom.callback', [
+            'code' => 'zoom-auth-code',
+            'state' => 'zoom-state-123',
+        ]))
+        ->assertRedirect(route('mentor.settings.index'));
+
+    $this->assertDatabaseCount('oauth_tokens', 1);
+    $this->assertDatabaseHas('oauth_tokens', [
+        'user_id' => $newMentorUser->id,
+        'provider' => 'zoom',
+        'provider_user_id' => 'zoom-user-123',
+        'access_token' => 'new-zoom-access-token',
+    ]);
+});
+
 it('disconnects the mentor zoom token from settings', function () {
     $mentorUser = createSettingsUser('mentor');
 

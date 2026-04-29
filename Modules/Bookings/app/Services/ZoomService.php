@@ -467,10 +467,11 @@ class ZoomService
 
         return OauthToken::query()->updateOrCreate(
             [
-                'user_id' => $user->id,
                 'provider' => 'zoom',
+                'provider_user_id' => $providerUserId,
             ],
             [
+                'user_id' => $user->id,
                 'provider_user_id' => $providerUserId,
                 'access_token' => $accessToken,
                 'refresh_token' => $refreshToken,
