@@ -236,7 +236,7 @@ it('turns off active office-hours schedules when the office-hours service is dis
         'current_service_id' => $normalService->id,
         'day_of_week' => 'tue',
         'start_time' => '20:00:00',
-        'timezone' => 'UTC',
+        'timezone' => 'Asia/Karachi',
         'frequency' => 'weekly',
         'max_spots' => 3,
         'is_active' => true,
@@ -251,9 +251,9 @@ it('turns off active office-hours schedules when the office-hours service is dis
         'title' => 'Admissions Mentor',
         'bio' => 'Helping students prepare.',
         'description' => 'Longer mentoring profile copy.',
-        'office_hours_schedule' => 'Every Tuesday at 8 PM UTC',
+        'office_hours_schedule' => 'Every Tuesday at 8 PM PKT',
         'edu_email' => 'mentor@example.edu',
-        'timezone' => 'UTC',
+        'timezone' => 'Asia/Karachi',
         'service_config_ids' => [$normalService->id],
     ])->assertRedirect(route('mentor.settings.index'));
 
@@ -535,14 +535,14 @@ it('auto-saves a detected supported timezone when the user has no saved timezone
     expect($mentorUser->fresh()->setting?->timezone)->toBe('Asia/Karachi');
 });
 
-it('does not overwrite a saved timezone from the detection endpoint', function () {
+it('does not overwrite a saved supported timezone from the detection endpoint', function () {
     $mentorUser = createSettingsUser('mentor');
     UserSetting::query()->create([
         'user_id' => $mentorUser->id,
         'theme' => 'light',
         'email_notifications' => true,
         'sms_notifications' => false,
-        'timezone' => 'UTC',
+        'timezone' => 'Asia/Karachi',
     ]);
 
     $this->withoutMiddleware()
@@ -551,9 +551,9 @@ it('does not overwrite a saved timezone from the detection endpoint', function (
             'timezone' => 'Asia/Karachi',
         ])
         ->assertOk()
-        ->assertJsonPath('timezone', 'UTC');
+        ->assertJsonPath('timezone', 'Asia/Karachi');
 
-    expect($mentorUser->fresh()->setting?->timezone)->toBe('UTC');
+    expect($mentorUser->fresh()->setting?->timezone)->toBe('Asia/Karachi');
 });
 
 it('rejects unsupported detected timezones', function () {

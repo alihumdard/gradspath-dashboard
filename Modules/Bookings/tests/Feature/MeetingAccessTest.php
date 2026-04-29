@@ -146,7 +146,7 @@ function createBookingForTime(
     return $booking;
 }
 
-it('blocks students from joining before the exact start time and exposes the lock state in the page payload', function () {
+it('allows students to join before the exact start time when the meeting link exists', function () {
     $context = createBookingAccessContext();
     $booking = $context['booking'];
 
@@ -156,8 +156,7 @@ it('blocks students from joining before the exact start time and exposes the loc
         ->actingAs($context['studentUser'])
         ->get(route('student.bookings.join-meeting', $booking->id));
 
-    $response->assertRedirect(route('student.bookings.show', $booking->id));
-    $response->assertSessionHas('error', 'Meeting access will be enabled at 1:00 PM on April 29, 2026.');
+    $response->assertRedirect('https://zoom.us/j/9876543210');
 
     $page = $this
         ->actingAs($context['studentUser'])
@@ -165,7 +164,7 @@ it('blocks students from joining before the exact start time and exposes the loc
 
     $page->assertOk();
     $page->assertSee('meetingAccessAllowed', false);
-    $page->assertSee('Meeting access will be enabled at 1:00 PM on April 29, 2026.', false);
+    $page->assertSee('Meeting access is enabled now.', false);
 });
 
 it('allows students to join exactly at the start time and after the meeting starts', function () {
@@ -214,30 +213,20 @@ it('unlocks bookings independently based on each booking start time', function (
     Carbon::setTestNow(Carbon::create(2026, 4, 29, 13, 30, 0, 'Asia/Karachi')->utc());
 
     expect($bookingAtOnePm->fresh()->meetingAccessAllowed())->toBeTrue();
-    expect($bookingAtTwoPm->fresh()->meetingAccessAllowed())->toBeFalse();
-    expect($bookingAtTwoPm->fresh()->meetingAccessMessage())->toBe('Meeting access will be enabled at 2:00 PM on April 29, 2026.');
+    expect($bookingAtTwoPm->fresh()->meetingAccessAllowed())->toBeTrue();
+    expect($bookingAtTwoPm->fresh()->meetingAccessMessage())->toBe('Meeting access is enabled now.');
 
     $response = $this
         ->actingAs($context['studentUser'])
         ->get(route('student.bookings.join-meeting', $bookingAtTwoPm->id));
 
-    $response->assertRedirect(route('student.bookings.show', $bookingAtTwoPm->id));
-    $response->assertSessionHas('error', 'Meeting access will be enabled at 2:00 PM on April 29, 2026.');
+    $response->assertRedirect('https://zoom.us/j/zoom-meeting-2pm');
 });
 
-it('blocks mentors before the start time and allows them exactly at the start time', function () {
+it('allows mentors to start before the scheduled start time when zoom is ready', function () {
     $context = createBookingAccessContext();
     $booking = $context['booking'];
     $startUtc = $context['sessionAtLocal']->copy()->utc();
-
-    Carbon::setTestNow($startUtc->copy()->subSecond());
-
-    $beforeStart = $this
-        ->actingAs($context['mentorUser'])
-        ->get(route('mentor.bookings.start-meeting', $booking->id));
-
-    $beforeStart->assertRedirect(route('mentor.bookings.show', $booking->id));
-    $beforeStart->assertSessionHas('error', 'Meeting access will be enabled at 1:00 PM on April 29, 2026.');
 
     config([
         'services.zoom.enabled' => true,
@@ -264,7 +253,7 @@ it('blocks mentors before the start time and allows them exactly at the start ti
         ]),
     ]);
 
-    Carbon::setTestNow($startUtc);
+    Carbon::setTestNow($startUtc->copy()->subSecond());
 
     $atStart = $this
         ->actingAs($context['mentorUser'])

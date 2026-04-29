@@ -113,11 +113,7 @@ class Booking extends Model
 
     public function meetingAccessAllowed(): bool
     {
-        if (! $this->session_at) {
-            return false;
-        }
-
-        return now()->utc()->greaterThanOrEqualTo($this->session_at);
+        return true;
     }
 
     public function meetingAccessOpensAt(?string $timezone = null): ?Carbon

@@ -45,16 +45,14 @@ class MentorAvailabilityManagerService
             ->get()
             ->filter(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->utc()->isFuture())
             ->sortBy(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->toIso8601String())
-            ->groupBy(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->setTimezone($slot->timezone ?: $fallbackTimezone)->toDateString());
-
-        $firstSlot = $slots->flatten(1)->first();
+            ->groupBy(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->setTimezone($fallbackTimezone)->toDateString());
 
         return [
-            'timezone' => $firstSlot?->timezone ?: $fallbackTimezone,
+            'timezone' => $fallbackTimezone,
             'effective_from' => null,
             'effective_until' => null,
             'date_slots' => $slots
-                ->map(function ($daySlots, string $date) {
+                ->map(function ($daySlots, string $date) use ($fallbackTimezone) {
                     $dateCarbon = Carbon::parse($date);
 
                     return [
@@ -64,14 +62,14 @@ class MentorAvailabilityManagerService
                         'slot_count' => $daySlots->count(),
                         'booked_count' => $daySlots->sum(fn (MentorAvailabilitySlot $slot) => (int) ($slot->active_bookings_count ?? 0)),
                         'bookings' => $daySlots
-                            ->flatMap(function (MentorAvailabilitySlot $slot) {
-                                return $slot->bookings->map(function ($booking) use ($slot) {
+                            ->flatMap(function (MentorAvailabilitySlot $slot) use ($fallbackTimezone) {
+                                return $slot->bookings->map(function ($booking) use ($slot, $fallbackTimezone) {
                                     return [
                                         'id' => (int) $booking->id,
                                         'booker_name' => $booking->booker?->name ?? 'Booked user',
                                         'booker_email' => $booking->booker?->email,
                                         'service_name' => $booking->service?->service_name ?? $slot->service?->service_name ?? 'Service',
-                                        'slot_label' => $this->formatTimeRange($this->localSlotTime($slot, 'start'), $this->localSlotTime($slot, 'end')),
+                                        'slot_label' => $this->formatTimeRange($this->localSlotTime($slot, 'start', $fallbackTimezone), $this->localSlotTime($slot, 'end', $fallbackTimezone)),
                                         'booked_at_label' => $booking->created_at?->setTimezone($booking->session_timezone ?: config('app.timezone', 'UTC'))->format('M j, Y g:i A'),
                                         'session_label' => $booking->session_at?->setTimezone($booking->session_timezone ?: config('app.timezone', 'UTC'))->format('M j, Y g:i A'),
                                         'status' => (string) $booking->status,
@@ -84,12 +82,12 @@ class MentorAvailabilityManagerService
                         'slots' => $daySlots
                             ->map(fn (MentorAvailabilitySlot $slot) => [
                                 'slot_id' => (int) $slot->id,
-                                'start_time' => $this->localSlotTime($slot, 'start'),
-                                'end_time' => $this->localSlotTime($slot, 'end'),
+                                'start_time' => $this->localSlotTime($slot, 'start', $fallbackTimezone),
+                                'end_time' => $this->localSlotTime($slot, 'end', $fallbackTimezone),
                                 'service_config_id' => $slot->service_config_id,
                                 'is_booked' => (int) ($slot->active_bookings_count ?? 0) > 0,
                                 'booking_count' => (int) ($slot->active_bookings_count ?? 0),
-                                'summary' => $this->formatTimeRange($this->localSlotTime($slot, 'start'), $this->localSlotTime($slot, 'end')),
+                                'summary' => $this->formatTimeRange($this->localSlotTime($slot, 'start', $fallbackTimezone), $this->localSlotTime($slot, 'end', $fallbackTimezone)),
                             ])
                             ->values()
                             ->all(),
@@ -152,10 +150,11 @@ class MentorAvailabilityManagerService
 
     public function schedulerPayload(array $formData, array $insights, array $timezoneOptions, array $serviceOptions = []): array
     {
-        $today = now('UTC');
+        $timezone = (string) ($formData['timezone'] ?? config('app.timezone', 'UTC'));
+        $today = now($timezone);
 
         return [
-            'timezone' => (string) ($formData['timezone'] ?? 'UTC'),
+            'timezone' => $timezone,
             'effective_from' => null,
             'effective_until' => null,
             'window_weeks' => (int) ($insights['window_weeks'] ?? self::WINDOW_WEEKS),
@@ -559,7 +558,7 @@ class MentorAvailabilityManagerService
                     ->orWhere(function (Builder $legacyQuery) {
                         $legacyQuery
                             ->whereNull('starts_at_utc')
-                            ->whereDate('slot_date', '>=', now('UTC')->toDateString());
+                            ->whereDate('slot_date', '>=', now('Asia/Karachi')->toDateString());
                     });
             })
             ->whereDoesntHave('bookings', fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']))
@@ -576,7 +575,7 @@ class MentorAvailabilityManagerService
                     ->orWhere(function (Builder $legacyQuery) {
                         $legacyQuery
                             ->whereNull('starts_at_utc')
-                            ->whereDate('slot_date', '>=', now('UTC')->toDateString());
+                            ->whereDate('slot_date', '>=', now('Asia/Karachi')->toDateString());
                     });
             })
             ->whereDoesntHave('bookings', fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']))
@@ -730,9 +729,9 @@ class MentorAvailabilityManagerService
         );
     }
 
-    private function localSlotTime(MentorAvailabilitySlot $slot, string $edge): string
+    private function localSlotTime(MentorAvailabilitySlot $slot, string $edge, ?string $timezone = null): string
     {
-        $timezone = $slot->timezone ?: config('app.timezone', 'UTC');
+        $timezone = $timezone ?: ($slot->timezone ?: config('app.timezone', 'UTC'));
         $dateTime = $edge === 'end' ? $this->slotEndsAt($slot) : $this->slotStartsAt($slot);
 
         return $dateTime->setTimezone($timezone)->format('H:i');

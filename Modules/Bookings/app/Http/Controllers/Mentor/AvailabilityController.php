@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Modules\Bookings\app\Services\MentorAvailabilityManagerService;
 use Modules\OfficeHours\app\Models\OfficeHourSchedule;
@@ -40,13 +41,14 @@ class AvailabilityController extends Controller
             'date_slots' => array_values($dateSlots),
             'effective_from' => null,
             'effective_until' => null,
+            'timezone' => TimezoneOptions::fallback(),
             'office_hours' => array_merge((array) $request->input('office_hours', []), [
-                'timezone' => (string) $request->input('timezone', TimezoneOptions::fallback()),
+                'timezone' => TimezoneOptions::fallback(),
             ]),
         ]);
 
         $rules = [
-            'timezone' => ['required', 'string', 'max:80'],
+            'timezone' => ['required', 'string', 'max:80', Rule::in(TimezoneOptions::values())],
             'date_slots' => ['nullable', 'array'],
             'date_slots.*.date' => ['required', 'date'],
             'date_slots.*.enabled' => ['nullable', 'boolean'],
@@ -59,7 +61,7 @@ class AvailabilityController extends Controller
             'office_hours.service_config_id' => ['nullable', 'integer'],
             'office_hours.day_of_week' => ['nullable', 'in:mon,tue,wed,thu,fri,sat,sun'],
             'office_hours.start_time' => ['nullable', 'date_format:H:i'],
-            'office_hours.timezone' => ['nullable', 'string', 'max:80'],
+            'office_hours.timezone' => ['nullable', 'string', 'max:80', Rule::in(TimezoneOptions::values())],
             'office_hours.frequency' => ['nullable', 'in:weekly'],
         ];
 
@@ -89,7 +91,7 @@ class AvailabilityController extends Controller
                     ->orWhere(function ($legacyQuery) {
                         $legacyQuery
                             ->whereNull('starts_at_utc')
-                            ->whereDate('slot_date', '>=', now('UTC')->toDateString());
+                            ->whereDate('slot_date', '>=', now(TimezoneOptions::fallback())->toDateString());
                     });
             })
             ->get()
@@ -121,6 +123,11 @@ class AvailabilityController extends Controller
                     ->filter(fn ($slot) => is_array($slot))
                     ->values();
                 $bookedSlotsForDate = collect($existingBookedSlots->get($dateValue, collect()));
+
+                if ($dateValue !== '' && $dateValue < $scheduleNow->toDateString()) {
+                    $validator->errors()->add("date_slots.{$dateIndex}.date", "{$dateLabel} has passed and cannot accept new availability.");
+                    continue;
+                }
 
                 if ($bookedSlotsForDate->isNotEmpty() && !$enabled) {
                     $validator->errors()->add("date_slots.{$dateIndex}.enabled", "{$dateLabel} has booked slots and cannot be cleared.");

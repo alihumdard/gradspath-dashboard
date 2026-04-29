@@ -6,18 +6,12 @@ use Modules\Auth\app\Models\User;
 
 class TimezoneOptions
 {
-    public const FALLBACK = 'UTC';
+    public const FALLBACK = 'Asia/Karachi';
 
     public static function all(): array
     {
         return [
-            'America/New_York' => 'Eastern Time',
-            'America/Chicago' => 'Central Time',
-            'America/Denver' => 'Mountain Time',
-            'America/Los_Angeles' => 'Pacific Time',
-            'Europe/London' => 'London',
             'Asia/Karachi' => 'Karachi',
-            'UTC' => 'UTC',
         ];
     }
 

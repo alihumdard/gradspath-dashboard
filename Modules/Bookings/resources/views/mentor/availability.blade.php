@@ -16,7 +16,7 @@
   $hasOldInput = session()->getOldInput() !== [];
 
   $initialSchedulerPayload['save_url'] = route('mentor.availability.update');
-  $initialSchedulerPayload['timezone'] = old('timezone', $initialSchedulerPayload['timezone'] ?? ($availabilityData['timezone'] ?? 'UTC'));
+  $initialSchedulerPayload['timezone'] = old('timezone', $initialSchedulerPayload['timezone'] ?? ($availabilityData['timezone'] ?? \Modules\Settings\app\Support\TimezoneOptions::fallback()));
   $initialSchedulerPayload['uses_old_input'] = $hasOldInput;
   $initialSchedulerPayload['date_slots'] = collect(
       $hasOldInput ? (json_decode((string) old('date_slots_payload', '[]'), true) ?: []) : ($initialSchedulerPayload['date_slots'] ?? [])
@@ -236,7 +236,7 @@
             <label for="availabilityTimezone">Timezone</label>
             <select id="availabilityTimezone" name="timezone">
               @foreach ($timezoneOptions as $value => $label)
-                <option value="{{ $value }}" @selected(old('timezone', $availabilityData['timezone'] ?? 'UTC') === $value)>
+                <option value="{{ $value }}" @selected(old('timezone', $availabilityData['timezone'] ?? \Modules\Settings\app\Support\TimezoneOptions::fallback()) === $value)>
                   {{ $label }} ({{ $value }})
                 </option>
               @endforeach

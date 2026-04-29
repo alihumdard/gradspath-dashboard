@@ -1658,18 +1658,18 @@
   function defaultStartTimeForDay(dayKey) {
     const nowParts = currentTimePartsInTimezone(state.timezone);
     if (!nowParts) {
-      return "09:00";
+      return "00:00";
     }
 
     if (dayKey && dayKey > nowParts.dateKey) {
-      return "09:00";
+      return "00:00";
     }
 
     if (dayKey && dayKey < nowParts.dateKey) {
       return "";
     }
 
-    return "09:00";
+    return "00:00";
   }
 
   function currentTimePartsInTimezone(timezone) {

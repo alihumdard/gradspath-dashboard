@@ -251,6 +251,7 @@ let localTypingActive = false;
 let localTypingTimeoutId = null;
 let remoteTypingTimeoutId = null;
 let selectedOfficeHoursServiceChoiceId = null;
+let meetingAccessTimerId = null;
 const chatMessagesByBooking = new Map();
 if (selectedDateKey) {
   const selectedDate = parseDateKey(selectedDateKey);
@@ -317,7 +318,8 @@ function updateZoomLink(booking) {
   }
 
   const hasMeetingLink = Boolean(booking?.meetingLink);
-  const accessAllowed = Boolean(booking?.meetingAccessAllowed);
+  const accessAllowed = meetingAccessAllowedNow(booking);
+  scheduleMeetingAccessRefresh(booking);
 
   if (hasMeetingLink && accessAllowed) {
     zoomLinkEl.href = booking.meetingLink;
@@ -343,10 +345,47 @@ function updateZoomLink(booking) {
 
 if (zoomLinkEl) {
   zoomLinkEl.addEventListener("click", (event) => {
+    const booking = getSelectedBooking();
+
+    if (zoomLinkEl.getAttribute("aria-disabled") === "true" && meetingAccessAllowedNow(booking)) {
+      updateZoomLink(booking);
+    }
+
     if (zoomLinkEl.getAttribute("aria-disabled") === "true") {
       event.preventDefault();
     }
   });
+}
+
+function meetingAccessAllowedNow(booking) {
+  if (!booking) {
+    return false;
+  }
+
+  return Boolean(booking.meetingLink || booking.meetingAccessAllowed);
+}
+
+function scheduleMeetingAccessRefresh(booking) {
+  if (meetingAccessTimerId) {
+    window.clearTimeout(meetingAccessTimerId);
+    meetingAccessTimerId = null;
+  }
+
+  if (!booking || booking.meetingAccessAllowed || !booking.meetingAccessOpensAt) {
+    return;
+  }
+
+  const opensAt = Date.parse(booking.meetingAccessOpensAt);
+  const delay = opensAt - Date.now();
+
+  if (!Number.isFinite(opensAt) || delay <= 0) {
+    return;
+  }
+
+  meetingAccessTimerId = window.setTimeout(() => {
+    booking.meetingAccessAllowed = true;
+    updateMeetingInfoFromSelected();
+  }, Math.min(delay + 250, 2147483647));
 }
 
 function getInitials(name) {
