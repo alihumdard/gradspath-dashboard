@@ -765,40 +765,25 @@ body {
   color: var(--text);
 }
 
-.payment-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.field-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.field label {
-  font-size: 13px;
-  font-weight: 700;
+.stripe-redirect-note {
+  border: 1px solid rgba(124, 92, 255, 0.22);
+  border-radius: 16px;
+  background: rgba(124, 92, 255, 0.08);
+  padding: 16px;
   color: var(--text);
 }
 
-.fake-input {
-  height: 48px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel);
-  display: flex;
-  align-items: center;
-  padding: 0 14px;
+.stripe-redirect-note strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.stripe-redirect-note p {
+  margin: 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .pay-button {

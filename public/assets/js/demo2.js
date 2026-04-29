@@ -85,7 +85,7 @@ payButton?.addEventListener("click", async () => {
     window.location.href = data.checkout_url;
   } catch (error) {
     payButton.disabled = false;
-    payButton.textContent = `Pay $${storePageData.creditPackPrice || 200}`;
+    payButton.textContent = `Continue to Stripe - Pay $${storePageData.creditPackPrice || 200}`;
 
     if (window.AppToast?.show) {
       window.AppToast.show({

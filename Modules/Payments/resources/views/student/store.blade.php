@@ -180,32 +180,13 @@
           </div>
         </div>
 
-      <div class="payment-fields">
-        <div class="field">
-          <label>Card information</label>
-          <div class="fake-input">4242 4242 4242 4242</div>
-        </div>
-
-        <div class="field-grid">
-          <div class="field">
-            <label>Expiration</label>
-            <div class="fake-input">MM / YY</div>
-          </div>
-
-          <div class="field">
-            <label>CVC</label>
-            <div class="fake-input">CVC</div>
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Name on card</label>
-          <div class="fake-input">Full name</div>
-        </div>
+      <div class="stripe-redirect-note">
+        <strong>Payment is completed on Stripe.</strong>
+        <p>You will be redirected to Stripe Checkout to enter card details securely. GradsPath does not collect or store card numbers.</p>
       </div>
 
       <button type="button" class="pay-button" id="payButton">
-        Pay ${{ $creditPackPrice ?? 200 }}
+        Continue to Stripe - Pay ${{ $creditPackPrice ?? 200 }}
       </button>
 
       <p class="checkout-note">

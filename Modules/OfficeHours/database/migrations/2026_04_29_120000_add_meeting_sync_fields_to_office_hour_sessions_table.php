@@ -10,9 +10,9 @@ return new class extends Migration
     {
         Schema::table('office_hour_sessions', function (Blueprint $table) {
             $table->string('meeting_link', 2000)->nullable()->after('service_choice_cutoff_at');
-            $table->string('external_calendar_event_id')->nullable()->after('meeting_link');
-            $table->string('calendar_provider')->nullable()->after('external_calendar_event_id');
-            $table->string('calendar_sync_status')->default('not_synced')->after('calendar_provider');
+            $table->string('external_calendar_event_id', 191)->nullable()->after('meeting_link');
+            $table->string('calendar_provider', 50)->nullable()->after('external_calendar_event_id');
+            $table->string('calendar_sync_status', 30)->default('not_synced')->after('calendar_provider');
             $table->text('calendar_last_error')->nullable()->after('calendar_sync_status');
 
             $table->index(['calendar_provider', 'external_calendar_event_id'], 'office_hour_sessions_calendar_lookup_idx');
