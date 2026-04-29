@@ -60,8 +60,24 @@ class StripeClient
 
     public function verifyWebhookSignature(string $payload, ?string $signatureHeader): void
     {
-        $secret = (string) config('services.stripe.webhook_secret');
+        $this->verifyWebhookSignatureUsingSecret(
+            $payload,
+            $signatureHeader,
+            (string) config('services.stripe.webhook_secret')
+        );
+    }
 
+    public function verifyConnectWebhookSignature(string $payload, ?string $signatureHeader): void
+    {
+        $this->verifyWebhookSignatureUsingSecret(
+            $payload,
+            $signatureHeader,
+            (string) config('services.stripe.connect_webhook_secret')
+        );
+    }
+
+    private function verifyWebhookSignatureUsingSecret(string $payload, ?string $signatureHeader, string $secret): void
+    {
         if ($secret === '') {
             return;
         }

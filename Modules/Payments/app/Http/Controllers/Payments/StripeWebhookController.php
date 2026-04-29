@@ -14,10 +14,24 @@ class StripeWebhookController extends Controller
 
     public function handle(Request $request): JsonResponse
     {
+        return $this->receive($request, false);
+    }
+
+    public function handleConnect(Request $request): JsonResponse
+    {
+        return $this->receive($request, true);
+    }
+
+    private function receive(Request $request, bool $connect): JsonResponse
+    {
         $payload = $request->getContent();
 
         try {
-            $this->stripe->verifyWebhookSignature($payload, $request->header('Stripe-Signature'));
+            if ($connect) {
+                $this->stripe->verifyConnectWebhookSignature($payload, $request->header('Stripe-Signature'));
+            } else {
+                $this->stripe->verifyWebhookSignature($payload, $request->header('Stripe-Signature'));
+            }
         } catch (\RuntimeException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),

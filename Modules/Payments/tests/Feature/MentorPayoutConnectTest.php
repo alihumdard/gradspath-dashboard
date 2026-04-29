@@ -3,8 +3,10 @@
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\User;
+use Modules\Payments\app\Jobs\ProcessStripeWebhookJob;
 use Modules\Payments\app\Services\StripeWebhookService;
 use Modules\Settings\app\Models\Mentor;
 use Spatie\Permission\Models\Role;
@@ -30,6 +32,14 @@ function createMentorUserForPayouts(): User
     $user->assignRole('mentor');
 
     return $user;
+}
+
+function stripeWebhookSignatureForPayouts(string $payload, string $secret): string
+{
+    $timestamp = time();
+    $signature = hash_hmac('sha256', $timestamp.'.'.$payload, $secret);
+
+    return "t={$timestamp},v1={$signature}";
 }
 
 it('creates a connected account and redirects mentors to Stripe onboarding', function () {
@@ -181,4 +191,54 @@ it('syncs mentor payout status when stripe sends an account link returned event'
         'event_type' => 'v2.core.account_link.returned',
         'processed' => true,
     ]);
+});
+
+it('accepts connect webhooks using the connect webhook secret', function () {
+    Queue::fake();
+
+    config()->set('services.stripe.webhook_secret', 'whsec_platform_test');
+    config()->set('services.stripe.connect_webhook_secret', 'whsec_connect_test');
+
+    $payload = json_encode([
+        'id' => 'evt_connect_route_123',
+        'type' => 'v2.core.account_link.returned',
+        'data' => [
+            'account_id' => 'acct_connect_route_123',
+        ],
+    ]);
+
+    $badResponse = $this->call(
+        'POST',
+        route('webhooks.stripe.connect'),
+        [],
+        [],
+        [],
+        [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_STRIPE_SIGNATURE' => stripeWebhookSignatureForPayouts($payload, 'whsec_platform_test'),
+        ],
+        $payload
+    );
+
+    $badResponse->assertStatus(400);
+
+    $goodResponse = $this->call(
+        'POST',
+        route('webhooks.stripe.connect'),
+        [],
+        [],
+        [],
+        [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_STRIPE_SIGNATURE' => stripeWebhookSignatureForPayouts($payload, 'whsec_connect_test'),
+        ],
+        $payload
+    );
+
+    $goodResponse->assertAccepted();
+
+    Queue::assertPushed(ProcessStripeWebhookJob::class, function (ProcessStripeWebhookJob $job) {
+        return $job->payload['id'] === 'evt_connect_route_123'
+            && $job->payload['type'] === 'v2.core.account_link.returned';
+    });
 });

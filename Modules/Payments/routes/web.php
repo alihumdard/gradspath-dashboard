@@ -29,6 +29,7 @@ Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
 });
 
 Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');
+Route::post('/webhooks/stripe/connect', [StripeWebhookController::class, 'handleConnect'])->name('webhooks.stripe.connect');
 
 Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
 	Route::get('/payouts', [PayoutsController::class, 'index'])->name('payouts');
