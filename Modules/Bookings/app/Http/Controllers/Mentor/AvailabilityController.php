@@ -234,13 +234,6 @@ class AvailabilityController extends Controller
                         $validator->errors()->add("date_slots.{$dateIndex}.slots.{$index}.service_config_id", "{$dateLabel} must use a service with a valid duration.");
                     }
 
-                    if ($slot['starts_at_utc'] && $slot['starts_at_utc']->lte(now('UTC'))) {
-                        $validator->errors()->add(
-                            "date_slots.{$dateIndex}.slots.{$index}.start_time",
-                            "{$dateLabel}: the {$slot['start_time']} - {$slot['end_time']} slot has already started or passed. Remove it, or change its start time to a future time."
-                        );
-                    }
-
                     $previousEndUtc = $slot['ends_at_utc'] ?: $previousEndUtc;
                 }
             }

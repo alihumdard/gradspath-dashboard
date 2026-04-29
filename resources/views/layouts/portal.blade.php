@@ -59,7 +59,9 @@
 @section('js')
   @php($portalJsAsset = trim($__env->yieldContent('portal_js_asset')))
   @if ($portalJsAsset !== '')
-    <script src="{{ asset($portalJsAsset) }}"></script>
+    @php($portalJsPath = public_path($portalJsAsset))
+    @php($portalJsVersion = is_file($portalJsPath) ? ('?v='.filemtime($portalJsPath)) : '')
+    <script src="{{ asset($portalJsAsset) }}{{ $portalJsVersion }}"></script>
   @endif
 
   @yield('portal_js')

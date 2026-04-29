@@ -846,7 +846,7 @@
       emptyState.textContent = !hasServiceOptions()
         ? "You do not have any active non-office-hours mentor services yet. Add one first to create availability slots."
         : !hasRemainingTimeWindow(dayKey)
-        ? `No future time remains on ${formattedDate}. Select another day to add availability.`
+        ? `This date cannot accept more slots. Select another day to add availability.`
         : `This date is currently unavailable. Add a slot and choose its service to make ${formattedDate} bookable.`;
       return;
     }
@@ -1206,12 +1206,6 @@
       for (let index = 0; index < blocks.length; index += 1) {
         const block = blocks[index];
 
-        if (!block.isBooked && isPastTimeBlock(dayKey, block)) {
-          dayErrors[dayKey] = `${dayLabel}: the ${formatTimeRange(block.startTime, block.endTime)} slot has already started or passed. Remove it, or change its start time to a future time.`;
-          hasErrors = true;
-          return;
-        }
-
         if (!block.startTime || !block.endTime || block.startTime >= block.endTime) {
           dayErrors[dayKey] = `${dayLabel} blocks must end after they start.`;
           hasErrors = true;
@@ -1508,12 +1502,8 @@
 
     const day = state.days[dayKey];
 
-    const last = sortBlocks(day.blocks).at(-1);
-    const suggestedStart = defaultStartTimeForDay(dayKey);
-    const start = last
-      ? maxTimeValue(last.endTime, suggestedStart)
-      : suggestedStart;
     const serviceConfigId = defaultServiceConfigId();
+    const start = findAvailableStartTime(dayKey, serviceConfigId);
     const end = endTimeForService(start, serviceConfigId);
 
     if (!start || start >= "24:00" || start === "23:30" || !end || end <= start) {
@@ -1532,6 +1522,34 @@
 
     day.blocks = sortBlocks(day.blocks);
     markDirty();
+  }
+
+  function findAvailableStartTime(dayKey, serviceConfigId) {
+    const duration = serviceDurationById(serviceConfigId);
+    const earliestStart = defaultStartTimeForDay(dayKey);
+    const blocks = sortBlocks(state.days[dayKey]?.blocks || []);
+    let cursor = timeToMinutes(earliestStart);
+
+    if (!Number.isFinite(cursor)) {
+      return "";
+    }
+
+    for (const block of blocks) {
+      const blockStart = timeToMinutes(block.startTime);
+      const blockEnd = timeToMinutes(block.endTime);
+
+      if (!Number.isFinite(blockStart) || !Number.isFinite(blockEnd)) {
+        continue;
+      }
+
+      if (cursor + duration <= blockStart) {
+        return minutesToTime(cursor);
+      }
+
+      cursor = Math.max(cursor, blockEnd);
+    }
+
+    return cursor + duration <= 24 * 60 ? minutesToTime(cursor) : "";
   }
 
   function deleteBlock(dayKey, blockId) {
@@ -1615,7 +1633,7 @@
   }
 
   function isPastTimeBlock(dayKey, block) {
-    if (!dayKey || !block || !block.startTime) {
+    if (!dayKey || !block) {
       return false;
     }
 
@@ -1624,15 +1642,7 @@
       return false;
     }
 
-    if (dayKey < nowParts.dateKey) {
-      return true;
-    }
-
-    if (dayKey > nowParts.dateKey) {
-      return false;
-    }
-
-    return block.startTime <= nowParts.time;
+    return dayKey < nowParts.dateKey;
   }
 
   function hasRemainingTimeWindow(dayKey) {
@@ -1651,8 +1661,15 @@
       return "09:00";
     }
 
-    const nextSlot = roundUpToNextHalfHour(nowParts.time);
-    return nextSlot < "23:30" ? nextSlot : "";
+    if (dayKey && dayKey > nowParts.dateKey) {
+      return "09:00";
+    }
+
+    if (dayKey && dayKey < nowParts.dateKey) {
+      return "";
+    }
+
+    return "09:00";
   }
 
   function currentTimePartsInTimezone(timezone) {
@@ -1829,9 +1846,27 @@
   }
 
   function diffMinutes(start, end) {
-    const [startHour, startMinute] = start.split(":").map(Number);
-    const [endHour, endMinute] = end.split(":").map(Number);
-    return Math.max((((endHour * 60) + endMinute) - ((startHour * 60) + startMinute)), 0);
+    return Math.max(timeToMinutes(end) - timeToMinutes(start), 0);
+  }
+
+  function timeToMinutes(value) {
+    const [hourRaw, minuteRaw] = String(value || "").split(":").map(Number);
+    const hour = Number.isFinite(hourRaw) ? hourRaw : NaN;
+    const minute = Number.isFinite(minuteRaw) ? minuteRaw : NaN;
+
+    if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
+      return NaN;
+    }
+
+    return (hour * 60) + minute;
+  }
+
+  function minutesToTime(value) {
+    const minutes = Math.max(0, Math.min(Number(value) || 0, 24 * 60));
+    const hour = Math.floor(minutes / 60);
+    const minute = minutes % 60;
+
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
   }
 
   function addHour(value) {
