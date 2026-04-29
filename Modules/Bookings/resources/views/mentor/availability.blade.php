@@ -5,7 +5,7 @@
 @section('portal_active_nav', 'availability')
 
 @section('portal_css')
-  <link rel="stylesheet" href="{{ asset('assets/css/mentor-availability.css') }}" />
+  <link rel="stylesheet" href="{{ asset('assets/css/mentor-availability.css') }}?v={{ filemtime(public_path('assets/css/mentor-availability.css')) }}" />
 @endsection
 
 @php
