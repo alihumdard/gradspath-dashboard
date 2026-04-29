@@ -90,13 +90,6 @@
       </p>
     </header>
 
-    @if (session('success'))
-      <div class="availability-alert availability-alert--success">
-        <strong>Availability saved.</strong>
-        <p>{{ session('success') }}</p>
-      </div>
-    @endif
-
     @if ($errors->any())
       <div class="availability-alert availability-alert--error">
         <strong>Please review the availability form.</strong>

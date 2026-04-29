@@ -11,7 +11,8 @@ class StripeWebhookService
     public function __construct(
         private readonly BookingCheckoutService $bookingCheckout,
         private readonly CreditService $creditService,
-        private readonly StripeConnectService $connect
+        private readonly StripeConnectService $connect,
+        private readonly StripeClient $stripe
     ) {}
 
     public function process(array $payload): StripeWebhook
@@ -66,6 +67,14 @@ class StripeWebhookService
                 $this->connect->syncMentorFromStripeAccount(
                     (array) data_get($payload, 'data.object', [])
                 );
+            } elseif ($eventType === 'v2.core.account_link.returned') {
+                $accountId = (string) data_get($payload, 'data.account_id');
+
+                if ($accountId !== '') {
+                    $this->connect->syncMentorFromStripeAccount(
+                        $this->stripe->retrieveConnectedAccount($accountId)
+                    );
+                }
             }
 
             $webhook->processed = true;

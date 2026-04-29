@@ -1136,12 +1136,7 @@
         state.serverInsights = responseData.insights;
       }
 
-      state.alert = {
-        type: "success",
-        title: "Availability saved.",
-        message: responseData.message || "Mentor availability updated successfully.",
-        items: [],
-      };
+      state.alert = null;
       state.saving = false;
       state.serverErrors = {};
       render();
