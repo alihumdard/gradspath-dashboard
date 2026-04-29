@@ -39,7 +39,7 @@ class BookingsController extends Controller
     {
         $mentor = Mentor::query()->where('user_id', Auth::id())->firstOrFail();
         $booking = Booking::query()
-            ->with(['booker:id,name,email,avatar_url', 'mentor.user:id,name,email,avatar_url', 'service', 'mentorNotes:id,booking_id,mentor_id,is_deleted'])
+            ->with(['booker:id,name,email,avatar_url', 'mentor.user:id,name,email,avatar_url', 'service', 'officeHourSession', 'mentorNotes:id,booking_id,mentor_id,is_deleted'])
             ->findOrFail($id);
         Gate::authorize('view', $booking);
 
@@ -55,7 +55,7 @@ class BookingsController extends Controller
     public function startMeeting(int $id): RedirectResponse
     {
         $mentor = Mentor::query()->where('user_id', Auth::id())->firstOrFail();
-        $booking = Booking::query()->findOrFail($id);
+        $booking = Booking::query()->with('officeHourSession')->findOrFail($id);
 
         if ((int) $booking->mentor_id !== (int) $mentor->id) {
             Log::warning('Blocked non-host mentor from starting Zoom meeting.', [
@@ -71,9 +71,9 @@ class BookingsController extends Controller
         if (! $this->isSyncedZoomBooking($booking)) {
             Log::warning('Mentor Zoom start route rejected unsynced booking.', [
                 'booking_id' => $booking->id,
-                'calendar_provider' => $booking->calendar_provider,
-                'calendar_sync_status' => $booking->calendar_sync_status,
-                'external_calendar_event_id' => $booking->external_calendar_event_id,
+                'calendar_provider' => $this->calendarProvider($booking),
+                'calendar_sync_status' => $this->calendarSyncStatus($booking),
+                'external_calendar_event_id' => $this->externalMeetingId($booking),
             ]);
 
             return back()->with('error', 'Zoom meeting is not ready yet.');
@@ -82,7 +82,7 @@ class BookingsController extends Controller
         if (! $booking->meetingAccessAllowed()) {
             Log::info('Mentor Zoom start route rejected before scheduled start time.', [
                 'booking_id' => $booking->id,
-                'meeting_id' => $booking->external_calendar_event_id,
+                'meeting_id' => $this->externalMeetingId($booking),
                 'session_at' => optional($booking->session_at)->toIso8601String(),
             ]);
 
@@ -94,7 +94,7 @@ class BookingsController extends Controller
         if (! $this->zoom->isConfigured()) {
             Log::warning('Mentor Zoom start route rejected because Zoom is not configured.', [
                 'booking_id' => $booking->id,
-                'meeting_id' => $booking->external_calendar_event_id,
+                'meeting_id' => $this->externalMeetingId($booking),
             ]);
 
             return back()->with('error', 'Zoom booking is not configured right now.');
@@ -103,7 +103,7 @@ class BookingsController extends Controller
         if (! $this->zoom->hasConnectedMentor($booking->mentor)) {
             Log::warning('Mentor Zoom start route rejected because mentor Zoom is not connected.', [
                 'booking_id' => $booking->id,
-                'meeting_id' => $booking->external_calendar_event_id,
+                'meeting_id' => $this->externalMeetingId($booking),
                 'mentor_id' => $booking->mentor_id,
             ]);
 
@@ -111,12 +111,12 @@ class BookingsController extends Controller
         }
 
         try {
-            $meeting = $this->zoom->getMeeting($booking);
+            $meeting = $this->zoom->getMeeting($this->bookingWithSharedOfficeHoursMeeting($booking));
             $startUrl = trim((string) data_get($meeting, 'start_url', ''));
 
             Log::info('Mentor Zoom start route fetched meeting details.', [
                 'booking_id' => $booking->id,
-                'meeting_id' => $booking->external_calendar_event_id,
+                'meeting_id' => $this->externalMeetingId($booking),
                 'start_url_present' => $startUrl !== '',
                 'join_url_present' => filled(data_get($meeting, 'join_url')),
             ]);
@@ -129,7 +129,7 @@ class BookingsController extends Controller
         } catch (\Throwable $exception) {
             Log::warning('Mentor Zoom start route failed.', [
                 'booking_id' => $booking->id,
-                'meeting_id' => $booking->external_calendar_event_id,
+                'meeting_id' => $this->externalMeetingId($booking),
                 'exception_class' => $exception::class,
                 'error' => $exception->getMessage(),
             ]);
@@ -227,7 +227,7 @@ class BookingsController extends Controller
             'meetingLink' => $this->meetingLinkForPerspective($booking, $perspective),
             'meetingProvider' => $this->meetingPresenter->providerLabel($booking),
             'meetingLinkLabel' => $this->meetingLinkLabelForPerspective($booking, $perspective),
-            'meetingLinkStatus' => (string) ($booking->calendar_sync_status ?: 'not_synced'),
+            'meetingLinkStatus' => $this->calendarSyncStatus($booking),
             'meetingLinkStatusMessage' => $this->meetingPresenter->statusMessage($booking),
             'meetingAccessAllowed' => $this->meetingPresenter->accessAllowed($booking),
             'meetingAccessMessage' => $this->meetingPresenter->accessMessage($booking),
@@ -310,7 +310,7 @@ class BookingsController extends Controller
 
     private function bookingCollections(Mentor $mentor): array
     {
-        $relations = ['booker:id,name,email,avatar_url', 'mentor.user:id,name,email,avatar_url', 'service', 'mentorNotes:id,booking_id,mentor_id,is_deleted'];
+        $relations = ['booker:id,name,email,avatar_url', 'mentor.user:id,name,email,avatar_url', 'service', 'officeHourSession', 'mentorNotes:id,booking_id,mentor_id,is_deleted'];
 
         return [
             Booking::query()
@@ -349,7 +349,7 @@ class BookingsController extends Controller
             return route('mentor.bookings.start-meeting', $booking->id);
         }
 
-        return $booking->meeting_link;
+        return $this->meetingLink($booking);
     }
 
     private function meetingLinkLabelForPerspective(Booking $booking, string $perspective): string
@@ -363,8 +363,61 @@ class BookingsController extends Controller
 
     private function isSyncedZoomBooking(Booking $booking): bool
     {
-        return $booking->calendar_provider === 'zoom'
-            && $booking->calendar_sync_status === 'synced'
-            && filled($booking->external_calendar_event_id);
+        return $this->calendarProvider($booking) === 'zoom'
+            && $this->calendarSyncStatus($booking) === 'synced'
+            && filled($this->externalMeetingId($booking));
+    }
+
+    private function bookingWithSharedOfficeHoursMeeting(Booking $booking): Booking
+    {
+        if ($booking->session_type !== 'office_hours') {
+            return $booking;
+        }
+
+        $booking->forceFill([
+            'meeting_link' => $this->meetingLink($booking),
+            'external_calendar_event_id' => $this->externalMeetingId($booking),
+            'calendar_provider' => $this->calendarProvider($booking),
+            'calendar_sync_status' => $this->calendarSyncStatus($booking),
+            'calendar_last_error' => $booking->officeHourSession?->calendar_last_error ?: $booking->calendar_last_error,
+        ]);
+
+        return $booking;
+    }
+
+    private function meetingLink(Booking $booking): ?string
+    {
+        if ($booking->session_type === 'office_hours') {
+            return $booking->officeHourSession?->meeting_link ?: $booking->meeting_link;
+        }
+
+        return $booking->meeting_link;
+    }
+
+    private function externalMeetingId(Booking $booking): ?string
+    {
+        if ($booking->session_type === 'office_hours') {
+            return $booking->officeHourSession?->external_calendar_event_id ?: $booking->external_calendar_event_id;
+        }
+
+        return $booking->external_calendar_event_id;
+    }
+
+    private function calendarProvider(Booking $booking): ?string
+    {
+        if ($booking->session_type === 'office_hours') {
+            return $booking->officeHourSession?->calendar_provider ?: $booking->calendar_provider;
+        }
+
+        return $booking->calendar_provider;
+    }
+
+    private function calendarSyncStatus(Booking $booking): string
+    {
+        if ($booking->session_type === 'office_hours') {
+            return (string) ($booking->officeHourSession?->calendar_sync_status ?: $booking->calendar_sync_status ?: 'not_synced');
+        }
+
+        return (string) ($booking->calendar_sync_status ?: 'not_synced');
     }
 }

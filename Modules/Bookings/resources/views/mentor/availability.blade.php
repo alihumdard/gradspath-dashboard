@@ -56,18 +56,20 @@
       'config' => $officeHoursConfigData,
       'preview' => $officeHoursPreviewData,
   ];
+    $officeHoursServiceOptions = $officeHoursConfigData['service_options'] ?? $initialSchedulerPayload['service_options'] ?? [];
   $officeHoursEnabled = filter_var(old('office_hours.enabled', $officeHoursConfigData['enabled'] ?? false), FILTER_VALIDATE_BOOLEAN);
-  $selectedOfficeHoursServiceId = old('office_hours.service_config_id', $officeHoursConfigData['service_config_id'] ?? '');
+    $selectedOfficeHoursServiceId = old('office_hours.service_config_id', $officeHoursConfigData['service_config_id'] ?? '');
+    if ($selectedOfficeHoursServiceId === '' && !empty($officeHoursServiceOptions)) {
+      $selectedOfficeHoursServiceId = (string) ($officeHoursServiceOptions[0]['value'] ?? '');
+    }
   $selectedOfficeHoursDay = old('office_hours.day_of_week', $officeHoursConfigData['day_of_week'] ?? 'sun');
   $selectedOfficeHoursTime = old('office_hours.start_time', $officeHoursConfigData['start_time'] ?? '20:00');
-  $selectedOfficeHoursTimezone = old('office_hours.timezone', $officeHoursConfigData['timezone'] ?? 'UTC');
   $selectedOfficeHoursFrequency = old('office_hours.frequency', $officeHoursConfigData['frequency'] ?? 'weekly');
   if ($hasOldInput) {
       $officeHoursConfigData['enabled'] = $officeHoursEnabled;
       $officeHoursConfigData['service_config_id'] = $selectedOfficeHoursServiceId !== '' ? (int) $selectedOfficeHoursServiceId : null;
       $officeHoursConfigData['day_of_week'] = $selectedOfficeHoursDay;
       $officeHoursConfigData['start_time'] = $selectedOfficeHoursTime;
-      $officeHoursConfigData['timezone'] = $selectedOfficeHoursTimezone;
       $officeHoursConfigData['frequency'] = $selectedOfficeHoursFrequency;
       $initialSchedulerPayload['office_hours']['config'] = $officeHoursConfigData;
   }
@@ -168,7 +170,7 @@
                 <span class="availability-switch-ui" aria-hidden="true"></span>
                 <span class="availability-switch-copy">
                   <strong>Enable recurring office hours</strong>
-                  <span>Students book these sessions with 1 credit at a recurring weekly or biweekly time.</span>
+                  <span>Students book these sessions with 1 credit at a recurring weekly time.</span>
                 </span>
               </label>
             </div>
@@ -178,7 +180,7 @@
                 <label for="officeHoursService">This Week&rsquo;s Focus</label>
                 <select id="officeHoursService" name="office_hours[service_config_id]">
                   <option value="">Select service</option>
-                  @foreach ($officeHoursConfigData['service_options'] ?? $initialSchedulerPayload['service_options'] ?? [] as $option)
+                  @foreach ($officeHoursServiceOptions as $option)
                     <option value="{{ $option['value'] }}" @selected((string) $selectedOfficeHoursServiceId === (string) $option['value'])>
                       {{ $option['label'] }}
                     </option>
@@ -212,26 +214,9 @@
               </div>
 
               <div class="availability-field">
-                <label for="officeHoursTimezone">Timezone</label>
-                <select id="officeHoursTimezone" name="office_hours[timezone]">
-                  @foreach ($timezoneOptions as $value => $label)
-                    <option value="{{ $value }}" @selected($selectedOfficeHoursTimezone === $value)>
-                      {{ $label }} ({{ $value }})
-                    </option>
-                  @endforeach
-                </select>
-                <p class="availability-field-error" id="officeHoursTimezoneError">{{ $errors->first('office_hours.timezone') }}</p>
-              </div>
-
-              <div class="availability-field">
-                <label for="officeHoursFrequency">Frequency</label>
-                <select id="officeHoursFrequency" name="office_hours[frequency]">
-                  @foreach ($officeHoursConfigData['frequency_options'] ?? [] as $option)
-                    <option value="{{ $option['value'] }}" @selected($selectedOfficeHoursFrequency === $option['value'])>
-                      {{ $option['label'] }}
-                    </option>
-                  @endforeach
-                </select>
+                <input type="hidden" id="officeHoursFrequency" name="office_hours[frequency]" value="weekly" />
+                <label>Frequency</label>
+                <div class="availability-fixed-field">Weekly</div>
                 <p class="availability-field-error" id="officeHoursFrequencyError">{{ $errors->first('office_hours.frequency') }}</p>
               </div>
 
@@ -240,47 +225,6 @@
                 <div class="availability-office-hours-fixed-value">3 spots</div>
                 <p>Meeting type stays fixed as small-group office hours.</p>
               </div>
-            </div>
-          </div>
-
-          <div class="availability-office-hours-preview">
-            <div class="availability-office-hours-mentor">
-              <div class="availability-office-hours-mentor-mark" aria-hidden="true">
-                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                  <path d="M12 3 2 8l10 5 10-5-10-5Z"></path>
-                  <path d="M6 11v4.5c0 1.1 2.7 2.5 6 2.5s6-1.4 6-2.5V11"></path>
-                </svg>
-              </div>
-              <div>
-                <div class="availability-office-hours-mentor-name" id="officeHoursMentorName">{{ $officeHoursPreviewData['mentor_name'] ?? auth()->user()?->name ?? 'Mentor' }}</div>
-                <div class="availability-office-hours-mentor-meta" id="officeHoursMentorMeta">{{ $officeHoursPreviewData['mentor_meta'] ?? 'Mentor' }}</div>
-              </div>
-            </div>
-
-            <div class="availability-office-hours-preview-grid">
-              <article class="availability-office-hours-tile">
-                <div class="availability-office-hours-tile-label">This Week&rsquo;s Focus</div>
-                <div class="availability-office-hours-tile-value" id="officeHoursWeeklyService">{{ $officeHoursPreviewData['weekly_service'] ?? 'Office Hours' }}</div>
-              </article>
-
-              <article class="availability-office-hours-tile">
-                <div class="availability-office-hours-tile-label">Recurring Weekly Time</div>
-                <div class="availability-office-hours-tile-value" id="officeHoursRecurringTime">{{ $officeHoursPreviewData['recurring_time'] ?? 'Schedule coming soon' }}</div>
-              </article>
-
-              <article class="availability-office-hours-tile">
-                <div class="availability-office-hours-tile-label">Meeting Type</div>
-                <div class="availability-office-hours-tile-value" id="officeHoursMeetingType">{{ $officeHoursPreviewData['meeting_type'] ?? 'Small Group Office Hours' }}</div>
-              </article>
-
-              <article class="availability-office-hours-tile">
-                <div class="availability-office-hours-tile-label">Current Availability</div>
-                <div class="availability-office-hours-tile-value" id="officeHoursAvailabilityText">{{ $officeHoursPreviewData['availability_text'] ?? 'No upcoming session generated yet' }}</div>
-              </article>
-            </div>
-
-            <div class="availability-office-hours-note" id="officeHoursNote">
-              {{ $officeHoursPreviewData['note'] ?? 'Turn on office hours to publish one recurring weekly or biweekly session for this mentor.' }}
             </div>
           </div>
         </div>

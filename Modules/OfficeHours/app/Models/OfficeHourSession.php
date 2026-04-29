@@ -4,6 +4,8 @@ namespace Modules\OfficeHours\app\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Modules\Bookings\app\Models\Booking;
 use Modules\Auth\app\Models\User;
 use Modules\Payments\app\Models\ServiceConfig;
 
@@ -24,6 +26,11 @@ class OfficeHourSession extends Model
         'first_booker_id',
         'first_booked_at',
         'service_choice_cutoff_at',
+        'meeting_link',
+        'external_calendar_event_id',
+        'calendar_provider',
+        'calendar_sync_status',
+        'calendar_last_error',
         'status',
     ];
 
@@ -50,5 +57,10 @@ class OfficeHourSession extends Model
     public function firstBooker(): BelongsTo
     {
         return $this->belongsTo(User::class, 'first_booker_id');
+    }
+
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'office_hour_session_id');
     }
 }

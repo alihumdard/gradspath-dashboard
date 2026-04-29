@@ -207,6 +207,20 @@
   transition: border-color var(--ease), box-shadow var(--ease), background var(--ease);
 }
 
+.availability-fixed-field {
+  width: 100%;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--panel-soft-2);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .availability-field select:focus,
 .availability-field input[type="date"]:focus,
 .availability-day-slot-controls select:focus,
@@ -282,7 +296,7 @@
 
 .availability-office-hours-shell {
   display: grid;
-  grid-template-columns: minmax(320px, 0.92fr) minmax(360px, 1.08fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   padding: 22px 24px 24px;
 }

@@ -5,6 +5,8 @@ namespace Modules\Bookings\app\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 use Modules\Bookings\app\Services\ZoomService;
+use Modules\OfficeHours\app\Models\OfficeHourSession;
+use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
 
 class CreateBookingRequest extends FormRequest
@@ -52,6 +54,7 @@ class CreateBookingRequest extends FormRequest
                     return $name !== '' || $email !== '';
                 })
                 ->values();
+            $mentor = Mentor::query()->with('user')->find((int) $this->input('mentor_id'));
 
             if ($sessionType === 'office_hours') {
                 if (!$this->filled('office_hour_session_id')) {
@@ -61,6 +64,35 @@ class CreateBookingRequest extends FormRequest
                 if ($this->filled('mentor_availability_slot_id')) {
                     $validator->errors()->add('mentor_availability_slot_id', 'Office Hours cannot use a standard mentor availability slot.');
                 }
+
+                if ($guestParticipants->isNotEmpty()) {
+                    $validator->errors()->add('guest_participants', 'Office Hours use fixed shared spots and cannot include group invitees.');
+                }
+
+                $hasActiveOfficeHours = $mentor?->officeHourSchedules()
+                    ->where('is_active', true)
+                    ->whereHas('mentor.services', fn ($query) => $query
+                        ->where('services_config.is_active', true)
+                        ->where('services_config.is_office_hours', true)
+                        ->where('mentor_services.is_active', true))
+                    ->exists() ?? false;
+
+                if (! $hasActiveOfficeHours) {
+                    $validator->errors()->add('booking', 'This mentor has not enabled Office Hours.');
+                }
+
+                if ($this->filled('office_hour_session_id') && $mentor) {
+                    $sessionBelongsToMentor = OfficeHourSession::query()
+                        ->whereKey((int) $this->input('office_hour_session_id'))
+                        ->whereHas('schedule', fn ($query) => $query
+                            ->where('mentor_id', $mentor->id)
+                            ->where('is_active', true))
+                        ->exists();
+
+                    if (! $sessionBelongsToMentor) {
+                        $validator->errors()->add('office_hour_session_id', 'Choose an active Office Hours session for this mentor.');
+                    }
+                }
             } else {
                 if (!$this->filled('mentor_availability_slot_id')) {
                     $validator->errors()->add('mentor_availability_slot_id', 'Please choose an available time slot.');
@@ -68,6 +100,20 @@ class CreateBookingRequest extends FormRequest
 
                 if ($this->filled('office_hour_session_id')) {
                     $validator->errors()->add('office_hour_session_id', 'Standard bookings cannot use an office-hours session.');
+                }
+            }
+
+            $service = $this->filled('service_config_id')
+                ? ServiceConfig::query()->find((int) $this->input('service_config_id'))
+                : null;
+
+            if ($service) {
+                if ($sessionType === 'office_hours' && ! (bool) $service->is_office_hours) {
+                    $validator->errors()->add('service_config_id', 'Office Hours bookings must use the Office Hours service.');
+                }
+
+                if ($sessionType !== 'office_hours' && (bool) $service->is_office_hours) {
+                    $validator->errors()->add('session_type', 'Choose Office Hours as the session type for the Office Hours service.');
                 }
             }
 
@@ -103,9 +149,7 @@ class CreateBookingRequest extends FormRequest
 
             if (
                 (string) $this->input('meeting_type', 'zoom') === 'zoom'
-                && $sessionType !== 'office_hours'
             ) {
-                $mentor = Mentor::query()->with('user')->find((int) $this->input('mentor_id'));
                 $zoom = app(ZoomService::class);
 
                 if (! $zoom->isConfigured()) {

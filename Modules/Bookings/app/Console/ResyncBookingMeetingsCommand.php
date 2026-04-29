@@ -87,8 +87,7 @@ class ResyncBookingMeetingsCommand extends Command
     private function targetBookings()
     {
         $query = Booking::query()
-            ->with(['booker', 'mentor.user', 'participantRecords', 'service'])
-            ->where('session_type', '!=', 'office_hours')
+            ->with(['booker', 'mentor.user', 'participantRecords', 'service', 'officeHourSession'])
             ->where('status', 'confirmed')
             ->where('session_at', '>', now())
             ->orderBy('id');

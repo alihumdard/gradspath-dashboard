@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\OauthToken;
@@ -185,6 +186,80 @@ it('updates mentor settings and syncs active services', function () {
         'mentor_id' => $mentor->id,
         'service_config_id' => $serviceA->id,
         'sort_order' => 1,
+    ]);
+});
+
+it('turns off active office-hours schedules when the office-hours service is disabled in settings', function () {
+    $mentorUser = createSettingsUser('mentor');
+    $mentor = Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'status' => 'active',
+    ]);
+    $normalService = ServiceConfig::query()->create([
+        'service_name' => 'Interview Prep',
+        'service_slug' => 'interview-prep-'.Str::lower(Str::random(5)),
+        'duration_minutes' => 60,
+        'is_active' => true,
+        'price_1on1' => 100,
+        'credit_cost_1on1' => 1,
+        'credit_cost_1on3' => 1,
+        'credit_cost_1on5' => 1,
+        'sort_order' => 1,
+    ]);
+    $officeHoursService = ServiceConfig::query()->create([
+        'service_name' => 'Office Hours',
+        'service_slug' => 'office-hours-'.Str::lower(Str::random(5)),
+        'duration_minutes' => 45,
+        'is_active' => true,
+        'is_office_hours' => true,
+        'price_1on1' => null,
+        'price_1on3_per_person' => null,
+        'price_1on3_total' => null,
+        'price_1on5_per_person' => null,
+        'price_1on5_total' => null,
+        'office_hours_subscription_price' => 200,
+        'office_hours_mentor_payout_per_attendee' => 15,
+        'credit_cost_1on1' => 1,
+        'credit_cost_1on3' => 1,
+        'credit_cost_1on5' => 1,
+        'sort_order' => 2,
+    ]);
+
+    $mentor->services()->sync([
+        $normalService->id => ['sort_order' => 0],
+        $officeHoursService->id => ['sort_order' => 1],
+    ]);
+
+    $scheduleId = DB::table('office_hour_schedules')->insertGetId([
+        'mentor_id' => $mentor->id,
+        'current_service_id' => $normalService->id,
+        'day_of_week' => 'tue',
+        'start_time' => '20:00:00',
+        'timezone' => 'UTC',
+        'frequency' => 'weekly',
+        'max_spots' => 3,
+        'is_active' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $this->withoutMiddleware()->actingAs($mentorUser)->patch(route('mentor.settings.update'), [
+        'name' => 'Mentor Example',
+        'email' => 'mentor@example.com',
+        'mentor_type' => 'graduate',
+        'title' => 'Admissions Mentor',
+        'bio' => 'Helping students prepare.',
+        'description' => 'Longer mentoring profile copy.',
+        'office_hours_schedule' => 'Every Tuesday at 8 PM UTC',
+        'edu_email' => 'mentor@example.edu',
+        'timezone' => 'UTC',
+        'service_config_ids' => [$normalService->id],
+    ])->assertRedirect(route('mentor.settings.index'));
+
+    $this->assertDatabaseHas('office_hour_schedules', [
+        'id' => $scheduleId,
+        'is_active' => false,
     ]);
 });
 

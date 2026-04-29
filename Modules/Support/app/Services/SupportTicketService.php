@@ -33,12 +33,18 @@ class SupportTicketService
     public function reply(SupportTicket $ticket, User $admin, string $reply, string $status = 'in_progress'): SupportTicket
     {
         return DB::transaction(function () use ($ticket, $admin, $reply, $status) {
-            $ticket->update([
-                'admin_reply' => trim($reply),
+            $reply = trim($reply);
+            $updates = [
                 'status' => $status,
                 'handled_by' => $admin->id,
-                'replied_at' => now(),
-            ]);
+            ];
+
+            if ($reply !== '') {
+                $updates['admin_reply'] = $reply;
+                $updates['replied_at'] = now();
+            }
+
+            $ticket->update($updates);
 
             return $ticket->fresh();
         });

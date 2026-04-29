@@ -36,7 +36,6 @@
   const officeHoursServiceSelect = document.getElementById("officeHoursService");
   const officeHoursDaySelect = document.getElementById("officeHoursDay");
   const officeHoursTimeSelect = document.getElementById("officeHoursTime");
-  const officeHoursTimezoneSelect = document.getElementById("officeHoursTimezone");
   const officeHoursFrequencySelect = document.getElementById("officeHoursFrequency");
   const officeHoursFields = document.getElementById("officeHoursFields");
   const officeHoursSpotsBadge = document.getElementById("officeHoursSpotsBadge");
@@ -50,7 +49,6 @@
   const officeHoursServiceError = document.getElementById("officeHoursServiceError");
   const officeHoursDayError = document.getElementById("officeHoursDayError");
   const officeHoursTimeError = document.getElementById("officeHoursTimeError");
-  const officeHoursTimezoneError = document.getElementById("officeHoursTimezoneError");
   const officeHoursFrequencyError = document.getElementById("officeHoursFrequencyError");
 
   const monthGrid = document.getElementById("availabilityMonthGrid");
@@ -151,7 +149,7 @@
       1,
     );
     const today = parseDateInput(String(input.today || formatDateKey(new Date())));
-    const firstSelectable = findFirstSelectableDate(monthDate, today);
+    const initialSelectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
     return {
       saveUrl: String(input.save_url || form.action || ""),
@@ -179,8 +177,8 @@
       today,
       currentMonth: monthDate,
       currentView: "week",
-      selectedDate: firstSelectable,
-      selectedDayKey: firstSelectable ? formatDateKey(firstSelectable) : formatDateKey(today),
+      selectedDate: initialSelectedDate,
+      selectedDayKey: formatDateKey(initialSelectedDate),
       officeHours: normalizeOfficeHours(input.office_hours),
     };
   }
@@ -188,24 +186,27 @@
   function normalizeOfficeHours(input) {
     const config = input?.config && typeof input.config === "object" ? input.config : {};
     const preview = input?.preview && typeof input.preview === "object" ? input.preview : {};
+    const firstServiceOption = Array.isArray(input?.service_options) && input.service_options.length > 0 ? input.service_options[0] : null;
+    const fallbackServiceId = firstServiceOption?.value ? Number(firstServiceOption.value) : null;
+    const serviceConfigId = config.service_config_id ? Number(config.service_config_id) : fallbackServiceId;
 
     return {
       enabled: Boolean(config.enabled),
-      serviceConfigId: config.service_config_id ? Number(config.service_config_id) : null,
+      serviceConfigId,
       dayOfWeek: String(config.day_of_week || "sun"),
       startTime: String(config.start_time || "20:00"),
       timezone: String(config.timezone || "UTC"),
-      frequency: String(config.frequency || "weekly"),
+      frequency: "weekly",
       meetingType: String(config.meeting_type || preview.meeting_type || "Small Group Office Hours"),
       preview: {
         mentorName: String(preview.mentor_name || "Mentor"),
         mentorMeta: String(preview.mentor_meta || "Mentor"),
         spotsBadge: String(preview.spots_badge || "0/3 spots filled"),
-        weeklyService: String(preview.weekly_service || serviceLabelById(config.service_config_id) || "Office Hours"),
+        weeklyService: String(preview.weekly_service || serviceLabelById(serviceConfigId) || "Office Hours"),
         recurringTime: String(preview.recurring_time || "Schedule coming soon"),
         meetingType: String(preview.meeting_type || "Small Group Office Hours"),
         availabilityText: String(preview.availability_text || "No upcoming session generated yet"),
-        note: String(preview.note || "Turn on office hours to publish one recurring weekly or biweekly session for this mentor."),
+        note: String(preview.note || "Turn on office hours to publish one recurring weekly session for this mentor."),
         serviceLocked: Boolean(preview.service_locked),
         hasUpcomingSession: Boolean(preview.has_upcoming_session),
       },
@@ -215,6 +216,7 @@
   function bindEvents() {
     timezoneSelect?.addEventListener("change", () => {
       state.timezone = timezoneSelect.value;
+      state.officeHours.timezone = timezoneSelect.value;
       markDirty();
       render();
     });
@@ -237,7 +239,6 @@
       officeHoursServiceSelect,
       officeHoursDaySelect,
       officeHoursTimeSelect,
-      officeHoursTimezoneSelect,
       officeHoursFrequencySelect,
     ].forEach((field) => {
       field?.addEventListener("change", handleOfficeHoursChange);
@@ -393,6 +394,7 @@
 
     if (field === "start") {
       block.startTime = normalizeTimeFieldValue(select.value, block.startTime);
+      block.endTime = endTimeForService(block.startTime, block.serviceConfigId);
     }
 
     if (field === "end") {
@@ -401,6 +403,7 @@
 
     if (field === "service") {
       block.serviceConfigId = select.value ? Number(select.value) : null;
+      block.endTime = endTimeForService(block.startTime, block.serviceConfigId);
     }
 
     state.days[state.selectedDayKey].blocks = sortBlocks(state.days[state.selectedDayKey].blocks);
@@ -812,8 +815,8 @@
 
     const locked = isLockedDate(selectedDate);
     const hasSlots = day.blocks.length > 0;
-    const hasEditableFutureSlots = day.blocks.some((block) => !block.isBooked && !isPastTimeBlock(dayKey, block));
-    const canAddAnotherSlot = !locked && hasServiceOptions() && hasRemainingTimeWindow(dayKey);
+    const hasEditableSlots = day.blocks.some((block) => !block.isBooked);
+    const canAddAnotherSlot = hasServiceOptions() && hasRemainingTimeWindow(dayKey);
     const formattedDate = selectedDate.toLocaleDateString(undefined, {
       weekday: "long",
       month: "long",
@@ -832,7 +835,7 @@
       : "Add an active mentor service first before opening booking availability for this day.";
 
     addSlotButton.disabled = !canAddAnotherSlot;
-    clearDayButton.disabled = locked || !hasEditableFutureSlots;
+    clearDayButton.disabled = !hasEditableSlots;
 
     const error = getDayError(dayKey);
     dayErrorEl.textContent = error;
@@ -842,8 +845,6 @@
       emptyState.hidden = false;
       emptyState.textContent = !hasServiceOptions()
         ? "You do not have any active non-office-hours mentor services yet. Add one first to create availability slots."
-        : locked
-        ? `${formattedDate} is in the past and locked. Select a current or future date to edit availability.`
         : !hasRemainingTimeWindow(dayKey)
         ? `No future time remains on ${formattedDate}. Select another day to add availability.`
         : `This date is currently unavailable. Add a slot and choose its service to make ${formattedDate} bookable.`;
@@ -917,7 +918,8 @@
   function renderSlotRow(block, locked) {
     const isBooked = Boolean(block.isBooked);
     const isPast = isPastTimeBlock(state.selectedDayKey, block);
-    const isDisabled = locked || isBooked || isPast;
+    const fieldsDisabled = isBooked;
+    const removeDisabled = isBooked;
     const badgeLabel = isBooked ? "Booked" : isPast ? "Past" : "";
 
     return `
@@ -938,7 +940,7 @@
               min="00:00"
               max="23:59"
               step="60"
-              ${isDisabled ? "disabled" : ""}
+              ${fieldsDisabled ? "disabled" : ""}
             />
           </label>
           <label class="availability-day-slot-field availability-day-slot-field--end">
@@ -951,17 +953,17 @@
               min="00:00"
               max="23:59"
               step="60"
-              ${isDisabled ? "disabled" : ""}
+              ${fieldsDisabled ? "disabled" : ""}
             />
           </label>
           <label class="availability-day-slot-field availability-day-slot-service">
             <span>Service</span>
-            <select data-slot-field="service" data-block-id="${block.id}" ${isDisabled ? "disabled" : ""}>
+            <select data-slot-field="service" data-block-id="${block.id}" ${fieldsDisabled ? "disabled" : ""}>
               ${renderServiceOptions(block.serviceConfigId)}
             </select>
           </label>
-          <button type="button" class="availability-danger-text-btn" data-remove-slot data-block-id="${block.id}" ${isDisabled ? "disabled" : ""}>
-            ${isBooked || isPast ? "Locked" : "Remove"}
+          <button type="button" class="availability-danger-text-btn" data-remove-slot data-block-id="${block.id}" ${removeDisabled ? "disabled" : ""}>
+            ${isBooked ? "Locked" : "Remove"}
           </button>
         </div>
       </div>
@@ -1021,10 +1023,6 @@
       officeHoursTimeSelect.value = state.officeHours.startTime;
     }
 
-    if (officeHoursTimezoneSelect && officeHoursTimezoneSelect.value !== state.officeHours.timezone) {
-      officeHoursTimezoneSelect.value = state.officeHours.timezone;
-    }
-
     if (officeHoursFrequencySelect && officeHoursFrequencySelect.value !== state.officeHours.frequency) {
       officeHoursFrequencySelect.value = state.officeHours.frequency;
     }
@@ -1033,7 +1031,6 @@
       officeHoursServiceSelect,
       officeHoursDaySelect,
       officeHoursTimeSelect,
-      officeHoursTimezoneSelect,
       officeHoursFrequencySelect,
     ].forEach((field) => {
       if (!field) {
@@ -1050,18 +1047,22 @@
     }
 
     const payload = state.dayOrder
-      .map((dayKey) => ({
-        date: dayKey,
-        enabled: state.days[dayKey].blocks.length > 0,
-        slots: sortBlocks(state.days[dayKey].blocks).map((block) => ({
+      .map((dayKey) => {
+        const slots = serializableBlocks(dayKey).map((block) => ({
           slot_id: block.slotId ?? null,
           start_time: block.startTime,
           end_time: block.endTime,
           service_config_id: block.serviceConfigId ?? null,
           is_booked: block.isBooked,
           booking_count: block.bookingCount,
-        })),
-      }))
+        }));
+
+        return {
+          date: dayKey,
+          enabled: slots.length > 0,
+          slots,
+        };
+      })
       .filter((day) => day.enabled || day.slots.length > 0);
 
     hiddenState.innerHTML = `<input type="hidden" name="date_slots_payload" value="${escapeAttribute(JSON.stringify(payload))}" />`;
@@ -1166,6 +1167,9 @@
 
   function hydrateFromResponse(input) {
     const next = createState(input);
+    const currentView = state.currentView || next.currentView || "week";
+    const selectedDate = state.selectedDate || next.selectedDate;
+    const selectedDayKey = state.selectedDayKey || next.selectedDayKey;
 
     state.saveUrl = next.saveUrl;
     state.timezoneOptions = next.timezoneOptions;
@@ -1179,10 +1183,12 @@
     state.days = next.days;
     state.serverInsights = next.serverInsights;
     state.today = next.today;
-    state.currentMonth = next.currentMonth;
-    state.currentView = state.currentView || next.currentView || "week";
-    state.selectedDate = next.selectedDate;
-    state.selectedDayKey = next.selectedDayKey;
+    state.currentMonth = selectedDate
+      ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+      : next.currentMonth;
+    state.currentView = currentView;
+    state.selectedDate = selectedDate;
+    state.selectedDayKey = selectedDayKey;
     state.officeHours = next.officeHours;
     state.dirty = false;
   }
@@ -1200,9 +1206,16 @@
 
       const blocks = sortBlocks(day.blocks);
       const dayLabel = formatDateLong(parseDateInput(dayKey) || state.today);
+      let previousEnd = null;
 
       for (let index = 0; index < blocks.length; index += 1) {
         const block = blocks[index];
+
+        if (!block.isBooked && isPastTimeBlock(dayKey, block)) {
+          dayErrors[dayKey] = `${dayLabel}: the ${formatTimeRange(block.startTime, block.endTime)} slot has already started or passed. Remove it, or change its start time to a future time.`;
+          hasErrors = true;
+          return;
+        }
 
         if (!block.startTime || !block.endTime || block.startTime >= block.endTime) {
           dayErrors[dayKey] = `${dayLabel} blocks must end after they start.`;
@@ -1216,17 +1229,13 @@
           return;
         }
 
-        if (!block.isBooked && isPastTimeBlock(dayKey, block)) {
-          dayErrors[dayKey] = `${dayLabel} time blocks must start in the future.`;
+        if (previousEnd !== null && block.startTime < previousEnd) {
+          dayErrors[dayKey] = `${dayLabel}: this time overlaps another slot. Choose a start time after the previous slot ends, or remove one of the slots.`;
           hasErrors = true;
           return;
         }
 
-        if (index > 0 && block.startTime < blocks[index - 1].endTime) {
-          dayErrors[dayKey] = `${dayLabel} blocks cannot overlap.`;
-          hasErrors = true;
-          return;
-        }
+        previousEnd = block.endTime;
       }
     });
 
@@ -1246,13 +1255,11 @@
         hasErrors = true;
       }
 
-      if (!state.officeHours.timezone) {
-        officeHoursErrors.timezone = "Choose the office-hours timezone.";
-        hasErrors = true;
-      }
-
       if (!state.officeHours.frequency) {
-        officeHoursErrors.frequency = "Choose whether office hours repeat weekly or biweekly.";
+        officeHoursErrors.frequency = "Choose weekly office hours.";
+        hasErrors = true;
+      } else if (state.officeHours.frequency !== "weekly") {
+        officeHoursErrors.frequency = "Office hours must repeat weekly.";
         hasErrors = true;
       }
     }
@@ -1270,8 +1277,8 @@
     state.officeHours.serviceConfigId = officeHoursServiceSelect?.value ? Number(officeHoursServiceSelect.value) : null;
     state.officeHours.dayOfWeek = String(officeHoursDaySelect?.value || "sun");
     state.officeHours.startTime = String(officeHoursTimeSelect?.value || "");
-    state.officeHours.timezone = String(officeHoursTimezoneSelect?.value || "UTC");
-    state.officeHours.frequency = String(officeHoursFrequencySelect?.value || "weekly");
+    state.officeHours.timezone = String(state.timezone || "UTC");
+    state.officeHours.frequency = "weekly";
     state.officeHours.preview = buildDraftOfficeHoursPreview();
     markDirty();
     render();
@@ -1280,7 +1287,6 @@
   function buildDraftOfficeHoursPreview() {
     const serviceName = serviceLabelById(state.officeHours.serviceConfigId) || "Office Hours";
     const weekday = weekdayLabel(state.officeHours.dayOfWeek);
-    const frequencyText = state.officeHours.frequency === "biweekly" ? "Biweekly" : "Weekly";
     const recurringTime = state.officeHours.enabled
       ? state.officeHours.startTime
         ? `${weekday}, ${formatTimeLabel(state.officeHours.startTime)} ${timezoneShortLabel(state.officeHours.timezone)}`
@@ -1294,10 +1300,10 @@
       weeklyService: serviceName,
       recurringTime,
       meetingType: "Small Group Office Hours",
-      availabilityText: state.officeHours.enabled ? `No upcoming ${frequencyText.toLowerCase()} session generated yet` : "Office hours are currently off",
+      availabilityText: state.officeHours.enabled ? "No upcoming weekly session generated yet" : "Office hours are currently off",
       note: state.officeHours.enabled
         ? `This week's office hours are currently set as ${serviceName}. Once an upcoming session is generated, spots and service-lock details will appear here.`
-        : "Turn on office hours to publish one recurring weekly or biweekly session for this mentor.",
+        : "Turn on office hours to publish one recurring weekly session for this mentor.",
       serviceLocked: false,
       hasUpcomingSession: false,
     };
@@ -1307,7 +1313,6 @@
     renderFieldError(officeHoursServiceError, getOfficeHoursError("service_config_id"));
     renderFieldError(officeHoursDayError, getOfficeHoursError("day_of_week"));
     renderFieldError(officeHoursTimeError, getOfficeHoursError("start_time"));
-    renderFieldError(officeHoursTimezoneError, getOfficeHoursError("timezone"));
     renderFieldError(officeHoursFrequencyError, getOfficeHoursError("frequency"));
   }
 
@@ -1381,7 +1386,7 @@
         return;
       }
 
-      state.days[dayKey].blocks.forEach((block) => {
+      serializableBlocks(dayKey).forEach((block) => {
         weeklyMinutes += diffMinutes(block.startTime, block.endTime);
       });
     });
@@ -1394,7 +1399,7 @@
         return;
       }
 
-      day.blocks.forEach((block) => {
+      serializableBlocks(dayKey).forEach((block) => {
         if (!block.startTime || !block.endTime || block.startTime >= block.endTime) {
           return;
         }
@@ -1458,6 +1463,34 @@
     return match ? String(match.label || "") : "";
   }
 
+  function serviceDurationById(serviceId) {
+    const match = state.serviceOptions.find((option) => Number(option.value) === Number(serviceId));
+    const duration = Number(match?.duration_minutes || match?.durationMinutes || 0);
+
+    return Number.isFinite(duration) && duration > 0 ? duration : 60;
+  }
+
+  function endTimeForService(startTime, serviceId) {
+    if (!startTime || !serviceId) {
+      return "";
+    }
+
+    return addMinutes(startTime, serviceDurationById(serviceId));
+  }
+
+  function addMinutes(value, minutesToAdd) {
+    const [hourRaw, minuteRaw] = String(value || "").split(":").map(Number);
+    const hour = Number.isFinite(hourRaw) ? hourRaw : 0;
+    const minute = Number.isFinite(minuteRaw) ? minuteRaw : 0;
+    const total = (hour * 60) + minute + Number(minutesToAdd || 0);
+
+    if (total >= 24 * 60) {
+      return "";
+    }
+
+    return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+  }
+
   function addSuggestedBlock(dayKey) {
     if (!hasServiceOptions()) {
       return;
@@ -1485,9 +1518,10 @@
     const start = last
       ? maxTimeValue(last.endTime, suggestedStart)
       : suggestedStart;
-    const end = addHour(start);
+    const serviceConfigId = defaultServiceConfigId();
+    const end = endTimeForService(start, serviceConfigId);
 
-    if (!start || start >= "24:00" || start === "23:30" || end <= start) {
+    if (!start || start >= "24:00" || start === "23:30" || !end || end <= start) {
       return;
     }
 
@@ -1495,8 +1529,8 @@
       id: createBlockId(),
       slotId: null,
       startTime: clampTime(start),
-      endTime: clampTime(end),
-      serviceConfigId: defaultServiceConfigId(),
+      endTime: normalizeExactTime(end),
+      serviceConfigId,
       isBooked: false,
       bookingCount: 0,
     });
@@ -1521,7 +1555,7 @@
       return;
     }
 
-    day.blocks = day.blocks.filter((block) => block.isBooked || isPastTimeBlock(dayKey, block));
+    day.blocks = day.blocks.filter((block) => block.isBooked);
     markDirty();
   }
 
@@ -1611,9 +1645,14 @@
     return Boolean(nextStart && nextStart < "23:30");
   }
 
+  function serializableBlocks(dayKey) {
+    return sortBlocks(state.days[dayKey]?.blocks || [])
+      .filter((block) => block.isBooked || !isPastTimeBlock(dayKey, block));
+  }
+
   function defaultStartTimeForDay(dayKey) {
     const nowParts = currentTimePartsInTimezone(state.timezone);
-    if (!nowParts || dayKey !== nowParts.dateKey) {
+    if (!nowParts) {
       return "09:00";
     }
 

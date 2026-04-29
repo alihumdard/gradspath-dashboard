@@ -137,7 +137,11 @@
         <span class="service-name">Office Hours</span>
       </button>
       </div>
-        <p class="service-lock-note">Service is locked after booking and cannot be changed here.</p>
+        <div class="service-choice-row" id="officeHoursServiceChoiceRow" hidden>
+          <p class="service-lock-note" id="officeHoursServiceChoiceNote">Office Hours focus updates here when eligible.</p>
+          <button class="feedback-trigger-btn service-choice-trigger" id="openOfficeHoursServiceChoiceBtn" type="button">Change Office Hours Focus</button>
+        </div>
+        <p class="service-lock-note" id="serviceLockNote">Service is locked after booking and cannot be changed here.</p>
       </section>
         <div class="info-grid">
           <div class="info-box mentor-profile-box">
@@ -308,6 +312,18 @@
             <div class="support-note">Include your mentor name, booked date, and session time if you contact support.</div>
             <div class="modal-actions single">
               <button class="modal-btn primary" id="supportCloseBtn" type="button">Done</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-overlay hidden" id="officeHoursServiceChoiceModal">
+          <div class="modal-card service-choice-modal-card">
+            <h3>Choose Office Hours Focus</h3>
+            <p id="officeHoursServiceChoiceModalText">You are the only student booked for this session, so you can choose another eligible service before the cutoff.</p>
+            <div class="service-choice-options" id="officeHoursServiceChoiceOptions"></div>
+            <div class="service-choice-alert" id="officeHoursServiceChoiceAlert" hidden></div>
+            <div class="modal-actions">
+              <button class="modal-btn secondary" id="closeOfficeHoursServiceChoiceBtn" type="button">Keep Current Focus</button>
+              <button class="modal-btn primary" id="saveOfficeHoursServiceChoiceBtn" type="button">Save Focus</button>
             </div>
           </div>
         </div>

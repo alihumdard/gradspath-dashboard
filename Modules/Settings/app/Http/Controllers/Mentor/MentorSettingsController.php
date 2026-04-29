@@ -152,6 +152,18 @@ class MentorSettingsController extends Controller
                     $id => ['sort_order' => $index],
                 ])->all()
             );
+
+            $officeHoursEnabled = ServiceConfig::query()
+                ->whereIn('id', $serviceIds)
+                ->where('is_active', true)
+                ->where('is_office_hours', true)
+                ->exists();
+
+            if (! $officeHoursEnabled) {
+                $mentor->officeHourSchedules()
+                    ->where('is_active', true)
+                    ->update(['is_active' => false]);
+            }
         });
 
         return redirect()

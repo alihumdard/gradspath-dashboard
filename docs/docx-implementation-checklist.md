@@ -25,7 +25,7 @@ Estimated overall completion: `~65-75%`
 | Authentication & User Management | `Mostly Done` | Core Laravel 12 auth works, but mentor approval still differs from the plan |
 | Find Mentors & Dashboard | `Mostly Done` | Search and featured data exist, but some UI/content is still fallback |
 | Institutions / Explore by University | `Mostly Done` | CRUD and browse flow work, but some planned filters are missing |
-| Office Hours | `Partial` | Core session logic exists, but automation/rotation is not complete |
+| Office Hours | `Mostly Done` | Core session logic, weekly automation/rotation, capacity, and first-student choice are implemented; biweekly remains intentionally out of scope |
 | Feedback & Reviews | `Partial` | Submission and moderation work, advanced analytics are incomplete |
 | Mentor Notes | `Mostly Remaining` | UI and migration exist, but backend CRUD is missing |
 | Bookings & Session Management | `Mostly Done` | Booking and chat work well, but planned Zoom-based meeting creation is not implemented yet |
@@ -165,7 +165,7 @@ Remaining work:
 
 ### 4. Office Hours Module
 
-Status: `Partial`
+Status: `Mostly Done`
 
 - `[x]` Office hour schedules and sessions data model
 - `[x]` Mentor office hours configuration in availability flow
@@ -175,15 +175,19 @@ Status: `Partial`
 - `[x]` First booker metadata
 - `[x]` Service lock after additional bookings
 - `[x]` Weekly/biweekly labels in surfaced data
-- `[-]` First-student choice messaging
-- `[ ]` Automated rotation engine
-- `[ ]` Automated recurring session generation engine proven in code
+- `[x]` First-student choice messaging
+- `[x]` First-student service-change workflow
+- `[x]` Automated weekly rotation engine
+- `[x]` Automated recurring session generation engine proven in code
 - `[ ]` Full dedicated mentor office-hours management backend beyond availability integration
+- `[ ]` Biweekly automation, if this becomes required again
 
 Notes:
 
 - The booking/availability side understands office-hours sessions well.
-- I did not find the planned CRON/background rotation engine that creates or rotates sessions/services automatically.
+- Weekly-only recurring generation and service rotation now run through `office-hours:sync-sessions`.
+- The first booked student can choose another active mentor service only while they are the sole attendee and the session is between 24 and 12 hours away.
+- Biweekly remains intentionally out of scope for the completed version, even though the older schema/UI still has the option.
 
 Evidence:
 
@@ -191,14 +195,14 @@ Evidence:
 - [Modules/Bookings/app/Services/BookingService.php](/home/rauf/projects/gradspath-dashboard/Modules/Bookings/app/Services/BookingService.php:236)
 - [Modules/OfficeHours/app/Http/Controllers/Student/OfficeHoursController.php](/home/rauf/projects/gradspath-dashboard/Modules/OfficeHours/app/Http/Controllers/Student/OfficeHoursController.php:9)
 - [Modules/OfficeHours/app/Http/Controllers/Mentor/OfficeHoursController.php](/home/rauf/projects/gradspath-dashboard/Modules/OfficeHours/app/Http/Controllers/Mentor/OfficeHoursController.php:8)
+- [Modules/OfficeHours/app/Console/SyncOfficeHourSessionsCommand.php](/home/rauf/projects/gradspath-dashboard/Modules/OfficeHours/app/Console/SyncOfficeHourSessionsCommand.php:8)
+- [Modules/OfficeHours/app/Services/OfficeHourServiceChoiceService.php](/home/rauf/projects/gradspath-dashboard/Modules/OfficeHours/app/Services/OfficeHourServiceChoiceService.php:10)
 - [tests/Feature/MentorBookingAndAvailabilityTest.php](/home/rauf/projects/gradspath-dashboard/tests/Feature/MentorBookingAndAvailabilityTest.php:232)
 
 Remaining work:
 
-- Build the automated rotation engine.
-- Build or confirm recurring session generation.
-- Implement the full first-student service-change workflow, not just the surfaced messaging/state.
 - Expand the dedicated mentor office-hours backend beyond the availability page integration.
+- Add biweekly automation only if product decides to support it again.
 
 ### 5. Feedback & Reviews Module
 

@@ -16,6 +16,7 @@ use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Services\BookingMeetingPresenter;
 use Modules\Bookings\app\Services\BookingPageService;
 use Modules\Bookings\app\Services\BookingService;
+use Modules\OfficeHours\app\Services\OfficeHourServiceChoiceService;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
 
@@ -25,12 +26,13 @@ class BookingController extends Controller
         private readonly BookingService $bookings,
         private readonly BookingPageService $bookingPage,
         private readonly BookingMeetingPresenter $meetingPresenter,
+        private readonly OfficeHourServiceChoiceService $officeHourChoices,
     ) {}
 
     public function index(Request $request): View
     {
         $bookings = Booking::query()
-            ->with(['mentor.user:id,name,avatar_url', 'service'])
+            ->with(['mentor.user:id,name,avatar_url', 'mentor.services', 'service', 'officeHourSession.currentService', 'officeHourSession.schedule.mentor.services'])
             ->where('student_id', Auth::id())
             ->orderByDesc('session_at')
             ->paginate((int) $request->integer('per_page', 20));
@@ -59,6 +61,7 @@ class BookingController extends Controller
                 'portal' => 'student',
                 'allow_office_hours' => true,
                 'max_meeting_size' => 5,
+                'selected_service' => (string) $request->query('service', ''),
             ]),
             'mentors' => Mentor::query()
                 ->with('user:id,name')
@@ -96,18 +99,19 @@ class BookingController extends Controller
 
         return redirect()
             ->route('student.bookings.show', $booking->id)
-            ->with('success', 'Booking created successfully.');
+            ->with('success', 'Booking created successfully.')
+            ->with('office_hours_service_choice_booking_id', $booking->session_type === 'office_hours' ? $booking->id : null);
     }
 
     public function show(int $id): View
     {
         $booking = Booking::query()
-            ->with(['mentor.user', 'service', 'student'])
+            ->with(['mentor.user', 'mentor.services', 'service', 'student', 'officeHourSession.currentService', 'officeHourSession.schedule.mentor.services'])
             ->findOrFail($id);
         Gate::authorize('view', $booking);
 
         $bookings = Booking::query()
-            ->with(['mentor.user:id,name,avatar_url', 'service'])
+            ->with(['mentor.user:id,name,avatar_url', 'mentor.services', 'service', 'officeHourSession.currentService', 'officeHourSession.schedule.mentor.services'])
             ->where('student_id', Auth::id())
             ->orderByDesc('session_at')
             ->paginate(20);
@@ -121,7 +125,7 @@ class BookingController extends Controller
 
     public function joinMeeting(int $id): RedirectResponse
     {
-        $booking = Booking::query()->findOrFail($id);
+        $booking = Booking::query()->with('officeHourSession')->findOrFail($id);
         Gate::authorize('view', $booking);
 
         if (! $booking->meetingAccessAllowed()) {
@@ -130,13 +134,15 @@ class BookingController extends Controller
                 ->with('error', $booking->meetingAccessMessage());
         }
 
-        if (! filled($booking->meeting_link)) {
+        $meetingLink = $this->meetingLink($booking);
+
+        if (! filled($meetingLink)) {
             return redirect()
                 ->route('student.bookings.show', $booking->id)
                 ->with('error', 'Meeting link is not ready yet.');
         }
 
-        return redirect()->away($booking->meeting_link);
+        return redirect()->away($meetingLink);
     }
 
     public function cancel(CancelBookingRequest $request, int $id): RedirectResponse
@@ -178,6 +184,7 @@ class BookingController extends Controller
 
         return [
             'selectedBookingId' => $selectedBooking?->id,
+            'autoOpenServiceChoiceBookingId' => session('office_hours_service_choice_booking_id'),
             'selectedBooking' => $selectedBooking ? $this->transformBooking($selectedBooking) : null,
             'serviceCatalog' => $serviceCatalog,
             'counterpartLabel' => 'Mentor',
@@ -198,6 +205,11 @@ class BookingController extends Controller
     {
         $sessionAt = $booking->sessionAtInTimezone();
         $mentorName = $booking->mentor?->user?->name ?? 'Mentor';
+        $officeHourSession = $booking->officeHourSession;
+        $officeHourFocusName = $officeHourSession?->currentService?->service_name;
+        $serviceChoice = $officeHourSession
+            ? $this->officeHourChoices->payload($officeHourSession, Auth::user())
+            : null;
         $mentorMeta = collect([
             $booking->mentor?->title,
             $this->programLabel($booking->mentor?->program_type),
@@ -216,6 +228,8 @@ class BookingController extends Controller
             'mentorTitle' => $booking->mentor?->title,
             'serviceName' => $booking->service?->service_name ?? 'Service',
             'serviceSlug' => $booking->service?->service_slug ?? null,
+            'officeHoursFocusName' => $officeHourFocusName,
+            'serviceChoice' => $serviceChoice,
             'meetingType' => $booking->meeting_type,
             'meetingSize' => $this->meetingSizeLabel($booking->session_type),
             'duration' => (int) $booking->duration_minutes,
@@ -226,7 +240,7 @@ class BookingController extends Controller
             'meetingLink' => $this->meetingLinkForBooking($booking),
             'meetingProvider' => $this->meetingPresenter->providerLabel($booking),
             'meetingLinkLabel' => $this->meetingPresenter->linkLabel($booking),
-            'meetingLinkStatus' => (string) ($booking->calendar_sync_status ?: 'not_synced'),
+            'meetingLinkStatus' => $this->calendarSyncStatus($booking),
             'meetingLinkStatusMessage' => $this->meetingPresenter->statusMessage($booking),
             'meetingAccessAllowed' => $this->meetingPresenter->accessAllowed($booking),
             'meetingAccessMessage' => $this->meetingPresenter->accessMessage($booking),
@@ -315,13 +329,49 @@ class BookingController extends Controller
             return route('student.bookings.join-meeting', $booking->id);
         }
 
-        return $booking->meeting_link;
+        return $this->meetingLink($booking);
     }
 
     private function isSyncedZoomBooking(Booking $booking): bool
     {
-        return $booking->calendar_provider === 'zoom'
-            && $booking->calendar_sync_status === 'synced'
-            && filled($booking->external_calendar_event_id);
+        return $this->calendarProvider($booking) === 'zoom'
+            && $this->calendarSyncStatus($booking) === 'synced'
+            && filled($this->externalMeetingId($booking));
+    }
+
+    private function meetingLink(Booking $booking): ?string
+    {
+        if ($booking->session_type === 'office_hours') {
+            return $booking->officeHourSession?->meeting_link ?: $booking->meeting_link;
+        }
+
+        return $booking->meeting_link;
+    }
+
+    private function externalMeetingId(Booking $booking): ?string
+    {
+        if ($booking->session_type === 'office_hours') {
+            return $booking->officeHourSession?->external_calendar_event_id ?: $booking->external_calendar_event_id;
+        }
+
+        return $booking->external_calendar_event_id;
+    }
+
+    private function calendarProvider(Booking $booking): ?string
+    {
+        if ($booking->session_type === 'office_hours') {
+            return $booking->officeHourSession?->calendar_provider ?: $booking->calendar_provider;
+        }
+
+        return $booking->calendar_provider;
+    }
+
+    private function calendarSyncStatus(Booking $booking): string
+    {
+        if ($booking->session_type === 'office_hours') {
+            return (string) ($booking->officeHourSession?->calendar_sync_status ?: $booking->calendar_sync_status ?: 'not_synced');
+        }
+
+        return (string) ($booking->calendar_sync_status ?: 'not_synced');
     }
 }

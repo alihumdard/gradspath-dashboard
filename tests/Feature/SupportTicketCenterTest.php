@@ -181,3 +181,71 @@ it('validates required support ticket fields', function (string $role, string $i
         ->assertRedirect(route($indexRoute))
         ->assertSessionHasErrors(['subject', 'message']);
 })->with('support portals');
+
+it('lets admins view user tickets and reply with a status update', function () {
+    $student = makeSupportUser('student', 'support-student');
+    $admin = makeSupportUser('admin', 'support-admin');
+
+    $ticket = app(SupportTicketService::class)->create($student, [
+        'subject' => 'Cannot access booking',
+        'message' => 'The meeting link is not opening.',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.support.tickets.index'))
+        ->assertOk()
+        ->assertSee('Support Tickets')
+        ->assertSee($ticket->ticket_ref)
+        ->assertSee('Cannot access booking')
+        ->assertSee($student->email)
+        ->assertDontSee('Save Reply');
+
+    $this->actingAs($admin)
+        ->get(route('admin.support.tickets.show', $ticket->id))
+        ->assertOk()
+        ->assertSee('Save Reply');
+
+    $this->from(route('admin.support.tickets.show', $ticket->id))
+        ->actingAs($admin)
+        ->patch(route('admin.support.tickets.update', $ticket->id), [
+            'admin_reply' => 'We refreshed the meeting link. Please try again.',
+            'status' => 'resolved',
+        ])
+        ->assertRedirect(route('admin.support.tickets.show', $ticket->id))
+        ->assertSessionHas('success', 'Support ticket updated successfully.');
+
+    $ticket->refresh();
+
+    expect($ticket->status)->toBe('resolved')
+        ->and($ticket->admin_reply)->toBe('We refreshed the meeting link. Please try again.')
+        ->and($ticket->handled_by)->toBe($admin->id)
+        ->and($ticket->replied_at)->not->toBeNull();
+});
+
+it('lets admins update ticket status without replacing the current reply', function () {
+    $student = makeSupportUser('student', 'support-student');
+    $admin = makeSupportUser('admin', 'support-admin');
+
+    $ticket = app(SupportTicketService::class)->create($student, [
+        'subject' => 'Payment proof',
+        'message' => 'Do you need anything else from me?',
+    ]);
+
+    app(SupportTicketService::class)->reply($ticket, $admin, 'Please upload the payment receipt.', 'more_information_required');
+    $ticket->refresh();
+    $originalReplyTime = $ticket->replied_at;
+
+    $this->actingAs($admin)
+        ->patch(route('admin.support.tickets.update', $ticket->id), [
+            'admin_reply' => '',
+            'status' => 'pending',
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('success', 'Support ticket updated successfully.');
+
+    $ticket->refresh();
+
+    expect($ticket->status)->toBe('pending')
+        ->and($ticket->admin_reply)->toBe('Please upload the payment receipt.')
+        ->and($ticket->replied_at?->toIso8601String())->toBe($originalReplyTime?->toIso8601String());
+});

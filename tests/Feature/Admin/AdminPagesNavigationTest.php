@@ -45,6 +45,7 @@ it('renders each dedicated admin page with sidebar navigation', function () {
         'admin.mentors' => 'Admin Mentors',
         'admin.services' => 'Admin Services',
         'admin.revenue' => 'Admin Revenue',
+        'admin.payouts' => 'Admin Payouts',
         'admin.rankings' => 'Admin Rankings',
         'admin.manual-actions' => 'Manual Controls',
     ];
@@ -58,6 +59,7 @@ it('renders each dedicated admin page with sidebar navigation', function () {
             ->assertSee('Mentors')
             ->assertSee('Services')
             ->assertSee('Revenue')
+            ->assertSee('Payouts')
             ->assertSee('Rankings')
             ->assertSee('Manual Actions')
             ->assertSee($heading);

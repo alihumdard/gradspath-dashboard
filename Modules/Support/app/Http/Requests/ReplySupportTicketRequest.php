@@ -14,8 +14,8 @@ class ReplySupportTicketRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'admin_reply' => ['required', 'string', 'max:5000'],
-            'status' => ['required', 'in:open,in_progress,resolved,closed'],
+            'admin_reply' => ['nullable', 'string', 'max:5000'],
+            'status' => ['required', 'in:open,pending,in_progress,more_information_required,resolved,closed'],
         ];
     }
 }

@@ -86,7 +86,7 @@ class BookingMeetingPresenter
 
     public function statusMessage(Booking $booking): string
     {
-        if ($booking->meeting_link) {
+        if ($this->meetingLink($booking)) {
             return match ($this->scheduledState($booking)) {
                 'live' => 'Meeting is live now. You can join with the Zoom link above.',
                 'ended' => 'This meeting window has ended. The Zoom link is kept here for reference.',
@@ -94,7 +94,7 @@ class BookingMeetingPresenter
             };
         }
 
-        return match ((string) $booking->calendar_sync_status) {
+        return match ($this->calendarSyncStatus($booking)) {
             'synced' => 'Zoom meeting is ready.',
             'failed' => 'Zoom meeting could not be generated automatically yet.',
             'skipped' => 'Zoom meeting is not generated for this booking type.',
@@ -138,7 +138,34 @@ class BookingMeetingPresenter
     private function isZoom(Booking $booking): bool
     {
         return $booking->meeting_type === 'zoom'
-            || $booking->calendar_provider === 'zoom'
-            || str_contains((string) $booking->meeting_link, 'zoom.us/');
+            || $this->calendarProvider($booking) === 'zoom'
+            || str_contains((string) $this->meetingLink($booking), 'zoom.us/');
+    }
+
+    private function meetingLink(Booking $booking): ?string
+    {
+        if ($booking->session_type === 'office_hours') {
+            return $booking->officeHourSession?->meeting_link ?: $booking->meeting_link;
+        }
+
+        return $booking->meeting_link;
+    }
+
+    private function calendarProvider(Booking $booking): ?string
+    {
+        if ($booking->session_type === 'office_hours') {
+            return $booking->officeHourSession?->calendar_provider ?: $booking->calendar_provider;
+        }
+
+        return $booking->calendar_provider;
+    }
+
+    private function calendarSyncStatus(Booking $booking): string
+    {
+        if ($booking->session_type === 'office_hours') {
+            return (string) ($booking->officeHourSession?->calendar_sync_status ?: $booking->calendar_sync_status);
+        }
+
+        return (string) $booking->calendar_sync_status;
     }
 }

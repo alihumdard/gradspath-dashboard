@@ -36,12 +36,6 @@ class BookingPageService
         $allowOfficeHours = (bool) ($options['allow_office_hours'] ?? ($portal === 'student'));
         $maxMeetingSize = (int) ($options['max_meeting_size'] ?? 5);
 
-        $services = $mentor->services
-            ->map(fn (ServiceConfig $service) => $this->transformService($service, $maxMeetingSize, $allowOfficeHours))
-            ->filter()
-            ->values()
-            ->all();
-
         $school = $mentor->grad_school_display
             ?: $mentor->university?->display_name
             ?: $mentor->university?->name
@@ -50,25 +44,57 @@ class BookingPageService
         $mentorName = $mentor->user?->name ?? 'Mentor';
         $programLabel = $this->programLabel($mentor->program_type);
         $viewerTimezone = TimezoneOptions::preferredFor($viewer?->loadMissing('setting'));
-        $officeHours = $this->availability->nextOfficeHourSessionForMentor($mentor, $viewerTimezone) ?? [
-            'sessionId' => null,
-            'mentorName' => $mentorName,
-            'mentorMeta' => trim($programLabel.' • '.$school, ' •'),
-            'weeklyService' => 'Office Hours',
-            'recurringTime' => $mentor->office_hours_schedule ?: 'Schedule coming soon',
-            'meetingType' => 'Small Group Office Hours',
-            'spotsFilled' => 0,
-            'maxSpots' => 3,
-            'remainingSpots' => 3,
-            'isFull' => false,
-            'isBookable' => false,
-            'availabilityText' => 'Availability updates soon',
-            'sessionDate' => null,
-            'sessionTime' => null,
-            'rotation' => null,
-            'serviceLocked' => false,
-            'note' => 'This mentor has not published an upcoming office-hours session yet.',
-        ];
+        $mentorHasOfficeHoursService = $allowOfficeHours && $this->mentorHasOfficeHoursService($mentor);
+        $activeOfficeHoursSchedule = $mentorHasOfficeHoursService
+            && $mentor->officeHourSchedules()->where('is_active', true)->exists();
+        $officeHours = $activeOfficeHoursSchedule
+            ? ($this->availability->nextOfficeHourSessionForMentor($mentor, $viewerTimezone) ?? [
+                'sessionId' => null,
+                'mentorName' => $mentorName,
+                'mentorMeta' => trim($programLabel.' • '.$school, ' •'),
+                'weeklyService' => 'Office Hours',
+                'recurringTime' => $mentor->office_hours_schedule ?: 'Schedule coming soon',
+                'meetingType' => 'Small Group Office Hours',
+                'spotsFilled' => 0,
+                'maxSpots' => 3,
+                'remainingSpots' => 3,
+                'isFull' => false,
+                'isBookable' => false,
+                'availabilityText' => 'Availability updates soon',
+                'sessionDate' => null,
+                'sessionTime' => null,
+                'rotation' => null,
+                'serviceLocked' => false,
+                'note' => 'This mentor has not published an upcoming office-hours session yet.',
+            ])
+            : null;
+        $servicesForBooking = $mentor->services;
+        $hasOfficeHoursSchedule = $activeOfficeHoursSchedule || (bool) ($officeHours['sessionId'] ?? false);
+
+        if (!$hasOfficeHoursSchedule) {
+            $servicesForBooking = $servicesForBooking
+                ->reject(fn (ServiceConfig $service) => (bool) $service->is_office_hours)
+                ->values();
+        }
+
+        if ($hasOfficeHoursSchedule && ! $servicesForBooking->contains(fn (ServiceConfig $service) => (bool) $service->is_office_hours)) {
+            $officeHoursService = ServiceConfig::query()
+                ->where('is_active', true)
+                ->where('is_office_hours', true)
+                ->orderBy('sort_order')
+                ->first();
+
+            if ($officeHoursService) {
+                $servicesForBooking = $servicesForBooking->push($officeHoursService);
+            }
+        }
+
+        $services = $servicesForBooking
+            ->map(fn (ServiceConfig $service) => $this->transformService($service, $maxMeetingSize, $allowOfficeHours))
+            ->filter()
+            ->values()
+            ->all();
+        $selectedServiceId = $this->selectedServiceId($services, (string) ($options['selected_service'] ?? ''));
 
         return [
             'mentor' => [
@@ -95,8 +121,8 @@ class BookingPageService
                 'hasSavedTimezone' => filled($viewer?->setting?->timezone),
             ],
             'services' => $services,
-            'officeHours' => $allowOfficeHours ? $officeHours : null,
-            'selectedServiceId' => $services[0]['id'] ?? null,
+            'officeHours' => $officeHours,
+            'selectedServiceId' => $selectedServiceId,
             'availabilityRoutes' => [
                 'months' => route("{$portal}.bookings.availability.months"),
                 'days' => route("{$portal}.bookings.availability.days"),
@@ -111,6 +137,41 @@ class BookingPageService
                 : route('mentor.office-hours'),
             'timezoneAutoSaveUrl' => route('settings.timezone.store'),
         ];
+    }
+
+    private function selectedServiceId(array $services, string $requestedService): ?string
+    {
+        if ($requestedService !== '') {
+            $normalized = str_replace('-', '_', Str::lower($requestedService));
+
+            if (in_array($normalized, ['office_hours', 'officehours'], true)) {
+                $officeHours = collect($services)->first(fn (array $service) => (bool) ($service['isOfficeHours'] ?? false));
+
+                if ($officeHours) {
+                    return $officeHours['id'];
+                }
+            }
+
+            $requested = collect($services)->first(function (array $service) use ($requestedService, $normalized) {
+                return (string) $service['id'] === $requestedService
+                    || str_replace('-', '_', Str::lower((string) $service['id'])) === $normalized;
+            });
+
+            if ($requested) {
+                return $requested['id'];
+            }
+        }
+
+        return $services[0]['id'] ?? null;
+    }
+
+    private function mentorHasOfficeHoursService(Mentor $mentor): bool
+    {
+        return $mentor->services()
+            ->where('services_config.is_active', true)
+            ->where('services_config.is_office_hours', true)
+            ->wherePivot('is_active', true)
+            ->exists();
     }
 
     private function transformService(ServiceConfig $service, int $maxMeetingSize = 5, bool $allowOfficeHours = true): ?array

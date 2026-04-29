@@ -4,6 +4,7 @@ namespace Modules\Bookings\app\Services;
 
 use App\Models\User;
 use Carbon\CarbonInterface;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -251,13 +252,33 @@ class ZoomService
                 'refresh_token' => $refreshToken,
             ]);
         } catch (\Throwable $exception) {
+            $shouldReconnect = $this->refreshFailureRequiresReconnect($exception);
+
+            Log::warning('Zoom OAuth token refresh failed.', array_filter([
+                'user_id' => $token->user_id,
+                'provider_user_id' => $token->provider_user_id,
+                'exception_class' => $exception::class,
+                'status' => $exception instanceof RequestException ? $exception->response->status() : null,
+                'zoom_error' => $exception instanceof RequestException ? data_get($exception->response->json(), 'error') : null,
+                'zoom_reason' => $exception instanceof RequestException ? data_get($exception->response->json(), 'reason') : null,
+                'requires_reconnect' => $shouldReconnect,
+            ], fn ($value) => $value !== null));
+
+            if ($shouldReconnect) {
+                $token->forceFill([
+                    'access_token' => '',
+                    'refresh_token' => '',
+                    'token_expires_at' => now()->subMinute(),
+                ])->save();
+
+                throw new \RuntimeException('Zoom connection expired or was revoked. Please reconnect Zoom.', 0, $exception);
+            }
+
             $token->forceFill([
-                'access_token' => '',
-                'refresh_token' => '',
                 'token_expires_at' => now()->subMinute(),
             ])->save();
 
-            throw new \RuntimeException('Zoom connection expired or refresh failed. Please reconnect Zoom.', 0, $exception);
+            throw new \RuntimeException('Zoom token refresh temporarily failed. Please try again shortly.', 0, $exception);
         }
 
         return $this->storeUserToken(
@@ -346,6 +367,7 @@ class ZoomService
         return match ($sessionType) {
             '1on3' => '1 on 3',
             '1on5' => '1 on 5',
+            'office_hours' => 'Office Hours',
             default => '1 on 1',
         };
     }
@@ -455,6 +477,22 @@ class ZoomService
                 'token_expires_at' => now()->addSeconds(max((int) ($payload['expires_in'] ?? 3600) - 60, 60)),
             ]
         );
+    }
+
+    private function refreshFailureRequiresReconnect(\Throwable $exception): bool
+    {
+        if (! $exception instanceof RequestException) {
+            return false;
+        }
+
+        $response = $exception->response;
+        $error = strtolower((string) data_get($response->json(), 'error'));
+
+        if ($error === 'invalid_grant') {
+            return true;
+        }
+
+        return $response->status() === 400 && str_contains(strtolower($response->body()), 'invalid_grant');
     }
 
     private function mentorUserForBooking(Booking $booking): User

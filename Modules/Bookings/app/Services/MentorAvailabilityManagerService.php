@@ -42,11 +42,10 @@ class MentorAvailabilityManagerService
                     ->orderBy('session_at'),
             ])
             ->where('is_active', true)
-            ->whereDate('slot_date', '>=', now('UTC')->toDateString())
             ->get()
-            ->filter(fn (MentorAvailabilitySlot $slot) => !$this->isExpiredUnbookedSlot($slot))
-            ->sortBy(fn (MentorAvailabilitySlot $slot) => $slot->slot_date->toDateString().' '.$slot->start_time)
-            ->groupBy(fn (MentorAvailabilitySlot $slot) => $slot->slot_date->toDateString());
+            ->filter(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->utc()->isFuture())
+            ->sortBy(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->toIso8601String())
+            ->groupBy(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->setTimezone($slot->timezone ?: $fallbackTimezone)->toDateString());
 
         $firstSlot = $slots->flatten(1)->first();
 
@@ -72,7 +71,7 @@ class MentorAvailabilityManagerService
                                         'booker_name' => $booking->booker?->name ?? 'Booked user',
                                         'booker_email' => $booking->booker?->email,
                                         'service_name' => $booking->service?->service_name ?? $slot->service?->service_name ?? 'Service',
-                                        'slot_label' => $this->formatTimeRange((string) $slot->start_time, (string) $slot->end_time),
+                                        'slot_label' => $this->formatTimeRange($this->localSlotTime($slot, 'start'), $this->localSlotTime($slot, 'end')),
                                         'booked_at_label' => $booking->created_at?->setTimezone($booking->session_timezone ?: config('app.timezone', 'UTC'))->format('M j, Y g:i A'),
                                         'session_label' => $booking->session_at?->setTimezone($booking->session_timezone ?: config('app.timezone', 'UTC'))->format('M j, Y g:i A'),
                                         'status' => (string) $booking->status,
@@ -85,12 +84,12 @@ class MentorAvailabilityManagerService
                         'slots' => $daySlots
                             ->map(fn (MentorAvailabilitySlot $slot) => [
                                 'slot_id' => (int) $slot->id,
-                                'start_time' => substr((string) $slot->start_time, 0, 5),
-                                'end_time' => substr((string) $slot->end_time, 0, 5),
+                                'start_time' => $this->localSlotTime($slot, 'start'),
+                                'end_time' => $this->localSlotTime($slot, 'end'),
                                 'service_config_id' => $slot->service_config_id,
                                 'is_booked' => (int) ($slot->active_bookings_count ?? 0) > 0,
                                 'booking_count' => (int) ($slot->active_bookings_count ?? 0),
-                                'summary' => $this->formatTimeRange((string) $slot->start_time, (string) $slot->end_time),
+                                'summary' => $this->formatTimeRange($this->localSlotTime($slot, 'start'), $this->localSlotTime($slot, 'end')),
                             ])
                             ->values()
                             ->all(),
@@ -105,36 +104,27 @@ class MentorAvailabilityManagerService
     {
         $slots = $this->directSlotsQuery($mentor)
             ->where('is_active', true)
-            ->whereDate('slot_date', '>=', now('UTC')->toDateString())
             ->get()
-            ->filter(fn (MentorAvailabilitySlot $slot) => !$this->isExpiredUnbookedSlot($slot))
-            ->sortBy(fn (MentorAvailabilitySlot $slot) => $slot->slot_date->toDateString().' '.$slot->start_time)
-            ->groupBy(fn (MentorAvailabilitySlot $slot) => $slot->slot_date->toDateString());
+            ->filter(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->utc()->isFuture())
+            ->sortBy(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->toIso8601String())
+            ->groupBy(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->setTimezone($slot->timezone ?: config('app.timezone', 'UTC'))->toDateString());
 
         $scheduledMinutes = $slots->flatten(1)
             ->reduce(function (int $minutes, MentorAvailabilitySlot $slot) {
-                if (!$slot->start_time || !$slot->end_time) {
-                    return $minutes;
-                }
-
-                $start = Carbon::createFromFormat('H:i:s', (string) $slot->start_time);
-                $end = Carbon::createFromFormat('H:i:s', (string) $slot->end_time);
-
-                return $minutes + $start->diffInMinutes($end);
+                return $minutes + max($this->slotStartsAt($slot)->diffInMinutes($this->slotEndsAt($slot)), 0);
             }, 0);
 
         $windowEnd = now('UTC')->copy()->addWeeks(self::WINDOW_WEEKS)->endOfDay();
-        $openSlotsQuery = $this->directSlotsQuery($mentor)
-            ->whereDate('slot_date', '>=', now('UTC')->toDateString())
-            ->whereDate('slot_date', '<=', $windowEnd->toDateString())
+        $openSlots = $this->directSlotsQuery($mentor)
             ->where('is_active', true)
             ->where('is_blocked', false)
-            ->whereDoesntHave('bookings', fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']));
+            ->whereDoesntHave('bookings', fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']))
+            ->get()
+            ->filter(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->utc()->between(now('UTC'), $windowEnd));
 
-        $openSlotsCount = (clone $openSlotsQuery)->count();
-        $nextOpenSlot = (clone $openSlotsQuery)
-            ->orderBy('slot_date')
-            ->orderBy('start_time')
+        $openSlotsCount = $openSlots->count();
+        $nextOpenSlot = $openSlots
+            ->sortBy(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->toIso8601String())
             ->first();
 
         return [
@@ -151,7 +141,7 @@ class MentorAvailabilityManagerService
                     return [
                         'label' => $dateCarbon->format('D, M j'),
                         'summary' => $daySlots
-                            ->map(fn (MentorAvailabilitySlot $slot) => $this->formatTimeRange((string) $slot->start_time, (string) $slot->end_time))
+                            ->map(fn (MentorAvailabilitySlot $slot) => $this->formatTimeRange($this->localSlotTime($slot, 'start'), $this->localSlotTime($slot, 'end')))
                             ->implode(', '),
                     ];
                 })
@@ -260,8 +250,9 @@ class MentorAvailabilityManagerService
 
             foreach ($payload['date_slots'] ?? [] as $dateSlot) {
                 $slotDate = isset($dateSlot['date']) ? Carbon::parse($dateSlot['date'])->startOfDay() : null;
+                $timezone = (string) ($payload['timezone'] ?? 'UTC');
 
-                if (!$slotDate || $slotDate->lt(now('UTC')->startOfDay())) {
+                if (!$slotDate) {
                     continue;
                 }
 
@@ -277,6 +268,9 @@ class MentorAvailabilityManagerService
                         continue;
                     }
 
+                    $startsAt = Carbon::parse($slotDate->toDateString().' '.$slot['start_time'], $timezone);
+                    $endsAt = Carbon::parse($slotDate->toDateString().' '.$slot['end_time'], $timezone);
+
                     MentorAvailabilitySlot::query()->updateOrCreate([
                         'mentor_id' => $mentor->id,
                         'slot_date' => $slotDate->toDateString(),
@@ -289,7 +283,9 @@ class MentorAvailabilityManagerService
                         'slot_date' => $slotDate->toDateString(),
                         'start_time' => $this->normalizeTime((string) $slot['start_time']),
                         'end_time' => $this->normalizeTime((string) $slot['end_time']),
-                        'timezone' => (string) ($payload['timezone'] ?? 'UTC'),
+                        'timezone' => $timezone,
+                        'starts_at_utc' => $startsAt->copy()->utc(),
+                        'ends_at_utc' => $endsAt->copy()->utc(),
                         'session_type' => '1on1',
                         'max_participants' => 1,
                         'booked_participants_count' => 0,
@@ -314,10 +310,11 @@ class MentorAvailabilityManagerService
             ->where('services_config.is_office_hours', false)
             ->orderBy('mentor_services.sort_order')
             ->orderBy('services_config.sort_order')
-            ->get(['services_config.id', 'services_config.service_name'])
+            ->get(['services_config.id', 'services_config.service_name', 'services_config.duration_minutes'])
             ->map(fn ($service) => [
                 'value' => (int) $service->id,
                 'label' => $service->service_name,
+                'duration_minutes' => max((int) $service->duration_minutes, 1),
             ])
             ->values()
             ->all();
@@ -330,7 +327,7 @@ class MentorAvailabilityManagerService
             'day_of_week' => (string) ($schedule?->day_of_week ?? 'sun'),
             'start_time' => $schedule?->start_time ? substr((string) $schedule->start_time, 0, 5) : '20:00',
             'timezone' => (string) ($schedule?->timezone ?? $fallbackTimezone),
-            'frequency' => (string) ($schedule?->frequency ?? 'weekly'),
+            'frequency' => 'weekly',
             'max_spots' => self::OFFICE_HOURS_MAX_SPOTS,
             'meeting_type' => 'Small Group Office Hours',
             'weekday_options' => collect(self::WEEKDAY_LABELS)
@@ -342,7 +339,6 @@ class MentorAvailabilityManagerService
                 ->all(),
             'frequency_options' => [
                 ['value' => 'weekly', 'label' => 'Weekly'],
-                ['value' => 'biweekly', 'label' => 'Biweekly'],
             ],
             'service_options' => $serviceOptions,
         ];
@@ -358,7 +354,10 @@ class MentorAvailabilityManagerService
             ->first();
 
         $session = OfficeHourSession::query()
-            ->with(['currentService:id,service_name', 'schedule'])
+            ->with(['currentService:id,service_name', 'schedule.currentService:id,service_name'])
+            ->withCount([
+                'bookings as active_bookings_count' => fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']),
+            ])
             ->whereHas('schedule', fn (Builder $query) => $query->where('mentor_id', $mentor->id)->where('is_active', true))
             ->where('status', 'upcoming')
             ->whereDate('session_date', '>=', now('UTC')->toDateString())
@@ -367,22 +366,29 @@ class MentorAvailabilityManagerService
             ->first();
 
         if ($session) {
-            $startsAt = Carbon::parse($session->session_date->toDateString().' '.$session->start_time, $session->timezone ?: config('app.timezone'));
-            $remaining = max(((int) $session->max_spots) - ((int) $session->current_occupancy), 0);
+            $activeBookings = $this->officeHourOccupancy($session);
+            $startsAt = $activeBookings === 0 && $session->schedule
+                ? $this->nextOfficeHoursStart((string) $session->schedule->day_of_week, (string) $session->schedule->start_time, (string) ($session->schedule->timezone ?: config('app.timezone')))
+                : Carbon::parse($session->session_date->toDateString().' '.$session->start_time, $session->timezone ?: config('app.timezone'));
+            $maxSpots = (int) ($session->schedule?->max_spots ?: $session->max_spots ?: self::OFFICE_HOURS_MAX_SPOTS);
+            $remaining = max($maxSpots - $activeBookings, 0);
+            $weeklyService = $activeBookings === 0
+                ? ($session->schedule?->currentService?->service_name ?? $session->currentService?->service_name ?? $config['service_name'] ?? 'Office Hours')
+                : ($session->currentService?->service_name ?? $session->schedule?->currentService?->service_name ?? $config['service_name'] ?? 'Office Hours');
 
             return [
                 'mentor_name' => $mentor->user?->name ?? 'Mentor',
                 'mentor_meta' => trim(($this->programLabel($mentor->program_type) ?: 'Mentor').' • '.($mentor->grad_school_display ?: 'School not listed'), ' •'),
-                'spots_filled' => (int) $session->current_occupancy,
-                'max_spots' => (int) $session->max_spots,
-                'spots_badge' => $session->current_occupancy.'/'.$session->max_spots.' spots filled',
-                'weekly_service' => $session->currentService?->service_name ?? $config['service_name'] ?? 'Office Hours',
+                'spots_filled' => $activeBookings,
+                'max_spots' => $maxSpots,
+                'spots_badge' => $activeBookings.'/'.$maxSpots.' spots filled',
+                'weekly_service' => $weeklyService,
                 'recurring_time' => $startsAt->format('l, g:i A T'),
                 'meeting_type' => 'Small Group Office Hours',
                 'availability_text' => $remaining === 0 ? 'Currently full' : ($remaining === 1 ? '1 spot remaining' : "{$remaining} spots remaining"),
                 'note' => $this->officeHoursNote(
-                    $session->currentService?->service_name ?? $config['service_name'] ?? 'Office Hours',
-                    (int) $session->current_occupancy,
+                    $weeklyService,
+                    $activeBookings,
                     (bool) $session->service_locked
                 ),
                 'has_upcoming_session' => true,
@@ -417,7 +423,7 @@ class MentorAvailabilityManagerService
             'availability_text' => ($config['enabled'] ?? false) ? 'No upcoming session generated yet' : 'Office hours are currently off',
             'note' => ($config['enabled'] ?? false)
                 ? "This week's office hours are currently set as {$weeklyService}. Once an upcoming session is generated, spots and service-lock details will appear here."
-                : 'Turn on office hours to publish one recurring weekly or biweekly session for this mentor.',
+                : 'Turn on office hours to publish one recurring weekly session for this mentor.',
             'has_upcoming_session' => false,
             'service_locked' => false,
         ];
@@ -441,7 +447,7 @@ class MentorAvailabilityManagerService
                 'day_of_week' => (string) ($payload['day_of_week'] ?? 'sun'),
                 'start_time' => $this->normalizeTime((string) ($payload['start_time'] ?? '20:00')),
                 'timezone' => (string) ($payload['timezone'] ?? 'UTC'),
-                'frequency' => (string) ($payload['frequency'] ?? 'weekly'),
+                'frequency' => 'weekly',
                 'max_spots' => self::OFFICE_HOURS_MAX_SPOTS,
                 'is_active' => $enabled,
             ];
@@ -457,12 +463,49 @@ class MentorAvailabilityManagerService
             ])->save();
 
             if ($enabled && !empty($attributes['current_service_id'])) {
-                OfficeHourSession::query()
+                $nextStart = $this->nextOfficeHoursStart($attributes['day_of_week'], $attributes['start_time'], $attributes['timezone']);
+
+                $updatedSessions = OfficeHourSession::query()
                     ->where('schedule_id', $schedule->id)
                     ->where('status', 'upcoming')
-                    ->where('current_occupancy', 0)
-                    ->where('service_locked', false)
-                    ->update(['current_service_id' => (int) $attributes['current_service_id']]);
+                    ->whereDoesntHave('bookings', fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']))
+                    ->update([
+                        'current_service_id' => (int) $attributes['current_service_id'],
+                        'session_date' => $nextStart->toDateString(),
+                        'start_time' => $nextStart->format('H:i:s'),
+                        'timezone' => $attributes['timezone'],
+                        'current_occupancy' => 0,
+                        'max_spots' => (int) $attributes['max_spots'],
+                        'is_full' => false,
+                        'service_locked' => false,
+                        'first_booker_id' => null,
+                        'first_booked_at' => null,
+                        'service_choice_cutoff_at' => $nextStart->copy()->subHours(12)->utc(),
+                    ]);
+
+                $hasUpcomingSession = OfficeHourSession::query()
+                    ->where('schedule_id', $schedule->id)
+                    ->where('status', 'upcoming')
+                    ->whereDate('session_date', '>=', now($attributes['timezone'])->toDateString())
+                    ->exists();
+
+                if ($updatedSessions === 0 && ! $hasUpcomingSession) {
+                    OfficeHourSession::query()->create([
+                        'schedule_id' => $schedule->id,
+                        'current_service_id' => (int) $attributes['current_service_id'],
+                        'session_date' => $nextStart->toDateString(),
+                        'start_time' => $nextStart->format('H:i:s'),
+                        'timezone' => $attributes['timezone'],
+                        'current_occupancy' => 0,
+                        'max_spots' => (int) $attributes['max_spots'],
+                        'is_full' => false,
+                        'service_locked' => false,
+                        'first_booker_id' => null,
+                        'first_booked_at' => null,
+                        'service_choice_cutoff_at' => $nextStart->copy()->subHours(12)->utc(),
+                        'status' => 'upcoming',
+                    ]);
+                }
             }
         });
     }
@@ -511,7 +554,14 @@ class MentorAvailabilityManagerService
 
         MentorAvailabilitySlot::query()
             ->whereIn('availability_rule_id', $ruleIds)
-            ->whereDate('slot_date', '>=', now('UTC')->toDateString())
+            ->where(function (Builder $query) {
+                $query->where('starts_at_utc', '>', now('UTC'))
+                    ->orWhere(function (Builder $legacyQuery) {
+                        $legacyQuery
+                            ->whereNull('starts_at_utc')
+                            ->whereDate('slot_date', '>=', now('UTC')->toDateString());
+                    });
+            })
             ->whereDoesntHave('bookings', fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']))
             ->delete();
     }
@@ -521,7 +571,14 @@ class MentorAvailabilityManagerService
         $mentor->availabilitySlots()
             ->where('session_type', '1on1')
             ->where('max_participants', 1)
-            ->whereDate('slot_date', '>=', now('UTC')->toDateString())
+            ->where(function (Builder $query) {
+                $query->where('starts_at_utc', '>', now('UTC'))
+                    ->orWhere(function (Builder $legacyQuery) {
+                        $legacyQuery
+                            ->whereNull('starts_at_utc')
+                            ->whereDate('slot_date', '>=', now('UTC')->toDateString());
+                    });
+            })
             ->whereDoesntHave('bookings', fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']))
             ->delete();
     }
@@ -635,7 +692,7 @@ class MentorAvailabilityManagerService
     private function formatSlotLabel(MentorAvailabilitySlot $slot): string
     {
         $timezone = $slot->timezone ?: 'UTC';
-        $startsAt = Carbon::parse($slot->slot_date->toDateString().' '.$slot->start_time, $timezone);
+        $startsAt = $this->slotStartsAt($slot)->setTimezone($timezone);
 
         return $startsAt->format('D, M j').' at '.$startsAt->format('g:i A').' '.$startsAt->format('T');
     }
@@ -646,15 +703,39 @@ class MentorAvailabilityManagerService
             return false;
         }
 
-        $timezone = 'UTC';
+        return $this->slotStartsAt($slot)->utc()->lte(now('UTC'));
+    }
 
-        try {
-            $startsAt = Carbon::parse($slot->slot_date->toDateString().' '.$slot->start_time, $timezone);
-        } catch (\Throwable) {
-            return false;
+    private function slotStartsAt(MentorAvailabilitySlot $slot): Carbon
+    {
+        if ($slot->starts_at_utc) {
+            return $slot->starts_at_utc->copy()->utc();
         }
 
-        return $startsAt->lte(now('UTC'));
+        return Carbon::parse(
+            $slot->slot_date->toDateString().' '.$slot->start_time,
+            $slot->timezone ?: config('app.timezone', 'UTC')
+        );
+    }
+
+    private function slotEndsAt(MentorAvailabilitySlot $slot): Carbon
+    {
+        if ($slot->ends_at_utc) {
+            return $slot->ends_at_utc->copy()->utc();
+        }
+
+        return Carbon::parse(
+            $slot->slot_date->toDateString().' '.$slot->end_time,
+            $slot->timezone ?: config('app.timezone', 'UTC')
+        );
+    }
+
+    private function localSlotTime(MentorAvailabilitySlot $slot, string $edge): string
+    {
+        $timezone = $slot->timezone ?: config('app.timezone', 'UTC');
+        $dateTime = $edge === 'end' ? $this->slotEndsAt($slot) : $this->slotStartsAt($slot);
+
+        return $dateTime->setTimezone($timezone)->format('H:i');
     }
 
     private function officeHoursNote(string $serviceName, int $occupancy, bool $serviceLocked): string
@@ -666,12 +747,48 @@ class MentorAvailabilityManagerService
         return "This week's office hours are currently set as {$serviceName}. Because multiple students are booked, the session will stay focused on this designated service.";
     }
 
+    private function officeHourOccupancy(OfficeHourSession $session): int
+    {
+        $activeBookings = (int) ($session->active_bookings_count ?? 0);
+        $storedOccupancy = (int) $session->current_occupancy;
+
+        if ($activeBookings > 0) {
+            return $activeBookings;
+        }
+
+        return $storedOccupancy > 1 ? $storedOccupancy : 0;
+    }
+
     private function formatOfficeHoursSummary(string $dayOfWeek, string $startTime, string $timezone, string $frequency): string
     {
         $dayLabel = self::WEEKDAY_LABELS[$dayOfWeek] ?? ucfirst($dayOfWeek);
-        $frequencyLabel = $frequency === 'biweekly' ? 'Every other week' : 'Every week';
+        return 'Every week on '.$dayLabel.' at '.$this->formatTimeLabel($startTime).' '.$this->timezoneAbbreviation($timezone);
+    }
 
-        return $frequencyLabel.' on '.$dayLabel.' at '.$this->formatTimeLabel($startTime).' '.$this->timezoneAbbreviation($timezone);
+    private function nextOfficeHoursStart(string $dayOfWeek, string $startTime, string $timezone): Carbon
+    {
+        $weekdayIndexes = [
+            'sun' => 0,
+            'mon' => 1,
+            'tue' => 2,
+            'wed' => 3,
+            'thu' => 4,
+            'fri' => 5,
+            'sat' => 6,
+        ];
+        $now = now($timezone);
+        $target = $now->copy()->startOfDay();
+        $targetDay = $weekdayIndexes[$dayOfWeek] ?? 0;
+        $target->addDays(($targetDay - (int) $target->dayOfWeek + 7) % 7);
+
+        [$hour, $minute, $second] = array_pad(array_map('intval', explode(':', substr($startTime, 0, 8))), 3, 0);
+        $target->setTime($hour, $minute, $second);
+
+        if ($target->lte($now)) {
+            $target->addWeek();
+        }
+
+        return $target;
     }
 
     private function timezoneAbbreviation(string $timezone): string

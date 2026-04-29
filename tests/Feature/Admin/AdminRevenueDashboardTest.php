@@ -264,6 +264,8 @@ it('applies alternate revenue ranges and renders the selector on the dashboard',
         ->assertSee('Revenue')
         ->assertSee('Last 60 Days')
         ->assertSee('Top Mentors by Revenue')
+        ->assertSee('View payout ledger')
+        ->assertDontSee('Recent Mentor Payouts')
         ->assertSee('value="60d" selected', false);
 });
 

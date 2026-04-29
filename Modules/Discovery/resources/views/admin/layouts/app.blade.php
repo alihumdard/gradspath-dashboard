@@ -35,7 +35,9 @@
             <a class="nav-link{{ request()->routeIs('admin.mentors') ? ' active' : '' }}" href="{{ route('admin.mentors') }}">Mentors</a>
             <a class="nav-link{{ request()->routeIs('admin.services') ? ' active' : '' }}" href="{{ route('admin.services') }}">Services</a>
             <a class="nav-link{{ request()->routeIs('admin.revenue') ? ' active' : '' }}" href="{{ route('admin.revenue') }}">Revenue</a>
+            <a class="nav-link{{ request()->routeIs('admin.payouts*') ? ' active' : '' }}" href="{{ route('admin.payouts') }}">Payouts</a>
             <a class="nav-link{{ request()->routeIs('admin.rankings') ? ' active' : '' }}" href="{{ route('admin.rankings') }}">Rankings</a>
+            <a class="nav-link{{ request()->routeIs('admin.support.*') ? ' active' : '' }}" href="{{ route('admin.support.tickets.index') }}">Support</a>
             <a class="nav-link{{ request()->routeIs('admin.manual-actions') ? ' active' : '' }}" href="{{ route('admin.manual-actions') }}">Manual Actions</a>
           </nav>
 

@@ -28,3 +28,8 @@ Route::get('/', function () {
 
     return view('landing_page.index');
 });
+
+Route::view('/terms', 'public_pages.terms')->name('public.terms');
+Route::view('/privacy', 'public_pages.privacy')->name('public.privacy');
+Route::view('/support', 'public_pages.support')->name('public.support');
+Route::view('/zoom-app-guide', 'public_pages.zoom-app-guide')->name('public.zoom-app-guide');

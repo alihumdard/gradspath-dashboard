@@ -20,6 +20,8 @@ class MentorAvailabilitySlot extends Model
         'start_time',
         'end_time',
         'timezone',
+        'starts_at_utc',
+        'ends_at_utc',
         'session_type',
         'max_participants',
         'booked_participants_count',
@@ -31,6 +33,8 @@ class MentorAvailabilitySlot extends Model
 
     protected $casts = [
         'slot_date' => 'date',
+        'starts_at_utc' => 'datetime',
+        'ends_at_utc' => 'datetime',
         'max_participants' => 'integer',
         'booked_participants_count' => 'integer',
         'is_booked' => 'boolean',

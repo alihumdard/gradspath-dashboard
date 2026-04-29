@@ -40,6 +40,9 @@ class AvailabilityController extends Controller
             'date_slots' => array_values($dateSlots),
             'effective_from' => null,
             'effective_until' => null,
+            'office_hours' => array_merge((array) $request->input('office_hours', []), [
+                'timezone' => (string) $request->input('timezone', TimezoneOptions::fallback()),
+            ]),
         ]);
 
         $rules = [
@@ -57,7 +60,7 @@ class AvailabilityController extends Controller
             'office_hours.day_of_week' => ['nullable', 'in:mon,tue,wed,thu,fri,sat,sun'],
             'office_hours.start_time' => ['nullable', 'date_format:H:i'],
             'office_hours.timezone' => ['nullable', 'string', 'max:80'],
-            'office_hours.frequency' => ['nullable', 'in:weekly,biweekly'],
+            'office_hours.frequency' => ['nullable', 'in:weekly'],
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -68,6 +71,12 @@ class AvailabilityController extends Controller
             ->pluck('services_config.id')
             ->map(fn ($id) => (int) $id)
             ->all();
+        $mentorServiceDurations = $mentor->services()
+            ->where('services_config.is_active', true)
+            ->where('services_config.is_office_hours', false)
+            ->pluck('services_config.duration_minutes', 'services_config.id')
+            ->mapWithKeys(fn ($duration, $id) => [(int) $id => max((int) $duration, 1)])
+            ->all();
 
         $existingBookedSlots = $mentor->availabilitySlots()
             ->withCount([
@@ -75,12 +84,19 @@ class AvailabilityController extends Controller
             ])
             ->where('session_type', '1on1')
             ->where('max_participants', 1)
-            ->whereDate('slot_date', '>=', now()->toDateString())
+            ->where(function ($query) {
+                $query->where('starts_at_utc', '>', now('UTC'))
+                    ->orWhere(function ($legacyQuery) {
+                        $legacyQuery
+                            ->whereNull('starts_at_utc')
+                            ->whereDate('slot_date', '>=', now('UTC')->toDateString());
+                    });
+            })
             ->get()
             ->filter(fn ($slot) => (int) ($slot->active_bookings_count ?? 0) > 0)
             ->groupBy(fn ($slot) => $slot->slot_date->toDateString());
 
-        $validator->after(function ($validator) use ($request, $mentor, $mentorServiceIds, $existingBookedSlots) {
+        $validator->after(function ($validator) use ($request, $mentor, $mentorServiceIds, $mentorServiceDurations, $existingBookedSlots) {
             $submittedDateValues = collect((array) $request->input('date_slots', []))
                 ->map(fn ($dateSlot) => (string) ($dateSlot['date'] ?? ''))
                 ->filter()
@@ -172,17 +188,41 @@ class AvailabilityController extends Controller
                     continue;
                 }
 
-                usort($normalizedSlots, fn (array $left, array $right) => strcmp($left['start_time'], $right['start_time']));
+                $normalizedSlots = collect($normalizedSlots)
+                    ->map(function (array $slot) use ($dateValue, $scheduleTimezone) {
+                        try {
+                            $startsAt = Carbon::parse($dateValue.' '.$slot['start_time'], $scheduleTimezone);
+                            $endsAt = Carbon::parse($dateValue.' '.$slot['end_time'], $scheduleTimezone);
+                        } catch (\Throwable) {
+                            $startsAt = null;
+                            $endsAt = null;
+                        }
 
-                $previousEnd = null;
+                        return $slot + [
+                            'starts_at_utc' => $startsAt?->copy()->utc(),
+                            'ends_at_utc' => $endsAt?->copy()->utc(),
+                        ];
+                    })
+                    ->sortBy(fn (array $slot) => $slot['starts_at_utc']?->timestamp ?? 0)
+                    ->values()
+                    ->all();
+
+                $previousEndUtc = null;
 
                 foreach ($normalizedSlots as $index => $slot) {
-                    if ($previousEnd !== null && $slot['start_time'] < $previousEnd) {
-                        $validator->errors()->add("date_slots.{$dateIndex}.slots.{$index}.start_time", "{$dateLabel} time blocks cannot overlap.");
+                    if (
+                        $previousEndUtc !== null
+                        && $slot['starts_at_utc']
+                        && $slot['starts_at_utc']->lt($previousEndUtc)
+                    ) {
+                        $validator->errors()->add(
+                            "date_slots.{$dateIndex}.slots.{$index}.start_time",
+                            "{$dateLabel}: this time overlaps another slot. Choose a start time after the previous slot ends, or remove one of the slots."
+                        );
                     }
 
                     if (!empty($slot['is_booked'])) {
-                        $previousEnd = $slot['end_time'];
+                        $previousEndUtc = $slot['ends_at_utc'] ?: $previousEndUtc;
                         continue;
                     }
 
@@ -190,24 +230,18 @@ class AvailabilityController extends Controller
                         $validator->errors()->add("date_slots.{$dateIndex}.slots.{$index}.service_config_id", "{$dateLabel} requires a service for every block.");
                     } elseif (!in_array($slot['service_config_id'], $mentorServiceIds, true)) {
                         $validator->errors()->add("date_slots.{$dateIndex}.slots.{$index}.service_config_id", "{$dateLabel} must use one of your active mentor services.");
+                    } elseif (($mentorServiceDurations[$slot['service_config_id']] ?? null) === null) {
+                        $validator->errors()->add("date_slots.{$dateIndex}.slots.{$index}.service_config_id", "{$dateLabel} must use a service with a valid duration.");
                     }
 
-                    if ($dateValue !== '') {
-                        try {
-                            $slotStartsAt = Carbon::parse($dateValue.' '.$slot['start_time'], $scheduleTimezone);
-
-                            if ($slotStartsAt->lte($scheduleNow)) {
-                                $validator->errors()->add(
-                                    "date_slots.{$dateIndex}.slots.{$index}.start_time",
-                                    "{$dateLabel} time blocks must start in the future."
-                                );
-                            }
-                        } catch (\Throwable) {
-                            // Let the existing date/time validation handle malformed values.
-                        }
+                    if ($slot['starts_at_utc'] && $slot['starts_at_utc']->lte(now('UTC'))) {
+                        $validator->errors()->add(
+                            "date_slots.{$dateIndex}.slots.{$index}.start_time",
+                            "{$dateLabel}: the {$slot['start_time']} - {$slot['end_time']} slot has already started or passed. Remove it, or change its start time to a future time."
+                        );
                     }
 
-                    $previousEnd = $slot['end_time'];
+                    $previousEndUtc = $slot['ends_at_utc'] ?: $previousEndUtc;
                 }
             }
 
@@ -253,12 +287,10 @@ class AvailabilityController extends Controller
                 $validator->errors()->add('office_hours.start_time', 'Choose the recurring start time for office hours.');
             }
 
-            if ($timezone === '') {
-                $validator->errors()->add('office_hours.timezone', 'Choose the office-hours timezone.');
-            }
-
             if ($frequency === '') {
-                $validator->errors()->add('office_hours.frequency', 'Choose whether office hours repeat weekly or biweekly.');
+                $validator->errors()->add('office_hours.frequency', 'Choose weekly office hours.');
+            } elseif ($frequency !== 'weekly') {
+                $validator->errors()->add('office_hours.frequency', 'Office hours must repeat weekly.');
             }
 
             $activeScheduleCount = OfficeHourSchedule::query()
@@ -318,10 +350,11 @@ class AvailabilityController extends Controller
             ->where('services_config.is_office_hours', false)
             ->orderBy('mentor_services.sort_order')
             ->orderBy('services_config.sort_order')
-            ->get(['services_config.id', 'services_config.service_name'])
+            ->get(['services_config.id', 'services_config.service_name', 'services_config.duration_minutes'])
             ->map(fn (ServiceConfig $service) => [
                 'value' => (int) $service->id,
                 'label' => $service->service_name,
+                'duration_minutes' => max((int) $service->duration_minutes, 1),
             ])
             ->values()
             ->all();

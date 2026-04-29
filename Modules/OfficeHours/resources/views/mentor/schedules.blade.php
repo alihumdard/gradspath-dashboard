@@ -131,6 +131,7 @@
 @endsection
 
 @section('page_js')
+        <script id="officeHoursData" type="application/json">@json($officeHoursData)</script>
         <script src="{{ asset('assets/js/demo13.js') }}">
         </script>
 @endsection

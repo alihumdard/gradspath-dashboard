@@ -56,7 +56,9 @@ class BookingAvailabilityService
                 ];
             }
 
-            $remaining = max(((int) $session->max_spots) - ((int) $session->current_occupancy), 0);
+            $spotsFilled = $this->officeHourOccupancy($session);
+            $remaining = max(((int) $session->max_spots) - $spotsFilled, 0);
+            $isFull = $spotsFilled >= (int) $session->max_spots || $remaining === 0;
 
             return [
                 'month' => $monthStart->format('Y-m'),
@@ -67,11 +69,11 @@ class BookingAvailabilityService
                     'weekday' => $sessionStartsAt->format('D'),
                     'day' => $sessionStartsAt->format('j'),
                     'sessionId' => (int) $session->id,
-                    'spotsFilled' => (int) $session->current_occupancy,
+                    'spotsFilled' => $spotsFilled,
                     'maxSpots' => (int) $session->max_spots,
                     'remainingSpots' => $remaining,
-                    'isFull' => (bool) $session->is_full || $remaining === 0,
-                    'isBookable' => $session->status === 'upcoming' && !((bool) $session->is_full || $remaining === 0),
+                    'isFull' => $isFull,
+                    'isBookable' => $session->status === 'upcoming' && !$isFull,
                 ]],
             ];
         }
@@ -115,7 +117,9 @@ class BookingAvailabilityService
 
             $durationMinutes = $this->officeHoursDuration($serviceConfigId);
             $endsAt = $startsAt->copy()->addMinutes($durationMinutes);
-            $remaining = max(((int) $session->max_spots) - ((int) $session->current_occupancy), 0);
+            $spotsFilled = $this->officeHourOccupancy($session);
+            $remaining = max(((int) $session->max_spots) - $spotsFilled, 0);
+            $isFull = $spotsFilled >= (int) $session->max_spots || $remaining === 0;
             $recurrenceLabel = match ((string) ($session->schedule?->frequency ?? 'weekly')) {
                 'biweekly' => 'This is a recurring biweekly session',
                 default => 'This is a recurring weekly session',
@@ -131,12 +135,12 @@ class BookingAvailabilityService
                     'endTime' => $endsAt->format('g:i A'),
                     'timeRangeLabel' => $startsAt->format('g:i A').' to '.$endsAt->format('g:i A'),
                     'recurrenceLabel' => $recurrenceLabel,
-                    'spotsFilled' => (int) $session->current_occupancy,
+                    'spotsFilled' => $spotsFilled,
                     'maxSpots' => (int) $session->max_spots,
                     'remainingSpots' => $remaining,
                     'availabilityText' => $remaining === 0 ? 'Currently full' : ($remaining === 1 ? '1 spot remaining' : "{$remaining} spots remaining"),
-                    'isBookable' => $session->status === 'upcoming' && !((bool) $session->is_full || $remaining === 0),
-                    'isFull' => (bool) $session->is_full || $remaining === 0,
+                    'isBookable' => $session->status === 'upcoming' && !$isFull,
+                    'isFull' => $isFull,
                 ]],
             ];
         }
@@ -172,8 +176,15 @@ class BookingAvailabilityService
 
     public function nextOfficeHourSessionForMentor(Mentor $mentor, string $viewerTimezone = 'UTC'): ?array
     {
+        if (!$this->mentorHasOfficeHoursService($mentor->id)) {
+            return null;
+        }
+
         $session = OfficeHourSession::query()
-            ->with(['schedule.mentor.user:id,name', 'currentService:id,service_name,service_slug'])
+            ->with(['schedule.currentService:id,service_name,service_slug', 'schedule.mentor.user:id,name', 'currentService:id,service_name,service_slug'])
+            ->withCount([
+                'bookings as active_bookings_count' => fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']),
+            ])
             ->whereHas('schedule', fn (Builder $query) => $query->where('mentor_id', $mentor->id)->where('is_active', true))
             ->where('status', 'upcoming')
             ->whereDate('session_date', '>=', now()->toDateString())
@@ -234,7 +245,10 @@ class BookingAvailabilityService
                         ->all(),
                     'icon' => $this->programIcon($mentor->program_type),
                     'isBookable' => $sessionData['isBookable'],
-                    'bookingUrl' => route('student.book-mentor', $mentor->id),
+                    'bookingUrl' => route('student.book-mentor', [
+                        'id' => $mentor->id,
+                        'service' => 'office_hours',
+                    ]),
                 ];
             })
             ->filter()
@@ -249,10 +263,17 @@ class BookingAvailabilityService
         }
 
         return OfficeHourSession::query()
-            ->with(['schedule.mentor.user:id,name', 'currentService:id,service_name,service_slug'])
+            ->with(['schedule.currentService:id,service_name,service_slug', 'schedule.mentor.user:id,name', 'currentService:id,service_name,service_slug'])
+            ->withCount([
+                'bookings as active_bookings_count' => fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']),
+            ])
             ->whereHas('schedule', fn (Builder $query) => $query
                 ->whereIn('mentor_id', $mentorIds)
-                ->where('is_active', true))
+                ->where('is_active', true)
+                ->whereHas('mentor.services', fn (Builder $serviceQuery) => $serviceQuery
+                    ->where('services_config.is_active', true)
+                    ->where('services_config.is_office_hours', true)
+                    ->where('mentor_services.is_active', true)))
             ->where('status', 'upcoming')
             ->whereDate('session_date', '>=', now()->toDateString())
             ->orderBy('session_date')
@@ -265,8 +286,15 @@ class BookingAvailabilityService
 
     private function nextGeneratedOfficeHourSession(int $mentorId): ?OfficeHourSession
     {
+        if (!$this->mentorHasOfficeHoursService($mentorId)) {
+            return null;
+        }
+
         return OfficeHourSession::query()
-            ->with(['schedule', 'currentService:id,service_name,service_slug'])
+            ->with(['schedule.currentService:id,service_name,service_slug', 'currentService:id,service_name,service_slug'])
+            ->withCount([
+                'bookings as active_bookings_count' => fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']),
+            ])
             ->whereHas('schedule', fn (Builder $query) => $query->where('mentor_id', $mentorId)->where('is_active', true))
             ->where('status', 'upcoming')
             ->whereDate('session_date', '>=', now()->toDateString())
@@ -275,29 +303,47 @@ class BookingAvailabilityService
             ->first();
     }
 
+    private function mentorHasOfficeHoursService(int $mentorId): bool
+    {
+        return Mentor::query()
+            ->whereKey($mentorId)
+            ->whereHas('services', fn (Builder $query) => $query
+                ->where('services_config.is_active', true)
+                ->where('services_config.is_office_hours', true)
+                ->where('mentor_services.is_active', true))
+            ->exists();
+    }
+
     private function transformOfficeHourSession(Mentor $mentor, OfficeHourSession $session, string $viewerTimezone = 'UTC'): array
     {
-        $startsAt = $this->sessionStartsAt($session)->setTimezone($viewerTimezone);
-        $remaining = max(((int) $session->max_spots) - ((int) $session->current_occupancy), 0);
+        $activeBookings = $this->officeHourOccupancy($session);
+        $startsAt = $activeBookings === 0 && $session->schedule
+            ? $this->nextScheduleStart($session->schedule)->setTimezone($viewerTimezone)
+            : $this->sessionStartsAt($session)->setTimezone($viewerTimezone);
+        $maxSpots = (int) ($session->schedule?->max_spots ?: $session->max_spots ?: 3);
+        $remaining = max($maxSpots - $activeBookings, 0);
+        $serviceName = $activeBookings === 0
+            ? ($session->schedule?->currentService?->service_name ?? $session->currentService?->service_name ?? 'Office Hours')
+            : ($session->currentService?->service_name ?? $session->schedule?->currentService?->service_name ?? 'Office Hours');
 
         return [
             'sessionId' => $session->id,
             'mentorName' => $mentor->user?->name ?? 'Mentor',
             'mentorMeta' => trim($this->programLabel($mentor->program_type).' • '.($mentor->grad_school_display ?: $mentor->university?->display_name ?: $mentor->university?->name ?: 'School not listed'), ' •'),
-            'weeklyService' => $session->currentService?->service_name ?? 'Office Hours',
+            'weeklyService' => $serviceName,
             'recurringTime' => $startsAt->format('l, g:i A T'),
             'meetingType' => 'Small Group Office Hours',
-            'spotsFilled' => (int) $session->current_occupancy,
-            'maxSpots' => (int) $session->max_spots,
+            'spotsFilled' => $activeBookings,
+            'maxSpots' => $maxSpots,
             'remainingSpots' => $remaining,
-            'isFull' => (bool) $session->is_full || $remaining === 0,
-            'isBookable' => $session->status === 'upcoming' && !((bool) $session->is_full || $remaining === 0),
+            'isFull' => $activeBookings >= $maxSpots || $remaining === 0,
+            'isBookable' => $session->status === 'upcoming' && $remaining > 0,
             'availabilityText' => $remaining === 0 ? 'Currently full' : ($remaining === 1 ? '1 spot remaining' : "{$remaining} spots remaining"),
-            'sessionDate' => $session->session_date->toDateString(),
+            'sessionDate' => $startsAt->toDateString(),
             'sessionTime' => $startsAt->format('l, g:i A T'),
             'rotation' => ucfirst((string) ($session->schedule?->frequency ?? 'weekly')),
             'serviceLocked' => (bool) $session->service_locked,
-            'note' => $this->officeHoursNote($session),
+            'note' => $this->officeHoursNote($serviceName, $activeBookings, (bool) $session->service_locked),
         ];
     }
 
@@ -325,6 +371,10 @@ class BookingAvailabilityService
 
     private function slotStartsAt(MentorAvailabilitySlot $slot): Carbon
     {
+        if ($slot->starts_at_utc) {
+            return $slot->starts_at_utc->copy()->utc();
+        }
+
         return Carbon::parse(
             $slot->slot_date->toDateString().' '.$slot->start_time,
             $slot->timezone ?: config('app.timezone', 'UTC')
@@ -339,16 +389,52 @@ class BookingAvailabilityService
         );
     }
 
-    private function officeHoursNote(OfficeHourSession $session): string
+    private function officeHoursNote(string $serviceName, int $occupancy, bool $serviceLocked): string
     {
-        $serviceName = $session->currentService?->service_name ?? 'Office Hours';
-        $occupancy = (int) $session->current_occupancy;
-
-        if ($occupancy <= 1 && !$session->service_locked) {
+        if ($occupancy <= 1 && !$serviceLocked) {
             return "This week's office hours are currently set as {$serviceName}. If no one else joins by the cutoff, the first student may request another eligible service.";
         }
 
         return "This week's office hours are currently set as {$serviceName}. Because multiple students are booked, the session will stay focused on this designated service.";
+    }
+
+    private function officeHourOccupancy(OfficeHourSession $session): int
+    {
+        $activeBookings = (int) ($session->active_bookings_count ?? 0);
+        $storedOccupancy = (int) $session->current_occupancy;
+
+        if ($activeBookings > 0) {
+            return $activeBookings;
+        }
+
+        return $storedOccupancy > 1 ? $storedOccupancy : 0;
+    }
+
+    private function nextScheduleStart($schedule): Carbon
+    {
+        $weekdayIndexes = [
+            'sun' => 0,
+            'mon' => 1,
+            'tue' => 2,
+            'wed' => 3,
+            'thu' => 4,
+            'fri' => 5,
+            'sat' => 6,
+        ];
+        $timezone = $schedule->timezone ?: config('app.timezone', 'UTC');
+        $now = now($timezone);
+        $target = $now->copy()->startOfDay();
+        $targetDay = $weekdayIndexes[(string) $schedule->day_of_week] ?? 0;
+        $target->addDays(($targetDay - (int) $target->dayOfWeek + 7) % 7);
+
+        [$hour, $minute, $second] = array_pad(array_map('intval', explode(':', substr((string) $schedule->start_time, 0, 8))), 3, 0);
+        $target->setTime($hour, $minute, $second);
+
+        if ($target->lte($now)) {
+            $target->addWeek();
+        }
+
+        return $target;
     }
 
     private function programLabel(?string $programType): string

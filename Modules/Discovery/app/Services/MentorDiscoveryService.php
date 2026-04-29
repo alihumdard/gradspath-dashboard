@@ -73,15 +73,22 @@ class MentorDiscoveryService
 
     public function featured(int $limit = 6, string $portal = 'student', ?int $viewerMentorId = null)
     {
+        $weekStart = now()->startOfWeek()->utc();
+        $weekEnd = now()->endOfWeek()->utc();
+
         return Mentor::query()
             ->with(['user:id,name,avatar_url', 'university:id,name,display_name', 'rating', 'services'])
+            ->withCount([
+                'bookings as current_week_bookings_count' => fn ($query) => $query
+                    ->whereBetween('session_at', [$weekStart, $weekEnd])
+                    ->whereNotIn('status', ['cancelled', 'cancelled_pending_refund']),
+            ])
             ->where('status', 'active')
             ->whereHas('user')
-            ->orderByDesc('is_featured')
+            ->orderByDesc('current_week_bookings_count')
             ->orderByDesc('id')
             ->limit($limit)
             ->get()
-            ->sortByDesc(fn(Mentor $mentor) => $mentor->rating?->avg_stars ?? 0)
             ->values()
             ->map(fn(Mentor $mentor): array => $this->mapMentorCard($mentor, $portal, $viewerMentorId))
             ->values();

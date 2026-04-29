@@ -11,12 +11,6 @@
     <div class="feedback-card">
       <h1>Submit Feedback</h1>
 
-      @if (session('success'))
-        <div id="successMessage" class="success-message visible" aria-live="polite">
-          {{ session('success') }}
-        </div>
-      @endif
-
       @if ($errors->any())
         <div class="error-summary" aria-live="polite">
           <strong>Please fix the highlighted fields.</strong>
@@ -124,7 +118,9 @@
       @php
         $ticketStatusLabels = [
           'open' => 'Open',
+          'pending' => 'Pending',
           'in_progress' => 'In Progress',
+          'more_information_required' => 'More Information Required',
           'resolved' => 'Resolved',
           'closed' => 'Closed',
         ];

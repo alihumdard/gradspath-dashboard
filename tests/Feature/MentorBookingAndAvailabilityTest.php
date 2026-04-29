@@ -211,7 +211,7 @@ function makeSyncedZoomBooking(Mentor $hostMentor, User $bookerUser, ServiceConf
         'service_config_id' => $service->id,
         'session_type' => '1on1',
         'requested_group_size' => 1,
-        'session_at' => now()->addHour(),
+        'session_at' => now()->subMinute(),
         'session_timezone' => 'UTC',
         'duration_minutes' => 60,
         'meeting_link' => 'https://zoom.us/j/zoom-start-123',
@@ -272,6 +272,47 @@ it('lets a mentor save date-specific availability and generates service-specific
         'service_config_id' => $firstService->id,
         'session_type' => '1on1',
     ]);
+});
+
+it('stores mentor date-specific availability as utc instants', function () {
+    [$mentorUser, $mentor] = makePortalMentor('availability-utc-host');
+    $service = makePortalService([
+        'service_name' => 'Program Insights',
+        'duration_minutes' => 45,
+    ]);
+    attachServiceToMentor($mentor, $service);
+
+    $startsAtLocal = now('Asia/Karachi')->addDays(3)->setTime(15, 0, 0);
+    $endsAtLocal = $startsAtLocal->copy()->addMinutes(45);
+
+    $this->actingAs($mentorUser)
+        ->patch(route('mentor.availability.update'), [
+            'timezone' => 'Asia/Karachi',
+            'date_slots_payload' => dateSlotsPayload([
+                [
+                    'date' => $startsAtLocal->toDateString(),
+                    'enabled' => true,
+                    'slots' => [
+                        [
+                            'start_time' => $startsAtLocal->format('H:i'),
+                            'end_time' => $endsAtLocal->format('H:i'),
+                            'service_config_id' => $service->id,
+                        ],
+                    ],
+                ],
+            ]),
+        ])
+        ->assertRedirect(route('mentor.availability.index'));
+
+    $slot = DB::table('mentor_availability_slots')
+        ->where('mentor_id', $mentor->id)
+        ->where('service_config_id', $service->id)
+        ->first();
+
+    expect($slot)->not->toBeNull()
+        ->and($slot->timezone)->toBe('Asia/Karachi')
+        ->and(Carbon\Carbon::parse($slot->starts_at_utc, 'UTC')->toIso8601String())->toBe($startsAtLocal->copy()->utc()->toIso8601String())
+        ->and(Carbon\Carbon::parse($slot->ends_at_utc, 'UTC')->toIso8601String())->toBe($endsAtLocal->copy()->utc()->toIso8601String());
 });
 
 it('renders the mentor availability editor page', function () {
@@ -353,6 +394,16 @@ it('lets a mentor save recurring office hours on the availability page', functio
         'max_spots' => 3,
         'is_active' => true,
     ]);
+    $this->assertDatabaseHas('office_hour_sessions', [
+        'current_service_id' => $service->id,
+        'start_time' => '20:00:00',
+        'timezone' => 'America/New_York',
+        'current_occupancy' => 0,
+        'max_spots' => 3,
+        'is_full' => false,
+        'service_locked' => false,
+        'status' => 'upcoming',
+    ]);
 
     expect($mentor->fresh()->office_hours_schedule)->toContain('Sunday')
         ->toContain('8:00 PM');
@@ -432,6 +483,33 @@ it('returns validation errors when office hours are enabled without a valid serv
         ->assertStatus(422)
         ->assertJsonValidationErrors(['office_hours.service_config_id'])
         ->assertJsonFragment(['Add at least one active mentor service before enabling office hours.']);
+});
+
+it('rejects biweekly office hours because office hours are weekly only', function () {
+    [$mentorUser, $mentor] = makePortalMentor('office-hours-biweekly');
+    $service = makePortalService(['service_name' => 'Application Review']);
+    attachServiceToMentor($mentor, $service);
+
+    $this->actingAs($mentorUser)
+        ->patchJson(route('mentor.availability.update'), [
+            'timezone' => 'America/New_York',
+            'date_slots_payload' => dateSlotsPayload([]),
+            'office_hours' => [
+                'enabled' => true,
+                'service_config_id' => $service->id,
+                'day_of_week' => 'sun',
+                'start_time' => '20:00',
+                'timezone' => 'America/New_York',
+                'frequency' => 'biweekly',
+            ],
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['office_hours.frequency']);
+
+    $this->assertDatabaseMissing('office_hour_schedules', [
+        'mentor_id' => $mentor->id,
+        'frequency' => 'biweekly',
+    ]);
 });
 
 it('returns scheduler hydration data when saving availability as json', function () {

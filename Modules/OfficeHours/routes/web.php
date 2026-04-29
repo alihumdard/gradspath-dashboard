@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\OfficeHours\app\Http\Controllers\Mentor\OfficeHoursController as MentorOfficeHoursController;
+use Modules\OfficeHours\app\Http\Controllers\Student\OfficeHourSessionServiceController;
 use Modules\OfficeHours\app\Http\Controllers\Student\OfficeHoursController as StudentOfficeHoursController;
 
 /*
@@ -12,6 +13,7 @@ use Modules\OfficeHours\app\Http\Controllers\Student\OfficeHoursController as St
 
 Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
     Route::get('/student/office-hours', [StudentOfficeHoursController::class, 'index'])->name('student.office-hours');
+    Route::patch('/student/office-hours/sessions/{session}/service', [OfficeHourSessionServiceController::class, 'update'])->name('student.office-hours.sessions.service');
 });
 
 Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {

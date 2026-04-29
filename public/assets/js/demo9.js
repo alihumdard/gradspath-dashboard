@@ -59,6 +59,8 @@ const bookedDates = upcomingBookings.reduce((carry, booking) => {
     time: booking.sessionTimeLabel || "Not set",
     service: booking.serviceName || "Service",
     serviceSlug: booking.serviceSlug || null,
+    officeHoursFocusName: booking.officeHoursFocusName || null,
+    serviceChoice: booking.serviceChoice || null,
     mentorName: booking.mentorDisplay || booking.mentorName || "Mentor",
     meetingLink: booking.meetingLink || booking.zoomLink || null,
     meetingProvider: booking.meetingProvider || "Meeting Link",
@@ -119,6 +121,10 @@ const todayBtn = document.getElementById("todayBtn");
 const calendarContentEl = document.getElementById("calendarContent");
 const upcomingListEl = document.getElementById("upcomingList");
 const serviceCards = document.querySelectorAll(".service-card.locked-card");
+const serviceLockNoteEl = document.getElementById("serviceLockNote");
+const officeHoursServiceChoiceRow = document.getElementById("officeHoursServiceChoiceRow");
+const officeHoursServiceChoiceNote = document.getElementById("officeHoursServiceChoiceNote");
+const openOfficeHoursServiceChoiceBtn = document.getElementById("openOfficeHoursServiceChoiceBtn");
 const counterpartLabelEl = document.getElementById("counterpartLabel");
 const bookingSubtitleEl = document.getElementById("bookingSubtitle");
 
@@ -126,6 +132,12 @@ const cancelMeetingBtn = document.getElementById("cancelMeetingBtn");
 const cancelModal = document.getElementById("cancelModal");
 const cancelConfirmModal = document.getElementById("cancelConfirmModal");
 const supportModal = document.getElementById("supportModal");
+const officeHoursServiceChoiceModal = document.getElementById("officeHoursServiceChoiceModal");
+const officeHoursServiceChoiceModalText = document.getElementById("officeHoursServiceChoiceModalText");
+const officeHoursServiceChoiceOptions = document.getElementById("officeHoursServiceChoiceOptions");
+const officeHoursServiceChoiceAlert = document.getElementById("officeHoursServiceChoiceAlert");
+const closeOfficeHoursServiceChoiceBtn = document.getElementById("closeOfficeHoursServiceChoiceBtn");
+const saveOfficeHoursServiceChoiceBtn = document.getElementById("saveOfficeHoursServiceChoiceBtn");
 const cancelNo1 = document.getElementById("cancelNo1");
 const cancelYes1 = document.getElementById("cancelYes1");
 const cancelNo2 = document.getElementById("cancelNo2");
@@ -238,6 +250,7 @@ let activeChatChannelName = null;
 let localTypingActive = false;
 let localTypingTimeoutId = null;
 let remoteTypingTimeoutId = null;
+let selectedOfficeHoursServiceChoiceId = null;
 const chatMessagesByBooking = new Map();
 if (selectedDateKey) {
   const selectedDate = parseDateKey(selectedDateKey);
@@ -436,6 +449,157 @@ function syncSelectedService(booking) {
     const matches = normalizeServiceValue(serviceName) === selectedValue;
     card.classList.toggle("selected", matches);
   });
+
+  syncOfficeHoursServiceChoiceState(booking);
+}
+
+function isOfficeHoursBooking(booking) {
+  return normalizeServiceValue(booking?.serviceSlug || booking?.service || booking?.meetingSize) === "office_hours";
+}
+
+function syncOfficeHoursServiceChoiceState(booking) {
+  const serviceChoice = booking?.serviceChoice || null;
+  const isOfficeHours = isOfficeHoursBooking(booking);
+  const focusName = serviceChoice?.currentServiceName || booking?.officeHoursFocusName || "the scheduled weekly focus";
+
+  if (serviceLockNoteEl) {
+    serviceLockNoteEl.textContent = isOfficeHours
+      ? `Booked as Office Hours. Current focus: ${focusName}.`
+      : "Service is locked after booking and cannot be changed here.";
+  }
+
+  if (!officeHoursServiceChoiceRow || !officeHoursServiceChoiceNote || !openOfficeHoursServiceChoiceBtn) {
+    return;
+  }
+
+  officeHoursServiceChoiceRow.hidden = !isOfficeHours;
+
+  if (!isOfficeHours) {
+    return;
+  }
+
+  officeHoursServiceChoiceNote.textContent = serviceChoice?.eligible
+    ? "You are the only student booked in the service-choice window."
+    : serviceChoice?.reason || "Office Hours focus cannot be changed for this session.";
+
+  openOfficeHoursServiceChoiceBtn.hidden = !serviceChoice?.eligible;
+  openOfficeHoursServiceChoiceBtn.disabled = !serviceChoice?.eligible;
+}
+
+function setOfficeHoursChoiceAlert(message = "", type = "error") {
+  if (!officeHoursServiceChoiceAlert) return;
+
+  officeHoursServiceChoiceAlert.hidden = !message;
+  officeHoursServiceChoiceAlert.textContent = message;
+  officeHoursServiceChoiceAlert.classList.toggle("success", type === "success");
+}
+
+function renderOfficeHoursServiceChoiceOptions(serviceChoice) {
+  if (!officeHoursServiceChoiceOptions) return;
+
+  officeHoursServiceChoiceOptions.innerHTML = "";
+  selectedOfficeHoursServiceChoiceId = Number(serviceChoice?.currentServiceId || 0) || null;
+
+  (serviceChoice?.availableServices || []).forEach((service) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "service-choice-option";
+    button.textContent = service.name || "Service";
+    button.dataset.serviceId = String(service.id);
+    button.classList.toggle("active", Number(service.id) === Number(selectedOfficeHoursServiceChoiceId));
+
+    button.addEventListener("click", () => {
+      selectedOfficeHoursServiceChoiceId = Number(service.id);
+      officeHoursServiceChoiceOptions
+        .querySelectorAll(".service-choice-option")
+        .forEach((item) => item.classList.toggle("active", item === button));
+    });
+
+    officeHoursServiceChoiceOptions.appendChild(button);
+  });
+}
+
+function openOfficeHoursServiceChoiceModal(booking = getSelectedBooking()) {
+  const serviceChoice = booking?.serviceChoice || null;
+
+  if (!officeHoursServiceChoiceModal || !serviceChoice?.eligible) {
+    return;
+  }
+
+  if (officeHoursServiceChoiceModalText) {
+    officeHoursServiceChoiceModalText.textContent =
+      "You are the only student booked for this session. Choose the focus before the 12-hour cutoff so your mentor can prepare.";
+  }
+
+  renderOfficeHoursServiceChoiceOptions(serviceChoice);
+  setOfficeHoursChoiceAlert("");
+  officeHoursServiceChoiceModal.classList.remove("hidden");
+}
+
+function closeOfficeHoursServiceChoiceModal() {
+  officeHoursServiceChoiceModal?.classList.add("hidden");
+}
+
+function applyOfficeHoursServiceChoicePayload(bookingId, serviceChoice) {
+  const applyToBooking = (booking) => {
+    if (!booking || Number(booking.id) !== Number(bookingId)) return;
+
+    booking.serviceChoice = serviceChoice;
+    booking.officeHoursFocusName = serviceChoice?.currentServiceName || booking.officeHoursFocusName;
+  };
+
+  upcomingBookings.forEach(applyToBooking);
+  Object.values(bookingsById).forEach(applyToBooking);
+  Object.values(bookedDates).forEach(applyToBooking);
+  bookingGroups.forEach((group) => {
+    (group?.items || []).forEach(applyToBooking);
+  });
+}
+
+async function saveOfficeHoursServiceChoice() {
+  const booking = getSelectedBooking();
+  const serviceChoice = booking?.serviceChoice || null;
+
+  if (!booking?.id || !serviceChoice?.changeUrl || !selectedOfficeHoursServiceChoiceId) {
+    setOfficeHoursChoiceAlert("Choose a service before saving.");
+    return;
+  }
+
+  saveOfficeHoursServiceChoiceBtn.disabled = true;
+  setOfficeHoursChoiceAlert("");
+
+  try {
+    const response = await fetch(serviceChoice.changeUrl, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-TOKEN": csrfToken,
+        "X-Requested-With": "XMLHttpRequest",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ service_config_id: selectedOfficeHoursServiceChoiceId }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(payload.message || "Unable to update the office-hours focus.");
+    }
+
+    applyOfficeHoursServiceChoicePayload(booking.id, payload.serviceChoice);
+    updateMeetingInfoFromSelected();
+    renderUpcomingAppointments();
+    setOfficeHoursChoiceAlert(payload.message || "Office-hours focus updated.", "success");
+
+    window.setTimeout(() => {
+      closeOfficeHoursServiceChoiceModal();
+    }, 700);
+  } catch (error) {
+    setOfficeHoursChoiceAlert(error.message || "Unable to update the office-hours focus.");
+  } finally {
+    saveOfficeHoursServiceChoiceBtn.disabled = false;
+  }
 }
 
 function syncMentorNotesState(booking) {
@@ -1681,6 +1845,22 @@ if (openFeedbackModalBtn) {
   });
 }
 
+if (openOfficeHoursServiceChoiceBtn) {
+  openOfficeHoursServiceChoiceBtn.addEventListener("click", () => {
+    openOfficeHoursServiceChoiceModal(getSelectedBooking());
+  });
+}
+
+if (closeOfficeHoursServiceChoiceBtn) {
+  closeOfficeHoursServiceChoiceBtn.addEventListener("click", closeOfficeHoursServiceChoiceModal);
+}
+
+if (saveOfficeHoursServiceChoiceBtn) {
+  saveOfficeHoursServiceChoiceBtn.addEventListener("click", () => {
+    void saveOfficeHoursServiceChoice();
+  });
+}
+
 if (closeFeedbackModalBtn) {
   closeFeedbackModalBtn.addEventListener("click", () => {
     closeModal(feedbackModal);
@@ -1735,6 +1915,14 @@ if (feedbackModal) {
   });
 }
 
+if (officeHoursServiceChoiceModal) {
+  officeHoursServiceChoiceModal.addEventListener("click", (event) => {
+    if (event.target === officeHoursServiceChoiceModal) {
+      closeOfficeHoursServiceChoiceModal();
+    }
+  });
+}
+
 if (supportLink) {
   supportLink.addEventListener("click", function (e) {
     if (meetingData.supportUrl) {
@@ -1770,6 +1958,16 @@ if (feedbackCharCountEl && feedbackCommentEl) {
 
 if (feedbackModal && document.querySelector(".feedback-inline-alert.error.modal-alert")) {
   openModal(feedbackModal);
+}
+
+const autoOpenServiceChoiceBookingId = bookingDetailsData.autoOpenServiceChoiceBookingId;
+if (autoOpenServiceChoiceBookingId && bookingsById[String(autoOpenServiceChoiceBookingId)]?.serviceChoice?.eligible) {
+  selectedBookingId = Number(autoOpenServiceChoiceBookingId);
+  selectedDateKey = bookingsById[String(autoOpenServiceChoiceBookingId)].sessionDateKey || selectedDateKey;
+  updateMeetingInfoFromSelected();
+  renderCalendar();
+  renderUpcomingAppointments();
+  openOfficeHoursServiceChoiceModal(bookingsById[String(autoOpenServiceChoiceBookingId)]);
 }
 // Mobile sidebar toggle
 const menuBtn = document.getElementById("mobileMenuToggle");

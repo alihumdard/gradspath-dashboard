@@ -582,6 +582,24 @@ h1 {
   color: var(--muted);
 }
 
+.service-choice-row {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.service-choice-row[hidden] {
+  display: none;
+}
+
+.service-choice-trigger {
+  min-height: 40px;
+  padding: 0 16px;
+}
+
 /* info */
 .info-grid {
   width: 100%;
@@ -1892,6 +1910,52 @@ h1 {
   font-size: 15px;
   line-height: 1.6;
   color: var(--muted);
+}
+
+.service-choice-modal-card {
+  max-width: 560px;
+}
+
+.service-choice-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.service-choice-option {
+  min-height: 54px;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.service-choice-option:hover,
+.service-choice-option.active {
+  border-color: var(--purple);
+  background: var(--purple-soft);
+  color: var(--purple-dark);
+}
+
+.service-choice-alert {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.service-choice-alert.success {
+  background: var(--teal-soft);
+  border-color: var(--teal);
+  color: var(--teal);
 }
 
 .modal-actions {

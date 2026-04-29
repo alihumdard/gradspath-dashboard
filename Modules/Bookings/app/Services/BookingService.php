@@ -40,6 +40,7 @@ class BookingService
         $this->assertUserHasNoOverdueFeedback($booker);
         $this->assertBookerMentorHasNoOverdueSessionNotes($booker);
         $this->assertMentorHasNoOverdueSessionNotes($mentor);
+        $this->assertServiceMatchesSessionType($service, $sessionType);
         $this->assertBookerCanBookMentor($booker, $mentor);
         $this->assertMentorOffersService($mentor, $service);
         $this->assertMentorCanHostZoomMeeting($mentor, $data, $sessionType);
@@ -88,7 +89,6 @@ class BookingService
 
             if (
                 ($data['meeting_type'] ?? 'zoom') === 'zoom'
-                && $sessionType !== 'office_hours'
                 && (string) $booking->status === 'confirmed'
                 && (string) $booking->calendar_sync_status !== 'synced'
             ) {
@@ -237,13 +237,17 @@ class BookingService
             throw new BookingException('This time slot cannot support the selected meeting size.');
         }
 
-        $sessionAt = Carbon::parse($slot->slot_date->toDateString().' '.$slot->start_time, $slot->timezone ?: config('app.timezone'));
-        if ($sessionAt->lte(now())) {
+        $sessionAtUtc = $slot->starts_at_utc
+            ? $slot->starts_at_utc->copy()->utc()
+            : Carbon::parse($slot->slot_date->toDateString().' '.$slot->start_time, $slot->timezone ?: config('app.timezone'))->utc();
+
+        if ($sessionAtUtc->lte(now('UTC'))) {
             throw new BookingException('Please choose a future time slot.');
         }
 
-        $sessionAtUtc = $sessionAt->copy()->utc();
-        $sessionEndUtc = Carbon::parse($slot->slot_date->toDateString().' '.$slot->end_time, $slot->timezone ?: config('app.timezone'))->utc();
+        $sessionEndUtc = $slot->ends_at_utc
+            ? $slot->ends_at_utc->copy()->utc()
+            : Carbon::parse($slot->slot_date->toDateString().' '.$slot->end_time, $slot->timezone ?: config('app.timezone'))->utc();
 
         $slot->booked_participants_count = $requestedGroupSize;
         $slot->is_booked = true;
@@ -275,7 +279,7 @@ class BookingService
 
     private function assertMentorCanHostZoomMeeting(Mentor $mentor, array $data, string $sessionType): void
     {
-        if (($data['meeting_type'] ?? 'zoom') !== 'zoom' || $sessionType === 'office_hours') {
+        if (($data['meeting_type'] ?? 'zoom') !== 'zoom') {
             return;
         }
 
@@ -331,13 +335,6 @@ class BookingService
             throw new BookingException('This office-hours session is no longer bookable.');
         }
 
-        $sessionAt = Carbon::parse($session->session_date->toDateString().' '.$session->start_time, $session->timezone ?: config('app.timezone'));
-        if ($sessionAt->lte(now())) {
-            throw new BookingException('Please choose an upcoming office-hours session.');
-        }
-
-        $sessionAtUtc = $sessionAt->copy()->utc();
-
         if (
             Booking::query()
                 ->where('office_hour_session_id', $session->id)
@@ -348,9 +345,41 @@ class BookingService
             throw new BookingException('You have already booked this office-hours session.');
         }
 
-        if ((int) $session->current_occupancy >= (int) $session->max_spots) {
+        $activeBookingCount = Booking::query()
+            ->where('office_hour_session_id', $session->id)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->count();
+
+        $session->current_occupancy = $activeBookingCount;
+        $session->is_full = $session->current_occupancy >= (int) $session->max_spots;
+        $session->service_locked = $session->current_occupancy >= 2;
+        if ($session->current_occupancy === 0) {
+            $session->first_booker_id = null;
+            $session->first_booked_at = null;
+        }
+
+        if ($session->current_occupancy >= (int) $session->max_spots) {
+            $session->save();
             throw new BookingException('This office-hours session is full.');
         }
+
+        if ($session->current_occupancy === 0 && $session->schedule) {
+            $nextStart = $this->nextOfficeHoursStart($session->schedule);
+
+            $session->current_service_id = $session->schedule->current_service_id ?: $session->current_service_id;
+            $session->session_date = $nextStart->toDateString();
+            $session->start_time = $nextStart->format('H:i:s');
+            $session->timezone = $session->schedule->timezone ?: $session->timezone;
+            $session->max_spots = (int) ($session->schedule->max_spots ?: $session->max_spots);
+            $session->service_choice_cutoff_at = $nextStart->copy()->subHours(12)->utc();
+        }
+
+        $sessionAt = Carbon::parse($session->session_date->toDateString().' '.$session->start_time, $session->timezone ?: config('app.timezone'));
+        if ($sessionAt->lte(now())) {
+            throw new BookingException('Please choose an upcoming office-hours session.');
+        }
+
+        $sessionAtUtc = $sessionAt->copy()->utc();
 
         $session->current_occupancy = (int) $session->current_occupancy + 1;
         $session->is_full = $session->current_occupancy >= (int) $session->max_spots;
@@ -370,6 +399,33 @@ class BookingService
         ];
     }
 
+    private function nextOfficeHoursStart($schedule): Carbon
+    {
+        $weekdayIndexes = [
+            'sun' => 0,
+            'mon' => 1,
+            'tue' => 2,
+            'wed' => 3,
+            'thu' => 4,
+            'fri' => 5,
+            'sat' => 6,
+        ];
+        $timezone = $schedule->timezone ?: config('app.timezone', 'UTC');
+        $now = now($timezone);
+        $target = $now->copy()->startOfDay();
+        $targetDay = $weekdayIndexes[(string) $schedule->day_of_week] ?? 0;
+        $target->addDays(($targetDay - (int) $target->dayOfWeek + 7) % 7);
+
+        [$hour, $minute, $second] = array_pad(array_map('intval', explode(':', substr((string) $schedule->start_time, 0, 8))), 3, 0);
+        $target->setTime($hour, $minute, $second);
+
+        if ($target->lte($now)) {
+            $target->addWeek();
+        }
+
+        return $target;
+    }
+
     private function assertBookerCanBookMentor(User $booker, Mentor $mentor): void
     {
         if ((int) ($mentor->user_id ?? 0) === (int) $booker->id) {
@@ -379,6 +435,18 @@ class BookingService
 
     private function assertMentorOffersService(Mentor $mentor, ServiceConfig $service): void
     {
+        if ((bool) $service->is_office_hours) {
+            $hasOfficeHours = $mentor->officeHourSchedules()
+                ->where('is_active', true)
+                ->exists();
+
+            if (! $hasOfficeHours) {
+                throw new BookingException('This mentor does not currently offer Office Hours.');
+            }
+
+            return;
+        }
+
         $offersService = $mentor->services()
             ->where('services_config.id', $service->id)
             ->where('services_config.is_active', true)
@@ -387,6 +455,17 @@ class BookingService
 
         if (! $offersService) {
             throw new BookingException('This mentor does not currently offer the selected service.');
+        }
+    }
+
+    private function assertServiceMatchesSessionType(ServiceConfig $service, string $sessionType): void
+    {
+        if ($sessionType === 'office_hours' && ! (bool) $service->is_office_hours) {
+            throw new BookingException('Office Hours bookings must use the Office Hours service.');
+        }
+
+        if ($sessionType !== 'office_hours' && (bool) $service->is_office_hours) {
+            throw new BookingException('Choose Office Hours as the session type for the Office Hours service.');
         }
     }
 
