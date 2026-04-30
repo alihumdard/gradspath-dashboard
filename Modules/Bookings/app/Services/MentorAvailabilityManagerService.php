@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
+use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Models\MentorAvailabilityRule;
 use Modules\Bookings\app\Models\MentorAvailabilitySlot;
 use Modules\OfficeHours\app\Models\OfficeHourSchedule;
@@ -47,54 +48,120 @@ class MentorAvailabilityManagerService
             ->sortBy(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->toIso8601String())
             ->groupBy(fn (MentorAvailabilitySlot $slot) => $this->slotStartsAt($slot)->setTimezone($fallbackTimezone)->toDateString());
 
+        $dateRows = $slots
+            ->map(function ($daySlots, string $date) use ($fallbackTimezone) {
+                $dateCarbon = Carbon::parse($date);
+
+                return [
+                    'date' => $date,
+                    'label' => $dateCarbon->format('l'),
+                    'enabled' => $daySlots->isNotEmpty(),
+                    'slot_count' => $daySlots->count(),
+                    'booked_count' => $daySlots->sum(fn (MentorAvailabilitySlot $slot) => (int) ($slot->active_bookings_count ?? 0)),
+                    'bookings' => $daySlots
+                        ->flatMap(function (MentorAvailabilitySlot $slot) use ($fallbackTimezone) {
+                            return $slot->bookings->map(fn (Booking $booking) => $this->bookingPayload($booking, $slot, $fallbackTimezone));
+                        })
+                        ->sortBy('session_label')
+                        ->values()
+                        ->all(),
+                    'slots' => $daySlots
+                        ->map(fn (MentorAvailabilitySlot $slot) => [
+                            'slot_id' => (int) $slot->id,
+                            'start_time' => $this->localSlotTime($slot, 'start', $fallbackTimezone),
+                            'end_time' => $this->localSlotTime($slot, 'end', $fallbackTimezone),
+                            'service_config_id' => $slot->service_config_id,
+                            'session_type' => $this->normalizeSessionType((string) ($slot->session_type ?: '1on1')),
+                            'meeting_size_label' => $this->meetingSizeLabel((string) ($slot->session_type ?: '1on1')),
+                            'is_booked' => (int) ($slot->active_bookings_count ?? 0) > 0,
+                            'booking_count' => (int) ($slot->active_bookings_count ?? 0),
+                            'summary' => $this->formatTimeRange($this->localSlotTime($slot, 'start', $fallbackTimezone), $this->localSlotTime($slot, 'end', $fallbackTimezone)),
+                        ])
+                        ->values()
+                        ->all(),
+                ];
+            });
+
+        $bookingsByDate = Booking::query()
+            ->with(['booker:id,name,email', 'service:id,service_name', 'availabilitySlot.service:id,service_name'])
+            ->where('mentor_id', $mentor->id)
+            ->whereNotIn('status', ['cancelled', 'cancelled_pending_refund'])
+            ->where('session_type', '!=', 'office_hours')
+            ->orderBy('session_at')
+            ->get()
+            ->groupBy(fn (Booking $booking) => $booking->sessionAtInTimezone($fallbackTimezone)?->toDateString() ?: '');
+
+        $bookingsByDate->each(function ($bookings, string $date) use (&$dateRows, $fallbackTimezone) {
+            if ($date === '') {
+                return;
+            }
+
+            $existing = $dateRows->get($date, [
+                'date' => $date,
+                'label' => Carbon::parse($date)->format('l'),
+                'enabled' => false,
+                'slot_count' => 0,
+                'booked_count' => 0,
+                'bookings' => [],
+                'slots' => [],
+            ]);
+
+            $existingBookings = collect($existing['bookings'] ?? []);
+            $slotIds = collect($existing['slots'] ?? [])
+                ->pluck('slot_id')
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $mergedBookings = $existingBookings
+                ->merge($bookings->map(function (Booking $booking) use ($fallbackTimezone, $slotIds) {
+                    $slot = $booking->availabilitySlot;
+
+                    if ($slot && in_array((int) $slot->id, $slotIds, true)) {
+                        return null;
+                    }
+
+                    return $this->bookingPayload($booking, $slot, $fallbackTimezone);
+                })->filter())
+                ->unique('id')
+                ->sortBy('session_label')
+                ->values();
+
+            $existing['bookings'] = $mergedBookings->all();
+            $existing['booked_count'] = max((int) ($existing['booked_count'] ?? 0), $mergedBookings->count());
+
+            $dateRows->put($date, $existing);
+        });
+
         return [
             'timezone' => $fallbackTimezone,
             'effective_from' => null,
             'effective_until' => null,
-            'date_slots' => $slots
-                ->map(function ($daySlots, string $date) use ($fallbackTimezone) {
-                    $dateCarbon = Carbon::parse($date);
-
-                    return [
-                        'date' => $date,
-                        'label' => $dateCarbon->format('l'),
-                        'enabled' => $daySlots->isNotEmpty(),
-                        'slot_count' => $daySlots->count(),
-                        'booked_count' => $daySlots->sum(fn (MentorAvailabilitySlot $slot) => (int) ($slot->active_bookings_count ?? 0)),
-                        'bookings' => $daySlots
-                            ->flatMap(function (MentorAvailabilitySlot $slot) use ($fallbackTimezone) {
-                                return $slot->bookings->map(function ($booking) use ($slot, $fallbackTimezone) {
-                                    return [
-                                        'id' => (int) $booking->id,
-                                        'booker_name' => $booking->booker?->name ?? 'Booked user',
-                                        'booker_email' => $booking->booker?->email,
-                                        'service_name' => $booking->service?->service_name ?? $slot->service?->service_name ?? 'Service',
-                                        'slot_label' => $this->formatTimeRange($this->localSlotTime($slot, 'start', $fallbackTimezone), $this->localSlotTime($slot, 'end', $fallbackTimezone)),
-                                        'booked_at_label' => $booking->created_at?->setTimezone($booking->session_timezone ?: config('app.timezone', 'UTC'))->format('M j, Y g:i A'),
-                                        'session_label' => $booking->session_at?->setTimezone($booking->session_timezone ?: config('app.timezone', 'UTC'))->format('M j, Y g:i A'),
-                                        'status' => (string) $booking->status,
-                                    ];
-                                });
-                            })
-                            ->sortBy('session_label')
-                            ->values()
-                            ->all(),
-                        'slots' => $daySlots
-                            ->map(fn (MentorAvailabilitySlot $slot) => [
-                                'slot_id' => (int) $slot->id,
-                                'start_time' => $this->localSlotTime($slot, 'start', $fallbackTimezone),
-                                'end_time' => $this->localSlotTime($slot, 'end', $fallbackTimezone),
-                                'service_config_id' => $slot->service_config_id,
-                                'is_booked' => (int) ($slot->active_bookings_count ?? 0) > 0,
-                                'booking_count' => (int) ($slot->active_bookings_count ?? 0),
-                                'summary' => $this->formatTimeRange($this->localSlotTime($slot, 'start', $fallbackTimezone), $this->localSlotTime($slot, 'end', $fallbackTimezone)),
-                            ])
-                            ->values()
-                            ->all(),
-                    ];
-                })
+            'date_slots' => $dateRows
+                ->sortKeys()
                 ->values()
                 ->all(),
+        ];
+    }
+
+    private function bookingPayload(Booking $booking, ?MentorAvailabilitySlot $slot, string $fallbackTimezone): array
+    {
+        $sessionTimezone = $booking->session_timezone ?: $fallbackTimezone;
+        $sessionAt = $booking->session_at?->copy()->setTimezone($sessionTimezone);
+        $sessionEnd = $sessionAt?->copy()->addMinutes(max((int) $booking->duration_minutes, 1));
+
+        return [
+            'id' => (int) $booking->id,
+            'booker_name' => $booking->booker?->name ?? 'Booked user',
+            'booker_email' => $booking->booker?->email,
+            'service_name' => $booking->service?->service_name ?? $slot?->service?->service_name ?? 'Service',
+            'meeting_size_label' => $this->meetingSizeLabel((string) ($booking->session_type ?: $slot?->session_type ?: '1on1')),
+            'slot_label' => $slot
+                ? $this->formatTimeRange($this->localSlotTime($slot, 'start', $fallbackTimezone), $this->localSlotTime($slot, 'end', $fallbackTimezone))
+                : $this->formatTimeRange($sessionAt?->format('H:i') ?? '', $sessionEnd?->format('H:i') ?? ''),
+            'booked_at_label' => $booking->created_at?->copy()->setTimezone($sessionTimezone)->format('M j, Y g:i A'),
+            'session_label' => $sessionAt?->format('M j, Y g:i A'),
+            'status' => (string) $booking->status,
         ];
     }
 
@@ -188,6 +255,8 @@ class MentorAvailabilityManagerService
                                 'start_time' => $startTime,
                                 'end_time' => $endTime,
                                 'service_config_id' => isset($slot['service_config_id']) ? (int) $slot['service_config_id'] : null,
+                                'session_type' => $this->normalizeSessionType((string) ($slot['session_type'] ?? '1on1')),
+                                'meeting_size_label' => $this->meetingSizeLabel((string) ($slot['session_type'] ?? '1on1')),
                                 'is_booked' => !empty($slot['is_booked']),
                                 'booking_count' => isset($slot['booking_count']) ? (int) $slot['booking_count'] : 0,
                                 'start_index' => $this->timeToIndex($startTime),
@@ -267,6 +336,7 @@ class MentorAvailabilityManagerService
                         continue;
                     }
 
+                    $sessionType = $this->normalizeSessionType((string) ($slot['session_type'] ?? '1on1'));
                     $startsAt = Carbon::parse($slotDate->toDateString().' '.$slot['start_time'], $timezone);
                     $endsAt = Carbon::parse($slotDate->toDateString().' '.$slot['end_time'], $timezone);
 
@@ -274,7 +344,7 @@ class MentorAvailabilityManagerService
                         'mentor_id' => $mentor->id,
                         'slot_date' => $slotDate->toDateString(),
                         'start_time' => $this->normalizeTime((string) $slot['start_time']),
-                        'session_type' => '1on1',
+                        'session_type' => $sessionType,
                     ], [
                         'availability_rule_id' => null,
                         'mentor_id' => $mentor->id,
@@ -285,8 +355,8 @@ class MentorAvailabilityManagerService
                         'timezone' => $timezone,
                         'starts_at_utc' => $startsAt->copy()->utc(),
                         'ends_at_utc' => $endsAt->copy()->utc(),
-                        'session_type' => '1on1',
-                        'max_participants' => 1,
+                        'session_type' => $sessionType,
+                        'max_participants' => $this->maxParticipantsForSessionType($sessionType),
                         'booked_participants_count' => 0,
                         'is_booked' => false,
                         'is_blocked' => false,
@@ -309,11 +379,19 @@ class MentorAvailabilityManagerService
             ->where('services_config.is_office_hours', false)
             ->orderBy('mentor_services.sort_order')
             ->orderBy('services_config.sort_order')
-            ->get(['services_config.id', 'services_config.service_name', 'services_config.duration_minutes'])
+            ->get([
+                'services_config.id',
+                'services_config.service_name',
+                'services_config.duration_minutes',
+                'services_config.price_1on1',
+                'services_config.price_1on3_per_person',
+                'services_config.price_1on5_per_person',
+            ])
             ->map(fn ($service) => [
                 'value' => (int) $service->id,
                 'label' => $service->service_name,
                 'duration_minutes' => max((int) $service->duration_minutes, 1),
+                'allowed_sizes' => $this->allowedSessionTypesForService($service),
             ])
             ->values()
             ->all();
@@ -533,9 +611,7 @@ class MentorAvailabilityManagerService
 
     private function directSlotsQuery(Mentor $mentor): Builder|HasMany
     {
-        return $mentor->availabilitySlots()
-            ->where('session_type', '1on1')
-            ->where('max_participants', 1);
+        return $mentor->availabilitySlots();
     }
 
     private function applyDirectRuleConstraints(Builder|HasMany $query): Builder|HasMany
@@ -551,14 +627,24 @@ class MentorAvailabilityManagerService
             return;
         }
 
+        $today = now('Asia/Karachi');
+
         MentorAvailabilitySlot::query()
             ->whereIn('availability_rule_id', $ruleIds)
-            ->where(function (Builder $query) {
+            ->where(function (Builder $query) use ($today) {
                 $query->where('starts_at_utc', '>', now('UTC'))
-                    ->orWhere(function (Builder $legacyQuery) {
+                    ->orWhere(function (Builder $legacyQuery) use ($today) {
                         $legacyQuery
                             ->whereNull('starts_at_utc')
-                            ->whereDate('slot_date', '>=', now('Asia/Karachi')->toDateString());
+                            ->where(function (Builder $legacyDateQuery) use ($today) {
+                                $legacyDateQuery
+                                    ->whereDate('slot_date', '>', $today->toDateString())
+                                    ->orWhere(function (Builder $sameDayQuery) use ($today) {
+                                        $sameDayQuery
+                                            ->whereDate('slot_date', $today->toDateString())
+                                            ->where('start_time', '>', $today->format('H:i:s'));
+                                    });
+                            });
                     });
             })
             ->whereDoesntHave('bookings', fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']))
@@ -567,15 +653,24 @@ class MentorAvailabilityManagerService
 
     private function deleteFutureUnbookedDirectSlots(Mentor $mentor): void
     {
+        $today = now('Asia/Karachi');
+
         $mentor->availabilitySlots()
-            ->where('session_type', '1on1')
-            ->where('max_participants', 1)
-            ->where(function (Builder $query) {
+            ->whereNull('availability_rule_id')
+            ->where(function (Builder $query) use ($today) {
                 $query->where('starts_at_utc', '>', now('UTC'))
-                    ->orWhere(function (Builder $legacyQuery) {
+                    ->orWhere(function (Builder $legacyQuery) use ($today) {
                         $legacyQuery
                             ->whereNull('starts_at_utc')
-                            ->whereDate('slot_date', '>=', now('Asia/Karachi')->toDateString());
+                            ->where(function (Builder $legacyDateQuery) use ($today) {
+                                $legacyDateQuery
+                                    ->whereDate('slot_date', '>', $today->toDateString())
+                                    ->orWhere(function (Builder $sameDayQuery) use ($today) {
+                                        $sameDayQuery
+                                            ->whereDate('slot_date', $today->toDateString())
+                                            ->where('start_time', '>', $today->format('H:i:s'));
+                                    });
+                            });
                     });
             })
             ->whereDoesntHave('bookings', fn (Builder $query) => $query->whereIn('status', ['pending', 'confirmed']))
@@ -607,6 +702,7 @@ class MentorAvailabilityManagerService
                 'start_time' => (string) ($slot['start_time'] ?? ''),
                 'end_time' => (string) ($slot['end_time'] ?? ''),
                 'service_config_id' => isset($slot['service_config_id']) ? (int) $slot['service_config_id'] : null,
+                'session_type' => $this->normalizeSessionType((string) ($slot['session_type'] ?? '1on1')),
                 'is_booked' => !empty($slot['is_booked']),
                 'booking_count' => isset($slot['booking_count']) ? (int) $slot['booking_count'] : 0,
             ])
@@ -630,6 +726,7 @@ class MentorAvailabilityManagerService
             'start_time' => $startTime,
             'end_time' => $endTime,
             'service_config_id' => isset($day['service_config_id']) ? (int) $day['service_config_id'] : null,
+            'session_type' => $this->normalizeSessionType((string) ($day['session_type'] ?? '1on1')),
             'is_booked' => !empty($day['is_booked']),
             'booking_count' => isset($day['booking_count']) ? (int) $day['booking_count'] : 0,
         ]];
@@ -694,6 +791,48 @@ class MentorAvailabilityManagerService
         $startsAt = $this->slotStartsAt($slot)->setTimezone($timezone);
 
         return $startsAt->format('D, M j').' at '.$startsAt->format('g:i A').' '.$startsAt->format('T');
+    }
+
+    private function normalizeSessionType(string $sessionType): string
+    {
+        return in_array($sessionType, ['1on1', '1on3', '1on5'], true) ? $sessionType : '1on1';
+    }
+
+    private function maxParticipantsForSessionType(string $sessionType): int
+    {
+        return match ($this->normalizeSessionType($sessionType)) {
+            '1on3' => 3,
+            '1on5' => 5,
+            default => 1,
+        };
+    }
+
+    private function meetingSizeLabel(string $sessionType): string
+    {
+        return match ($this->normalizeSessionType($sessionType)) {
+            '1on3' => '1 on 3',
+            '1on5' => '1 on 5',
+            default => '1 on 1',
+        };
+    }
+
+    private function allowedSessionTypesForService($service): array
+    {
+        $types = [];
+
+        if ($service->price_1on1 !== null) {
+            $types[] = '1on1';
+        }
+
+        if ($service->price_1on3_per_person !== null) {
+            $types[] = '1on3';
+        }
+
+        if ($service->price_1on5_per_person !== null) {
+            $types[] = '1on5';
+        }
+
+        return $types !== [] ? $types : ['1on1'];
     }
 
     private function isExpiredUnbookedSlot(MentorAvailabilitySlot $slot): bool

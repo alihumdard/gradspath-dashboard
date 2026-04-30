@@ -81,7 +81,7 @@ class ZoomService
             return 'not_connected';
         }
 
-        if (trim((string) $token->access_token) === '' && trim((string) $token->refresh_token) === '') {
+        if (trim((string) $token->refresh_token) === '') {
             return 'error';
         }
 
@@ -96,12 +96,66 @@ class ZoomService
             return false;
         }
 
-        return trim((string) $token->access_token) !== '' || trim((string) $token->refresh_token) !== '';
+        return trim((string) $token->refresh_token) !== '';
     }
 
     public function hasConnectedMentor(?Mentor $mentor): bool
     {
         return $mentor?->user ? $this->hasConnectedUser($mentor->user) : false;
+    }
+
+    public function assertUserConnectionIsUsable(User $user): void
+    {
+        $token = $this->oauthTokenForUser($user);
+
+        if (! $token) {
+            throw new \RuntimeException('This mentor has not connected Zoom.');
+        }
+
+        if (trim((string) $token->refresh_token) === '') {
+            throw new \RuntimeException('Zoom refresh token is missing. Please reconnect Zoom.');
+        }
+
+        $accessToken = $this->accessTokenForUser($user);
+
+        try {
+            $this->retrieveCurrentUserProfile($accessToken);
+        } catch (RequestException $exception) {
+            if (in_array($exception->response->status(), [401, 403], true)) {
+                $token = $this->oauthTokenForUser($user);
+
+                if ($token && trim((string) $token->refresh_token) !== '') {
+                    $token = $this->refreshToken($token);
+
+                    try {
+                        $this->retrieveCurrentUserProfile((string) $token->access_token);
+
+                        return;
+                    } catch (RequestException $retryException) {
+                        if (! in_array($retryException->response->status(), [401, 403], true)) {
+                            throw new \RuntimeException('Zoom connection check temporarily failed. Please try again shortly.', 0, $retryException);
+                        }
+
+                        $exception = $retryException;
+                    }
+                }
+
+                $this->clearUserToken($user);
+
+                throw new \RuntimeException('Zoom connection expired or was revoked. Please reconnect Zoom.', 0, $exception);
+            }
+
+            throw new \RuntimeException('Zoom connection check temporarily failed. Please try again shortly.', 0, $exception);
+        }
+    }
+
+    public function assertMentorConnectionIsUsable(?Mentor $mentor): void
+    {
+        if (! $mentor?->user) {
+            throw new \RuntimeException('The booking mentor user could not be resolved.');
+        }
+
+        $this->assertUserConnectionIsUsable($mentor->user);
     }
 
     public function createMeeting(Booking $booking): array
@@ -265,11 +319,7 @@ class ZoomService
             ], fn ($value) => $value !== null));
 
             if ($shouldReconnect) {
-                $token->forceFill([
-                    'access_token' => '',
-                    'refresh_token' => '',
-                    'token_expires_at' => now()->subMinute(),
-                ])->save();
+                $this->clearUserToken(User::query()->findOrFail($token->user_id));
 
                 throw new \RuntimeException('Zoom connection expired or was revoked. Please reconnect Zoom.', 0, $exception);
             }
@@ -451,6 +501,18 @@ class ZoomService
         return $response;
     }
 
+    private function clearUserToken(User $user): void
+    {
+        OauthToken::query()
+            ->where('user_id', $user->id)
+            ->where('provider', 'zoom')
+            ->update([
+                'access_token' => '',
+                'refresh_token' => '',
+                'token_expires_at' => now()->subMinute(),
+            ]);
+    }
+
     private function storeUserToken(User $user, array $payload, array $profile): OauthToken
     {
         $providerUserId = trim((string) (Arr::get($profile, 'id') ?: Arr::get($profile, 'email')));
@@ -475,6 +537,7 @@ class ZoomService
                 'provider_user_id' => $providerUserId,
                 'access_token' => $accessToken,
                 'refresh_token' => $refreshToken,
+                // Zoom access tokens are short-lived; the refresh token is stored separately and reused until Zoom rotates or revokes it.
                 'token_expires_at' => now()->addSeconds(max((int) ($payload['expires_in'] ?? 3600) - 60, 60)),
             ]
         );

@@ -286,6 +286,81 @@ it('uses the gated student route in confirmation and reminder emails for synced 
     });
 });
 
+it('allows invited registered participants to join group meetings using the student join route', function () {
+    $context = createBookingAccessContext();
+    $invitedStudent = createBookingAccessUser('student');
+    $booking = $context['booking'];
+
+    $booking->forceFill([
+        'session_type' => '1on3',
+        'requested_group_size' => 3,
+        'is_group_payer' => true,
+        'group_payer_id' => $context['studentUser']->id,
+    ])->save();
+
+    DB::table('booking_participants')->insert([
+        'booking_id' => $booking->id,
+        'user_id' => null,
+        'full_name' => $invitedStudent->name,
+        'email' => $invitedStudent->email,
+        'participant_role' => 'guest',
+        'is_primary' => false,
+        'invite_status' => 'pending',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    Carbon::setTestNow($context['sessionAtLocal']->copy()->utc()->subSecond());
+
+    $response = $this
+        ->actingAs($invitedStudent)
+        ->get(route('student.bookings.join-meeting', $booking->id));
+
+    $response->assertRedirect('https://zoom.us/j/9876543210');
+});
+
+it('uses the raw zoom link for email-only guests in booking emails', function () {
+    Mail::fake();
+
+    $context = createBookingAccessContext();
+    $booking = $context['booking'];
+    $booking->forceFill([
+        'session_type' => '1on3',
+        'requested_group_size' => 3,
+        'is_group_payer' => true,
+        'group_payer_id' => $context['studentUser']->id,
+    ])->save();
+
+    DB::table('booking_participants')->insert([
+        'booking_id' => $booking->id,
+        'user_id' => null,
+        'full_name' => 'Guest Student',
+        'email' => 'email-only-guest@example.com',
+        'participant_role' => 'guest',
+        'is_primary' => false,
+        'invite_status' => 'pending',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $presenter = app(BookingMeetingPresenter::class);
+
+    (new SendBookingConfirmationJob($booking->id))->handle($presenter);
+    (new SendBookingReminderJob($booking->id, 24))->handle($presenter);
+
+    Mail::assertSent(StudentBookingConfirmationMail::class, function (StudentBookingConfirmationMail $mail) use ($booking) {
+        return $mail->hasTo('email-only-guest@example.com')
+            && $mail->bookingDetails['meeting_link'] === $booking->meeting_link
+            && $mail->bookingDetails['meeting_link_label'] === 'Open Zoom Meeting';
+    });
+
+    Mail::assertSent(BookingReminderMail::class, function (BookingReminderMail $mail) use ($booking) {
+        return $mail->hasTo('email-only-guest@example.com')
+            && $mail->bookingDetails['meeting_link'] === $booking->meeting_link
+            && $mail->bookingDetails['meeting_link_label'] === 'Open Zoom Meeting';
+    });
+});
+
 it('includes mentor program name and email in the student feedback payload', function () {
     $context = createBookingAccessContext();
     $mentorUser = $context['mentorUser'];

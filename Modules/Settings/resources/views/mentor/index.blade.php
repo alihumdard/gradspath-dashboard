@@ -266,6 +266,11 @@
                     @if ($zoomConnectedAccount)
                       <p class="helper-text" style="margin-top: 0;">Connected Zoom account: {{ $zoomConnectedAccount }}</p>
                     @endif
+                    @if ($zoomConnectionStatus === 'error')
+                      <div class="mentor-status-lock" role="alert">
+                        <strong>Your Zoom connection needs to be reconnected before students can book Zoom sessions.</strong>
+                      </div>
+                    @endif
                     <div class="payout-actions">
                       @if ($zoomConnectionStatus === 'connected')
                         <button

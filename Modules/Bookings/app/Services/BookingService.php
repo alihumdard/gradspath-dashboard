@@ -33,14 +33,16 @@ class BookingService
         $chargeCredits = (bool) ($options['charge_credits'] ?? true);
         $credits = $chargeCredits ? $this->creditService->creditsNeeded($service, $sessionType) : 0;
         $requestedGroupSize = $this->requestedGroupSize($sessionType);
-        $approvalStatus = $requestedGroupSize > 1 ? 'pending' : 'not_required';
+        $approvalStatus = 'not_required';
         $amountCharged = $this->amountCharged($service, $sessionType);
         $pricingSnapshot = $this->pricingSnapshot($service, $sessionType, $credits, $amountCharged);
         $guestParticipants = $this->guestParticipants($data['guest_participants'] ?? []);
+        $resolvedGuestParticipants = $this->resolveGuestParticipants($guestParticipants);
         $this->assertUserHasNoOverdueFeedback($booker);
         $this->assertBookerMentorHasNoOverdueSessionNotes($booker);
         $this->assertMentorHasNoOverdueSessionNotes($mentor);
         $this->assertServiceMatchesSessionType($service, $sessionType);
+        $this->assertServiceSupportsSessionType($service, $sessionType);
         $this->assertBookerCanBookMentor($booker, $mentor);
         $this->assertMentorOffersService($mentor, $service);
         $this->assertMentorCanHostZoomMeeting($mentor, $data, $sessionType);
@@ -56,7 +58,7 @@ class BookingService
             $approvalStatus,
             $amountCharged,
             $pricingSnapshot,
-            $guestParticipants,
+            $resolvedGuestParticipants,
             $data
         ) {
             [$sessionAtUtc, $sessionTimezone, $durationMinutes, $slotId, $officeHourSessionId] = $sessionType === 'office_hours'
@@ -75,7 +77,7 @@ class BookingService
                 'session_timezone' => $sessionTimezone,
                 'duration_minutes' => $durationMinutes,
                 'meeting_type' => $data['meeting_type'] ?? 'zoom',
-                'status' => $approvalStatus === 'pending' ? 'pending' : 'confirmed',
+                'status' => 'confirmed',
                 'approval_status' => $sessionType === 'office_hours' ? 'not_required' : $approvalStatus,
                 'credits_charged' => $credits,
                 'amount_charged' => $amountCharged,
@@ -107,21 +109,21 @@ class BookingService
                 'updated_at' => now(),
             ]);
 
-            if ($guestParticipants !== []) {
+            if ($resolvedGuestParticipants !== []) {
                 DB::table('booking_participants')->insert(
                     array_map(function (array $participant) use ($booking) {
                         return [
                             'booking_id' => $booking->id,
-                            'user_id' => null,
+                            'user_id' => $participant['user_id'],
                             'full_name' => $participant['full_name'],
                             'email' => $participant['email'],
                             'participant_role' => 'guest',
                             'is_primary' => false,
-                            'invite_status' => 'pending',
+                            'invite_status' => $participant['user_id'] ? 'accepted' : 'pending',
                             'created_at' => now(),
                             'updated_at' => now(),
                         ];
-                    }, $guestParticipants)
+                    }, $resolvedGuestParticipants)
                 );
             }
 
@@ -469,6 +471,23 @@ class BookingService
         }
     }
 
+    private function assertServiceSupportsSessionType(ServiceConfig $service, string $sessionType): void
+    {
+        if ($sessionType === 'office_hours') {
+            return;
+        }
+
+        $isSupported = match ($sessionType) {
+            '1on3' => $service->price_1on3_per_person !== null,
+            '1on5' => $service->price_1on5_per_person !== null,
+            default => $service->price_1on1 !== null,
+        };
+
+        if (! $isSupported) {
+            throw new BookingException('This service does not support the selected meeting size.');
+        }
+    }
+
     private function requestedGroupSize(string $sessionType): int
     {
         return match ($sessionType) {
@@ -524,6 +543,31 @@ class BookingService
                 ];
             })
             ->filter(fn (array $participant) => $participant['full_name'] !== '' && $participant['email'] !== '')
+            ->values()
+            ->all();
+    }
+
+    private function resolveGuestParticipants(array $participants): array
+    {
+        if ($participants === []) {
+            return [];
+        }
+
+        $participantsByEmail = collect($participants)
+            ->keyBy(fn (array $participant) => strtolower((string) $participant['email']));
+
+        $usersByEmail = User::query()
+            ->whereIn(DB::raw('LOWER(email)'), $participantsByEmail->keys()->all())
+            ->get()
+            ->keyBy(fn (User $user) => strtolower((string) $user->email));
+
+        return $participantsByEmail
+            ->map(function (array $participant, string $email) use ($usersByEmail) {
+                return [
+                    ...$participant,
+                    'user_id' => $usersByEmail->get($email)?->id,
+                ];
+            })
             ->values()
             ->all();
     }

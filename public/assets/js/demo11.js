@@ -25,6 +25,10 @@ const services = Array.isArray(bookingPageData?.services)
   ? bookingPageData.services
   : [];
 const officeHoursData = bookingPageData?.officeHours || null;
+const zoomBooking = bookingPageData?.zoom || {
+  isBookable: true,
+  message: "",
+};
 const availabilityRoutes = bookingPageData?.availabilityRoutes || {};
 const bookingCheckoutUrl = bookingPageData?.bookingCheckoutUrl || "";
 const creditBalanceUrl = bookingPageData?.creditBalanceUrl || "";
@@ -309,7 +313,76 @@ function currentAvailabilityParams() {
   };
 }
 
+function isZoomBookable() {
+  return zoomBooking.isBookable !== false;
+}
+
+function zoomUnavailableMessage() {
+  return (
+    zoomBooking.message ||
+    "This mentor is temporarily unavailable for Zoom bookings."
+  );
+}
+
+function clearAvailabilitySelection() {
+  state.availableMonths = [];
+  state.availableDays = [];
+  state.availableTimes = [];
+  state.selectedDate = null;
+  state.selectedTime = null;
+  state.selectedSlotId = null;
+  state.selectedOfficeHourSessionId = null;
+  state.selectedOfficeHoursDetails = null;
+}
+
+function renderZoomUnavailableState() {
+  clearAvailabilitySelection();
+
+  if (availabilityPanelTitle) {
+    availabilityPanelTitle.textContent = "Select Date & Time";
+  }
+
+  if (availabilityPanelSubtext) {
+    availabilityPanelSubtext.textContent = zoomUnavailableMessage();
+  }
+
+  if (monthDisplay) {
+    monthDisplay.textContent = "Unavailable";
+  }
+
+  if (prevMonthBtn) prevMonthBtn.disabled = true;
+  if (nextMonthBtn) nextMonthBtn.disabled = true;
+
+  if (calendarGrid) {
+    calendarGrid.innerHTML = `
+      <div class="calendar-empty-state" role="status" aria-live="polite">
+        ${zoomUnavailableMessage()}
+      </div>
+    `;
+  }
+
+  if (selectedDateLabel) {
+    selectedDateLabel.textContent = "Zoom unavailable";
+  }
+
+  if (timeGrid) {
+    timeGrid.innerHTML = `
+      <button type="button" class="time-slot disabled" disabled>
+        Zoom unavailable
+      </button>
+    `;
+  }
+
+  updateSummary();
+  updateContinue();
+}
+
 async function loadMonths() {
+  if (!isZoomBookable()) {
+    renderZoomUnavailableState();
+    return;
+  }
+
   const service = getServiceById(state.selectedServiceId);
   if (!service) {
     state.availableMonths = [];
@@ -590,7 +663,9 @@ function renderAvailabilityPanelMode() {
   }
 
   if (availabilityPanelSubtext) {
-    availabilityPanelSubtext.textContent = isOfficeHours
+    availabilityPanelSubtext.textContent = !isZoomBookable()
+      ? zoomUnavailableMessage()
+      : isOfficeHours
       ? "Choose the recurring office-hours date and review the session details below."
       : "Choose an available day and then select a time.";
   }
@@ -756,7 +831,7 @@ function updateContinue() {
 
   const service = getServiceById(state.selectedServiceId);
 
-  if (!service) {
+  if (!service || !isZoomBookable()) {
     continueBtn.disabled = true;
     return;
   }
@@ -931,6 +1006,13 @@ continueBtn?.addEventListener("click", () => {
   if (!service) return;
 
   clearClientMessage();
+
+  if (!isZoomBookable()) {
+    setClientMessage(zoomUnavailableMessage());
+    updateContinue();
+    return;
+  }
+
   setContinueBusy(true, isPaidService() ? "Redirecting..." : "Processing...");
 
   const payload = currentBookingPayload();
@@ -1012,7 +1094,11 @@ renderCalendar();
 renderTimes();
 updateSummary();
 updateContinue();
-initializeAvailability();
+if (isZoomBookable()) {
+  initializeAvailability();
+} else {
+  renderZoomUnavailableState();
+}
 
 const menuBtn = document.getElementById("mobileMenuToggle");
 const overlay = document.getElementById("sidebarOverlay");

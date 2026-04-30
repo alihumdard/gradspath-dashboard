@@ -83,7 +83,7 @@
   autoSaveDetectedTimezone();
 
   bindEvents();
-  render();
+  safeRender();
 
   function initTheme() {
     const savedTheme = localStorage.getItem("theme") || "light";
@@ -139,7 +139,7 @@
         label: String(day.label || key),
         bookedCount: Number(day.booked_count || 0),
         bookings: Array.isArray(day.bookings) ? day.bookings : [],
-        blocks: sortBlocks((Array.isArray(day.slots) ? day.slots : []).map((slot) => normalizeBlock(slot))),
+        blocks: sortBlocks((Array.isArray(day.slots) ? day.slots : []).map((slot) => normalizeBlock(slot, input.service_options))),
       };
     });
 
@@ -155,7 +155,7 @@
     return {
       saveUrl: String(input.save_url || form.action || ""),
       timezoneOptions: Array.isArray(input.timezone_options) ? input.timezone_options : [],
-      serviceOptions: Array.isArray(input.service_options) ? input.service_options : [],
+      serviceOptions: normalizeServiceOptions(input.service_options),
       timeOptions: Array.isArray(input.time_options) ? input.time_options : [],
       windowWeeks: Number(input.window_weeks || 12),
       timezone: String(input.timezone || "UTC"),
@@ -171,6 +171,8 @@
       serverErrors: {},
       validation: {
         dayErrors: {},
+        slotErrors: {},
+        officeHoursErrors: {},
         rangeError: "",
         hasErrors: false,
       },
@@ -180,16 +182,22 @@
       currentView: "week",
       selectedDate: initialSelectedDate,
       selectedDayKey: formatDateKey(initialSelectedDate),
-      officeHours: normalizeOfficeHours(input.office_hours),
+      officeHours: normalizeOfficeHours(input.office_hours, input.service_options),
     };
   }
 
-  function normalizeOfficeHours(input) {
+  function normalizeOfficeHours(input, serviceOptions = []) {
     const config = input?.config && typeof input.config === "object" ? input.config : {};
     const preview = input?.preview && typeof input.preview === "object" ? input.preview : {};
-    const firstServiceOption = Array.isArray(input?.service_options) && input.service_options.length > 0 ? input.service_options[0] : null;
+    const optionSource = Array.isArray(input?.service_options) && input.service_options.length > 0
+      ? input.service_options
+      : Array.isArray(serviceOptions)
+      ? serviceOptions
+      : [];
+    const firstServiceOption = optionSource.length > 0 ? optionSource[0] : null;
     const fallbackServiceId = firstServiceOption?.value ? Number(firstServiceOption.value) : null;
     const serviceConfigId = config.service_config_id ? Number(config.service_config_id) : fallbackServiceId;
+    const fallbackServiceName = serviceLabelFromOptions(optionSource, serviceConfigId);
 
     return {
       enabled: Boolean(config.enabled),
@@ -203,7 +211,7 @@
         mentorName: String(preview.mentor_name || "Mentor"),
         mentorMeta: String(preview.mentor_meta || "Mentor"),
         spotsBadge: String(preview.spots_badge || "0/3 spots filled"),
-        weeklyService: String(preview.weekly_service || serviceLabelById(serviceConfigId) || "Office Hours"),
+        weeklyService: String(preview.weekly_service || fallbackServiceName || "Office Hours"),
         recurringTime: String(preview.recurring_time || "Schedule coming soon"),
         meetingType: String(preview.meeting_type || "Small Group Office Hours"),
         availabilityText: String(preview.availability_text || "No upcoming session generated yet"),
@@ -219,19 +227,19 @@
       state.timezone = timezoneSelect.value;
       state.officeHours.timezone = timezoneSelect.value;
       markDirty();
-      render();
+      safeRender();
     });
 
     effectiveFromInput?.addEventListener("change", () => {
       state.effectiveFrom = effectiveFromInput.value;
       markDirty();
-      render();
+      safeRender();
     });
 
     effectiveUntilInput?.addEventListener("change", () => {
       state.effectiveUntil = effectiveUntilInput.value;
       markDirty();
-      render();
+      safeRender();
     });
 
     form.addEventListener("submit", handleSubmit);
@@ -256,7 +264,7 @@
           state.currentMonth = new Date(state.currentMonth.getFullYear(), monthIndex, 1);
           state.currentView = "month";
           syncSelectedDateToCurrentMonth();
-          render();
+          safeRender();
         }
         return;
       }
@@ -274,7 +282,7 @@
 
       state.selectedDate = date;
       state.selectedDayKey = String(cell.dataset.dayKey || formatDateKey(date));
-      render();
+      safeRender();
     });
 
     viewButtons.forEach((button) => {
@@ -295,7 +303,7 @@
           state.currentMonth = new Date(state.selectedDate.getFullYear(), state.selectedDate.getMonth(), 1);
         }
 
-        render();
+        safeRender();
       });
     });
 
@@ -305,29 +313,29 @@
 
     addSlotButton?.addEventListener("click", () => {
       addSuggestedBlock(state.selectedDayKey);
-      render();
+      safeRender();
     });
 
     clearDayButton?.addEventListener("click", () => {
       clearDay(state.selectedDayKey);
-      render();
+      safeRender();
     });
 
     todayButton?.addEventListener("click", () => {
       state.currentMonth = new Date(state.today.getFullYear(), state.today.getMonth(), 1);
       state.selectedDate = new Date(state.today.getFullYear(), state.today.getMonth(), state.today.getDate());
       state.selectedDayKey = formatDateKey(state.selectedDate);
-      render();
+      safeRender();
     });
 
     prevMonthButton?.addEventListener("click", () => {
       shiftView(-1);
-      render();
+      safeRender();
     });
 
     nextMonthButton?.addEventListener("click", () => {
       shiftView(1);
-      render();
+      safeRender();
     });
   }
 
@@ -348,7 +356,7 @@
 
     state.timezone = detectedTimezone;
     state.officeHours.timezone = detectedTimezone;
-    render();
+    safeRender();
 
     if (!state.timezoneAutoSaveUrl || !csrfToken) {
       return;
@@ -392,7 +400,7 @@
     }
 
     if (block.isBooked) {
-      render();
+      safeRender();
       return;
     }
 
@@ -407,12 +415,17 @@
 
     if (field === "service") {
       block.serviceConfigId = select.value ? Number(select.value) : null;
+      block.sessionType = normalizeBlockSessionType(block.sessionType, block.serviceConfigId);
       block.endTime = endTimeForService(block.startTime, block.serviceConfigId);
+    }
+
+    if (field === "session") {
+      block.sessionType = normalizeBlockSessionType(select.value, block.serviceConfigId);
     }
 
     state.days[state.selectedDayKey].blocks = sortBlocks(state.days[state.selectedDayKey].blocks);
     markDirty();
-    render();
+    safeRender();
   }
 
   function handleServiceSelectionChange() {
@@ -426,7 +439,7 @@
     }
 
     markDirty();
-    render();
+    safeRender();
   }
 
   function handleSlotListClick(event) {
@@ -443,7 +456,7 @@
     }
 
     deleteBlock(state.selectedDayKey, blockId);
-    render();
+    safeRender();
   }
 
   function render() {
@@ -460,6 +473,22 @@
     renderBookingsPanel();
     renderOfficeHours();
     renderSaveButton();
+  }
+
+  function safeRender() {
+    try {
+      render();
+    } catch (error) {
+      console.error("Mentor availability render failed", error);
+      try {
+        renderViewButtons();
+        renderCalendar();
+        renderDayPanel();
+        renderBookingsPanel();
+      } catch (fallbackError) {
+        console.error("Mentor availability fallback render failed", fallbackError);
+      }
+    }
   }
 
   function renderOfficeHours() {
@@ -787,6 +816,10 @@
   }
 
   function renderDateCellMeta(meta, blockCount, bookedCount, locked) {
+    if (bookedCount > 0 && blockCount === 0) {
+      return `<span class="availability-month-cell-booked">${bookedCount} ${bookedCount === 1 ? "Booked" : "Bookings"}</span>`;
+    }
+
     if (locked && meta) {
       return `<span class="availability-month-cell-meta">${escapeHtml(meta)}</span>`;
     }
@@ -871,7 +904,7 @@
 
     emptyState.hidden = true;
     slotList.innerHTML = sortBlocks(day.blocks)
-      .map((block) => renderSlotRow(block, locked))
+      .map((block, index) => renderSlotRow(block, locked, dayKey, index))
       .join("");
   }
 
@@ -916,6 +949,10 @@
               <strong>${escapeHtml(booking.service_name || "Service")}</strong>
             </div>
             <div class="availability-booking-card-item">
+              <span class="availability-booking-card-label">Meeting Size</span>
+              <strong>${escapeHtml(booking.meeting_size_label || "1 on 1")}</strong>
+            </div>
+            <div class="availability-booking-card-item">
               <span class="availability-booking-card-label">Slot</span>
               <strong>${escapeHtml(booking.slot_label || "Not available")}</strong>
             </div>
@@ -933,18 +970,19 @@
       .join("");
   }
 
-  function renderSlotRow(block, locked) {
+  function renderSlotRow(block, locked, dayKey, index) {
     const isBooked = Boolean(block.isBooked);
     const isPast = isPastTimeBlock(state.selectedDayKey, block);
     const fieldsDisabled = isBooked;
     const removeDisabled = isBooked;
     const badgeLabel = isBooked ? "Booked" : isPast ? "Past" : "";
+    const slotError = getSlotError(dayKey, block, index);
 
     return `
-      <div class="availability-day-slot-row ${isBooked ? "is-booked" : ""}">
+      <div class="availability-day-slot-row ${isBooked ? "is-booked" : ""} ${slotError ? "is-error" : ""}">
         <div class="availability-day-slot-row-strike" aria-hidden="true"></div>
         <div class="availability-day-slot-row-top">
-          <div class="availability-day-slot-summary">${escapeHtml(formatTimeRange(block.startTime, block.endTime))}</div>
+          <div class="availability-day-slot-summary">${escapeHtml(formatTimeRange(block.startTime, block.endTime))} • ${escapeHtml(sessionTypeLabel(normalizeBlockSessionType(block.sessionType, block.serviceConfigId)))}</div>
           ${badgeLabel ? `<span class="availability-day-slot-badge">${escapeHtml(badgeLabel)}</span>` : ""}
         </div>
         <div class="availability-day-slot-controls">
@@ -980,10 +1018,17 @@
               ${renderServiceOptions(block.serviceConfigId)}
             </select>
           </label>
+          <label class="availability-day-slot-field availability-day-slot-session">
+            <span>Meeting Size</span>
+            <select data-slot-field="session" data-block-id="${block.id}" ${fieldsDisabled ? "disabled" : ""}>
+              ${renderSessionTypeOptions(block.sessionType, block.serviceConfigId)}
+            </select>
+          </label>
           <button type="button" class="availability-danger-text-btn" data-remove-slot data-block-id="${block.id}" ${removeDisabled ? "disabled" : ""}>
             ${isBooked ? "Locked" : "Remove"}
           </button>
         </div>
+        ${slotError ? `<p class="availability-day-slot-error">${escapeHtml(slotError)}</p>` : ""}
       </div>
     `;
   }
@@ -995,6 +1040,16 @@
       .map((option) => `
         <option value="${escapeAttribute(String(option.value))}" ${Number(option.value) === Number(selectedValue) ? "selected" : ""}>
           ${escapeHtml(option.label)}
+        </option>
+      `)
+      .join("");
+  }
+
+  function renderSessionTypeOptions(selectedValue, serviceId) {
+    return allowedSessionTypesForService(serviceId)
+      .map((type) => `
+        <option value="${escapeAttribute(type)}" ${type === normalizeBlockSessionType(selectedValue, serviceId) ? "selected" : ""}>
+          ${escapeHtml(sessionTypeLabel(type))}
         </option>
       `)
       .join("");
@@ -1073,6 +1128,7 @@
           start_time: block.startTime,
           end_time: block.endTime,
           service_config_id: block.serviceConfigId ?? null,
+          session_type: normalizeBlockSessionType(block.sessionType, block.serviceConfigId),
           is_booked: block.isBooked,
           booking_count: block.bookingCount,
         }));
@@ -1092,7 +1148,7 @@
     event.preventDefault();
 
     state.validation = validateState();
-    render();
+    safeRender();
 
     if (state.validation.hasErrors) {
       showToast("Please fix the highlighted availability settings before saving.", {
@@ -1112,7 +1168,7 @@
 
     syncHiddenInputs();
     state.saving = true;
-    render();
+    safeRender();
 
     try {
       const response = await fetch(state.saveUrl || form.action, {
@@ -1136,7 +1192,7 @@
           items: flattenErrors(state.serverErrors),
         };
         state.saving = false;
-        render();
+        safeRender();
         showToast("Please fix the highlighted availability settings before saving.", {
           type: "error",
           title: "Availability issue",
@@ -1159,7 +1215,7 @@
       state.alert = null;
       state.saving = false;
       state.serverErrors = {};
-      render();
+      safeRender();
       showToast("Availability saved.", {
         type: "success",
         title: "Availability saved",
@@ -1172,7 +1228,7 @@
         message: error instanceof Error ? error.message : "Unable to save availability right now.",
         items: [],
       };
-      render();
+      safeRender();
       showToast("Unable to save availability right now.", {
         type: "error",
         title: "Save failed",
@@ -1210,8 +1266,18 @@
 
   function validateState() {
     const dayErrors = {};
+    const slotErrors = {};
     const officeHoursErrors = {};
     let hasErrors = false;
+
+    const addSlotError = (dayKey, block, message) => {
+      if (!slotErrors[dayKey]) {
+        slotErrors[dayKey] = {};
+      }
+
+      slotErrors[dayKey][block.id] = message;
+      hasErrors = true;
+    };
 
     state.dayOrder.forEach((dayKey) => {
       const day = state.days[dayKey];
@@ -1227,20 +1293,27 @@
         const block = blocks[index];
 
         if (!block.startTime || !block.endTime || block.startTime >= block.endTime) {
-          dayErrors[dayKey] = `${dayLabel} blocks must end after they start.`;
-          hasErrors = true;
+          addSlotError(dayKey, block, `${dayLabel} blocks must end after they start.`);
           return;
         }
 
         if (!block.serviceConfigId) {
-          dayErrors[dayKey] = `${dayLabel} blocks must include a service.`;
-          hasErrors = true;
+          addSlotError(dayKey, block, `${dayLabel} blocks must include a service.`);
+          return;
+        }
+
+        if (!allowedSessionTypesForService(block.serviceConfigId).includes(normalizeBlockSessionType(block.sessionType, block.serviceConfigId))) {
+          addSlotError(dayKey, block, `${dayLabel} uses a meeting size that is not available for the selected service.`);
+          return;
+        }
+
+        if (!block.isBooked && !isUnchangedExistingBlock(block) && !isFutureStartTime(dayKey, block.startTime)) {
+          addSlotError(dayKey, block, `${dayLabel} has a new slot that starts in the past. Choose a future start time.`);
           return;
         }
 
         if (previousEnd !== null && block.startTime < previousEnd) {
-          dayErrors[dayKey] = `${dayLabel}: this time overlaps another slot. Choose a start time after the previous slot ends, or remove one of the slots.`;
-          hasErrors = true;
+          addSlotError(dayKey, block, `${dayLabel}: this time overlaps another slot. Choose a start time after the previous slot ends, or remove one of the slots.`);
           return;
         }
 
@@ -1275,6 +1348,7 @@
 
     return {
       dayErrors,
+      slotErrors,
       officeHoursErrors,
       rangeError: "",
       hasErrors,
@@ -1290,7 +1364,7 @@
     state.officeHours.frequency = "weekly";
     state.officeHours.preview = buildDraftOfficeHoursPreview();
     markDirty();
-    render();
+    safeRender();
   }
 
   function buildDraftOfficeHoursPreview() {
@@ -1381,6 +1455,36 @@
 
     for (const [key, messages] of Object.entries(state.serverErrors)) {
       if (!key.startsWith(`date_slots.${slotIndex}`)) {
+        continue;
+      }
+
+      if (key.includes(".slots.")) {
+        continue;
+      }
+
+      if (Array.isArray(messages) && messages[0]) {
+        return messages[0];
+      }
+    }
+
+    return "";
+  }
+
+  function getSlotError(dayKey, block, blockIndex) {
+    const clientError = state.validation.slotErrors?.[dayKey]?.[block.id];
+    if (clientError) {
+      return clientError;
+    }
+
+    const dayIndex = state.dayOrder.indexOf(dayKey);
+    if (dayIndex === -1 || !Number.isFinite(blockIndex)) {
+      return "";
+    }
+
+    const slotPrefix = `date_slots.${dayIndex}.slots.${blockIndex}`;
+
+    for (const [key, messages] of Object.entries(state.serverErrors)) {
+      if (!key.startsWith(slotPrefix)) {
         continue;
       }
 
@@ -1495,6 +1599,24 @@
     return match ? String(match.label || "") : "";
   }
 
+  function serviceLabelFromOptions(options, serviceId) {
+    const match = (Array.isArray(options) ? options : [])
+      .find((option) => Number(option?.value) === Number(serviceId));
+
+    return match ? String(match.label || "") : "";
+  }
+
+  function normalizeServiceOptions(options) {
+    return (Array.isArray(options) ? options : [])
+      .map((option) => ({
+        value: Number(option?.value),
+        label: String(option?.label || "Service"),
+        duration_minutes: Math.max(Number(option?.duration_minutes || option?.durationMinutes || 1), 1),
+        allowed_sizes: normalizeAllowedSessionTypes(option?.allowed_sizes || option?.allowedSizes),
+      }))
+      .filter((option) => Number.isFinite(option.value) && option.value > 0);
+  }
+
   function serviceOptionsFromInputs() {
     return serviceInputs
       .filter((input) => input.checked && input.dataset.serviceOfficeHours !== "true")
@@ -1502,7 +1624,24 @@
         value: Number(input.value),
         label: String(input.dataset.serviceLabel || "Service"),
         duration_minutes: Math.max(Number(input.dataset.serviceDuration || 1), 1),
+        allowed_sizes: parseAllowedSessionTypes(input.dataset.serviceAllowedSizes),
       }));
+  }
+
+  function parseAllowedSessionTypes(value) {
+    try {
+      return normalizeAllowedSessionTypes(JSON.parse(String(value || "[]")));
+    } catch (error) {
+      return ["1on1"];
+    }
+  }
+
+  function normalizeAllowedSessionTypes(value) {
+    const allowed = Array.isArray(value)
+      ? value.map((type) => String(type)).filter((type) => ["1on1", "1on3", "1on5"].includes(type))
+      : [];
+
+    return allowed.length > 0 ? allowed : ["1on1"];
   }
 
   function serviceDurationById(serviceId) {
@@ -1510,6 +1649,43 @@
     const duration = Number(match?.duration_minutes || match?.durationMinutes || 0);
 
     return Number.isFinite(duration) && duration > 0 ? duration : 60;
+  }
+
+  function allowedSessionTypesForService(serviceId, options = null) {
+    const optionSource = Array.isArray(options) ? normalizeServiceOptions(options) : state.serviceOptions;
+    const match = optionSource.find((option) => Number(option.value) === Number(serviceId));
+    const allowed = Array.isArray(match?.allowed_sizes)
+      ? match.allowed_sizes
+      : Array.isArray(match?.allowedSizes)
+      ? match.allowedSizes
+      : ["1on1"];
+
+    const normalized = allowed
+      .map((type) => String(type))
+      .filter((type) => ["1on1", "1on3", "1on5"].includes(type));
+
+    return normalized.length > 0 ? normalized : ["1on1"];
+  }
+
+  function defaultSessionTypeForService(serviceId, options = null) {
+    const allowed = allowedSessionTypesForService(serviceId, options);
+
+    return allowed.includes("1on1") ? "1on1" : allowed[0] || "1on1";
+  }
+
+  function normalizeBlockSessionType(sessionType, serviceId, options = null) {
+    const value = ["1on1", "1on3", "1on5"].includes(String(sessionType)) ? String(sessionType) : "1on1";
+    const allowed = allowedSessionTypesForService(serviceId, options);
+
+    return allowed.includes(value) ? value : defaultSessionTypeForService(serviceId, options);
+  }
+
+  function sessionTypeLabel(sessionType) {
+    return {
+      "1on1": "1 on 1",
+      "1on3": "1 on 3",
+      "1on5": "1 on 5",
+    }[sessionType] || "1 on 1";
   }
 
   function endTimeForService(startTime, serviceId) {
@@ -1569,6 +1745,11 @@
       startTime: clampTime(start),
       endTime: normalizeExactTime(end),
       serviceConfigId,
+      sessionType: defaultSessionTypeForService(serviceConfigId),
+      originalStartTime: null,
+      originalEndTime: null,
+      originalServiceConfigId: null,
+      originalSessionType: null,
       isBooked: false,
       bookingCount: 0,
     });
@@ -1698,6 +1879,35 @@
     return dayKey < nowParts.dateKey;
   }
 
+  function isUnchangedExistingBlock(block) {
+    return Boolean(block?.slotId)
+      && block.startTime === block.originalStartTime
+      && block.endTime === block.originalEndTime
+      && Number(block.serviceConfigId || 0) === Number(block.originalServiceConfigId || 0)
+      && normalizeBlockSessionType(block.sessionType, block.serviceConfigId) === normalizeBlockSessionType(block.originalSessionType, block.originalServiceConfigId);
+  }
+
+  function isFutureStartTime(dayKey, startTime) {
+    if (!dayKey || !startTime) {
+      return false;
+    }
+
+    const nowParts = currentTimePartsInTimezone(state.timezone);
+    if (!nowParts) {
+      return true;
+    }
+
+    if (dayKey > nowParts.dateKey) {
+      return true;
+    }
+
+    if (dayKey < nowParts.dateKey) {
+      return false;
+    }
+
+    return startTime > nowParts.time;
+  }
+
   function hasRemainingTimeWindow(dayKey) {
     const nextStart = defaultStartTimeForDay(dayKey);
     return Boolean(nextStart && nextStart < "23:30");
@@ -1722,7 +1932,7 @@
       return "";
     }
 
-    return "00:00";
+    return roundUpToNextHalfHour(nowParts.time);
   }
 
   function currentTimePartsInTimezone(timezone) {
@@ -1771,15 +1981,24 @@
     return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
   }
 
-  function normalizeBlock(slot) {
+  function normalizeBlock(slot, serviceOptions = null) {
     blockSequence += 1;
+    const startTime = String(slot?.start_time || "");
+    const endTime = String(slot?.end_time || "");
+    const serviceConfigId = slot?.service_config_id ? Number(slot.service_config_id) : null;
+    const sessionType = normalizeBlockSessionType(String(slot?.session_type || "1on1"), serviceConfigId, serviceOptions);
 
     return {
       id: `availability-block-${blockSequence}`,
       slotId: slot?.slot_id ? Number(slot.slot_id) : null,
-      startTime: String(slot?.start_time || ""),
-      endTime: String(slot?.end_time || ""),
-      serviceConfigId: slot?.service_config_id ? Number(slot.service_config_id) : null,
+      startTime,
+      endTime,
+      serviceConfigId,
+      sessionType,
+      originalStartTime: slot?.slot_id ? startTime : null,
+      originalEndTime: slot?.slot_id ? endTime : null,
+      originalServiceConfigId: slot?.slot_id ? serviceConfigId : null,
+      originalSessionType: slot?.slot_id ? sessionType : null,
       isBooked: Boolean(slot?.is_booked),
       bookingCount: Number(slot?.booking_count || 0),
     };

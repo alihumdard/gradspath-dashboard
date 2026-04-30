@@ -232,6 +232,7 @@ class BookingController extends Controller
             'officeHoursFocusName' => $officeHourFocusName,
             'serviceChoice' => $serviceChoice,
             'meetingType' => $booking->meeting_type,
+            'meetingTypeLabel' => $this->meetingTypeLabel($booking->meeting_type),
             'meetingSize' => $this->meetingSizeLabel($booking->session_type),
             'duration' => (int) $booking->duration_minutes,
             'sessionDateKey' => $sessionAt?->toDateString(),
@@ -255,6 +256,7 @@ class BookingController extends Controller
             'feedbackSubmitted' => (bool) $booking->student_feedback_done,
             'feedbackSubmitUrl' => route('student.feedback.store'),
             'status' => $booking->status,
+            'statusLabel' => $this->statusLabel($booking->status),
             'isUpcoming' => $this->meetingPresenter->scheduledState($booking) !== 'ended',
             'isTodayOrFuture' => $sessionAt ? $sessionAt->greaterThanOrEqualTo(now()->startOfDay()) : false,
             'canCancel' => in_array((string) $booking->status, ['pending', 'confirmed'], true)
@@ -297,6 +299,28 @@ class BookingController extends Controller
             '1on5' => '1 on 5',
             'office_hours' => 'Office Hours',
             default => '1 on 1',
+        };
+    }
+
+    private function meetingTypeLabel(?string $meetingType): string
+    {
+        return match ($meetingType) {
+            'zoom' => 'Zoom',
+            'google_meet' => 'Google Meet',
+            null, '' => 'Meeting',
+            default => str_replace('_', ' ', ucfirst((string) $meetingType)),
+        };
+    }
+
+    private function statusLabel(?string $status): string
+    {
+        return match ($status) {
+            'confirmed' => 'Booked',
+            'completed' => 'Completed',
+            'pending' => 'Pending',
+            'cancelled', 'cancelled_pending_refund' => 'Cancelled',
+            'no_show' => 'No Show',
+            default => str_replace('_', ' ', ucfirst((string) ($status ?: 'Booked'))),
         };
     }
 

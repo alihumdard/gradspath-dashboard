@@ -36,13 +36,14 @@ class BookingMeetingSyncService
             return $this->syncOfficeHoursBooking($booking);
         }
 
-        if ($booking->status !== 'confirmed') {
-            Log::info('Booking meeting sync skipped because booking is not confirmed.', [
+        if (! $this->shouldCreateMeetingForBooking($booking)) {
+            Log::info('Booking meeting sync skipped because booking is not confirmed or an active group booking.', [
                 'booking_id' => $booking->id,
                 'status' => $booking->status,
+                'session_type' => $booking->session_type,
             ]);
 
-            return $this->markSkipped($booking, 'Only confirmed bookings sync to Zoom.');
+            return $this->markSkipped($booking, 'Only confirmed bookings and pending group bookings sync to Zoom.');
         }
 
         if (! $this->zoom->isConfigured()) {
@@ -103,6 +104,16 @@ class BookingMeetingSyncService
         }
 
         return $booking->fresh(['booker', 'mentor.user', 'participantRecords', 'service']);
+    }
+
+    private function shouldCreateMeetingForBooking(Booking $booking): bool
+    {
+        if ($booking->status === 'confirmed') {
+            return true;
+        }
+
+        return $booking->status === 'pending'
+            && in_array((string) $booking->session_type, ['1on3', '1on5'], true);
     }
 
     private function syncOfficeHoursBooking(Booking $booking): Booking

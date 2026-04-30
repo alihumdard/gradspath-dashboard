@@ -36,7 +36,7 @@ class EnsureBookingParticipant
             return $next($request);
         }
 
-        if ($booking->participants()->where('users.id', $user->id)->exists()) {
+        if ($booking->hasParticipantUser($user)) {
             return $next($request);
         }
 

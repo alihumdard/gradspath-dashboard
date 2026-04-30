@@ -3,13 +3,19 @@
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\OauthToken;
 use Modules\Auth\app\Models\User;
 use Modules\Bookings\app\Events\ChatMessageSent;
+use Modules\Bookings\app\Jobs\SendBookingConfirmationJob;
+use Modules\Bookings\app\Mail\MentorBookingNotificationMail;
+use Modules\Bookings\app\Mail\StudentBookingConfirmationMail;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Models\Chat;
 use Modules\Bookings\app\Models\MentorAvailabilityRule;
+use Modules\Bookings\app\Services\BookingMeetingPresenter;
+use Modules\Payments\app\Models\BookingPayment;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
 use Spatie\Permission\Models\Role;
@@ -31,6 +37,10 @@ beforeEach(function () {
         'services.zoom.redirect_uri' => 'https://gradspath.test/mentor/settings/zoom/callback',
         'services.zoom.api_base' => 'https://api.zoom.us/v2',
     ]);
+});
+
+afterEach(function () {
+    Carbon\Carbon::setTestNow();
 });
 
 function makePortalUser(string $prefix, string $role): User
@@ -144,8 +154,16 @@ function createGenericRule(Mentor $mentor, string $dayOfWeek, string $start = '0
     ]);
 }
 
-function createGenericSlot(Mentor $mentor, string $date, string $start = '08:00:00', string $end = '09:00:00', ?int $ruleId = null, ?int $serviceConfigId = null): int
+function createGenericSlot(Mentor $mentor, string $date, string $start = '08:00:00', string $end = '09:00:00', ?int $ruleId = null, ?int $serviceConfigId = null, string $timezone = 'America/New_York', string $sessionType = '1on1'): int
 {
+    $startsAt = Carbon\Carbon::parse($date.' '.$start, $timezone);
+    $endsAt = Carbon\Carbon::parse($date.' '.$end, $timezone);
+    $maxParticipants = match ($sessionType) {
+        '1on3' => 3,
+        '1on5' => 5,
+        default => 1,
+    };
+
     return DB::table('mentor_availability_slots')->insertGetId([
         'mentor_id' => $mentor->id,
         'availability_rule_id' => $ruleId,
@@ -153,9 +171,11 @@ function createGenericSlot(Mentor $mentor, string $date, string $start = '08:00:
         'slot_date' => $date,
         'start_time' => $start,
         'end_time' => $end,
-        'timezone' => 'America/New_York',
-        'session_type' => '1on1',
-        'max_participants' => 1,
+        'timezone' => $timezone,
+        'starts_at_utc' => $startsAt->copy()->utc(),
+        'ends_at_utc' => $endsAt->copy()->utc(),
+        'session_type' => $sessionType,
+        'max_participants' => $maxParticipants,
         'booked_participants_count' => 0,
         'is_booked' => false,
         'is_blocked' => false,
@@ -182,6 +202,10 @@ function fakeStripeCheckoutSession(string $sessionId = 'cs_test_mentor_booking',
             'id' => $sessionId,
             'payment_status' => 'paid',
             'payment_intent' => $paymentIntent,
+        ], 200),
+        'https://api.zoom.us/v2/users/me' => Http::response([
+            'id' => 'zoom-user-preflight',
+            'email' => 'mentor@example.edu',
         ], 200),
         'https://api.zoom.us/v2/users/me/meetings' => Http::response([
             'id' => 'zoom-mentor-paid-booking',
@@ -223,6 +247,29 @@ function makeSyncedZoomBooking(Mentor $hostMentor, User $bookerUser, ServiceConf
         'approval_status' => 'approved',
     ], $overrides));
 }
+
+it('shows student booking page as temporarily unavailable when mentor zoom needs reconnect', function () {
+    [$mentorUser, $mentor] = makePortalMentor('student-zoom-reconnect');
+    $student = makePortalUser('student-zoom-reconnect', 'student');
+    $service = makePortalService();
+    attachServiceToMentor($mentor, $service);
+
+    OauthToken::query()
+        ->where('user_id', $mentorUser->id)
+        ->where('provider', 'zoom')
+        ->update([
+            'access_token' => '',
+            'refresh_token' => '',
+            'token_expires_at' => now()->subMinute(),
+        ]);
+
+    $response = $this->actingAs($student)
+        ->get(route('student.mentor.book', $mentor->id));
+
+    $response->assertOk();
+    $response->assertSee('This mentor is temporarily unavailable for Zoom bookings.');
+    $response->assertSee('"isBookable":false', false);
+});
 
 it('lets a mentor save date-specific availability and generates service-specific 1on1 slots', function () {
     [$mentorUser, $mentor] = makePortalMentor('availability-host');
@@ -274,6 +321,97 @@ it('lets a mentor save date-specific availability and generates service-specific
     ]);
 });
 
+it('lets a mentor save 1on3 and 1on5 availability slots for services that support group sizes', function () {
+    [$mentorUser, $mentor] = makePortalMentor('availability-group-sizes');
+    $service = makePortalService(['service_name' => 'Group Program Insights']);
+    attachServiceToMentor($mentor, $service);
+    $targetDate = now()->addDays(4)->toDateString();
+
+    $this->actingAs($mentorUser)
+        ->patch(route('mentor.availability.update'), [
+            'timezone' => 'America/New_York',
+            'date_slots_payload' => dateSlotsPayload([
+                [
+                    'date' => $targetDate,
+                    'enabled' => true,
+                    'slots' => [
+                        [
+                            'start_time' => '09:00',
+                            'end_time' => '10:00',
+                            'service_config_id' => $service->id,
+                            'session_type' => '1on3',
+                        ],
+                        [
+                            'start_time' => '11:00',
+                            'end_time' => '12:00',
+                            'service_config_id' => $service->id,
+                            'session_type' => '1on5',
+                        ],
+                    ],
+                ],
+            ]),
+        ])
+        ->assertRedirect(route('mentor.availability.index'));
+
+    $this->assertDatabaseHas('mentor_availability_slots', [
+        'mentor_id' => $mentor->id,
+        'slot_date' => $targetDate,
+        'service_config_id' => $service->id,
+        'session_type' => '1on3',
+        'max_participants' => 3,
+        'start_time' => '09:00:00',
+    ]);
+
+    $this->assertDatabaseHas('mentor_availability_slots', [
+        'mentor_id' => $mentor->id,
+        'slot_date' => $targetDate,
+        'service_config_id' => $service->id,
+        'session_type' => '1on5',
+        'max_participants' => 5,
+        'start_time' => '11:00:00',
+    ]);
+});
+
+it('rejects group availability for a service that does not support that meeting size', function () {
+    [$mentorUser, $mentor] = makePortalMentor('availability-unsupported-group');
+    $service = makePortalService([
+        'service_name' => 'Application Review',
+        'price_1on3_per_person' => null,
+        'price_1on3_total' => null,
+        'platform_fee_1on3' => null,
+        'mentor_payout_1on3' => null,
+        'price_1on5_per_person' => null,
+        'price_1on5_total' => null,
+        'platform_fee_1on5' => null,
+        'mentor_payout_1on5' => null,
+    ]);
+    attachServiceToMentor($mentor, $service);
+    $targetDate = now()->addDays(4)->toDateString();
+    $dateLabel = Carbon\Carbon::parse($targetDate)->format('l, F j, Y');
+
+    $this->actingAs($mentorUser)
+        ->patchJson(route('mentor.availability.update'), [
+            'timezone' => 'America/New_York',
+            'date_slots_payload' => dateSlotsPayload([
+                [
+                    'date' => $targetDate,
+                    'enabled' => true,
+                    'slots' => [
+                        [
+                            'start_time' => '09:00',
+                            'end_time' => '10:00',
+                            'service_config_id' => $service->id,
+                            'session_type' => '1on3',
+                        ],
+                    ],
+                ],
+            ]),
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['date_slots.0.slots.0.session_type'])
+        ->assertJsonFragment(["{$dateLabel} uses a meeting size that is not available for the selected service."]);
+});
+
 it('stores mentor date-specific availability as utc instants', function () {
     [$mentorUser, $mentor] = makePortalMentor('availability-utc-host');
     $service = makePortalService([
@@ -313,6 +451,91 @@ it('stores mentor date-specific availability as utc instants', function () {
         ->and($slot->timezone)->toBe('Asia/Karachi')
         ->and(Carbon\Carbon::parse($slot->starts_at_utc, 'UTC')->toIso8601String())->toBe($startsAtLocal->copy()->utc()->toIso8601String())
         ->and(Carbon\Carbon::parse($slot->ends_at_utc, 'UTC')->toIso8601String())->toBe($endsAtLocal->copy()->utc()->toIso8601String());
+});
+
+it('rejects a new same-day availability slot that starts in the past', function () {
+    Carbon\Carbon::setTestNow(Carbon\Carbon::parse('2026-04-30 15:00:00', 'Asia/Karachi'));
+
+    [$mentorUser, $mentor] = makePortalMentor('availability-past-today');
+    $service = makePortalService(['service_name' => 'Program Insights']);
+    attachServiceToMentor($mentor, $service);
+
+    $this->actingAs($mentorUser)
+        ->patchJson(route('mentor.availability.update'), [
+            'timezone' => 'Asia/Karachi',
+            'date_slots_payload' => dateSlotsPayload([
+                [
+                    'date' => now('Asia/Karachi')->toDateString(),
+                    'enabled' => true,
+                    'slots' => [
+                        ['start_time' => '14:00', 'end_time' => '15:00', 'service_config_id' => $service->id],
+                    ],
+                ],
+            ]),
+        ])
+        ->assertStatus(422)
+        ->assertJsonFragment([
+            'message' => 'Please fix the highlighted availability settings before saving.',
+        ])
+        ->assertJsonValidationErrors(['date_slots.0.slots.0.start_time'])
+        ->assertJsonFragment(['Thursday, April 30, 2026 has a new slot that starts in the past. Choose a future start time.']);
+
+    $this->assertDatabaseMissing('mentor_availability_slots', [
+        'mentor_id' => $mentor->id,
+        'slot_date' => '2026-04-30',
+        'start_time' => '14:00:00',
+    ]);
+});
+
+it('allows an unchanged saved same-day past slot while adding a new future slot', function () {
+    Carbon\Carbon::setTestNow(Carbon\Carbon::parse('2026-04-30 15:00:00', 'Asia/Karachi'));
+
+    [$mentorUser, $mentor] = makePortalMentor('availability-unchanged-past-today');
+    $service = makePortalService(['service_name' => 'Program Insights']);
+    attachServiceToMentor($mentor, $service);
+
+    $today = now('Asia/Karachi')->toDateString();
+    $existingSlotId = createGenericSlot($mentor, $today, '09:00:00', '10:00:00', null, $service->id, 'Asia/Karachi');
+
+    $this->actingAs($mentorUser)
+        ->patch(route('mentor.availability.update'), [
+            'timezone' => 'Asia/Karachi',
+            'date_slots_payload' => dateSlotsPayload([
+                [
+                    'date' => $today,
+                    'enabled' => true,
+                    'slots' => [
+                        [
+                            'slot_id' => $existingSlotId,
+                            'start_time' => '09:00',
+                            'end_time' => '10:00',
+                            'service_config_id' => $service->id,
+                        ],
+                        [
+                            'start_time' => '16:00',
+                            'end_time' => '17:00',
+                            'service_config_id' => $service->id,
+                        ],
+                    ],
+                ],
+            ]),
+        ])
+        ->assertRedirect(route('mentor.availability.index'));
+
+    $this->assertDatabaseHas('mentor_availability_slots', [
+        'id' => $existingSlotId,
+        'mentor_id' => $mentor->id,
+        'slot_date' => $today,
+        'start_time' => '09:00:00',
+        'end_time' => '10:00:00',
+    ]);
+
+    $this->assertDatabaseHas('mentor_availability_slots', [
+        'mentor_id' => $mentor->id,
+        'slot_date' => $today,
+        'start_time' => '16:00:00',
+        'end_time' => '17:00:00',
+    ]);
 });
 
 it('renders the mentor availability editor page', function () {
@@ -426,15 +649,15 @@ it('turns off active office-hours schedules when the office-hours service is dis
     ]);
 });
 
-it('defaults mentor availability and office-hours timezones to utc on the availability page', function () {
+it('defaults mentor availability and office-hours timezones to the configured fallback on the availability page', function () {
     [$mentorUser] = makePortalMentor('availability-default-utc');
 
     $this->actingAs($mentorUser)
         ->get(route('mentor.availability.index'))
         ->assertOk()
-        ->assertViewHas('availabilityData', fn (array $data) => ($data['timezone'] ?? null) === 'UTC')
-        ->assertViewHas('officeHoursConfig', fn (array $data) => ($data['timezone'] ?? null) === 'UTC')
-        ->assertViewHas('schedulerPayload', fn (array $data) => ($data['timezone'] ?? null) === 'UTC');
+        ->assertViewHas('availabilityData', fn (array $data) => ($data['timezone'] ?? null) === 'Asia/Karachi')
+        ->assertViewHas('officeHoursConfig', fn (array $data) => ($data['timezone'] ?? null) === 'Asia/Karachi')
+        ->assertViewHas('schedulerPayload', fn (array $data) => ($data['timezone'] ?? null) === 'Asia/Karachi');
 });
 
 it('defaults mentor availability and office-hours timezones to the saved user timezone when present', function () {
@@ -483,7 +706,7 @@ it('lets a mentor save recurring office hours on the availability page', functio
         'current_service_id' => $service->id,
         'day_of_week' => 'sun',
         'start_time' => '20:00:00',
-        'timezone' => 'America/New_York',
+        'timezone' => 'Asia/Karachi',
         'frequency' => 'weekly',
         'max_spots' => 3,
         'is_active' => true,
@@ -491,7 +714,7 @@ it('lets a mentor save recurring office hours on the availability page', functio
     $this->assertDatabaseHas('office_hour_sessions', [
         'current_service_id' => $service->id,
         'start_time' => '20:00:00',
-        'timezone' => 'America/New_York',
+        'timezone' => 'Asia/Karachi',
         'current_occupancy' => 0,
         'max_spots' => 3,
         'is_full' => false,
@@ -627,7 +850,7 @@ it('returns scheduler hydration data when saving availability as json', function
         ])
         ->assertOk()
         ->assertJsonPath('message', 'Mentor availability updated successfully.')
-        ->assertJsonPath('formData.timezone', 'America/New_York')
+        ->assertJsonPath('formData.timezone', 'Asia/Karachi')
         ->assertJsonPath('formData.date_slots.0.date', $targetDate)
         ->assertJsonPath('formData.date_slots.0.slots.0.start_time', '09:00')
         ->assertJsonPath('formData.date_slots.0.slots.0.service_config_id', $service->id)
@@ -669,21 +892,21 @@ it('returns json validation errors for invalid scheduler edits', function () {
         ->assertStatus(422)
         ->assertJsonPath('message', 'Please fix the highlighted availability settings before saving.')
         ->assertJsonValidationErrors(['date_slots.0.slots.1.start_time'])
-        ->assertJsonFragment(["{$dateLabel} time blocks cannot overlap."]);
+        ->assertJsonFragment(["{$dateLabel}: this time overlaps another slot. Choose a start time after the previous slot ends, or remove one of the slots."]);
 });
 
 it('rejects same-day availability slots that start in the past', function () {
-    Carbon\Carbon::setTestNow(Carbon\Carbon::create(2026, 4, 20, 15, 0, 0, 'America/New_York'));
+    Carbon\Carbon::setTestNow(Carbon\Carbon::create(2026, 4, 20, 15, 0, 0, 'Asia/Karachi'));
 
     [$mentorUser, $mentor] = makePortalMentor('availability-past-today');
     $service = makePortalService();
     attachServiceToMentor($mentor, $service);
-    $today = Carbon\Carbon::now('America/New_York')->toDateString();
+    $today = Carbon\Carbon::now('Asia/Karachi')->toDateString();
     $dateLabel = Carbon\Carbon::parse($today)->format('l, F j, Y');
 
     $this->actingAs($mentorUser)
         ->patchJson(route('mentor.availability.update'), [
-            'timezone' => 'America/New_York',
+            'timezone' => 'Asia/Karachi',
             'date_slots_payload' => dateSlotsPayload([
                 [
                     'date' => $today,
@@ -697,7 +920,7 @@ it('rejects same-day availability slots that start in the past', function () {
         ->assertStatus(422)
         ->assertJsonPath('message', 'Please fix the highlighted availability settings before saving.')
         ->assertJsonValidationErrors(['date_slots.0.slots.0.start_time'])
-        ->assertJsonFragment(["{$dateLabel} time blocks must start in the future."]);
+        ->assertJsonFragment(["{$dateLabel} has a new slot that starts in the past. Choose a future start time."]);
 
     $this->assertDatabaseMissing('mentor_availability_slots', [
         'mentor_id' => $mentor->id,
@@ -709,17 +932,17 @@ it('rejects same-day availability slots that start in the past', function () {
     Carbon\Carbon::setTestNow();
 });
 
-it('allows same-day availability slots that start later in the current utc day', function () {
-    Carbon\Carbon::setTestNow(Carbon\Carbon::create(2026, 4, 20, 15, 20, 0, 'UTC'));
+it('allows same-day availability slots that start later in the current day', function () {
+    Carbon\Carbon::setTestNow(Carbon\Carbon::create(2026, 4, 20, 15, 20, 0, 'Asia/Karachi'));
 
     [$mentorUser, $mentor] = makePortalMentor('availability-future-today-utc');
     $service = makePortalService();
     attachServiceToMentor($mentor, $service);
-    $today = Carbon\Carbon::now('UTC')->toDateString();
+    $today = Carbon\Carbon::now('Asia/Karachi')->toDateString();
 
     $this->actingAs($mentorUser)
         ->patchJson(route('mentor.availability.update'), [
-            'timezone' => 'UTC',
+            'timezone' => 'Asia/Karachi',
             'date_slots_payload' => dateSlotsPayload([
                 [
                     'date' => $today,
@@ -739,7 +962,7 @@ it('allows same-day availability slots that start later in the current utc day',
         'start_time' => '15:30:00',
         'end_time' => '16:30:00',
         'service_config_id' => $service->id,
-        'timezone' => 'UTC',
+        'timezone' => 'Asia/Karachi',
     ]);
 
     Carbon\Carbon::setTestNow();
@@ -871,6 +1094,174 @@ it('surfaces service-specific 1on1 availability to both students and mentors', f
         ->and($mentorMonths)->not->toBeEmpty();
 });
 
+it('returns availability only for slots matching the requested meeting size', function () {
+    [$hostUser, $hostMentor] = makePortalMentor('availability-group-filter-host');
+    $student = makePortalUser('availability-group-filter-student', 'student');
+    $service = makePortalService();
+    attachServiceToMentor($hostMentor, $service);
+    $targetDate = now()->addDays(7)->toDateString();
+
+    $this->actingAs($hostUser)
+        ->patch(route('mentor.availability.update'), [
+            'timezone' => 'America/New_York',
+            'date_slots_payload' => dateSlotsPayload([
+                [
+                    'date' => $targetDate,
+                    'enabled' => true,
+                    'slots' => [
+                        ['start_time' => '08:00', 'end_time' => '09:00', 'service_config_id' => $service->id, 'session_type' => '1on1'],
+                        ['start_time' => '10:00', 'end_time' => '11:00', 'service_config_id' => $service->id, 'session_type' => '1on3'],
+                    ],
+                ],
+            ]),
+        ])
+        ->assertRedirect(route('mentor.availability.index'));
+
+    $times = $this->actingAs($student)
+        ->getJson(route('student.bookings.availability.times', [
+            'mentor_id' => $hostMentor->id,
+            'service_config_id' => $service->id,
+            'session_type' => '1on3',
+            'date' => $targetDate,
+        ]))
+        ->assertOk()
+        ->json('times');
+
+    expect($times)->toHaveCount(1)
+        ->and($times[0]['label'])->toBe('10:00 AM');
+});
+
+it('creates a paid 1on3 booking with one payer and guest participants', function () {
+    [$hostUser, $hostMentor] = makePortalMentor('paid-group-host');
+    $student = makePortalUser('paid-group-student', 'student');
+    $service = makePortalService([
+        'service_name' => 'Program Insights Group',
+        'service_slug' => 'program-insights-group-'.Str::lower(Str::random(5)),
+    ]);
+    attachServiceToMentor($hostMentor, $service);
+    $slotId = createGenericSlot($hostMentor, now()->addDays(8)->toDateString(), '13:00:00', '14:00:00', null, $service->id, 'America/New_York', '1on3');
+
+    fakeStripeCheckoutSession('cs_test_group_booking', 'pi_test_group_booking');
+
+    $this->actingAs($student)
+        ->postJson(route('student.bookings.checkout.store'), [
+            'mentor_id' => $hostMentor->id,
+            'service_config_id' => $service->id,
+            'session_type' => '1on3',
+            'mentor_availability_slot_id' => $slotId,
+            'guest_participants' => [
+                ['full_name' => 'Guest One', 'email' => 'guest-one@gmail.com'],
+                ['full_name' => 'Guest Two', 'email' => 'guest-two@company.com'],
+            ],
+        ])
+        ->assertOk()
+        ->assertJsonPath('session_id', 'cs_test_group_booking');
+
+    $this->actingAs($student)
+        ->get(route('student.bookings.checkout.success', ['session_id' => 'cs_test_group_booking']))
+        ->assertRedirect();
+
+    $booking = Booking::query()->latest('id')->firstOrFail();
+    $slot = DB::table('mentor_availability_slots')->where('id', $slotId)->first();
+
+    expect((string) $booking->session_type)->toBe('1on3')
+        ->and((int) $booking->requested_group_size)->toBe(3)
+        ->and((string) $booking->status)->toBe('confirmed')
+        ->and((string) $booking->approval_status)->toBe('not_required')
+        ->and((string) $booking->calendar_provider)->toBe('zoom')
+        ->and((string) $booking->calendar_sync_status)->toBe('synced')
+        ->and((string) $booking->external_calendar_event_id)->toBe('zoom-mentor-paid-booking')
+        ->and((string) $booking->meeting_link)->toBe('https://zoom.us/j/zoom-mentor-paid-booking')
+        ->and((bool) $booking->is_group_payer)->toBeTrue()
+        ->and((int) $booking->group_payer_id)->toBe((int) $student->id)
+        ->and((int) $slot->booked_participants_count)->toBe(3)
+        ->and((bool) $slot->is_booked)->toBeTrue();
+
+    $this->assertDatabaseHas('booking_participants', [
+        'booking_id' => $booking->id,
+        'user_id' => $student->id,
+        'is_primary' => true,
+        'invite_status' => 'accepted',
+    ]);
+
+    $this->assertDatabaseHas('booking_participants', [
+        'booking_id' => $booking->id,
+        'email' => 'guest-one@gmail.com',
+        'participant_role' => 'guest',
+    ]);
+
+    $this->assertDatabaseHas('booking_participants', [
+        'booking_id' => $booking->id,
+        'email' => 'guest-two@company.com',
+        'participant_role' => 'guest',
+    ]);
+
+    Mail::fake();
+
+    (new SendBookingConfirmationJob($booking->id))->handle(app(BookingMeetingPresenter::class));
+
+    Mail::assertSent(StudentBookingConfirmationMail::class, function (StudentBookingConfirmationMail $mail) use ($booking) {
+        return $mail->bookingDetails['meeting_link'] === route('student.bookings.join-meeting', $booking->id)
+            && $mail->bookingDetails['meeting_link_label'] === 'Join Zoom Meeting';
+    });
+
+    Mail::assertSent(MentorBookingNotificationMail::class, function (MentorBookingNotificationMail $mail) use ($booking) {
+        return $mail->bookingDetails['meeting_link'] === route('mentor.bookings.start-meeting', $booking->id)
+            && $mail->bookingDetails['meeting_link_label'] === 'Start Zoom Meeting';
+    });
+});
+
+it('rejects edits to a booked group slot meeting size', function () {
+    [$mentorUser, $mentor] = makePortalMentor('availability-booked-group-size');
+    $student = makePortalUser('availability-booked-group-student', 'student');
+    $service = makePortalService();
+    attachServiceToMentor($mentor, $service);
+    $targetDate = now()->addDays(8)->toDateString();
+    $slotId = createGenericSlot($mentor, $targetDate, '09:00:00', '10:00:00', null, $service->id, 'America/New_York', '1on3');
+
+    Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'mentor_availability_slot_id' => $slotId,
+        'session_type' => '1on3',
+        'requested_group_size' => 3,
+        'session_at' => Carbon\Carbon::parse($targetDate.' 09:00:00', 'America/New_York')->utc(),
+        'session_timezone' => 'America/New_York',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'credits_charged' => 0,
+        'amount_charged' => 225,
+        'currency' => 'USD',
+        'status' => 'confirmed',
+        'approval_status' => 'not_required',
+    ]);
+
+    $this->actingAs($mentorUser)
+        ->patchJson(route('mentor.availability.update'), [
+            'timezone' => 'America/New_York',
+            'date_slots_payload' => dateSlotsPayload([
+                [
+                    'date' => $targetDate,
+                    'enabled' => true,
+                    'slots' => [
+                        [
+                            'slot_id' => $slotId,
+                            'start_time' => '09:00',
+                            'end_time' => '10:00',
+                            'service_config_id' => $service->id,
+                            'session_type' => '1on5',
+                            'is_booked' => true,
+                            'booking_count' => 1,
+                        ],
+                    ],
+                ],
+            ]),
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['date_slots.0.slots']);
+});
+
 it('prevents a mentor from booking their own mentor profile', function () {
     [$mentorUser, $mentor] = makePortalMentor('self-book');
 
@@ -937,6 +1328,58 @@ it('lets a mentor complete a paid 1on1 booking and shows it in the correct mento
                 && collect(collect($data['bookingGroups'])->firstWhere('key', 'booked')['items'] ?? [])
                     ->contains(fn (array $item) => (int) $item['id'] === (int) $booking->id);
         });
+});
+
+it('blocks stripe checkout when the host mentor zoom connection is revoked', function () {
+    [$hostUser, $hostMentor] = makePortalMentor('paid-revoked-host', 'professional');
+    [$bookerUser] = makePortalMentor('paid-revoked-booker');
+    $service = makePortalService([
+        'service_name' => 'Interview Prep',
+        'service_slug' => 'interview-prep-revoked-'.Str::lower(Str::random(5)),
+        'price_1on1' => 120,
+    ]);
+    attachServiceToMentor($hostMentor, $service);
+
+    $slotId = createGenericSlot($hostMentor, now()->addDays(6)->toDateString(), '13:00:00', '14:00:00', null, $service->id);
+    $hostToken = OauthToken::query()
+        ->where('user_id', $hostUser->id)
+        ->where('provider', 'zoom')
+        ->firstOrFail();
+    $hostToken->forceFill([
+        'access_token' => 'expired-access-token',
+        'refresh_token' => 'revoked-refresh-token',
+        'token_expires_at' => now()->subMinute(),
+    ])->save();
+
+    config([
+        'services.stripe.secret_key' => 'sk_test_123',
+        'services.stripe.api_base' => 'https://stripe.test',
+    ]);
+
+    Http::fake([
+        'https://zoom.us/oauth/token' => Http::response(['error' => 'invalid_grant'], 400),
+        'https://stripe.test/*' => Http::response([
+            'id' => 'cs_should_not_be_created',
+            'url' => 'https://stripe.test/checkout/cs_should_not_be_created',
+        ], 200),
+    ]);
+
+    $this->actingAs($bookerUser)
+        ->postJson(route('mentor.bookings.checkout.store'), [
+            'mentor_id' => $hostMentor->id,
+            'service_config_id' => $service->id,
+            'session_type' => '1on1',
+            'mentor_availability_slot_id' => $slotId,
+        ])
+        ->assertStatus(422)
+        ->assertJsonPath('message', 'Zoom connection expired or was revoked. Please reconnect Zoom.');
+
+    expect(Booking::query()->count())->toBe(0)
+        ->and(BookingPayment::query()->count())->toBe(0)
+        ->and($hostToken->fresh()->access_token)->toBe('')
+        ->and($hostToken->fresh()->refresh_token)->toBe('');
+
+    Http::assertNotSent(fn ($request) => str_starts_with((string) $request->url(), 'https://stripe.test/checkout/sessions'));
 });
 
 it('allows either mentor participant to cancel a mentor-booked session before 24 hours', function () {

@@ -116,6 +116,37 @@ it('renders paused mentor settings as read only with a status badge', function (
     $response->assertSee('aria-disabled="true"', false);
 });
 
+it('shows a reconnect warning when mentor zoom refresh token is missing', function () {
+    config()->set('services.zoom.enabled', true);
+    config()->set('services.zoom.client_id', 'zoom-client-id');
+    config()->set('services.zoom.client_secret', 'zoom-client-secret');
+    config()->set('services.zoom.redirect_uri', 'https://gradspath.test/mentor/settings/zoom/callback');
+
+    $mentorUser = createSettingsUser('mentor');
+
+    Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'title' => 'Zoom Mentor',
+        'status' => 'active',
+    ]);
+
+    OauthToken::query()->create([
+        'user_id' => $mentorUser->id,
+        'provider' => 'zoom',
+        'provider_user_id' => 'zoom-user-'.$mentorUser->id,
+        'access_token' => '',
+        'refresh_token' => '',
+        'token_expires_at' => now()->subMinute(),
+    ]);
+
+    $response = $this->actingAs($mentorUser)->get(route('mentor.settings.index'));
+
+    $response->assertOk();
+    $response->assertSee('Reconnect required');
+    $response->assertSee('Your Zoom connection needs to be reconnected before students can book Zoom sessions.');
+});
+
 it('blocks paused mentors from updating settings', function () {
     $mentorUser = createSettingsUser('mentor');
 

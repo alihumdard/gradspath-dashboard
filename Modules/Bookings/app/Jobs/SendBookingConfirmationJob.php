@@ -45,6 +45,8 @@ class SendBookingConfirmationJob implements ShouldQueue
                 return [
                     'email' => $this->normalizeEmail($participant->email),
                     'name' => $participant->full_name ?: 'Booker',
+                    'user_id' => $participant->user_id,
+                    'is_primary' => (bool) $participant->is_primary,
                 ];
             })
             ->filter(fn (array $recipient) => $recipient['email'] !== null)
@@ -53,13 +55,13 @@ class SendBookingConfirmationJob implements ShouldQueue
 
         foreach ($bookingRecipients as $recipient) {
             Mail::to($recipient['email'])->send(new StudentBookingConfirmationMail(
-                $this->bookingDetails($booking, 'student', $meetingPresenter),
+                $this->bookingDetails($booking, 'student', $meetingPresenter, $recipient),
                 $recipient['name'],
             ));
         }
     }
 
-    private function bookingDetails(Booking $booking, string $recipientType, BookingMeetingPresenter $meetingPresenter): array
+    private function bookingDetails(Booking $booking, string $recipientType, BookingMeetingPresenter $meetingPresenter, ?array $recipient = null): array
     {
         $bookerName = $booking->booker?->name ?? 'Booker';
         $bookerEmail = $this->normalizeEmail($booking->booker?->email);
@@ -89,8 +91,10 @@ class SendBookingConfirmationJob implements ShouldQueue
         ];
 
         if ($recipientType === 'student' && $this->isSyncedZoomBooking($booking)) {
-            $details['meeting_link'] = route('student.bookings.join-meeting', $booking->id);
-            $details['meeting_link_label'] = 'Join Zoom Meeting';
+            if (($recipient['user_id'] ?? null) || ($recipient['is_primary'] ?? false)) {
+                $details['meeting_link'] = route('student.bookings.join-meeting', $booking->id);
+                $details['meeting_link_label'] = 'Join Zoom Meeting';
+            }
         }
 
         if ($recipientType === 'mentor' && $this->isSyncedZoomBooking($booking)) {

@@ -1066,6 +1066,8 @@ h1 {
   justify-content: space-between;
   gap: 12px;
   align-items: center;
+  text-align: left;
+  width: 100%;
 }
 
 .day-view-event.active {
@@ -1082,6 +1084,59 @@ h1 {
   margin-top: 4px;
   font-size: 12px;
   color: var(--muted);
+}
+
+.day-view-event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.day-view-event-meta span,
+.day-view-event-status {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 6px 8px;
+}
+
+.day-view-event-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.day-view-event-status.is-confirmed {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
+  color: #047857;
+}
+
+.day-view-event-status.is-completed {
+  background: rgba(79, 70, 229, 0.12);
+  border-color: rgba(79, 70, 229, 0.26);
+  color: #4338ca;
+}
+
+.day-view-event-status.is-pending {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #b45309;
+}
+
+.day-view-event-status.is-cancelled,
+.day-view-event-status.is-cancelled_pending_refund,
+.day-view-event-status.is-no_show {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.26);
+  color: #b91c1c;
 }
 
 .day-view-event-time {

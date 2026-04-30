@@ -56,6 +56,7 @@ class AvailabilityController extends Controller
             'date_slots.*.slots.*.start_time' => ['nullable', 'date_format:H:i'],
             'date_slots.*.slots.*.end_time' => ['nullable', 'date_format:H:i'],
             'date_slots.*.slots.*.service_config_id' => ['nullable', 'integer'],
+            'date_slots.*.slots.*.session_type' => ['nullable', 'in:1on1,1on3,1on5'],
             'office_hours' => ['nullable', 'array'],
             'office_hours.enabled' => ['nullable', 'boolean'],
             'office_hours.service_config_id' => ['nullable', 'integer'],
@@ -100,13 +101,36 @@ class AvailabilityController extends Controller
             ->pluck('services_config.duration_minutes', 'services_config.id')
             ->mapWithKeys(fn ($duration, $id) => [(int) $id => max((int) $duration, 1)])
             ->all();
+        $mentorServiceMeetingSizes = (clone $activeMentorServiceQuery)
+            ->where('services_config.is_active', true)
+            ->where('services_config.is_office_hours', false)
+            ->get([
+                'services_config.id',
+                'services_config.price_1on1',
+                'services_config.price_1on3_per_person',
+                'services_config.price_1on5_per_person',
+            ])
+            ->mapWithKeys(fn (ServiceConfig $service) => [
+                (int) $service->id => $this->allowedSessionTypesForService($service),
+            ])
+            ->all();
+        $submittedSlotIds = collect((array) $request->input('date_slots', []))
+            ->flatMap(fn ($dateSlot) => collect((array) ($dateSlot['slots'] ?? []))
+                ->map(fn ($slot) => (int) ($slot['slot_id'] ?? 0)))
+            ->filter()
+            ->unique()
+            ->values();
+        $existingSubmittedSlots = $submittedSlotIds->isEmpty()
+            ? collect()
+            : $mentor->availabilitySlots()
+                ->whereIn('id', $submittedSlotIds)
+                ->get()
+                ->keyBy('id');
 
         $existingBookedSlots = $mentor->availabilitySlots()
             ->withCount([
                 'bookings as active_bookings_count' => fn ($query) => $query->whereIn('status', ['pending', 'confirmed']),
             ])
-            ->where('session_type', '1on1')
-            ->where('max_participants', 1)
             ->where(function ($query) {
                 $query->where('starts_at_utc', '>', now('UTC'))
                     ->orWhere(function ($legacyQuery) {
@@ -119,7 +143,7 @@ class AvailabilityController extends Controller
             ->filter(fn ($slot) => (int) ($slot->active_bookings_count ?? 0) > 0)
             ->groupBy(fn ($slot) => $slot->slot_date->toDateString());
 
-        $validator->after(function ($validator) use ($request, $mentor, $mentorServiceIds, $mentorServiceDurations, $existingBookedSlots) {
+        $validator->after(function ($validator) use ($request, $mentor, $mentorServiceIds, $mentorServiceDurations, $mentorServiceMeetingSizes, $existingBookedSlots, $existingSubmittedSlots) {
             $submittedDateValues = collect((array) $request->input('date_slots', []))
                 ->map(fn ($dateSlot) => (string) ($dateSlot['date'] ?? ''))
                 ->filter()
@@ -166,11 +190,13 @@ class AvailabilityController extends Controller
                     $submittedStartTime = (string) ($matchingSubmittedSlot['start_time'] ?? '');
                     $submittedEndTime = (string) ($matchingSubmittedSlot['end_time'] ?? '');
                     $submittedServiceId = isset($matchingSubmittedSlot['service_config_id']) ? (int) $matchingSubmittedSlot['service_config_id'] : null;
+                    $submittedSessionType = $this->normalizeSessionType((string) ($matchingSubmittedSlot['session_type'] ?? '1on1'));
 
                     if (
                         $submittedStartTime !== substr((string) $bookedSlot->start_time, 0, 5)
                         || $submittedEndTime !== substr((string) $bookedSlot->end_time, 0, 5)
                         || $submittedServiceId !== (int) $bookedSlot->service_config_id
+                        || $submittedSessionType !== $this->normalizeSessionType((string) $bookedSlot->session_type)
                     ) {
                         $validator->errors()->add("date_slots.{$dateIndex}.slots", "{$dateLabel} has booked slots that cannot be edited.");
                     }
@@ -207,6 +233,7 @@ class AvailabilityController extends Controller
                         'start_time' => $startTime,
                         'end_time' => $endTime,
                         'service_config_id' => isset($slot['service_config_id']) ? (int) $slot['service_config_id'] : null,
+                        'session_type' => $this->normalizeSessionType((string) ($slot['session_type'] ?? '1on1')),
                         'is_booked' => !empty($slot['is_booked']),
                     ];
                 }
@@ -254,12 +281,35 @@ class AvailabilityController extends Controller
                         continue;
                     }
 
+                    $existingSlot = $slot['slot_id'] ? $existingSubmittedSlots->get($slot['slot_id']) : null;
+                    $isUnchangedExistingSlot = $existingSlot
+                        && $slot['start_time'] === substr((string) $existingSlot->start_time, 0, 5)
+                        && $slot['end_time'] === substr((string) $existingSlot->end_time, 0, 5)
+                        && (int) $slot['service_config_id'] === (int) $existingSlot->service_config_id
+                        && $slot['session_type'] === $this->normalizeSessionType((string) $existingSlot->session_type);
+
+                    if (
+                        !$isUnchangedExistingSlot
+                        && $slot['starts_at_utc']
+                        && $slot['starts_at_utc']->lte(now('UTC'))
+                    ) {
+                        $validator->errors()->add(
+                            "date_slots.{$dateIndex}.slots.{$index}.start_time",
+                            "{$dateLabel} has a new slot that starts in the past. Choose a future start time."
+                        );
+                    }
+
                     if (!$slot['service_config_id']) {
                         $validator->errors()->add("date_slots.{$dateIndex}.slots.{$index}.service_config_id", "{$dateLabel} requires a service for every block.");
                     } elseif (!in_array($slot['service_config_id'], $mentorServiceIds, true)) {
                         $validator->errors()->add("date_slots.{$dateIndex}.slots.{$index}.service_config_id", "{$dateLabel} must use one of your active mentor services.");
                     } elseif (($mentorServiceDurations[$slot['service_config_id']] ?? null) === null) {
                         $validator->errors()->add("date_slots.{$dateIndex}.slots.{$index}.service_config_id", "{$dateLabel} must use a service with a valid duration.");
+                    } elseif (!in_array($slot['session_type'], $mentorServiceMeetingSizes[$slot['service_config_id']] ?? [], true)) {
+                        $validator->errors()->add(
+                            "date_slots.{$dateIndex}.slots.{$index}.session_type",
+                            "{$dateLabel} uses a meeting size that is not available for the selected service."
+                        );
                     }
 
                     $previousEndUtc = $slot['ends_at_utc'] ?: $previousEndUtc;
@@ -407,11 +457,19 @@ class AvailabilityController extends Controller
             ->where('services_config.is_office_hours', false)
             ->orderBy('mentor_services.sort_order')
             ->orderBy('services_config.sort_order')
-            ->get(['services_config.id', 'services_config.service_name', 'services_config.duration_minutes'])
+            ->get([
+                'services_config.id',
+                'services_config.service_name',
+                'services_config.duration_minutes',
+                'services_config.price_1on1',
+                'services_config.price_1on3_per_person',
+                'services_config.price_1on5_per_person',
+            ])
             ->map(fn (ServiceConfig $service) => [
                 'value' => (int) $service->id,
                 'label' => $service->service_name,
                 'duration_minutes' => max((int) $service->duration_minutes, 1),
+                'allowed_sizes' => $this->allowedSessionTypesForService($service),
             ])
             ->values()
             ->all();
@@ -435,5 +493,29 @@ class AvailabilityController extends Controller
             'services' => $services,
             'selectedServiceIds' => $selectedServiceIds,
         ];
+    }
+
+    private function allowedSessionTypesForService(ServiceConfig $service): array
+    {
+        $types = [];
+
+        if ($service->price_1on1 !== null) {
+            $types[] = '1on1';
+        }
+
+        if ($service->price_1on3_per_person !== null) {
+            $types[] = '1on3';
+        }
+
+        if ($service->price_1on5_per_person !== null) {
+            $types[] = '1on5';
+        }
+
+        return $types !== [] ? $types : ['1on1'];
+    }
+
+    private function normalizeSessionType(string $sessionType): string
+    {
+        return in_array($sessionType, ['1on1', '1on3', '1on5'], true) ? $sessionType : '1on1';
     }
 }

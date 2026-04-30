@@ -218,6 +218,7 @@ class BookingsController extends Controller
             'serviceName' => $booking->service?->service_name ?? 'Service',
             'serviceSlug' => $booking->service?->service_slug ?? null,
             'meetingType' => $booking->meeting_type,
+            'meetingTypeLabel' => $this->meetingTypeLabel($booking->meeting_type),
             'meetingSize' => $this->meetingSizeLabel($booking->session_type),
             'duration' => (int) $booking->duration_minutes,
             'sessionDateKey' => $sessionAt?->toDateString(),
@@ -239,6 +240,7 @@ class BookingsController extends Controller
             'feedbackAllowed' => $this->meetingPresenter->feedbackAllowed($booking),
             'feedbackUnlockReason' => $this->meetingPresenter->feedbackUnlockReason($booking),
             'status' => $booking->status,
+            'statusLabel' => $this->statusLabel($booking->status),
             'bookingGroup' => $perspective,
             'relationshipLabel' => $perspective === 'booked' ? 'Booked by you' : 'Hosted by you',
             'isUpcoming' => $this->meetingPresenter->scheduledState($booking) !== 'ended',
@@ -290,6 +292,28 @@ class BookingsController extends Controller
             '1on5' => '1 on 5',
             'office_hours' => 'Office Hours',
             default => '1 on 1',
+        };
+    }
+
+    private function meetingTypeLabel(?string $meetingType): string
+    {
+        return match ($meetingType) {
+            'zoom' => 'Zoom',
+            'google_meet' => 'Google Meet',
+            null, '' => 'Meeting',
+            default => str_replace('_', ' ', ucfirst((string) $meetingType)),
+        };
+    }
+
+    private function statusLabel(?string $status): string
+    {
+        return match ($status) {
+            'confirmed' => 'Booked',
+            'completed' => 'Completed',
+            'pending' => 'Pending',
+            'cancelled', 'cancelled_pending_refund' => 'Cancelled',
+            'no_show' => 'No Show',
+            default => str_replace('_', ' ', ucfirst((string) ($status ?: 'Booked'))),
         };
     }
 

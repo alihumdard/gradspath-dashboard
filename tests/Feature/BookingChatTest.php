@@ -92,7 +92,7 @@ function makeChatBooking(string $sessionType = '1on1'): array
         'currency' => 'USD',
         'pricing_snapshot' => ['service_name' => $service->service_name],
         'status' => 'confirmed',
-        'approval_status' => $sessionType === '1on1' ? 'not_required' : 'pending',
+        'approval_status' => 'not_required',
         'is_group_payer' => $sessionType !== '1on1',
         'group_payer_id' => $sessionType !== '1on1' ? $student->id : null,
     ]);

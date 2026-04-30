@@ -139,10 +139,6 @@ class CreateBookingRequest extends FormRequest
                 $validator->errors()->add('guest_participants', 'Each group participant must use a different email address.');
             }
 
-            if ($emails->contains(fn (string $email) => !str_contains((string) str($email)->after('@'), '.edu'))) {
-                $validator->errors()->add('guest_participants', 'Each invited applicant must use a valid .edu email address.');
-            }
-
             if ($this->user()?->email && $emails->contains(strtolower((string) $this->user()->email))) {
                 $validator->errors()->add('guest_participants', 'Do not enter your own email in the additional applicant fields.');
             }

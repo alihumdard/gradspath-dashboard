@@ -28,6 +28,7 @@ class BookingCheckoutService
         $mentor = Mentor::query()->findOrFail((int) $data['mentor_id']);
         $sessionType = (string) ($data['session_type'] ?? '1on1');
         $portalContext = (string) ($data['portal_context'] ?? 'student');
+        $this->assertServiceSupportsSessionType($service, $sessionType);
         $amount = $this->amountFor($service, $sessionType);
 
         if ($portalContext === 'mentor' && $sessionType !== '1on1') {
@@ -220,6 +221,8 @@ class BookingCheckoutService
             if (! $this->zoom->hasConnectedMentor($mentor)) {
                 throw new \RuntimeException('This mentor must connect Zoom before students can book Zoom meetings.');
             }
+
+            $this->zoom->assertMentorConnectionIsUsable($mentor);
         }
 
         if ($sessionType === 'office_hours') {
@@ -267,6 +270,23 @@ class BookingCheckoutService
             'office_hours' => 0.0,
             default => (float) ($service->price_1on1 ?? 0),
         };
+    }
+
+    private function assertServiceSupportsSessionType(ServiceConfig $service, string $sessionType): void
+    {
+        if ($sessionType === 'office_hours') {
+            return;
+        }
+
+        $isSupported = match ($sessionType) {
+            '1on3' => $service->price_1on3_per_person !== null,
+            '1on5' => $service->price_1on5_per_person !== null,
+            default => $service->price_1on1 !== null,
+        };
+
+        if (! $isSupported) {
+            throw new \RuntimeException('This service does not support the selected meeting size.');
+        }
     }
 
     private function successUrl(string $portalContext): string

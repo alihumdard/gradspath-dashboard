@@ -35,6 +35,7 @@
                   'start_time' => (string) ($slot['start_time'] ?? ''),
                   'end_time' => (string) ($slot['end_time'] ?? ''),
                   'service_config_id' => isset($slot['service_config_id']) ? (int) $slot['service_config_id'] : null,
+                  'session_type' => in_array((string) ($slot['session_type'] ?? '1on1'), ['1on1', '1on3', '1on5'], true) ? (string) ($slot['session_type'] ?? '1on1') : '1on1',
                   'is_booked' => !empty($slot['is_booked']),
                   'booking_count' => isset($slot['booking_count']) ? (int) $slot['booking_count'] : 0,
               ])
@@ -145,6 +146,14 @@
         <div class="availability-services-panel">
           <div class="availability-service-options">
             @foreach ($services as $service)
+              @php
+                $allowedSessionTypes = collect([
+                    $service->price_1on1 !== null ? '1on1' : null,
+                    $service->price_1on3_per_person !== null ? '1on3' : null,
+                    $service->price_1on5_per_person !== null ? '1on5' : null,
+                ])->filter()->values()->all();
+                $allowedSessionTypes = $allowedSessionTypes ?: ['1on1'];
+              @endphp
               <label class="availability-service-option">
                 <input
                   class="availability-service-option-input"
@@ -154,6 +163,7 @@
                   data-service-label="{{ $service->service_name }}"
                   data-service-duration="{{ max((int) $service->duration_minutes, 1) }}"
                   data-service-office-hours="{{ $service->is_office_hours ? 'true' : 'false' }}"
+                  data-service-allowed-sizes='@json($allowedSessionTypes)'
                   @checked(in_array($service->id, $selectedIds, true))
                 />
                 <span class="availability-service-option-copy">
@@ -385,7 +395,7 @@
 
         <div class="availability-card-footer">
           <span class="availability-footer-note">
-            Save applies these date-specific service slots to future unbooked 1 on 1 availability only.
+            Save applies these date-specific service slots to future unbooked availability for the selected meeting size.
           </span>
           <button class="availability-save-btn" id="availabilitySaveBtn" type="submit">Save Availability</button>
         </div>

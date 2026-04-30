@@ -850,6 +850,8 @@ it('creates a booking from a selected availability slot and reserves it', functi
         'updated_at' => now(),
     ]);
 
+    fakeZoomApi('zoom-group-slot-booking');
+
     $this->actingAs($student)
         ->post(route('student.bookings.store'), [
             'mentor_id' => $mentor->id,
@@ -868,7 +870,8 @@ it('creates a booking from a selected availability slot and reserves it', functi
         'mentor_id' => $mentor->id,
         'mentor_availability_slot_id' => $slotId,
         'session_type' => '1on3',
-        'approval_status' => 'pending',
+        'status' => 'confirmed',
+        'approval_status' => 'not_required',
         'is_group_payer' => true,
         'group_payer_id' => $student->id,
     ]);
@@ -1696,9 +1699,13 @@ it('queues a confirmation job and sends booking emails for 1on3 to mentor and al
 
     attachMentorService($mentor, $service);
     $slotId = createAvailabilitySlot($mentor, $service, '1on3');
+    fakeZoomApi('zoom-group-email-1on3');
 
     $guestEmailOne = 'guestone@example.edu';
     $guestEmailTwo = 'guesttwo@example.edu';
+    $registeredGuest = makeUser('booking-guest');
+    $registeredGuest->assignRole('student');
+    $registeredGuest->forceFill(['email' => $guestEmailOne])->save();
 
     $this->actingAs($student)
         ->post(route('student.bookings.store'), [
@@ -1727,9 +1734,24 @@ it('queues a confirmation job and sends booking emails for 1on3 to mentor and al
     Mail::assertSent(MentorBookingNotificationMail::class, 1);
     Mail::assertSent(StudentBookingConfirmationMail::class, 3);
 
+    $this->assertDatabaseHas('booking_participants', [
+        'booking_id' => $booking->id,
+        'email' => $guestEmailOne,
+        'user_id' => $registeredGuest->id,
+        'invite_status' => 'accepted',
+    ]);
+
     Mail::assertSent(StudentBookingConfirmationMail::class, fn (StudentBookingConfirmationMail $mail) => $mail->hasTo($student->email));
-    Mail::assertSent(StudentBookingConfirmationMail::class, fn (StudentBookingConfirmationMail $mail) => $mail->hasTo($guestEmailOne));
-    Mail::assertSent(StudentBookingConfirmationMail::class, fn (StudentBookingConfirmationMail $mail) => $mail->hasTo($guestEmailTwo));
+    Mail::assertSent(StudentBookingConfirmationMail::class, function (StudentBookingConfirmationMail $mail) use ($booking, $guestEmailOne) {
+        return $mail->hasTo($guestEmailOne)
+            && $mail->bookingDetails['meeting_link'] === route('student.bookings.join-meeting', $booking->id)
+            && $mail->bookingDetails['meeting_link_label'] === 'Join Zoom Meeting';
+    });
+    Mail::assertSent(StudentBookingConfirmationMail::class, function (StudentBookingConfirmationMail $mail) use ($booking, $guestEmailTwo) {
+        return $mail->hasTo($guestEmailTwo)
+            && $mail->bookingDetails['meeting_link'] === $booking->meeting_link
+            && $mail->bookingDetails['meeting_link_label'] === 'Open Zoom Meeting';
+    });
 });
 
 it('queues a confirmation job and sends booking emails for 1on5 to mentor and all participants', function () {
@@ -1752,6 +1774,7 @@ it('queues a confirmation job and sends booking emails for 1on5 to mentor and al
 
     attachMentorService($mentor, $service);
     $slotId = createAvailabilitySlot($mentor, $service, '1on5');
+    fakeZoomApi('zoom-group-email-1on5');
 
     $guestParticipants = [
         ['full_name' => 'Guest One', 'email' => 'guestone@example.edu'],

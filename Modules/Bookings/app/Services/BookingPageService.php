@@ -10,7 +10,10 @@ use Modules\Settings\app\Support\TimezoneOptions;
 
 class BookingPageService
 {
-    public function __construct(private readonly BookingAvailabilityService $availability) {}
+    public function __construct(
+        private readonly BookingAvailabilityService $availability,
+        private readonly ZoomService $zoom,
+    ) {}
 
     public function getSelectedMentor(int $mentorId): Mentor
     {
@@ -44,6 +47,10 @@ class BookingPageService
         $mentorName = $mentor->user?->name ?? 'Mentor';
         $programLabel = $this->programLabel($mentor->program_type);
         $viewerTimezone = TimezoneOptions::preferredFor($viewer?->loadMissing('setting'));
+        $zoomConnectionStatus = $mentor->user
+            ? $this->zoom->connectionStatusForUser($mentor->user)
+            : 'not_connected';
+        $zoomBookable = $this->zoom->isConfigured() && $zoomConnectionStatus === 'connected';
         $mentorHasOfficeHoursService = $allowOfficeHours && $this->mentorHasOfficeHoursService($mentor);
         $activeOfficeHoursSchedule = $mentorHasOfficeHoursService
             && $mentor->officeHourSchedules()->where('is_active', true)->exists();
@@ -122,6 +129,13 @@ class BookingPageService
             ],
             'services' => $services,
             'officeHours' => $officeHours,
+            'zoom' => [
+                'status' => $zoomConnectionStatus,
+                'isBookable' => $zoomBookable,
+                'message' => $zoomBookable
+                    ? null
+                    : 'This mentor is temporarily unavailable for Zoom bookings.',
+            ],
             'selectedServiceId' => $selectedServiceId,
             'availabilityRoutes' => [
                 'months' => route("{$portal}.bookings.availability.months"),

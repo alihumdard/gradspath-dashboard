@@ -58,12 +58,16 @@ class SendBookingReminderJob implements ShouldQueue
                 'email' => $participant->email,
                 'name' => $participant->full_name ?: 'Participant',
                 'role' => 'participant',
+                'user_id' => $participant->user_id,
+                'is_primary' => (bool) $participant->is_primary,
             ])
         )
             ->map(fn (array $recipient) => [
                 'email' => $this->normalizeEmail($recipient['email'] ?? null),
                 'name' => $recipient['name'] ?? 'Participant',
                 'role' => $recipient['role'] ?? 'participant',
+                'user_id' => $recipient['user_id'] ?? null,
+                'is_primary' => (bool) ($recipient['is_primary'] ?? false),
             ])
             ->filter(fn (array $recipient) => $recipient['email'] !== null)
             ->unique('email')
@@ -75,7 +79,10 @@ class SendBookingReminderJob implements ShouldQueue
             if (($recipient['role'] ?? null) === 'mentor' && $this->isSyncedZoomBooking($booking)) {
                 $details['meeting_link'] = route('mentor.bookings.start-meeting', $booking->id);
                 $details['meeting_link_label'] = 'Start Zoom Meeting';
-            } elseif ($this->isSyncedZoomBooking($booking)) {
+            } elseif (
+                $this->isSyncedZoomBooking($booking)
+                && (($recipient['user_id'] ?? null) || ($recipient['is_primary'] ?? false))
+            ) {
                 $details['meeting_link'] = route('student.bookings.join-meeting', $booking->id);
                 $details['meeting_link_label'] = 'Join Zoom Meeting';
             }

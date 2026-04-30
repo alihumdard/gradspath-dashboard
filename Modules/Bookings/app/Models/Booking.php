@@ -202,6 +202,29 @@ class Booking extends Model
         return $this->feedback_due_at !== null && $this->feedback_due_at->lessThan(now());
     }
 
+    public function hasParticipantUser(User $user): bool
+    {
+        if ($this->relationLoaded('participantRecords')) {
+            return $this->participantRecords->contains(function (BookingParticipant $participant) use ($user) {
+                return (int) ($participant->user_id ?? 0) === (int) $user->id
+                    || (
+                        filled($participant->email)
+                        && strtolower((string) $participant->email) === strtolower((string) $user->email)
+                    );
+            });
+        }
+
+        return $this->participantRecords()
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+
+                if (filled($user->email)) {
+                    $query->orWhereRaw('LOWER(email) = ?', [strtolower((string) $user->email)]);
+                }
+            })
+            ->exists();
+    }
+
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');

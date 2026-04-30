@@ -10,7 +10,7 @@ class BookingPolicy
     public function view(User $user, Booking $booking): bool
     {
         return (int) $booking->student_id === (int) $user->id
-            || $booking->participants()->where('users.id', $user->id)->exists()
+            || $booking->hasParticipantUser($user)
             || (int) $booking->mentor?->user_id === (int) $user->id
             || $user->hasRole('admin');
     }

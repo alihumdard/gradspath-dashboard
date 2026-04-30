@@ -51,6 +51,8 @@ const bookingsById = upcomingBookings.reduce((carry, booking) => {
   return carry;
 }, {});
 
+const bookingsByDate = {};
+
 const bookedDates = upcomingBookings.reduce((carry, booking) => {
   if (!booking.sessionDateKey) return carry;
 
@@ -71,6 +73,11 @@ const bookedDates = upcomingBookings.reduce((carry, booking) => {
     meetingAccessMessage: booking.meetingAccessMessage || "Meeting access is not available yet.",
     meetingAccessOpensAt: booking.meetingAccessOpensAt || null,
     meetingSize: booking.meetingSize || "1 on 1",
+    meetingType: booking.meetingType || "meeting",
+    meetingTypeLabel: booking.meetingTypeLabel || booking.meetingProvider || "Meeting",
+    status: booking.status || "confirmed",
+    statusLabel: booking.statusLabel || formatBookingStatus(booking.status),
+    meetingStateLabel: booking.meetingStateLabel || null,
     duration: booking.duration || null,
     sessionDateLabel: booking.sessionDateLabel || null,
     mentorEmail: booking.mentorEmail || null,
@@ -99,12 +106,22 @@ const bookedDates = upcomingBookings.reduce((carry, booking) => {
     chatChannel: booking.chatChannel || null,
   };
 
+  if (!bookingsByDate[booking.sessionDateKey]) {
+    bookingsByDate[booking.sessionDateKey] = [];
+  }
+
+  bookingsByDate[booking.sessionDateKey].push(normalizedBooking);
+
   if (!carry[booking.sessionDateKey]) {
     carry[booking.sessionDateKey] = normalizedBooking;
   }
 
   return carry;
 }, {});
+
+Object.values(bookingsByDate).forEach((bookings) => {
+  bookings.sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")));
+});
 
 const mentorNameEl = document.getElementById("mentorName");
 const meetingDateEl = document.getElementById("meetingDate");
@@ -289,7 +306,39 @@ function normalizeServiceValue(value) {
     .replace(/^_+|_+$/g, "");
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatBookingStatus(status) {
+  switch (String(status || "confirmed")) {
+    case "completed":
+      return "Completed";
+    case "pending":
+      return "Pending";
+    case "cancelled":
+    case "cancelled_pending_refund":
+      return "Cancelled";
+    case "no_show":
+      return "No Show";
+    case "confirmed":
+      return "Booked";
+    default:
+      return String(status || "Booked").replace(/_/g, " ");
+  }
+}
+
+function getBookingsByDateKey(key) {
+  return Array.isArray(bookingsByDate[key]) ? bookingsByDate[key] : [];
+}
+
 function getBookingByDateKey(key) {
+  const dayBookings = getBookingsByDateKey(key);
   const selectedBookingForDate = selectedBookingId != null
     ? bookingsById[String(selectedBookingId)]
     : null;
@@ -303,7 +352,17 @@ function getBookingByDateKey(key) {
     };
   }
 
-  return bookedDates[key] || null;
+  return dayBookings[0] || bookedDates[key] || null;
+}
+
+function selectBookingForDate(key, bookingId = null) {
+  selectedDateKey = key;
+  const dayBookings = getBookingsByDateKey(key);
+  const selected = bookingId != null
+    ? dayBookings.find((booking) => String(booking.id) === String(bookingId))
+    : dayBookings[0];
+
+  selectedBookingId = selected?.id ?? null;
 }
 
 function getSelectedBooking() {
@@ -1282,16 +1341,19 @@ function renderMonthView() {
     if (bookedDates[key]) {
       cell.classList.add("booked");
 
+      const dayBookings = getBookingsByDateKey(key);
       const timeEl = document.createElement("span");
       timeEl.className = "day-time";
-      timeEl.textContent = bookedDates[key].time;
+      timeEl.textContent = dayBookings.length > 1
+        ? `${dayBookings.length} bookings`
+        : bookedDates[key].time;
       cell.appendChild(timeEl);
 
       cell.addEventListener("click", () => {
-        selectedDateKey = key;
-        if (getBookingByDateKey(key)?.id != null) {
-          selectedBookingId = getBookingByDateKey(key).id;
-        }
+        selectBookingForDate(key);
+        currentView = "day";
+        currentDate = parseDateKey(key);
+        setActiveViewButton();
         updateMeetingInfoFromSelected();
         renderCalendar();
         renderUpcomingAppointments();
@@ -1343,6 +1405,7 @@ function renderWeekView() {
       dayDate.getDate(),
     );
     const booking = bookedDates[key];
+    const dayBookings = getBookingsByDateKey(key);
 
     const card = document.createElement("button");
     card.type = "button";
@@ -1367,8 +1430,8 @@ function renderWeekView() {
       const bookingEl = document.createElement("div");
       bookingEl.className = "week-booking";
       bookingEl.innerHTML = `
-        <strong>${booking.service}</strong>
-        <span>${booking.time}</span>
+        <strong>${escapeHtml(dayBookings.length > 1 ? `${dayBookings.length} meetings` : booking.service)}</strong>
+        <span>${escapeHtml(dayBookings.length > 1 ? dayBookings.map((item) => item.time).join(", ") : booking.time)}</span>
       `;
       card.appendChild(bookingEl);
     } else {
@@ -1381,10 +1444,9 @@ function renderWeekView() {
     card.addEventListener("click", () => {
       currentDate = new Date(dayDate);
       if (booking) {
-        selectedDateKey = key;
-        if (getBookingByDateKey(key)?.id != null) {
-          selectedBookingId = getBookingByDateKey(key).id;
-        }
+        selectBookingForDate(key);
+        currentView = "day";
+        setActiveViewButton();
         updateMeetingInfoFromSelected();
         renderUpcomingAppointments();
       }
@@ -1404,7 +1466,7 @@ function renderDayView() {
     currentDate.getMonth(),
     currentDate.getDate(),
   );
-  const booking = bookedDates[key];
+  const dayBookings = getBookingsByDateKey(key);
 
   const wrapper = document.createElement("div");
   wrapper.className = "day-view-card";
@@ -1413,46 +1475,53 @@ function renderDayView() {
   header.className = "day-view-header";
   header.innerHTML = `
     <h4>${weekDayLong[currentDate.getDay()]}, ${monthNames[currentDate.getMonth()]} ${currentDate.getDate()}</h4>
-    <p>${currentDate.getFullYear()}${isTodayKey(key) ? " • Today" : ""}</p>
+    <p>${currentDate.getFullYear()}${isTodayKey(key) ? " • Today" : ""} • ${dayBookings.length} ${dayBookings.length === 1 ? "meeting" : "meetings"}</p>
   `;
   wrapper.appendChild(header);
 
   const eventsWrap = document.createElement("div");
   eventsWrap.className = "day-view-events";
 
-  if (!booking) {
+  if (dayBookings.length === 0) {
     const empty = document.createElement("div");
     empty.className = "day-view-empty";
     empty.textContent = "No booked session on this day.";
     eventsWrap.appendChild(empty);
   } else {
-    const event = document.createElement("button");
-    event.type = "button";
-    event.className = "day-view-event";
+    dayBookings.forEach((booking) => {
+      const event = document.createElement("button");
+      event.type = "button";
+      event.className = "day-view-event";
 
-    if (key === selectedDateKey) {
-      event.classList.add("active");
-    }
-
-    event.innerHTML = `
-      <div>
-        <div class="day-view-event-title">${booking.service}</div>
-        <div class="day-view-event-sub">With ${booking.mentorName || meetingData.mentorName}</div>
-      </div>
-      <div class="day-view-event-time">${booking.time}</div>
-    `;
-
-    event.addEventListener("click", () => {
-      selectedDateKey = key;
-      if (getBookingByDateKey(key)?.id != null) {
-        selectedBookingId = getBookingByDateKey(key).id;
+      if (key === selectedDateKey && String(booking.id) === String(selectedBookingId)) {
+        event.classList.add("active");
       }
-      updateMeetingInfoFromSelected();
-      renderCalendar();
-      renderUpcomingAppointments();
-    });
 
-    eventsWrap.appendChild(event);
+      event.innerHTML = `
+        <div class="day-view-event-main">
+          <div class="day-view-event-title">${escapeHtml(booking.service)}</div>
+          <div class="day-view-event-sub">With ${escapeHtml(booking.mentorName || meetingData.mentorName)}</div>
+          <div class="day-view-event-meta">
+            <span>${escapeHtml(booking.meetingTypeLabel || "Meeting")}</span>
+            <span>${escapeHtml(booking.meetingSize || "1 on 1")}</span>
+            <span>${escapeHtml(booking.attendanceLabel || booking.meetingStateLabel || "Booked")}</span>
+          </div>
+        </div>
+        <div class="day-view-event-side">
+          <span class="day-view-event-status is-${escapeHtml(String(booking.status || "confirmed"))}">${escapeHtml(booking.statusLabel || formatBookingStatus(booking.status))}</span>
+          <span class="day-view-event-time">${escapeHtml(booking.time)}</span>
+        </div>
+      `;
+
+      event.addEventListener("click", () => {
+        selectBookingForDate(key, booking.id);
+        updateMeetingInfoFromSelected();
+        renderCalendar();
+        renderUpcomingAppointments();
+      });
+
+      eventsWrap.appendChild(event);
+    });
   }
 
   wrapper.appendChild(eventsWrap);
@@ -1618,9 +1687,10 @@ function renderUpcomingAppointments() {
     });
 
   futureKeys.forEach((key) => {
-    const booking = bookedDates[key];
     const dateObj = parseDateKey(key);
-    upcomingListEl.appendChild(createUpcomingItem(booking, key, dateObj));
+    getBookingsByDateKey(key).forEach((booking) => {
+      upcomingListEl.appendChild(createUpcomingItem(booking, key, dateObj));
+    });
   });
 }
 
@@ -1647,18 +1717,17 @@ function createUpcomingItem(booking, key, dateObj) {
 
   item.innerHTML = `
     <div class="upcoming-item-left">
-      <strong>${formatFullDate(dateObj)}</strong>
-      <span>${relationshipText}</span>
+      <strong>${escapeHtml(formatFullDate(dateObj))}</strong>
+      <span>${escapeHtml(relationshipText)}</span>
     </div>
     <div class="upcoming-item-right">
-      <span class="time">${timeText}</span>
-      <span class="service">${serviceText}</span>
+      <span class="time">${escapeHtml(timeText)}</span>
+      <span class="service">${escapeHtml(serviceText)}</span>
     </div>
   `;
 
   item.addEventListener("click", () => {
-    selectedDateKey = key;
-    selectedBookingId = booking?.id ?? null;
+    selectBookingForDate(key, booking?.id ?? null);
     currentDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
     updateMeetingInfoFromSelected();
     renderCalendar();
