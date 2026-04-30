@@ -88,12 +88,105 @@ it('renders mentor settings with saved profile data', function () {
     $response->assertSee('Academic Profile');
     $response->assertSee('Wharton');
     $response->assertSee('MBA (Wharton School)');
-    $response->assertSee('Program Insights');
     $response->assertSee('Focused on admissions strategy.');
     $response->assertSee('Timezone');
+    $response->assertSee('mentor-status-badge--active', false);
+    $response->assertSee('Active');
+    $response->assertDontSee('Featured Mentor');
+    $response->assertDontSee('id="officeHours"', false);
 });
 
-it('updates mentor settings and syncs active services', function () {
+it('renders paused mentor settings as read only with a status badge', function () {
+    $mentorUser = createSettingsUser('mentor');
+
+    Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'title' => 'Paused Mentor',
+        'status' => 'paused',
+    ]);
+
+    $response = $this->actingAs($mentorUser)->get(route('mentor.settings.index'));
+
+    $response->assertOk();
+    $response->assertSee('mentor-status-badge--paused', false);
+    $response->assertSee('Paused');
+    $response->assertSee('Your mentor profile is currently restricted.');
+    $response->assertSee('class="mentor-settings-fieldset" disabled', false);
+    $response->assertSee('aria-disabled="true"', false);
+});
+
+it('blocks paused mentors from updating settings', function () {
+    $mentorUser = createSettingsUser('mentor');
+
+    $mentor = Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'title' => 'Original Title',
+        'status' => 'paused',
+    ]);
+
+    $this->actingAs($mentorUser)
+        ->from(route('mentor.settings.index'))
+        ->patch(route('mentor.settings.update'), [
+            'name' => 'Blocked Mentor',
+            'email' => 'blocked@example.com',
+            'mentor_type' => 'graduate',
+            'title' => 'Updated Title',
+            'timezone' => 'Asia/Karachi',
+        ])
+        ->assertRedirect(route('mentor.settings.index'))
+        ->assertSessionHas('error');
+
+    expect($mentor->fresh()->title)->toBe('Original Title');
+    expect($mentorUser->fresh()->email)->not->toBe('blocked@example.com');
+});
+
+it('blocks paused mentors from operational mentor routes', function () {
+    $mentorUser = createSettingsUser('mentor');
+
+    Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'status' => 'paused',
+    ]);
+
+    foreach ([
+        route('mentor.dashboard'),
+        route('mentor.bookings.index'),
+        route('mentor.availability.index'),
+        route('mentor.office-hours'),
+        route('mentor.notes'),
+        route('mentor.institutions.index'),
+        route('mentor.payouts.connect'),
+        route('mentor.payouts.status'),
+    ] as $url) {
+        $this->actingAs($mentorUser)
+            ->get($url)
+            ->assertRedirect(route('mentor.settings.index'))
+            ->assertSessionHas('error');
+    }
+});
+
+it('keeps inactive mentor users blocked by the active account middleware', function () {
+    $mentorUser = createSettingsUser('mentor');
+    $mentorUser->forceFill(['is_active' => false])->save();
+
+    Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($mentorUser)
+        ->get(route('mentor.settings.index'))
+        ->assertRedirect(route('login'))
+        ->assertSessionHasErrors('email');
+
+    $this->assertGuest();
+});
+
+it('updates mentor settings', function () {
     $mentorUser = createSettingsUser('mentor');
     $university = University::query()->create([
         'name' => 'Yale University',
@@ -113,31 +206,9 @@ it('updates mentor settings and syncs active services', function () {
         'user_id' => $mentorUser->id,
         'university_id' => $university->id,
         'mentor_type' => 'graduate',
+        'office_hours_schedule' => 'Existing office hours schedule',
+        'is_featured' => true,
         'status' => 'active',
-    ]);
-
-    $serviceA = ServiceConfig::query()->create([
-        'service_name' => 'Program Insights',
-        'service_slug' => 'program-insights',
-        'duration_minutes' => 60,
-        'is_active' => true,
-        'price_1on1' => 100,
-        'credit_cost_1on1' => 1,
-        'credit_cost_1on3' => 1,
-        'credit_cost_1on5' => 1,
-        'sort_order' => 0,
-    ]);
-
-    $serviceB = ServiceConfig::query()->create([
-        'service_name' => 'Interview Prep',
-        'service_slug' => 'interview-prep',
-        'duration_minutes' => 45,
-        'is_active' => true,
-        'price_1on1' => 125,
-        'credit_cost_1on1' => 1,
-        'credit_cost_1on3' => 1,
-        'credit_cost_1on5' => 1,
-        'sort_order' => 1,
     ]);
 
     $response = $this->withoutMiddleware()->actingAs($mentorUser)->patch(route('mentor.settings.update'), [
@@ -150,12 +221,9 @@ it('updates mentor settings and syncs active services', function () {
         'grad_school_display' => 'Yale Law',
         'bio' => 'Helping students sharpen essays and interviews.',
         'description' => 'Longer mentoring profile copy for expanded views.',
-        'office_hours_schedule' => 'Mondays at 7 PM EST',
         'edu_email' => 'mentor@yale.edu',
         'calendly_link' => 'https://calendly.com/mentor-example',
-        'is_featured' => '1',
         'timezone' => 'Asia/Karachi',
-        'service_config_ids' => [$serviceB->id, $serviceA->id],
     ]);
 
     $response->assertRedirect(route('mentor.settings.index'));
@@ -171,96 +239,10 @@ it('updates mentor settings and syncs active services', function () {
     expect($mentor->program_type)->toBe('law');
     expect($mentor->grad_school_display)->toBe('Yale Law');
     expect($mentor->bio)->toBe('Helping students sharpen essays and interviews.');
-    expect($mentor->office_hours_schedule)->toBe('Mondays at 7 PM EST');
+    expect($mentor->office_hours_schedule)->toBe('Existing office hours schedule');
     expect($mentor->edu_email)->toBe('mentor@yale.edu');
     expect($mentor->is_featured)->toBeTrue();
     expect($mentorUser->fresh()->setting?->timezone)->toBe('Asia/Karachi');
-
-    $this->assertDatabaseHas('mentor_services', [
-        'mentor_id' => $mentor->id,
-        'service_config_id' => $serviceB->id,
-        'sort_order' => 0,
-    ]);
-
-    $this->assertDatabaseHas('mentor_services', [
-        'mentor_id' => $mentor->id,
-        'service_config_id' => $serviceA->id,
-        'sort_order' => 1,
-    ]);
-});
-
-it('turns off active office-hours schedules when the office-hours service is disabled in settings', function () {
-    $mentorUser = createSettingsUser('mentor');
-    $mentor = Mentor::query()->create([
-        'user_id' => $mentorUser->id,
-        'mentor_type' => 'graduate',
-        'status' => 'active',
-    ]);
-    $normalService = ServiceConfig::query()->create([
-        'service_name' => 'Interview Prep',
-        'service_slug' => 'interview-prep-'.Str::lower(Str::random(5)),
-        'duration_minutes' => 60,
-        'is_active' => true,
-        'price_1on1' => 100,
-        'credit_cost_1on1' => 1,
-        'credit_cost_1on3' => 1,
-        'credit_cost_1on5' => 1,
-        'sort_order' => 1,
-    ]);
-    $officeHoursService = ServiceConfig::query()->create([
-        'service_name' => 'Office Hours',
-        'service_slug' => 'office-hours-'.Str::lower(Str::random(5)),
-        'duration_minutes' => 45,
-        'is_active' => true,
-        'is_office_hours' => true,
-        'price_1on1' => null,
-        'price_1on3_per_person' => null,
-        'price_1on3_total' => null,
-        'price_1on5_per_person' => null,
-        'price_1on5_total' => null,
-        'office_hours_subscription_price' => 200,
-        'office_hours_mentor_payout_per_attendee' => 15,
-        'credit_cost_1on1' => 1,
-        'credit_cost_1on3' => 1,
-        'credit_cost_1on5' => 1,
-        'sort_order' => 2,
-    ]);
-
-    $mentor->services()->sync([
-        $normalService->id => ['sort_order' => 0],
-        $officeHoursService->id => ['sort_order' => 1],
-    ]);
-
-    $scheduleId = DB::table('office_hour_schedules')->insertGetId([
-        'mentor_id' => $mentor->id,
-        'current_service_id' => $normalService->id,
-        'day_of_week' => 'tue',
-        'start_time' => '20:00:00',
-        'timezone' => 'Asia/Karachi',
-        'frequency' => 'weekly',
-        'max_spots' => 3,
-        'is_active' => true,
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    $this->withoutMiddleware()->actingAs($mentorUser)->patch(route('mentor.settings.update'), [
-        'name' => 'Mentor Example',
-        'email' => 'mentor@example.com',
-        'mentor_type' => 'graduate',
-        'title' => 'Admissions Mentor',
-        'bio' => 'Helping students prepare.',
-        'description' => 'Longer mentoring profile copy.',
-        'office_hours_schedule' => 'Every Tuesday at 8 PM PKT',
-        'edu_email' => 'mentor@example.edu',
-        'timezone' => 'Asia/Karachi',
-        'service_config_ids' => [$normalService->id],
-    ])->assertRedirect(route('mentor.settings.index'));
-
-    $this->assertDatabaseHas('office_hour_schedules', [
-        'id' => $scheduleId,
-        'is_active' => false,
-    ]);
 });
 
 it('rejects mentor program selections outside the mentor university', function () {
@@ -501,7 +483,10 @@ it('returns only active programs for active universities from the mentor setting
 it('requires a .edu email for graduate mentors', function () {
     $mentorUser = createSettingsUser('mentor');
 
-    $response = $this->actingAs($mentorUser)->from(route('mentor.settings.index'))->patch(route('mentor.settings.update'), [
+    $response = $this->withoutMiddleware(\App\Http\Middleware\EnsureMentorApproved::class)
+        ->actingAs($mentorUser)
+        ->from(route('mentor.settings.index'))
+        ->patch(route('mentor.settings.update'), [
         'name' => 'Mentor Example',
         'email' => 'mentor@gmail.com',
         'mentor_type' => 'graduate',
@@ -571,6 +556,11 @@ it('rejects unsupported detected timezones', function () {
 
 it('starts the mentor zoom oauth flow from settings', function () {
     $mentorUser = createSettingsUser('mentor');
+    Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'status' => 'active',
+    ]);
 
     config([
         'services.zoom.enabled' => true,
@@ -588,6 +578,11 @@ it('starts the mentor zoom oauth flow from settings', function () {
 
 it('stores the mentor zoom token after a successful oauth callback', function () {
     $mentorUser = createSettingsUser('mentor');
+    Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'status' => 'active',
+    ]);
 
     config([
         'services.zoom.enabled' => true,
@@ -628,6 +623,11 @@ it('stores the mentor zoom token after a successful oauth callback', function ()
 it('moves an existing zoom token to the reconnecting mentor instead of duplicating it', function () {
     $oldMentorUser = createSettingsUser('mentor');
     $newMentorUser = createSettingsUser('mentor');
+    Mentor::query()->create([
+        'user_id' => $newMentorUser->id,
+        'mentor_type' => 'graduate',
+        'status' => 'active',
+    ]);
 
     OauthToken::query()->create([
         'user_id' => $oldMentorUser->id,
@@ -678,6 +678,11 @@ it('moves an existing zoom token to the reconnecting mentor instead of duplicati
 
 it('disconnects the mentor zoom token from settings', function () {
     $mentorUser = createSettingsUser('mentor');
+    Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'status' => 'active',
+    ]);
 
     OauthToken::query()->create([
         'user_id' => $mentorUser->id,

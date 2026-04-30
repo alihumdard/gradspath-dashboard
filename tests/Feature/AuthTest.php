@@ -296,7 +296,7 @@ it('registers a mentor and redirects to verification notice', function () {
         'password' => 'Password123',
         'password_confirmation' => 'Password123',
         'role' => 'mentor',
-        'program_level' => 'grad',
+        'mentor_type' => 'graduate',
         'institution' => 'Top Grad School',
     ];
 
@@ -324,6 +324,86 @@ it('registers a mentor and redirects to verification notice', function () {
 
     $this->assertAuthenticated();
     expect(Auth::id())->toBe($user->id);
+});
+
+it('registers a professional mentor with the selected mentor type', function () {
+    Notification::fake();
+
+    $email = 'professional-mentor-' . Str::uuid() . '@example.com';
+
+    $payload = [
+        'name' => 'Professional Mentor',
+        'email' => $email,
+        'password' => 'Password123',
+        'password_confirmation' => 'Password123',
+        'role' => 'mentor',
+        'mentor_type' => 'professional',
+        'institution' => 'Industry Org',
+    ];
+
+    $this->post('/register', $payload)
+        ->assertRedirect(route('verification.notice'));
+
+    $user = User::query()->where('email', $email)->firstOrFail();
+
+    $this->assertDatabaseHas('mentors', [
+        'user_id' => $user->id,
+        'mentor_type' => 'professional',
+        'grad_school_display' => 'Industry Org',
+    ]);
+
+    $this->assertDatabaseMissing('student_profiles', [
+        'user_id' => $user->id,
+    ]);
+});
+
+it('normalizes legacy professional mentor signup payloads', function () {
+    Notification::fake();
+
+    $email = 'legacy-professional-mentor-' . Str::uuid() . '@example.com';
+
+    $payload = [
+        'name' => 'Legacy Professional Mentor',
+        'email' => $email,
+        'password' => 'Password123',
+        'password_confirmation' => 'Password123',
+        'role' => 'mentor',
+        'program_level' => 'professional',
+        'institution' => 'Industry Org',
+    ];
+
+    $this->post('/register', $payload)
+        ->assertRedirect(route('verification.notice'));
+
+    $user = User::query()->where('email', $email)->firstOrFail();
+
+    $this->assertDatabaseHas('mentors', [
+        'user_id' => $user->id,
+        'mentor_type' => 'professional',
+    ]);
+});
+
+it('does not accept graduate or professional program levels for student signup', function () {
+    Notification::fake();
+
+    $payload = [
+        'name' => 'Student Wrong Level',
+        'email' => 'student-wrong-level-' . Str::uuid() . '@college.edu',
+        'password' => 'Password123',
+        'password_confirmation' => 'Password123',
+        'role' => 'student',
+        'program_level' => 'grad',
+        'institution' => 'State University',
+    ];
+
+    $this->from('/')
+        ->post('/register', $payload)
+        ->assertRedirect('/')
+        ->assertSessionHasErrors('program_level');
+
+    $this->assertDatabaseMissing('users', [
+        'email' => $payload['email'],
+    ]);
 });
 
 it('logs in an unverified student and redirects to verification notice', function () {

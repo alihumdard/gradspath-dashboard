@@ -371,7 +371,6 @@
                     <th>Interview Prep</th>
                     <th>Application Review</th>
                     <th>Gap Year Planning</th>
-                    <th>Office Hours</th>
                     <th>Missed</th>
                     <th>Refunds</th>
                     <th>Rating</th>
@@ -394,7 +393,6 @@
                       <td>{{ $adminMentor['interview_prep'] }}</td>
                       <td>{{ $adminMentor['application_review'] }}</td>
                       <td>{{ $adminMentor['gap_year_planning'] }}</td>
-                      <td>{{ $adminMentor['office_hours'] }}</td>
                       <td>{{ $adminMentor['missed'] }}</td>
                       <td>{{ $adminMentor['refunds'] }}</td>
                       <td>{{ $adminMentor['rating'] ?: '-' }}</td>

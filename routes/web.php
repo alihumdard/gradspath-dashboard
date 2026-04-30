@@ -29,6 +29,10 @@ Route::get('/', function () {
     return view('landing_page.index');
 });
 
+Route::get('/home', function () {
+    return view('landing_page.index');
+})->name('public.home');
+
 Route::view('/terms', 'public_pages.terms')->name('public.terms');
 Route::view('/privacy', 'public_pages.privacy')->name('public.privacy');
 Route::view('/support', 'public_pages.support')->name('public.support');

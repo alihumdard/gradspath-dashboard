@@ -35,7 +35,7 @@ class StoreServiceRequest extends FormRequest
             'office_hours_subscription_price' => ['nullable', 'numeric', 'min:0'],
             'office_hours_mentor_payout_per_attendee' => ['nullable', 'numeric', 'min:0'],
             'sort_order' => ['nullable', 'integer', 'min:0'],
-            'notes' => ['required', 'string', 'max:1000'],
+            'notes' => ['nullable', 'string', 'max:1000'],
             'manual_section' => ['nullable', 'string'],
         ];
     }

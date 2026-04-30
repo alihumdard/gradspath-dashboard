@@ -93,9 +93,9 @@ function createManualBooking(User $student, Mentor $mentor, ServiceConfig $servi
     ]);
 }
 
-function createManualService(): ServiceConfig
+function createManualService(array $attributes = []): ServiceConfig
 {
-    return ServiceConfig::query()->create([
+    return ServiceConfig::query()->create(array_merge([
         'service_name' => 'Interview Prep',
         'service_slug' => 'interview_prep',
         'duration_minutes' => 60,
@@ -118,7 +118,7 @@ function createManualService(): ServiceConfig
         'credit_cost_1on3' => 0,
         'credit_cost_1on5' => 0,
         'sort_order' => 0,
-    ]);
+    ], $attributes));
 }
 
 it('renders the manual actions hub with grouped sections', function () {
@@ -135,6 +135,7 @@ it('renders the manual actions hub with grouped sections', function () {
         ->assertSee('Adjust user credits')
         ->assertSee('Update service pricing')
         ->assertSee('Update feedback')
+        ->assertDontSee('Admin note')
         ->assertDontSee('1 on 1 credits')
         ->assertDontSee('1 on 3 credits')
         ->assertDontSee('1 on 5 credits');
@@ -148,7 +149,6 @@ it('writes an admin log for credit adjustments and returns to the credits sectio
         ->post(route('admin.manual-actions.credits.adjust'), [
             'user_id' => $student->id,
             'amount' => 3,
-            'notes' => 'Restore credits after support review.',
             'manual_section' => 'credits',
         ])
         ->assertRedirect(route('admin.manual-actions'))
@@ -162,7 +162,6 @@ it('writes an admin log for credit adjustments and returns to the credits sectio
     $this->assertDatabaseHas('admin_logs', [
         'admin_id' => $admin->id,
         'action' => 'manual_credit_adjustment',
-        'notes' => 'Restore credits after support review.',
     ]);
 });
 
@@ -174,7 +173,6 @@ it('writes an admin log for mentor updates and returns to the mentor section', f
         ->post(route('admin.manual-actions.mentors.update'), [
             'mentor_id' => $mentor->id,
             'status' => 'active',
-            'notes' => 'Approved after profile review.',
             'manual_section' => 'mentor',
         ])
         ->assertRedirect(route('admin.manual-actions'))
@@ -206,7 +204,6 @@ it('writes admin logs for institution and service pricing actions', function () 
             'city' => 'Chicago',
             'state_province' => 'Illinois',
             'is_active' => '1',
-            'notes' => 'Add new university requested by admin.',
             'manual_section' => 'institutions',
         ])
         ->assertRedirect(route('admin.manual-actions'))
@@ -226,7 +223,6 @@ it('writes admin logs for institution and service pricing actions', function () 
             'mentor_payout_1on5' => 125,
             'office_hours_subscription_price' => 30,
             'office_hours_mentor_payout_per_attendee' => 18,
-            'notes' => 'Seasonal pricing update.',
             'manual_section' => 'pricing',
         ])
         ->assertRedirect(route('admin.manual-actions'))
@@ -267,13 +263,67 @@ it('rejects service pricing updates when admin and mentor splits do not equal th
             'price_1on1' => 95,
             'platform_fee_1on1' => 40,
             'mentor_payout_1on1' => 40,
-            'notes' => 'Invalid split update.',
             'manual_section' => 'pricing',
         ])
         ->assertRedirect(route('admin.manual-actions'))
         ->assertSessionHasErrors(['platform_fee_1on1', 'mentor_payout_1on1']);
 
     expect((float) $service->fresh()->price_1on1)->toBe(80.0);
+});
+
+it('allows pricing updates when inactive service groups are left blank', function () {
+    $admin = createManualActionsAdmin();
+    $service = createManualService([
+        'service_name' => 'Gap Year Planning',
+        'service_slug' => 'gap_year_planning',
+        'price_1on1' => 50,
+        'platform_fee_1on1' => 19,
+        'mentor_payout_1on1' => 31,
+        'price_1on3_per_person' => null,
+        'price_1on3_total' => null,
+        'platform_fee_1on3' => null,
+        'mentor_payout_1on3' => null,
+        'price_1on5_per_person' => null,
+        'price_1on5_total' => null,
+        'platform_fee_1on5' => null,
+        'mentor_payout_1on5' => null,
+        'is_office_hours' => false,
+        'office_hours_subscription_price' => null,
+        'office_hours_mentor_payout_per_attendee' => null,
+    ]);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.manual-actions.services.pricing.update'), [
+            'service_id' => $service->id,
+            'price_1on1' => 55,
+            'platform_fee_1on1' => 20,
+            'mentor_payout_1on1' => 35,
+            'price_1on3_total' => '',
+            'platform_fee_1on3' => '',
+            'mentor_payout_1on3' => '',
+            'price_1on5_total' => '',
+            'platform_fee_1on5' => '',
+            'mentor_payout_1on5' => '',
+            'office_hours_subscription_price' => '',
+            'office_hours_mentor_payout_per_attendee' => '',
+            'manual_section' => 'pricing',
+        ])
+        ->assertRedirect(route('admin.manual-actions'))
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('manual_section', 'pricing');
+
+    $this->assertDatabaseHas('services_config', [
+        'id' => $service->id,
+        'price_1on1' => 55,
+        'platform_fee_1on1' => 20,
+        'mentor_payout_1on1' => 35,
+        'price_1on3_total' => null,
+        'platform_fee_1on3' => null,
+        'mentor_payout_1on3' => null,
+        'price_1on5_total' => null,
+        'platform_fee_1on5' => null,
+        'mentor_payout_1on5' => null,
+    ]);
 });
 
 it('writes an admin log for feedback moderation and keeps the feedback section active', function () {
@@ -299,7 +349,6 @@ it('writes an admin log for feedback moderation and keeps the feedback section a
             'feedback_id' => $feedback->id,
             'comment' => 'Edited by admin',
             'is_visible' => '0',
-            'admin_note' => 'Hidden after moderation review.',
             'manual_section' => 'feedback',
         ])
         ->assertRedirect(route('admin.manual-actions'))
@@ -309,7 +358,6 @@ it('writes an admin log for feedback moderation and keeps the feedback section a
         'id' => $feedback->id,
         'comment' => 'Edited by admin',
         'is_visible' => 0,
-        'admin_note' => 'Hidden after moderation review.',
     ]);
 
     $this->assertDatabaseHas('admin_logs', [
@@ -343,7 +391,6 @@ it('writes an admin log for booking outcome updates and keeps the bookings secti
         ->patch(route('admin.manual-actions.bookings.outcome.update'), [
             'booking_id' => $booking->id,
             'session_outcome' => 'interrupted',
-            'session_outcome_note' => 'Mentor reported a network interruption.',
             'completion_source' => 'manual',
             'manual_section' => 'bookings',
         ])
@@ -355,7 +402,6 @@ it('writes an admin log for booking outcome updates and keeps the bookings secti
         'status' => 'completed',
         'session_outcome' => 'interrupted',
         'completion_source' => 'manual',
-        'session_outcome_note' => 'Mentor reported a network interruption.',
     ]);
 
     $this->assertDatabaseHas('admin_logs', [
@@ -377,7 +423,6 @@ it('blocks non admin users from the manual actions hub and endpoints', function 
         ->post(route('admin.manual-actions.credits.adjust'), [
             'user_id' => $student->id,
             'amount' => 1,
-            'notes' => 'Should not be allowed.',
             'manual_section' => 'credits',
         ])
         ->assertForbidden();

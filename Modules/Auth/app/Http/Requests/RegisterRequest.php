@@ -15,6 +15,28 @@ class RegisterRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('role') !== 'mentor') {
+            return;
+        }
+
+        $legacyProgramLevel = $this->input('program_level');
+
+        if (! $this->filled('mentor_type') && in_array($legacyProgramLevel, ['grad', 'professional'], true)) {
+            $this->merge([
+                'mentor_type' => $legacyProgramLevel === 'professional' ? 'professional' : 'graduate',
+                'program_level' => null,
+            ]);
+
+            return;
+        }
+
+        if (in_array($legacyProgramLevel, ['grad', 'professional'], true)) {
+            $this->merge(['program_level' => null]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -27,7 +49,16 @@ class RegisterRequest extends FormRequest
             ],
             'password' => ['required', 'confirmed', Password::min(8)->letters()],
             'role' => ['required', Rule::in($this->allowedRoles())],
-            'program_level' => ['required', 'in:undergrad,grad,professional'],
+            'program_level' => [
+                Rule::requiredIf(fn () => $this->input('role') === 'student'),
+                'nullable',
+                Rule::in(['undergrad']),
+            ],
+            'mentor_type' => [
+                Rule::requiredIf(fn () => $this->input('role') === 'mentor'),
+                'nullable',
+                Rule::in(['graduate', 'professional']),
+            ],
             'institution_id' => ['nullable', 'integer', Rule::exists('universities', 'id')->where(fn ($query) => $query->where('is_active', true))],
             'institution' => ['required', 'string', 'max:255'],
         ];
@@ -37,7 +68,10 @@ class RegisterRequest extends FormRequest
     {
         return [
             'role.in' => 'Please select a valid role.',
-            'program_level.in' => 'Please select a valid program level.',
+            'program_level.required' => 'Please select a valid student level.',
+            'program_level.in' => 'Students can only select the student level during signup.',
+            'mentor_type.required' => 'Please select a valid mentor type.',
+            'mentor_type.in' => 'Please select either a graduate or professional mentor type.',
             'email.unique' => 'An account with this email already exists.',
             'institution.required' => 'The institution field is required.',
         ];
@@ -49,6 +83,7 @@ class RegisterRequest extends FormRequest
             'email' => $this->input('email'),
             'role' => $this->input('role'),
             'program_level' => $this->input('program_level'),
+            'mentor_type' => $this->input('mentor_type'),
             'institution' => $this->input('institution'),
             'errors' => $validator->errors()->toArray(),
         ]);

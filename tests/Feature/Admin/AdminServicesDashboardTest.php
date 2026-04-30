@@ -92,7 +92,7 @@ it('renders services table from db data', function () {
 
     $response->assertOk();
     $response->assertSee('Interview Prep');
-    $response->assertSee('60 min');
+    $response->assertDontSee('60 min');
     $response->assertSee('1:1 $70');
     $response->assertSee('$70', false);
     $response->assertSee('1');
@@ -119,7 +119,7 @@ it('uses dash fallback for missing service values', function () {
     $row = collect($rows)->firstWhere('service_name', 'Placeholder Service');
 
     expect($row)->not->toBeNull();
-    expect($row['format'])->toBe('60 min');
+    expect($row['format'])->toBe('-');
     expect($row['set_price'])->toBe('-');
     expect($row['revenue'])->toBeNull();
     expect($row['bookings'])->toBe(0);

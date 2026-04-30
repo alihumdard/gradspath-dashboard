@@ -30,16 +30,13 @@ class FeedbackController extends Controller
             $feedback->id,
             $before,
             $feedback->fresh()->toArray(),
-            (string) $request->input('admin_note')
+            $request->input('admin_note')
         );
 
         return redirect()
             ->route('admin.manual-actions')
             ->with('manual_section', 'feedback')
-            ->with('manual_status', [
-                'type' => 'success',
-                'message' => 'Feedback moderated successfully.',
-            ]);
+            ->with('success', 'Feedback moderated successfully.');
     }
 
     public function destroy(int $id): RedirectResponse

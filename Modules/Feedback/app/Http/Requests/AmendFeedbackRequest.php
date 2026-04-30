@@ -18,7 +18,7 @@ class AmendFeedbackRequest extends FormRequest
             'feedback_id' => [Rule::requiredIf($this->route('id') === null), 'nullable', 'integer', 'exists:feedback,id'],
             'comment' => ['nullable', 'string', 'max:2000'],
             'is_visible' => ['nullable', 'boolean'],
-            'admin_note' => ['required', 'string', 'max:2000'],
+            'admin_note' => ['nullable', 'string', 'max:2000'],
             'manual_section' => ['nullable', 'string'],
         ];
     }

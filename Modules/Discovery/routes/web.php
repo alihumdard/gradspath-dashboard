@@ -7,7 +7,7 @@ use Modules\Discovery\app\Http\Controllers\Mentor\MentorSearchController as Ment
 use Modules\Discovery\app\Http\Controllers\Student\DashboardController;
 use Modules\Discovery\app\Http\Controllers\Student\MentorSearchController as StudentMentorSearchController;
 
-Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->group(function () {
     Route::get('/mentor/dashboard', [MentorDashboardController::class, 'index'])->name('mentor.dashboard');
     Route::get('/mentor/mentors', [MentorMentorSearchController::class, 'index'])->name('mentor.mentors.index');
     Route::get('/mentor/mentors/{id}', [MentorMentorSearchController::class, 'show'])->name('mentor.mentors.show');

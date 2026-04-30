@@ -50,6 +50,7 @@
   const officeHoursDayError = document.getElementById("officeHoursDayError");
   const officeHoursTimeError = document.getElementById("officeHoursTimeError");
   const officeHoursFrequencyError = document.getElementById("officeHoursFrequencyError");
+  const serviceInputs = Array.from(document.querySelectorAll(".availability-service-option-input"));
 
   const monthGrid = document.getElementById("availabilityMonthGrid");
   const monthLabel = document.getElementById("availabilityMonthLabel");
@@ -243,6 +244,9 @@
     ].forEach((field) => {
       field?.addEventListener("change", handleOfficeHoursChange);
     });
+    serviceInputs.forEach((input) => {
+      input.addEventListener("change", handleServiceSelectionChange);
+    });
 
     monthGrid?.addEventListener("click", (event) => {
       const monthCard = event.target.closest("[data-view-month]");
@@ -407,6 +411,20 @@
     }
 
     state.days[state.selectedDayKey].blocks = sortBlocks(state.days[state.selectedDayKey].blocks);
+    markDirty();
+    render();
+  }
+
+  function handleServiceSelectionChange() {
+    state.serviceOptions = serviceOptionsFromInputs();
+
+    if (
+      state.officeHours.serviceConfigId
+      && !state.serviceOptions.some((option) => Number(option.value) === Number(state.officeHours.serviceConfigId))
+    ) {
+      state.officeHours.serviceConfigId = defaultServiceConfigId();
+    }
+
     markDirty();
     render();
   }
@@ -1011,6 +1029,8 @@
       officeHoursEnabledInput.checked = state.officeHours.enabled;
     }
 
+    syncOfficeHoursServiceOptions();
+
     if (officeHoursServiceSelect && officeHoursServiceSelect.value !== String(state.officeHours.serviceConfigId || "")) {
       officeHoursServiceSelect.value = String(state.officeHours.serviceConfigId || "");
     }
@@ -1305,6 +1325,29 @@
     renderFieldError(officeHoursFrequencyError, getOfficeHoursError("frequency"));
   }
 
+  function syncOfficeHoursServiceOptions() {
+    if (!officeHoursServiceSelect) {
+      return;
+    }
+
+    const currentValue = officeHoursServiceSelect.value;
+    const options = [
+      '<option value="">Select service</option>',
+      ...state.serviceOptions.map((option) => {
+        const value = String(option.value);
+        return `<option value="${escapeHtml(value)}">${escapeHtml(option.label)}</option>`;
+      }),
+    ];
+
+    officeHoursServiceSelect.innerHTML = options.join("");
+
+    if (state.officeHours.serviceConfigId) {
+      officeHoursServiceSelect.value = String(state.officeHours.serviceConfigId);
+    } else if (currentValue) {
+      officeHoursServiceSelect.value = currentValue;
+    }
+  }
+
   function renderFieldError(element, message) {
     if (!element) {
       return;
@@ -1450,6 +1493,16 @@
     const match = state.serviceOptions.find((option) => Number(option.value) === Number(serviceId));
 
     return match ? String(match.label || "") : "";
+  }
+
+  function serviceOptionsFromInputs() {
+    return serviceInputs
+      .filter((input) => input.checked && input.dataset.serviceOfficeHours !== "true")
+      .map((input) => ({
+        value: Number(input.value),
+        label: String(input.dataset.serviceLabel || "Service"),
+        duration_minutes: Math.max(Number(input.dataset.serviceDuration || 1), 1),
+      }));
   }
 
   function serviceDurationById(serviceId) {

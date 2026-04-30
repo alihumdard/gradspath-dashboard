@@ -23,7 +23,7 @@ class ManualActionsController extends Controller
         $data = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
             'amount' => ['required', 'integer', 'not_in:0'],
-            'notes' => ['required', 'string', 'max:1000'],
+            'notes' => ['nullable', 'string', 'max:1000'],
             'manual_section' => ['nullable', 'string'],
         ]);
 
@@ -50,7 +50,7 @@ class ManualActionsController extends Controller
             $wallet->id,
             ['user_id' => $target->id, 'balance' => $beforeBalance],
             ['user_id' => $target->id, 'amount' => (int) $data['amount'], 'balance' => $wallet->balance],
-            $data['notes']
+            $data['notes'] ?? null
         );
 
         return $this->redirectToManualActions('credits', "Credits adjusted successfully. New balance: {$wallet->balance}.");
@@ -61,7 +61,7 @@ class ManualActionsController extends Controller
         $data = $request->validate([
             'mentor_id' => ['required', 'integer', 'exists:mentors,id'],
             'status' => ['required', 'in:pending,active,paused,rejected'],
-            'notes' => ['required', 'string', 'max:1000'],
+            'notes' => ['nullable', 'string', 'max:1000'],
             'manual_section' => ['nullable', 'string'],
         ]);
 
@@ -79,7 +79,7 @@ class ManualActionsController extends Controller
             $mentor->id,
             $before,
             ['status' => $mentor->status],
-            $data['notes']
+            $data['notes'] ?? null
         );
 
         return $this->redirectToManualActions('mentor', 'Mentor status updated successfully.');
@@ -90,9 +90,6 @@ class ManualActionsController extends Controller
         return redirect()
             ->route('admin.manual-actions')
             ->with('manual_section', $section)
-            ->with('manual_status', [
-                'type' => 'success',
-                'message' => $message,
-            ]);
+            ->with('success', $message);
     }
 }

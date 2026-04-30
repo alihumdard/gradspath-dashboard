@@ -16,6 +16,6 @@ Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () 
     Route::patch('/student/office-hours/sessions/{session}/service', [OfficeHourSessionServiceController::class, 'update'])->name('student.office-hours.sessions.service');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->group(function () {
     Route::get('/mentor/office-hours', [MentorOfficeHoursController::class, 'index'])->name('mentor.office-hours');
 });

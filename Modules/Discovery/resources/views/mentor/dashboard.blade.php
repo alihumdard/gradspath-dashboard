@@ -7,7 +7,8 @@
 
 @php
   $institutionsUrl = route('mentor.institutions.index');
-  $mentorsUrl = route('mentor.mentors.index');
+  $graduateMentorsUrl = route('mentor.mentors.index', ['mentor_type' => 'graduate']);
+  $professionalMentorsUrl = route('mentor.mentors.index', ['mentor_type' => 'professional']);
 @endphp
 
 @section('portal_content')
@@ -18,8 +19,8 @@
           </div>
 
           <div class="mentor-hero-links">
-            <a href="{{ $mentorsUrl }}">See all graduate mentors</a>
-            <a href="{{ $mentorsUrl }}">See all professional mentors</a>
+            <a href="{{ $graduateMentorsUrl }}">See all graduate mentors</a>
+            <a href="{{ $professionalMentorsUrl }}">See all professional mentors</a>
           </div>
         </section>
 

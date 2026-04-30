@@ -3,6 +3,7 @@
 namespace Modules\Institutions\app\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Modules\Settings\app\Models\Mentor;
 use Modules\Settings\app\Models\StudentProfile;
@@ -33,6 +34,13 @@ class University extends Model
     public function programs(): HasMany
     {
         return $this->hasMany(UniversityProgram::class);
+    }
+
+    public function scopeActiveWithPrograms(Builder $query): Builder
+    {
+        return $query
+            ->where('is_active', true)
+            ->whereHas('programs', fn(Builder $programs) => $programs->where('is_active', true));
     }
 
     public function mentors(): HasMany

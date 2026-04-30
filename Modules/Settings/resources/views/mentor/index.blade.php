@@ -7,12 +7,22 @@
 
 @php
   $viewErrors = $errors ?? new \Illuminate\Support\ViewErrorBag();
-  $selectedIds = collect(old('service_config_ids', $selectedServiceIds ?? []))
-      ->map(fn ($id) => (int) $id)
-      ->all();
   $payoutButtonLabel = $mentor->payouts_enabled || $mentor->stripe_onboarding_complete
       ? 'Update payout details'
       : ($mentor->stripe_account_id ? 'Continue payout setup' : 'Enable Payouts');
+  $mentorStatus = $mentor->status ?: 'pending';
+  $mentorStatusLabel = [
+      'active' => 'Active',
+      'pending' => 'Under review',
+      'paused' => 'Paused',
+      'rejected' => 'Blocked',
+  ][$mentorStatus] ?? 'Not active';
+  $mentorProfileBlocked = $mentorStatus !== 'active';
+  $mentorStatusMessage = [
+      'pending' => 'Your mentor application is under review. Profile editing and mentor tools will unlock after approval.',
+      'paused' => 'Your mentor profile has been paused by admin. Your profile and mentor tools are read-only until admin reactivates it.',
+      'rejected' => 'Your mentor profile is blocked. Please contact support or admin if you believe this needs review.',
+  ][$mentorStatus] ?? 'Your mentor profile is not active. Please contact support or admin.';
 @endphp
 
 @section('page_topbar_left')
@@ -25,15 +35,27 @@
   <div class="page">
     <div class="layout">
       <section class="form-panel">
-        <h1>Mentor Settings</h1>
+        <div class="mentor-settings-title-row">
+          <h1>Mentor Settings</h1>
+          <span class="mentor-status-badge mentor-status-badge--{{ $mentorStatus }}">
+            {{ $mentorStatusLabel }}
+          </span>
+        </div>
         <p class="subtitle">
-          Update the profile details and services students see across discovery and booking.
+          Update the profile details students see across discovery and booking.
         </p>
+        @if ($mentorProfileBlocked)
+          <div class="mentor-status-lock" role="alert">
+            <strong>Your mentor profile is currently restricted.</strong>
+            <span>{{ $mentorStatusMessage }}</span>
+          </div>
+        @endif
         <div class="availability-alert availability-alert--error" id="mentorFormAlert" hidden></div>
         <form id="mentorForm" method="POST" action="{{ route('mentor.settings.update') }}" novalidate>
           @csrf
           @method('PATCH')
-          <div class="settings-columns">
+          <fieldset class="mentor-settings-fieldset" @disabled($mentorProfileBlocked)>
+            <div class="settings-columns">
             <div class="settings-column">
               <section class="settings-card">
                 <div class="settings-card-head">
@@ -193,12 +215,6 @@
 
                 <div class="field-row">
                   <div class="field">
-                    <label for="officeHours">Office Hours</label>
-                    <input type="text" id="officeHours" name="office_hours_schedule" value="{{ old('office_hours_schedule', $mentor->office_hours_schedule ?? '') }}" placeholder="Every Tuesday at 5 PM EST" />
-                    <p class="error-text" id="officeHoursError">{{ $viewErrors->first('office_hours_schedule') }}</p>
-                  </div>
-
-                  <div class="field">
                     <label for="calendlyLink">Calendly Link</label>
                     <input type="url" id="calendlyLink" name="calendly_link" value="{{ old('calendly_link', $mentor->calendly_link ?? '') }}" placeholder="https://calendly.com/your-link" />
                     <p class="error-text" id="calendlyError">{{ $viewErrors->first('calendly_link') }}</p>
@@ -222,28 +238,6 @@
                     </div>
                     <p class="helper-text">We use your timezone as the default for scheduling and booking display.</p>
                     <p class="error-text">{{ $viewErrors->first('timezone') }}</p>
-                  </div>
-
-                  <div class="field">
-                    <label for="isFeatured">Featured Mentor</label>
-                    <div class="slack-box settings-inline-toggle">
-                      <div>
-                        <p class="slack-text" style="margin-bottom: 4px;">Show this mentor in featured sections across discovery.</p>
-                        <p class="helper-text" style="margin: 0;">Turn this on to mark the profile as featured.</p>
-                      </div>
-                      <label for="isFeatured" class="settings-switch-label">
-                        <input type="hidden" name="is_featured" value="0" />
-                        <input
-                          type="checkbox"
-                          id="isFeatured"
-                          name="is_featured"
-                          value="1"
-                          @checked((bool) old('is_featured', $mentor->is_featured))
-                        />
-                        <span>{{ old('is_featured', $mentor->is_featured) ? 'Enabled' : 'Disabled' }}</span>
-                      </label>
-                    </div>
-                    <p class="error-text">{{ $viewErrors->first('is_featured') }}</p>
                   </div>
                 </div>
               </section>
@@ -282,47 +276,20 @@
                           Disconnect Zoom
                         </button>
                       @else
-                        <a href="{{ $zoomConnectUrl }}" class="primary-btn{{ $zoomConfigured ? '' : ' is-disabled' }}" @if (! $zoomConfigured) aria-disabled="true" @endif>
-                          {{ $zoomConnectionStatus === 'error' ? 'Reconnect Zoom' : 'Connect Zoom' }}
-                        </a>
+                        @if ($mentorProfileBlocked)
+                          <span class="primary-btn is-disabled" aria-disabled="true">
+                            {{ $zoomConnectionStatus === 'error' ? 'Reconnect Zoom' : 'Connect Zoom' }}
+                          </span>
+                        @else
+                          <a href="{{ $zoomConnectUrl }}" class="primary-btn{{ $zoomConfigured ? '' : ' is-disabled' }}" @if (! $zoomConfigured) aria-disabled="true" @endif>
+                            {{ $zoomConnectionStatus === 'error' ? 'Reconnect Zoom' : 'Connect Zoom' }}
+                          </a>
+                        @endif
                       @endif
                     </div>
                   </div>
                   <p class="helper-text">Students cannot complete new Zoom bookings with you until this connection is active.</p>
                   <p class="error-text">{{ $viewErrors->first('zoom') }}</p>
-                </div>
-              </section>
-
-              <section class="settings-card">
-                <div class="field">
-                  <label>Services Offered</label>
-                  <div class="services-panel">
-                    <div class="services-panel-head">
-                      <p class="services-eyebrow">Booking visibility</p>
-                      <p class="slack-text">Select the active services students can book with you.</p>
-                    </div>
-                    <div class="service-options">
-                      @foreach ($services as $service)
-                        <label class="service-option">
-                          <input
-                            class="service-option-input"
-                            type="checkbox"
-                            name="service_config_ids[]"
-                            value="{{ $service->id }}"
-                            @checked(in_array($service->id, $selectedIds, true))
-                          />
-                          <span class="service-option-copy">
-                            <strong>{{ $service->service_name }}</strong>
-                            <span class="service-option-meta">{{ $service->duration_minutes }} min session</span>
-                          </span>
-                          <span class="service-option-toggle" aria-hidden="true">
-                            <span class="service-option-toggle-thumb"></span>
-                          </span>
-                        </label>
-                      @endforeach
-                    </div>
-                  </div>
-                  <p class="error-text">{{ $viewErrors->first('service_config_ids') ?: $viewErrors->first('service_config_ids.*') }}</p>
                 </div>
               </section>
 
@@ -345,6 +312,7 @@
                         data-connect-url="{{ route('mentor.payouts.connect') }}"
                         data-status-url="{{ route('mentor.payouts.status') }}"
                         data-stripe-return="{{ $stripeReturn ? 'true' : 'false' }}"
+                        @disabled($mentorProfileBlocked)
                       >{{ $payoutButtonLabel }}</button>
                       <span class="payout-status{{ $mentor->payouts_enabled ? ' enabled' : '' }}" id="payoutStatus">
                         {{ $mentor->payouts_enabled ? 'Enabled' : 'Not enabled' }}
@@ -355,8 +323,9 @@
                 </div>
               </section>
             </div>
-          </div>
-          <button type="submit" class="save-btn">Save Changes</button>
+            </div>
+            <button type="submit" class="save-btn">Save Changes</button>
+          </fieldset>
         </form>
         <form id="zoomDisconnectForm" method="POST" action="{{ $zoomDisconnectUrl }}">
           @csrf

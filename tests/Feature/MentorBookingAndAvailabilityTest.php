@@ -332,6 +332,100 @@ it('renders the mentor availability editor page', function () {
         ->assertSee('availabilityDayPanel', false);
 });
 
+it('renders mentor services on the availability editor page', function () {
+    [$mentorUser, $mentor] = makePortalMentor('availability-services-page');
+    $service = makePortalService(['service_name' => 'Program Insights']);
+    attachServiceToMentor($mentor, $service);
+
+    $this->actingAs($mentorUser)
+        ->get(route('mentor.availability.index'))
+        ->assertOk()
+        ->assertSee('Services Offered')
+        ->assertSee('Program Insights')
+        ->assertSee('name="service_config_ids[]"', false);
+});
+
+it('lets a mentor update active services on the availability page', function () {
+    [$mentorUser, $mentor] = makePortalMentor('availability-services-save');
+    $serviceA = makePortalService(['service_name' => 'Program Insights', 'sort_order' => 1]);
+    $serviceB = makePortalService(['service_name' => 'Interview Prep', 'sort_order' => 2]);
+
+    attachServiceToMentor($mentor, $serviceA);
+
+    $this->actingAs($mentorUser)
+        ->patch(route('mentor.availability.update'), [
+            'service_config_ids_present' => '1',
+            'service_config_ids' => [$serviceB->id, $serviceA->id],
+            'timezone' => 'America/New_York',
+            'date_slots_payload' => dateSlotsPayload([]),
+        ])
+        ->assertRedirect(route('mentor.availability.index'));
+
+    $this->assertDatabaseHas('mentor_services', [
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $serviceB->id,
+        'sort_order' => 0,
+    ]);
+
+    $this->assertDatabaseHas('mentor_services', [
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $serviceA->id,
+        'sort_order' => 1,
+    ]);
+});
+
+it('turns off active office-hours schedules when the office-hours service is disabled on availability', function () {
+    [$mentorUser, $mentor] = makePortalMentor('availability-office-hours-disabled');
+    $normalService = makePortalService([
+        'service_name' => 'Interview Prep',
+        'sort_order' => 1,
+    ]);
+    $officeHoursService = makePortalService([
+        'service_name' => 'Office Hours',
+        'is_office_hours' => true,
+        'price_1on1' => null,
+        'price_1on3_per_person' => null,
+        'price_1on3_total' => null,
+        'price_1on5_per_person' => null,
+        'price_1on5_total' => null,
+        'office_hours_subscription_price' => 200,
+        'office_hours_mentor_payout_per_attendee' => 15,
+        'sort_order' => 2,
+    ]);
+
+    $mentor->services()->sync([
+        $normalService->id => ['sort_order' => 0],
+        $officeHoursService->id => ['sort_order' => 1],
+    ]);
+
+    $scheduleId = DB::table('office_hour_schedules')->insertGetId([
+        'mentor_id' => $mentor->id,
+        'current_service_id' => $normalService->id,
+        'day_of_week' => 'tue',
+        'start_time' => '20:00:00',
+        'timezone' => 'Asia/Karachi',
+        'frequency' => 'weekly',
+        'max_spots' => 3,
+        'is_active' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $this->actingAs($mentorUser)
+        ->patch(route('mentor.availability.update'), [
+            'service_config_ids_present' => '1',
+            'service_config_ids' => [$normalService->id],
+            'timezone' => 'Asia/Karachi',
+            'date_slots_payload' => dateSlotsPayload([]),
+        ])
+        ->assertRedirect(route('mentor.availability.index'));
+
+    $this->assertDatabaseHas('office_hour_schedules', [
+        'id' => $scheduleId,
+        'is_active' => false,
+    ]);
+});
+
 it('defaults mentor availability and office-hours timezones to utc on the availability page', function () {
     [$mentorUser] = makePortalMentor('availability-default-utc');
 

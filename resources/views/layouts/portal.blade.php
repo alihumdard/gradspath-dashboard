@@ -6,6 +6,12 @@
     <link rel="stylesheet" href="{{ asset($portalCssAsset) }}?v={{ filemtime(public_path($portalCssAsset)) }}" />
   @endif
 
+  @php($portalHeaderCssAsset = 'assets/css/portal-header.css')
+  @php($portalHeaderCssPath = public_path($portalHeaderCssAsset))
+  @if (is_file($portalHeaderCssPath))
+    <link rel="stylesheet" href="{{ asset($portalHeaderCssAsset) }}?v={{ filemtime($portalHeaderCssPath) }}" />
+  @endif
+
   @yield('portal_css')
 @endsection
 
@@ -65,4 +71,23 @@
   @endif
 
   @yield('portal_js')
+
+  <script>
+    (function () {
+      const themeToggle = document.getElementById('themeToggle');
+
+      if (!themeToggle) {
+        return;
+      }
+
+      const normalizeThemeToggleLabel = () => {
+        themeToggle.textContent = 'Light / Dark';
+      };
+
+      normalizeThemeToggleLabel();
+      themeToggle.addEventListener('click', () => {
+        window.setTimeout(normalizeThemeToggleLabel, 0);
+      });
+    })();
+  </script>
 @endsection

@@ -30,15 +30,12 @@ class BookingOutcomeController extends Controller
             $updated->id,
             $before,
             $updated->fresh()->toArray(),
-            (string) $request->input('session_outcome_note')
+            $request->input('session_outcome_note')
         );
 
         return redirect()
             ->route('admin.manual-actions')
             ->with('manual_section', 'bookings')
-            ->with('manual_status', [
-                'type' => 'success',
-                'message' => 'Booking outcome updated successfully.',
-            ]);
+            ->with('success', 'Booking outcome updated successfully.');
     }
 }

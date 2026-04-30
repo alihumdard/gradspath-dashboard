@@ -107,7 +107,7 @@
 <body>
   <header>
     <nav aria-label="Public navigation">
-      <a class="brand" href="{{ url('/') }}">Grads Paths</a>
+      <a class="brand" href="{{ route('public.home') }}">Grads Paths</a>
       <div class="nav-links">
         <a href="{{ route('public.terms') }}">Terms</a>
         <a href="{{ route('public.privacy') }}">Privacy</a>

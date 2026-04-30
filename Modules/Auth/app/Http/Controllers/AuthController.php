@@ -152,6 +152,7 @@ class AuthController extends Controller
             'email' => $validated['email'] ?? null,
             'role' => $validated['role'] ?? null,
             'program_level' => $validated['program_level'] ?? null,
+            'mentor_type' => $validated['mentor_type'] ?? null,
             'institution' => $validated['institution'] ?? null,
             'session_id_before_login' => $request->session()->getId(),
         ]);

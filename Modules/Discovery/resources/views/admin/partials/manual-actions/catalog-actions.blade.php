@@ -74,14 +74,6 @@
           @enderror
         </label>
 
-        <label class="manual-field manual-field--full">
-          <span>Admin note</span>
-          <textarea name="notes" rows="4" placeholder="Why are we adding this institution?" required>{{ old('notes') }}</textarea>
-          @error('notes')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-
         <label class="manual-check">
           <input name="is_active" type="hidden" value="0" />
           <input name="is_active" type="checkbox" value="1" @checked(old('is_active', '1') === '1') />
@@ -183,14 +175,6 @@
           @enderror
         </label>
 
-        <label class="manual-field manual-field--full">
-          <span>Admin note</span>
-          <textarea name="notes" rows="4" placeholder="Why are we adding this program?" required>{{ old('notes') }}</textarea>
-          @error('notes')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-
         <label class="manual-check">
           <input name="is_active" type="hidden" value="0" />
           <input name="is_active" type="checkbox" value="1" @checked(old('is_active', '1') === '1') />
@@ -229,14 +213,6 @@
           <span>Service name</span>
           <input name="service_name" type="text" value="{{ old('service_name') }}" required />
           @error('service_name')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-
-        <label class="manual-field">
-          <span>Duration (minutes)</span>
-          <input name="duration_minutes" type="number" min="15" max="300" value="{{ old('duration_minutes', 60) }}" />
-          @error('duration_minutes')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror
         </label>
@@ -355,22 +331,6 @@
           @enderror
         </label>
 
-        <label class="manual-field">
-          <span>Sort order</span>
-          <input name="sort_order" type="number" min="0" step="1" value="{{ old('sort_order', 0) }}" />
-          @error('sort_order')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-
-        <label class="manual-field manual-field--full">
-          <span>Admin note</span>
-          <textarea name="notes" rows="4" placeholder="Why are we creating this service?" required>{{ old('notes') }}</textarea>
-          @error('notes')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-
         <label class="manual-check">
           <input name="is_active" type="hidden" value="0" />
           <input name="is_active" type="checkbox" value="1" @checked(old('is_active', '1') === '1') />
@@ -386,7 +346,7 @@
           @foreach (collect($services)->take(6) as $service)
             <li>
               <strong>{{ $service['name'] }}</strong>
-              <span>{{ $service['duration_minutes'] }} min · {{ $service['is_active'] ? 'Active' : 'Inactive' }}</span>
+              <span>{{ $service['is_active'] ? 'Active' : 'Inactive' }}</span>
             </li>
           @endforeach
         </ul>
@@ -419,7 +379,7 @@
           @enderror
         </label>
 
-        <div class="manual-split-row manual-field--full">
+        <div class="manual-split-row manual-field--full" data-pricing-session-field>
           <label class="manual-field">
             <span>1 on 1 student price</span>
             <input name="price_1on1" type="number" min="0" step="0.01" value="{{ old('price_1on1') }}" />
@@ -445,7 +405,7 @@
           </label>
         </div>
 
-        <div class="manual-split-row manual-field--full">
+        <div class="manual-split-row manual-field--full" data-pricing-session-field>
           <label class="manual-field">
             <span>1 on 3 student price total</span>
             <input name="price_1on3_total" type="number" min="0" step="0.01" value="{{ old('price_1on3_total') }}" />
@@ -471,7 +431,7 @@
           </label>
         </div>
 
-        <div class="manual-split-row manual-field--full">
+        <div class="manual-split-row manual-field--full" data-pricing-session-field>
           <label class="manual-field">
             <span>1 on 5 student price total</span>
             <input name="price_1on5_total" type="number" min="0" step="0.01" value="{{ old('price_1on5_total') }}" />
@@ -497,7 +457,7 @@
           </label>
         </div>
 
-        <label class="manual-field">
+        <label class="manual-field" data-pricing-office-hours-field>
           <span>Office hours price</span>
           <input name="office_hours_subscription_price" type="number" min="0" step="0.01" value="{{ old('office_hours_subscription_price') }}" />
           @error('office_hours_subscription_price')
@@ -505,18 +465,10 @@
           @enderror
         </label>
 
-        <label class="manual-field">
+        <label class="manual-field" data-pricing-office-hours-field>
           <span>Office hours mentor payout per attendee</span>
           <input name="office_hours_mentor_payout_per_attendee" type="number" min="0" step="0.01" value="{{ old('office_hours_mentor_payout_per_attendee') }}" />
           @error('office_hours_mentor_payout_per_attendee')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-
-        <label class="manual-field manual-field--full">
-          <span>Admin note</span>
-          <textarea name="notes" rows="4" placeholder="Why is this pricing changing?" required>{{ old('notes') }}</textarea>
-          @error('notes')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror
         </label>

@@ -11,7 +11,7 @@ Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () 
 	Route::get('/student/institutions/{id}', [StudentInstitutionsController::class, 'show'])->name('student.institutions.show');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->group(function () {
 	Route::get('/mentor/institutions', [MentorInstitutionsController::class, 'index'])->name('mentor.institutions.index');
 	Route::get('/mentor/institutions/{id}', [MentorInstitutionsController::class, 'show'])->name('mentor.institutions.show');
 });

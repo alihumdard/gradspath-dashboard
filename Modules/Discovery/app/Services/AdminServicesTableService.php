@@ -72,14 +72,7 @@ class AdminServicesTableService
     private function formatServiceFormat(ServiceConfig $service): string
     {
         if ($service->is_office_hours) {
-            $duration = $service->duration_minutes !== null ? "{$service->duration_minutes} min" : '-';
-            return "{$duration} subscription";
-        }
-
-        $parts = [];
-
-        if ($service->duration_minutes !== null) {
-            $parts[] = "{$service->duration_minutes} min";
+            return 'Subscription';
         }
 
         $sessionTypes = [];
@@ -94,10 +87,10 @@ class AdminServicesTableService
         }
 
         if ($sessionTypes !== []) {
-            $parts[] = implode(' / ', $sessionTypes);
+            return implode(' / ', $sessionTypes);
         }
 
-        return $parts === [] ? '-' : implode(' • ', $parts);
+        return '-';
     }
 
     private function formatSetPrice(ServiceConfig $service): string

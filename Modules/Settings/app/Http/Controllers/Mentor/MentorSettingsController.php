@@ -13,7 +13,6 @@ use Illuminate\View\View;
 use Modules\Bookings\app\Services\ZoomService;
 use Modules\Institutions\app\Models\University;
 use Modules\Institutions\app\Models\UniversityProgram;
-use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Http\Requests\UpdateMentorSettingsRequest;
 use Modules\Settings\app\Models\Mentor;
 use Modules\Settings\app\Support\TimezoneOptions;
@@ -47,14 +46,6 @@ class MentorSettingsController extends Controller
             'selectedUniversityId' => $selectedUniversity?->id,
             'universityPrograms' => $universityPrograms,
             'selectedUniversityProgramId' => $selectedUniversityProgramId,
-            'services' => ServiceConfig::query()
-                ->where('is_active', true)
-                ->orderBy('sort_order')
-                ->orderBy('service_name')
-                ->get(),
-            'selectedServiceIds' => $mentor->exists
-                ? $mentor->services->pluck('id')->all()
-                : [],
             'timezoneOptions' => TimezoneOptions::all(),
             'selectedTimezone' => old('timezone', $user->setting?->timezone ?? TimezoneOptions::fallback()),
             'hasSavedTimezone' => filled($user->setting?->timezone),
@@ -127,7 +118,7 @@ class MentorSettingsController extends Controller
                 $gradSchoolDisplay = $selectedUniversity?->display_name ?: $selectedUniversity?->name ?: null;
             }
 
-            $mentor->fill([
+            $mentorData = [
                 'university_id' => $selectedUniversity?->id,
                 'mentor_type' => $data['mentor_type'],
                 'title' => $data['title'] ?? null,
@@ -136,34 +127,13 @@ class MentorSettingsController extends Controller
                 'grad_school_display' => $gradSchoolDisplay,
                 'bio' => $data['bio'] ?? null,
                 'description' => $data['description'] ?? null,
-                'office_hours_schedule' => $data['office_hours_schedule'] ?? null,
                 'edu_email' => $data['edu_email'] ?? null,
                 'calendly_link' => $data['calendly_link'] ?? null,
-                'is_featured' => (bool) ($data['is_featured'] ?? false),
-            ]);
+            ];
+
+            $mentor->fill($mentorData);
             $mentor->save();
 
-            $serviceIds = collect($data['service_config_ids'] ?? [])
-                ->map(fn (mixed $id) => (int) $id)
-                ->values();
-
-            $mentor->services()->sync(
-                $serviceIds->mapWithKeys(fn (int $id, int $index) => [
-                    $id => ['sort_order' => $index],
-                ])->all()
-            );
-
-            $officeHoursEnabled = ServiceConfig::query()
-                ->whereIn('id', $serviceIds)
-                ->where('is_active', true)
-                ->where('is_office_hours', true)
-                ->exists();
-
-            if (! $officeHoursEnabled) {
-                $mentor->officeHourSchedules()
-                    ->where('is_active', true)
-                    ->update(['is_active' => false]);
-            }
         });
 
         return redirect()

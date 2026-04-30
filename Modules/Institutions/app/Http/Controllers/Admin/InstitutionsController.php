@@ -37,7 +37,7 @@ class InstitutionsController extends Controller
             $university->id,
             null,
             $university->fresh()->toArray(),
-            (string) $request->input('notes')
+            $request->input('notes')
         );
 
         return $this->redirectToManualActions('institutions', "Institution {$university->name} created successfully.");
@@ -59,7 +59,7 @@ class InstitutionsController extends Controller
             $university->id,
             $before,
             $university->fresh()->toArray(),
-            (string) $request->input('notes')
+            $request->input('notes')
         );
 
         return $this->redirectToManualActions('institutions', 'Institution updated successfully.');
@@ -86,7 +86,7 @@ class InstitutionsController extends Controller
             'state_province' => [$isUpdate ? 'sometimes' : 'nullable', 'string', 'max:255'],
             'logo_url' => [$isUpdate ? 'sometimes' : 'nullable', 'url'],
             'is_active' => [$isUpdate ? 'sometimes' : 'nullable', 'boolean'],
-            'notes' => ['required', 'string', 'max:1000'],
+            'notes' => ['nullable', 'string', 'max:1000'],
             'manual_station' => ['nullable', 'string'],
             'manual_section' => ['nullable', 'string'],
         ];
@@ -128,10 +128,7 @@ class InstitutionsController extends Controller
         return redirect()
             ->route('admin.manual-actions')
             ->with('manual_section', $section)
-            ->with('manual_status', [
-                'type' => 'success',
-                'message' => $message,
-            ]);
+            ->with('success', $message);
     }
 
     private function normalizeLineList(?string $value): ?array

@@ -7,7 +7,6 @@
 @endsection
 
 @section('portal_topbar_left')
-  @yield('page_topbar_left')
 @endsection
 
 @section('portal_topbar_right')

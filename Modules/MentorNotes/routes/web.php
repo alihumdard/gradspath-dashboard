@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->group(function () {
     Route::get('/mentor/notes', [MentorNotesController::class, 'index'])->name('mentor.notes');
     Route::get('/mentor/notes/bookings/{bookingId}', [MentorNotesController::class, 'edit'])->name('mentor.notes.bookings.edit');
     Route::post('/mentor/notes/bookings/{bookingId}', [MentorNotesController::class, 'store'])->name('mentor.notes.bookings.store');

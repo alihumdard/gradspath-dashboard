@@ -14,6 +14,8 @@ use Modules\Bookings\app\Mail\BookingReminderMail;
 use Modules\Bookings\app\Mail\StudentBookingConfirmationMail;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Services\BookingMeetingPresenter;
+use Modules\Institutions\app\Models\University;
+use Modules\Institutions\app\Models\UniversityProgram;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
 use Spatie\Permission\Models\Role;
@@ -282,4 +284,43 @@ it('uses the gated student route in confirmation and reminder emails for synced 
             && $mail->bookingDetails['meeting_link'] === route('student.bookings.join-meeting', $booking->id)
             && $mail->bookingDetails['meeting_link_label'] === 'Join Zoom Meeting';
     });
+});
+
+it('includes mentor program name and email in the student feedback payload', function () {
+    $context = createBookingAccessContext();
+    $mentorUser = $context['mentorUser'];
+    $mentor = $context['mentor'];
+
+    $university = University::query()->create([
+        'name' => 'University of Payload',
+        'display_name' => 'Payload U',
+        'country' => 'US',
+        'is_active' => true,
+    ]);
+
+    $program = UniversityProgram::query()->create([
+        'university_id' => $university->id,
+        'program_name' => 'Master of Feedback Systems',
+        'program_type' => 'mba',
+        'tier' => 'top',
+        'is_active' => true,
+    ]);
+
+    $mentor->forceFill(['university_program_id' => $program->id])->save();
+    $mentorUser->forceFill(['email' => 'mentor.feedback@example.edu'])->save();
+
+    $response = $this
+        ->actingAs($context['studentUser'])
+        ->get(route('student.bookings.show', $context['booking']->id));
+
+    $response->assertOk();
+
+    $payload = $response->viewData('bookingPageData');
+    $selectedBooking = $payload['selectedBooking'];
+    $upcomingBooking = collect($payload['upcomingBookings'])->firstWhere('id', $context['booking']->id);
+
+    expect($selectedBooking['mentorProgram'])->toBe('Master of Feedback Systems');
+    expect($selectedBooking['mentorEmail'])->toBe('mentor.feedback@example.edu');
+    expect($upcomingBooking['mentorProgram'])->toBe('Master of Feedback Systems');
+    expect($upcomingBooking['mentorEmail'])->toBe('mentor.feedback@example.edu');
 });

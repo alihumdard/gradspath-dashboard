@@ -102,6 +102,12 @@ class Mentor extends Model
         return $this->hasMany(Feedback::class);
     }
 
+    public function latestVisibleFeedback(): HasOne
+    {
+        return $this->hasOne(Feedback::class)
+            ->ofMany(['id' => 'max'], fn ($query) => $query->where('is_visible', true));
+    }
+
     public function rating(): HasOne
     {
         return $this->hasOne(MentorRating::class);

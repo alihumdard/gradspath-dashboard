@@ -14,6 +14,10 @@
   $officeHoursConfigData = $officeHoursConfig ?? [];
   $officeHoursPreviewData = $officeHoursPreview ?? [];
   $hasOldInput = session()->getOldInput() !== [];
+  $viewErrors = $errors ?? new \Illuminate\Support\ViewErrorBag();
+  $selectedIds = collect(old('service_config_ids', $selectedServiceIds ?? []))
+      ->map(fn ($id) => (int) $id)
+      ->all();
 
   $initialSchedulerPayload['save_url'] = route('mentor.availability.update');
   $initialSchedulerPayload['timezone'] = old('timezone', $initialSchedulerPayload['timezone'] ?? ($availabilityData['timezone'] ?? \Modules\Settings\app\Support\TimezoneOptions::fallback()));
@@ -75,12 +79,6 @@
   }
 @endphp
 
-@section('page_topbar_left')
-  <div class="search-wrap">
-    <input type="text" class="search-input" placeholder="Search mentors, universities..." />
-  </div>
-@endsection
-
 @section('portal_content')
   <main class="availability-main">
     <header class="availability-page-header">
@@ -134,6 +132,43 @@
     <form method="POST" action="{{ route('mentor.availability.update') }}" id="mentorAvailabilityForm" novalidate>
       @csrf
       @method('PATCH')
+
+      <section class="availability-card availability-card--services">
+        <div class="availability-card-header">
+          <div>
+            <div class="availability-card-title">Services Offered</div>
+            <div class="availability-card-sub">Select the active services students can book, then assign those services to your available slots.</div>
+          </div>
+        </div>
+
+        <input type="hidden" name="service_config_ids_present" value="1" />
+        <div class="availability-services-panel">
+          <div class="availability-service-options">
+            @foreach ($services as $service)
+              <label class="availability-service-option">
+                <input
+                  class="availability-service-option-input"
+                  type="checkbox"
+                  name="service_config_ids[]"
+                  value="{{ $service->id }}"
+                  data-service-label="{{ $service->service_name }}"
+                  data-service-duration="{{ max((int) $service->duration_minutes, 1) }}"
+                  data-service-office-hours="{{ $service->is_office_hours ? 'true' : 'false' }}"
+                  @checked(in_array($service->id, $selectedIds, true))
+                />
+                <span class="availability-service-option-copy">
+                  <strong>{{ $service->service_name }}</strong>
+                  <span>{{ $service->duration_minutes }} min session</span>
+                </span>
+                <span class="availability-service-option-toggle" aria-hidden="true">
+                  <span class="availability-service-option-toggle-thumb"></span>
+                </span>
+              </label>
+            @endforeach
+          </div>
+        </div>
+        <p class="availability-field-error">{{ $viewErrors->first('service_config_ids') ?: $viewErrors->first('service_config_ids.*') }}</p>
+      </section>
 
       <section class="availability-card availability-card--office-hours">
         <div class="availability-card-header availability-card-header--office-hours">

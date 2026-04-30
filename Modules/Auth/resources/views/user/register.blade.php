@@ -54,15 +54,17 @@
         <input type="hidden" name="auth_context" value="signup" />
         <input type="hidden" name="role" id="signup-role-input" value="{{ old('role', 'student') }}" />
         <input type="hidden" name="program_level" id="signup-program-level-input" value="{{ old('program_level', 'undergrad') }}" />
+        <input type="hidden" name="mentor_type" id="signup-mentor-type-input" value="{{ old('mentor_type', 'graduate') }}" />
         <input type="hidden" name="institution_id" id="signup-institution-id" value="{{ old('institution_id') }}" />
-        <div>
-          <label class="block text-sm font-bold text-[#1D1440] mb-2"
-            >Program level</label
+        <div id="signup-type-section">
+          <label id="signup-type-label" class="block text-sm font-bold text-[#1D1440] mb-2"
+            >Student level</label
           >
-          <div class="grid grid-cols-3 gap-3">
+          <div id="signup-type-options" class="grid grid-cols-1 gap-3">
             <button
               type="button"
               data-value="Undergrad"
+              data-role-scope="student"
               class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#6D28D9] bg-[#EBE0F8] text-[#6D28D9]"
             >
               <i class="fa-solid fa-graduation-cap"></i> Undergrad
@@ -70,19 +72,24 @@
             <button
               type="button"
               data-value="Grad"
-              class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
+              data-role-scope="mentor"
+              class="signup-level hidden flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
             >
-              <i class="fa-solid fa-graduation-cap"></i> Grad
+              <i class="fa-solid fa-graduation-cap"></i> Grad Mentor
             </button>
             <button
               type="button"
               data-value="Professional"
-              class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
+              data-role-scope="mentor"
+              class="signup-level hidden flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
             >
-              <i class="fa-solid fa-briefcase"></i> Professional
+              <i class="fa-solid fa-briefcase"></i> Professional Mentor
             </button>
           </div>
           @error('program_level')
+            <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+          @enderror
+          @error('mentor_type')
             <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
           @enderror
         </div>

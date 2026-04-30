@@ -26,7 +26,6 @@ class AdminMentorsTableService
         'Interview Prep',
         'Application Review',
         'Gap Year Planning',
-        'Office Hours',
     ];
 
     public function build(): array
@@ -97,7 +96,6 @@ class AdminMentorsTableService
                 'interview_prep' => $serviceCounts['Interview Prep'],
                 'application_review' => $serviceCounts['Application Review'],
                 'gap_year_planning' => $serviceCounts['Gap Year Planning'],
-                'office_hours' => $serviceCounts['Office Hours'],
                 'missed' => $bookings->where('status', 'no_show')->count(),
                 'refunds' => $bookings->where('status', 'cancelled_pending_refund')->count(),
                 'rating' => $ratingValue,

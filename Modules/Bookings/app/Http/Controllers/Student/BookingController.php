@@ -32,7 +32,7 @@ class BookingController extends Controller
     public function index(Request $request): View
     {
         $bookings = Booking::query()
-            ->with(['mentor.user:id,name,avatar_url', 'mentor.services', 'service', 'officeHourSession.currentService', 'officeHourSession.schedule.mentor.services'])
+            ->with(['mentor.user:id,name,email,avatar_url', 'mentor.universityProgram:id,program_name', 'mentor.services', 'service', 'officeHourSession.currentService', 'officeHourSession.schedule.mentor.services'])
             ->where('student_id', Auth::id())
             ->orderByDesc('session_at')
             ->paginate((int) $request->integer('per_page', 20));
@@ -106,12 +106,12 @@ class BookingController extends Controller
     public function show(int $id): View
     {
         $booking = Booking::query()
-            ->with(['mentor.user', 'mentor.services', 'service', 'student', 'officeHourSession.currentService', 'officeHourSession.schedule.mentor.services'])
+            ->with(['mentor.user', 'mentor.universityProgram:id,program_name', 'mentor.services', 'service', 'student', 'officeHourSession.currentService', 'officeHourSession.schedule.mentor.services'])
             ->findOrFail($id);
         Gate::authorize('view', $booking);
 
         $bookings = Booking::query()
-            ->with(['mentor.user:id,name,avatar_url', 'mentor.services', 'service', 'officeHourSession.currentService', 'officeHourSession.schedule.mentor.services'])
+            ->with(['mentor.user:id,name,email,avatar_url', 'mentor.universityProgram:id,program_name', 'mentor.services', 'service', 'officeHourSession.currentService', 'officeHourSession.schedule.mentor.services'])
             ->where('student_id', Auth::id())
             ->orderByDesc('session_at')
             ->paginate(20);
@@ -222,7 +222,8 @@ class BookingController extends Controller
             'mentorName' => $mentorName,
             'mentorDisplay' => trim(implode(' • ', array_filter([$mentorName, $mentorMeta]))),
             'mentorEmail' => $booking->mentor?->user?->email,
-            'mentorProgram' => $this->programLabel($booking->mentor?->program_type),
+            'mentorProgram' => $booking->mentor?->universityProgram?->program_name
+                ?: $this->programLabel($booking->mentor?->program_type),
             'mentorType' => $this->mentorTypeLabel($booking->mentor?->mentor_type),
             'mentorSchool' => $booking->mentor?->grad_school_display,
             'mentorTitle' => $booking->mentor?->title,

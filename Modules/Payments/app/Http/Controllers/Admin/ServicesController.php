@@ -35,7 +35,7 @@ class ServicesController extends Controller
     {
         $data = $request->validated();
         $sessionTypes = collect($data['available_session_types'] ?? []);
-        $notes = (string) ($data['notes'] ?? '');
+        $notes = $data['notes'] ?? null;
 
         $service = ServiceConfig::create([
             'service_name' => $data['service_name'],
@@ -101,11 +101,11 @@ class ServicesController extends Controller
             'office_hours_subscription_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'office_hours_mentor_payout_per_attendee' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
-            'notes' => ['required', 'string', 'max:1000'],
+            'notes' => ['nullable', 'string', 'max:1000'],
             'manual_section' => ['nullable', 'string'],
         ]);
 
-        $notes = (string) $data['notes'];
+        $notes = $data['notes'] ?? null;
         unset($data['service_id'], $data['notes'], $data['manual_section']);
 
         $this->validateSplitRequest($request, $service);
@@ -217,6 +217,14 @@ class ServicesController extends Controller
                 continue;
             }
 
+            $submittedValues = collect($fields)
+                ->filter(fn (string $field): bool => $request->has($field))
+                ->map(fn (string $field): mixed => $request->input($field));
+
+            if ($submittedValues->isNotEmpty() && $submittedValues->every(fn (mixed $value): bool => $value === null || $value === '')) {
+                continue;
+            }
+
             $price = $request->has($priceField) ? $request->input($priceField) : $service->{$priceField};
             $platform = $request->has($platformField) ? $request->input($platformField) : $service->{$platformField};
             $mentor = $request->has($mentorField) ? $request->input($mentorField) : $service->{$mentorField};
@@ -245,9 +253,6 @@ class ServicesController extends Controller
         return redirect()
             ->route('admin.manual-actions')
             ->with('manual_section', $section)
-            ->with('manual_status', [
-                'type' => 'success',
-                'message' => $message,
-            ]);
+            ->with('success', $message);
     }
 }

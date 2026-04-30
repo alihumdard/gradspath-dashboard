@@ -29,7 +29,7 @@ Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () 
     Route::post('/student/bookings/{id}/chat', [BookingChatController::class, 'store'])->middleware('booking.participant')->name('student.bookings.chat.store');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->group(function () {
     Route::get('/mentor/bookings/availability/months', [BookingAvailabilityController::class, 'months'])->name('mentor.bookings.availability.months');
     Route::get('/mentor/bookings/availability/days', [BookingAvailabilityController::class, 'days'])->name('mentor.bookings.availability.days');
     Route::get('/mentor/bookings/availability/times', [BookingAvailabilityController::class, 'times'])->name('mentor.bookings.availability.times');

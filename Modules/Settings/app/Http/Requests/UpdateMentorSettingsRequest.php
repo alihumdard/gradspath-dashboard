@@ -49,8 +49,6 @@ class UpdateMentorSettingsRequest extends FormRequest
             'grad_school_display' => ['nullable', 'string', 'max:255'],
             'bio' => ['nullable', 'string', 'max:1000'],
             'description' => ['nullable', 'string', 'max:5000'],
-            'office_hours_schedule' => ['nullable', 'string', 'max:255'],
-            'is_featured' => ['nullable', 'boolean'],
             'edu_email' => [
                 'nullable',
                 'email',
@@ -64,11 +62,6 @@ class UpdateMentorSettingsRequest extends FormRequest
             ],
             'calendly_link' => ['nullable', 'url:http,https', 'max:255'],
             'timezone' => ['nullable', Rule::in(TimezoneOptions::values())],
-            'service_config_ids' => ['nullable', 'array'],
-            'service_config_ids.*' => [
-                'integer',
-                Rule::exists('services_config', 'id')->where(fn($query) => $query->where('is_active', true)),
-            ],
         ];
     }
 }

@@ -77,7 +77,13 @@ class MentorDiscoveryService
         $weekEnd = now()->endOfWeek()->utc();
 
         return Mentor::query()
-            ->with(['user:id,name,avatar_url', 'university:id,name,display_name', 'rating', 'services'])
+            ->with([
+                'user:id,name,avatar_url',
+                'university:id,name,display_name',
+                'rating',
+                'services',
+                'latestVisibleFeedback:feedback.id,feedback.mentor_id,feedback.comment,feedback.created_at',
+            ])
             ->withCount([
                 'bookings as current_week_bookings_count' => fn ($query) => $query
                     ->whereBetween('session_at', [$weekStart, $weekEnd])
@@ -117,7 +123,8 @@ class MentorDiscoveryService
             'services' => $services->isNotEmpty()
                 ? $services->take(6)->all()
                 : ['Office Hours', 'Program Insights', 'Application Review'],
-            'review' => $mentor->rating?->top_tag
+            'review' => $mentor->latestVisibleFeedback?->comment
+                ?: $mentor->rating?->top_tag
                 ?: 'Students value this mentor for practical, focused guidance.',
             'canBook' => $canBook,
             'bookingUrl' => $canBook ? route("{$portal}.mentor.book", $mentor->id) : null,

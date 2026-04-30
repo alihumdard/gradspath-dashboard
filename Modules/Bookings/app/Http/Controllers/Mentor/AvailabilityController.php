@@ -63,17 +63,38 @@ class AvailabilityController extends Controller
             'office_hours.start_time' => ['nullable', 'date_format:H:i'],
             'office_hours.timezone' => ['nullable', 'string', 'max:80', Rule::in(TimezoneOptions::values())],
             'office_hours.frequency' => ['nullable', 'in:weekly'],
+            'service_config_ids_present' => ['nullable', 'boolean'],
+            'service_config_ids' => ['nullable', 'array'],
+            'service_config_ids.*' => [
+                'integer',
+                Rule::exists('services_config', 'id')->where(fn ($query) => $query->where('is_active', true)),
+            ],
         ];
 
         $validator = Validator::make($request->all(), $rules);
 
-        $mentorServiceIds = $mentor->services()
+        $shouldSyncServices = $request->boolean('service_config_ids_present');
+        $submittedServiceIds = collect((array) $request->input('service_config_ids', []))
+            ->map(fn (mixed $id) => (int) $id)
+            ->unique()
+            ->values();
+        $activeSubmittedServiceIds = ServiceConfig::query()
+            ->whereIn('id', $submittedServiceIds)
+            ->where('is_active', true)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        $activeMentorServiceQuery = $shouldSyncServices
+            ? ServiceConfig::query()->whereIn('id', $activeSubmittedServiceIds)
+            : $mentor->services()->where('services_config.is_active', true);
+
+        $mentorServiceIds = (clone $activeMentorServiceQuery)
             ->where('services_config.is_active', true)
             ->where('services_config.is_office_hours', false)
             ->pluck('services_config.id')
             ->map(fn ($id) => (int) $id)
             ->all();
-        $mentorServiceDurations = $mentor->services()
+        $mentorServiceDurations = (clone $activeMentorServiceQuery)
             ->where('services_config.is_active', true)
             ->where('services_config.is_office_hours', false)
             ->pluck('services_config.duration_minutes', 'services_config.id')
@@ -318,6 +339,33 @@ class AvailabilityController extends Controller
 
         $data = $validator->validated();
 
+        if ($shouldSyncServices) {
+            $serviceIds = collect($data['service_config_ids'] ?? [])
+                ->map(fn (mixed $id) => (int) $id)
+                ->unique()
+                ->values();
+
+            $mentor->services()->sync(
+                $serviceIds->mapWithKeys(fn (int $id, int $index) => [
+                    $id => ['sort_order' => $index],
+                ])->all()
+            );
+
+            $officeHoursEnabled = ServiceConfig::query()
+                ->whereIn('id', $serviceIds)
+                ->where('is_active', true)
+                ->where('is_office_hours', true)
+                ->exists();
+
+            if (! $officeHoursEnabled) {
+                $mentor->officeHourSchedules()
+                    ->where('is_active', true)
+                    ->update(['is_active' => false]);
+            }
+
+            $mentor->load('services');
+        }
+
         $this->availability->updateWeeklyAvailability($mentor, $data);
         $this->availability->saveOfficeHours($mentor, (array) ($data['office_hours'] ?? []));
 
@@ -345,6 +393,15 @@ class AvailabilityController extends Controller
         $formData = $this->availability->formData($mentor, $preferredTimezone);
         $insights = $this->availability->insights($mentor);
         $timezoneOptions = TimezoneOptions::all();
+        $services = ServiceConfig::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('service_name')
+            ->get();
+        $selectedServiceIds = $mentor->services()
+            ->pluck('services_config.id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
         $serviceOptions = $mentor->services()
             ->where('services_config.is_active', true)
             ->where('services_config.is_office_hours', false)
@@ -375,6 +432,8 @@ class AvailabilityController extends Controller
             'schedulerPayload' => $schedulerPayload,
             'officeHoursConfig' => $officeHoursConfig,
             'officeHoursPreview' => $officeHoursPreview,
+            'services' => $services,
+            'selectedServiceIds' => $selectedServiceIds,
         ];
     }
 }

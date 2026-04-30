@@ -14,8 +14,12 @@ const activeFilters = document.getElementById("activeFilters");
 const emptyState = document.getElementById("emptyState");
 const tabPills = document.querySelectorAll("#tabPills .filter-pill");
 const programPillsContainer = document.getElementById("programPills");
+const initialParams = new URLSearchParams(window.location.search);
 
-let activeTab = "graduates";
+let activeTab =
+  initialParams.get("mentor_type") === "professional"
+    ? "professionals"
+    : "graduates";
 let activeProgram = "all";
 let mentorSearchTerm = "";
 let schoolSearchTerm = "";
@@ -269,6 +273,8 @@ if (sidebarOverlay) {
 }
 
 tabPills.forEach((pill) => {
+  pill.classList.toggle("active", pill.dataset.tab === activeTab);
+
   pill.addEventListener("click", () => {
     tabPills.forEach((p) => p.classList.remove("active"));
     pill.classList.add("active");

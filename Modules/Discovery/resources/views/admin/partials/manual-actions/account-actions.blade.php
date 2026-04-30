@@ -16,7 +16,7 @@
   <div class="manual-panel" id="manual-section-mentor" data-section-panel="mentor">
     <div class="manual-panel__copy">
       <h4>Amend mentor account</h4>
-      <p>Update the mentor status and capture why the change was made.</p>
+      <p>Update the mentor status from the current backend state.</p>
     </div>
 
     <div class="manual-panel__grid">
@@ -46,14 +46,6 @@
             @endforeach
           </select>
           @error('status')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-
-        <label class="manual-field manual-field--full">
-          <span>Admin note</span>
-          <textarea name="notes" rows="4" placeholder="Why is this mentor status changing?" required>{{ old('notes') }}</textarea>
-          @error('notes')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror
         </label>
@@ -100,16 +92,9 @@
           @enderror
         </label>
 
-        <label class="manual-field manual-field--full">
-          <span>Admin note</span>
-          <textarea name="notes" rows="4" placeholder="Explain the reason for this credit adjustment." required>{{ old('notes') }}</textarea>
-          @error('notes')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-          @error('manual')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
+        @error('manual')
+          <small class="manual-field__error manual-field--full">{{ $message }}</small>
+        @enderror
 
         <button class="primary-btn manual-submit-btn" type="submit">Apply credit change</button>
       </form>

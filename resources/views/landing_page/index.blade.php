@@ -3857,10 +3857,17 @@
         const signupForm = document.getElementById("signup-form");
         const roleInput = document.getElementById("signup-role-input");
         const levelInput = document.getElementById("signup-program-level-input");
+        const mentorTypeInput = document.getElementById("signup-mentor-type-input");
+        const typeLabel = document.getElementById("signup-type-label");
+        const typeOptions = document.getElementById("signup-type-options");
         const roleMap = { Student: "student", Mentor: "mentor" };
         const levelMap = {
           Undergrad: "undergrad",
           Grad: "grad",
+          Professional: "professional",
+        };
+        const mentorTypeMap = {
+          Grad: "graduate",
           Professional: "professional",
         };
 
@@ -3880,15 +3887,69 @@
           return activeButton?.getAttribute("data-value") || null;
         }
 
+        function findVisibleActiveLevel() {
+          const visibleActiveButton = visibleLevelButtons().find(function (btn) {
+            return btn.classList.contains("border-[#6D28D9]");
+          });
+
+          return visibleActiveButton?.getAttribute("data-value") || null;
+        }
+
+        function visibleLevelButtons() {
+          return Array.from(document.querySelectorAll(".signup-level")).filter(function (btn) {
+            return !btn.classList.contains("hidden");
+          });
+        }
+
+        function activeRoleValue() {
+          const activeRole = findActiveValue(".signup-role") || "Student";
+          return roleMap[activeRole] || "student";
+        }
+
+        function applyRoleTypeVisibility(roleValue) {
+          const isMentor = roleValue === "mentor";
+
+          if (typeLabel) {
+            typeLabel.textContent = isMentor ? "Mentor type" : "Student level";
+          }
+
+          if (typeOptions) {
+            typeOptions.classList.toggle("grid-cols-1", !isMentor);
+            typeOptions.classList.toggle("grid-cols-2", isMentor);
+          }
+
+          document.querySelectorAll(".signup-level").forEach(function (btn) {
+            const scope = btn.getAttribute("data-role-scope");
+            const shouldShow = isMentor ? scope === "mentor" : scope === "student";
+            btn.classList.toggle("hidden", !shouldShow);
+          });
+
+          const visibleButtons = visibleLevelButtons();
+          const activeButton = visibleButtons.find(function (btn) {
+            return btn.classList.contains("border-[#6D28D9]");
+          });
+
+          if (!activeButton && visibleButtons[0]) {
+            syncSelected(".signup-level", visibleButtons[0].getAttribute("data-value"));
+          }
+        }
+
         function syncHiddenInputs() {
+          const roleValue = activeRoleValue();
+
           if (roleInput) {
-            const activeRole = findActiveValue(".signup-role") || "Student";
-            roleInput.value = roleMap[activeRole] || "student";
+            roleInput.value = roleValue;
           }
 
           if (levelInput) {
-            const activeLevel = findActiveValue(".signup-level") || "Undergrad";
-            levelInput.value = levelMap[activeLevel] || "undergrad";
+            levelInput.value = roleValue === "student" ? "undergrad" : "";
+          }
+
+          if (mentorTypeInput) {
+            const activeLevel = findVisibleActiveLevel() || "Grad";
+            mentorTypeInput.value = roleValue === "mentor"
+              ? (mentorTypeMap[activeLevel] || "graduate")
+              : "";
           }
         }
 
@@ -3897,40 +3958,49 @@
             if (roleInput) {
               roleInput.value = roleMap[btn.getAttribute("data-value")] || "student";
             }
+            applyRoleTypeVisibility(roleInput?.value || "student");
+            syncHiddenInputs();
           });
         });
 
         document.querySelectorAll(".signup-level").forEach(function (btn) {
           btn.addEventListener("click", function () {
-            if (levelInput) {
-              levelInput.value = levelMap[btn.getAttribute("data-value")] || "undergrad";
-            }
+            syncHiddenInputs();
           });
         });
 
         const oldRole = @json(old('role'));
-        const oldLevel = @json(old('program_level'));
+        const oldMentorType = @json(old('mentor_type'));
         const savedRole = window.localStorage?.getItem("gradspaths_signup_role");
         const savedLevel = window.localStorage?.getItem("gradspaths_signup_level");
         const initialRole = oldRole || roleMap[savedRole] || "student";
-        const initialLevel = oldLevel || levelMap[savedLevel] || "undergrad";
+        const initialLevel = initialRole === "mentor"
+          ? (oldMentorType === "professional" ? "professional" : mentorTypeMap[savedLevel] || "graduate")
+          : "undergrad";
         const activeRoleLabel = Object.keys(roleMap).find(function (label) {
           return roleMap[label] === initialRole;
         }) || "Student";
-        const activeLevelLabel = Object.keys(levelMap).find(function (label) {
-          return levelMap[label] === initialLevel;
-        }) || "Undergrad";
+        const activeLevelLabel = initialRole === "mentor"
+          ? (Object.keys(mentorTypeMap).find(function (label) {
+              return mentorTypeMap[label] === initialLevel;
+            }) || "Grad")
+          : "Undergrad";
 
         if (roleInput) {
           roleInput.value = initialRole;
         }
 
         if (levelInput) {
-          levelInput.value = initialLevel;
+          levelInput.value = initialRole === "student" ? "undergrad" : "";
+        }
+
+        if (mentorTypeInput) {
+          mentorTypeInput.value = initialRole === "mentor" ? initialLevel : "";
         }
 
         syncSelected(".signup-role", activeRoleLabel);
         syncSelected(".signup-level", activeLevelLabel);
+        applyRoleTypeVisibility(initialRole);
         syncHiddenInputs();
 
         signupForm?.addEventListener("submit", function () {

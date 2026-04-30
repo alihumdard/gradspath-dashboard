@@ -47,10 +47,7 @@ class AuthService
             }
 
             if ($role === 'mentor') {
-                $mentorType = match ($data['program_level'] ?? null) {
-                    'undergrad', 'grad' => 'graduate',
-                    default => 'professional',
-                };
+                $mentorType = $this->resolveMentorType($data);
 
                 $user->mentor()->firstOrCreate(
                     [],
@@ -66,6 +63,15 @@ class AuthService
 
             return $user;
         });
+    }
+
+    private function resolveMentorType(array $data): string
+    {
+        if (in_array(($data['mentor_type'] ?? null), ['graduate', 'professional'], true)) {
+            return $data['mentor_type'];
+        }
+
+        return ($data['program_level'] ?? null) === 'professional' ? 'professional' : 'graduate';
     }
 
     private function resolveRegistrationRole(?string $role): string

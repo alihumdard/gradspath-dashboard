@@ -2320,6 +2320,15 @@ function initializeManualActionsHub() {
     const userSummary = document.getElementById("manualUserSummary");
     const pricingSelect = document.getElementById("manualPricingServiceSelect");
     const pricingSummary = document.getElementById("manualPricingSummary");
+    const pricingForm = pricingSelect?.closest("form");
+    const pricingOfficeHoursFields = pricingForm
+        ? Array.from(
+              pricingForm.querySelectorAll("[data-pricing-office-hours-field]"),
+          )
+        : [];
+    const pricingSessionFields = pricingForm
+        ? Array.from(pricingForm.querySelectorAll("[data-pricing-session-field]"))
+        : [];
     const feedbackSelect = document.getElementById("manualFeedbackSelect");
     const feedbackSummary = document.getElementById("manualFeedbackSummary");
 
@@ -2368,25 +2377,106 @@ function initializeManualActionsHub() {
             return;
         }
 
-        renderSummary(pricingSummary, [
-            { label: "Service", value: service.name },
-            {
-                label: "1 on 1",
-                value: `${money(service.price_1on1)} | Admin ${money(service.platform_fee_1on1)} | Mentor ${money(service.mentor_payout_1on1)}`,
-            },
-            {
-                label: "1 on 3",
-                value: `${money(service.price_1on3_total)} | Admin ${money(service.platform_fee_1on3)} | Mentor ${money(service.mentor_payout_1on3)}`,
-            },
-            {
-                label: "1 on 5",
-                value: `${money(service.price_1on5_total)} | Admin ${money(service.platform_fee_1on5)} | Mentor ${money(service.mentor_payout_1on5)}`,
-            },
-            {
+        const summaryItems = [{ label: "Service", value: service.name }];
+
+        if (shouldShowSessionPricing(service)) {
+            summaryItems.push(
+                {
+                    label: "1 on 1",
+                    value: `${money(service.price_1on1)} | Admin ${money(service.platform_fee_1on1)} | Mentor ${money(service.mentor_payout_1on1)}`,
+                },
+                {
+                    label: "1 on 3",
+                    value: `${money(service.price_1on3_total)} | Admin ${money(service.platform_fee_1on3)} | Mentor ${money(service.mentor_payout_1on3)}`,
+                },
+                {
+                    label: "1 on 5",
+                    value: `${money(service.price_1on5_total)} | Admin ${money(service.platform_fee_1on5)} | Mentor ${money(service.mentor_payout_1on5)}`,
+                },
+            );
+        }
+
+        if (service.is_office_hours) {
+            summaryItems.push({
                 label: "Office hours",
                 value: `${money(service.office_hours_subscription_price)} | Mentor ${money(service.office_hours_mentor_payout_per_attendee)} / attendee`,
-            },
-        ]);
+            });
+        }
+
+        renderSummary(pricingSummary, summaryItems);
+
+        fillPricingForm(service);
+        syncPricingSessionFields(service);
+        syncPricingOfficeHoursFields(service);
+    }
+
+    function fillPricingForm(service) {
+        if (!pricingForm) {
+            return;
+        }
+
+        [
+            "price_1on1",
+            "platform_fee_1on1",
+            "mentor_payout_1on1",
+            "price_1on3_total",
+            "platform_fee_1on3",
+            "mentor_payout_1on3",
+            "price_1on5_total",
+            "platform_fee_1on5",
+            "mentor_payout_1on5",
+            "office_hours_subscription_price",
+            "office_hours_mentor_payout_per_attendee",
+        ].forEach((field) => {
+            const input = pricingForm.querySelector(`[name="${field}"]`);
+
+            if (!input) {
+                return;
+            }
+
+            const value = service[field];
+            input.value = value === null || value === undefined ? "" : value;
+        });
+    }
+
+    function syncPricingOfficeHoursFields(service) {
+        const isOfficeHours = Boolean(service?.is_office_hours);
+
+        pricingOfficeHoursFields.forEach((field) => {
+            field.classList.toggle("hidden", !isOfficeHours);
+            field.querySelectorAll("input, select, textarea").forEach((input) => {
+                input.disabled = !isOfficeHours;
+            });
+        });
+    }
+
+    function syncPricingSessionFields(service) {
+        const showSessionPricing = shouldShowSessionPricing(service);
+
+        pricingSessionFields.forEach((field) => {
+            field.classList.toggle("hidden", !showSessionPricing);
+            field.querySelectorAll("input, select, textarea").forEach((input) => {
+                input.disabled = !showSessionPricing;
+            });
+        });
+    }
+
+    function shouldShowSessionPricing(service) {
+        if (!service?.is_office_hours) {
+            return true;
+        }
+
+        return [
+            "price_1on1",
+            "platform_fee_1on1",
+            "mentor_payout_1on1",
+            "price_1on3_total",
+            "platform_fee_1on3",
+            "mentor_payout_1on3",
+            "price_1on5_total",
+            "platform_fee_1on5",
+            "mentor_payout_1on5",
+        ].some((field) => service[field] !== null && service[field] !== undefined && service[field] !== "");
     }
 
     function syncFeedbackSummary() {

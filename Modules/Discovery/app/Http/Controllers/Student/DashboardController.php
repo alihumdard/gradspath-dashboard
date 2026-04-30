@@ -25,7 +25,7 @@ class DashboardController extends Controller
             'featuredMentors' => $this->discovery->featured(),
             'creditBalance' => $user ? $this->credits->getBalance($user) : 0,
             'institutions' => University::query()
-                ->where('is_active', true)
+                ->activeWithPrograms()
                 ->orderByRaw('COALESCE(display_name, name)')
                 ->limit(6)
                 ->get(['id', 'name', 'display_name']),

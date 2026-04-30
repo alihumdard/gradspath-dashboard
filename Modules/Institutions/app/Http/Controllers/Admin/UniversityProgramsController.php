@@ -72,7 +72,7 @@ class UniversityProgramsController extends Controller
     public function store(StoreUniversityProgramRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $notes = (string) ($data['notes'] ?? '');
+        $notes = $data['notes'] ?? null;
         unset($data['manual_station'], $data['manual_section'], $data['notes']);
         $data['is_active'] = $request->boolean('is_active');
 
@@ -97,7 +97,7 @@ class UniversityProgramsController extends Controller
         $before = $program->toArray();
 
         $data = $request->validated();
-        $notes = (string) ($data['notes'] ?? '');
+        $notes = $data['notes'] ?? null;
         unset($data['manual_station'], $data['manual_section'], $data['notes']);
 
         if ($request->has('is_active')) {
@@ -133,9 +133,6 @@ class UniversityProgramsController extends Controller
         return redirect()
             ->route('admin.manual-actions')
             ->with('manual_section', $section)
-            ->with('manual_status', [
-                'type' => 'success',
-                'message' => $message,
-            ]);
+            ->with('success', $message);
     }
 }

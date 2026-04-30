@@ -423,6 +423,8 @@ body {
 }
 
 .support-wrapper {
+  display: grid;
+  gap: 24px;
   max-width: 680px;
   margin: 0 auto 30px;
   padding: 0 6px;

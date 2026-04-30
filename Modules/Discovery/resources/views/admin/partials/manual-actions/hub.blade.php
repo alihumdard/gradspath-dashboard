@@ -1,6 +1,5 @@
 @php
   $manualSection = old('manual_section', session('manual_section', 'mentor'));
-  $manualStatus = session('manual_status');
   $manualData = $adminManualActionsData ?? app(\Modules\Discovery\app\Services\AdminManualActionsService::class)->build();
   $manualSummary = $manualData['summary'] ?? [];
 @endphp
@@ -12,7 +11,7 @@
     <div>
       <p class="manual-hub__eyebrow">Admin Operations</p>
       <h2 class="manual-hub__title">Manual Actions Hub</h2>
-      <p class="manual-hub__subtitle">Run controlled admin actions with one shared workflow: review the current record, add an admin note, submit the change, and keep the audit trail intact.</p>
+      <p class="manual-hub__subtitle">Run controlled admin actions with one shared workflow: review the current record, submit the change, and keep the audit trail intact.</p>
     </div>
 
     <div class="manual-hub__stats" aria-label="Manual action summary">
@@ -34,12 +33,6 @@
       </div>
     </div>
   </div>
-
-  @if ($manualStatus)
-    <div class="manual-alert manual-alert--{{ $manualStatus['type'] ?? 'success' }}">
-      {{ $manualStatus['message'] ?? '' }}
-    </div>
-  @endif
 
   <div class="manual-hub__nav">
     <button class="manual-nav-btn" type="button" data-section-target="mentor">Mentor</button>

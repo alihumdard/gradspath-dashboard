@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <a href="{{ url('/') }}" class="back-link">
+    <a href="{{ route('public.home') }}" class="back-link">
       <span class="back-link-arrow">&larr;</span>
       <span>Back to the Website</span>
     </a>
