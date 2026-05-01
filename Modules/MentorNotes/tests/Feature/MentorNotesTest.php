@@ -106,6 +106,7 @@ it('loads the mentor notes form for a hosted booking and saves the note', functi
     $service = createService();
     $booking = createBookingForMentor($mentor, $student, $service, [
         'session_at' => now()->subHours(3)->utc()->toDateTimeString(),
+        'actual_ended_at' => now()->subHours(2)->utc()->toDateTimeString(),
     ]);
 
     $this->actingAs($mentorUser)
@@ -142,6 +143,7 @@ it('updates the existing mentor note instead of creating a duplicate for the sam
     $service = createService('Interview Prep', 'interview_prep');
     $booking = createBookingForMentor($mentor, $student, $service, [
         'session_at' => now()->subHours(3)->utc()->toDateTimeString(),
+        'actual_ended_at' => now()->subHours(2)->utc()->toDateTimeString(),
     ]);
 
     MentorNote::query()->create([
@@ -184,6 +186,7 @@ it('forbids mentors from creating or editing notes for bookings they do not host
     $service = createService();
     $booking = createBookingForMentor($hostMentor, $student, $service, [
         'session_at' => now()->subHours(3)->utc()->toDateTimeString(),
+        'actual_ended_at' => now()->subHours(2)->utc()->toDateTimeString(),
     ]);
 
     $this->actingAs($viewerUser)
@@ -229,6 +232,39 @@ it('blocks mentors from opening or saving notes before the specific booking is c
         ])
         ->assertRedirect(route('mentor.bookings.show', $booking->id))
         ->assertSessionHas('error');
+
+    $this->assertDatabaseMissing('mentor_notes', [
+        'mentor_id' => $mentor->id,
+        'booking_id' => $booking->id,
+    ]);
+});
+
+it('keeps mentor notes locked after the scheduled booking end until the meeting actually ends', function () {
+    [$mentorUser, $mentor] = createMentorUser('notes-awaiting-meeting-end');
+    $student = createStudentUser('notes-awaiting-meeting-end-student');
+    $service = createService();
+    $booking = createBookingForMentor($mentor, $student, $service, [
+        'session_at' => now()->subHours(3)->utc()->toDateTimeString(),
+        'actual_ended_at' => null,
+        'completed_at' => now()->subHours(2)->utc()->toDateTimeString(),
+        'status' => 'completed',
+    ]);
+
+    $this->actingAs($mentorUser)
+        ->get(route('mentor.notes.bookings.edit', $booking->id))
+        ->assertRedirect(route('mentor.bookings.show', $booking->id))
+        ->assertSessionHas('error', 'Mentor notes will be available once the meeting end time is available.');
+
+    $this->actingAs($mentorUser)
+        ->post(route('mentor.notes.bookings.store', $booking->id), [
+            'worked_on' => 'Should stay locked.',
+            'next_steps' => 'Should stay locked.',
+            'session_result' => 'Should stay locked.',
+            'strengths_challenges' => 'Should stay locked.',
+            'other_notes' => 'Should stay locked.',
+        ])
+        ->assertRedirect(route('mentor.bookings.show', $booking->id))
+        ->assertSessionHas('error', 'Mentor notes will be available once the meeting end time is available.');
 
     $this->assertDatabaseMissing('mentor_notes', [
         'mentor_id' => $mentor->id,

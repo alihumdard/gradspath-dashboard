@@ -142,24 +142,24 @@ class Booking extends Model
 
     public function mentorNotesAllowed(): bool
     {
-        $scheduledEnd = $this->scheduledEndAt();
+        $meetingEndedAt = $this->mentorNotesAvailableAt();
 
-        if (! $scheduledEnd) {
+        if (! $meetingEndedAt) {
             return false;
         }
 
-        return now()->utc()->greaterThanOrEqualTo($scheduledEnd);
+        return now()->utc()->greaterThanOrEqualTo($meetingEndedAt->copy()->utc());
     }
 
     public function mentorNotesAvailableAt(?string $timezone = null): ?Carbon
     {
-        $scheduledEnd = $this->scheduledEndAt();
+        $meetingEndedAt = $this->actualMeetingEndedAt();
 
-        if (! $scheduledEnd) {
+        if (! $meetingEndedAt) {
             return null;
         }
 
-        return $scheduledEnd->copy()->setTimezone($timezone ?: ($this->session_timezone ?: config('app.timezone', 'UTC')));
+        return $meetingEndedAt->copy()->setTimezone($timezone ?: ($this->session_timezone ?: config('app.timezone', 'UTC')));
     }
 
     public function mentorNotesMessage(?string $timezone = null): string
@@ -167,18 +167,42 @@ class Booking extends Model
         $availableAt = $this->mentorNotesAvailableAt($timezone);
 
         if (! $availableAt) {
-            return 'Mentor notes will be available once the booking completion time is available.';
+            return 'Mentor notes will be available once the meeting end time is available.';
         }
 
         if ($this->mentorNotesAllowed()) {
-            return 'Mentor notes are available for this completed booking.';
+            return 'Mentor notes are available because the meeting has ended.';
         }
 
         return sprintf(
-            'Mentor notes will be enabled after this booking ends at %s on %s.',
+            'Mentor notes will be enabled after the meeting ends at %s on %s.',
             $availableAt->format('g:i A'),
             $availableAt->format('F j, Y')
         );
+    }
+
+    public function actualMeetingEndedAt(): ?Carbon
+    {
+        if ($this->actual_ended_at) {
+            return $this->actual_ended_at->copy();
+        }
+
+        $latestEndedAt = $this->relationLoaded('meetingEvents')
+            ? $this->meetingEvents
+                ->pluck('meeting_ended_at')
+                ->filter()
+                ->sort()
+                ->last()
+            : $this->meetingEvents()
+                ->whereNotNull('meeting_ended_at')
+                ->orderByDesc('meeting_ended_at')
+                ->value('meeting_ended_at');
+
+        if ($latestEndedAt instanceof Carbon) {
+            return $latestEndedAt->copy();
+        }
+
+        return $latestEndedAt ? Carbon::parse($latestEndedAt, 'UTC') : null;
     }
 
     public function feedbackUnlocked(): bool
