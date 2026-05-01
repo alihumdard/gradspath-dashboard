@@ -18,7 +18,8 @@ class AdminManualActionsService
 
         $institutions = University::query()
             ->withCount('programs')
-            ->orderByRaw('COALESCE(display_name, name)')
+            ->latest('created_at')
+            ->latest('id')
             ->limit(20)
             ->get([
                 'id',

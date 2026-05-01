@@ -84,7 +84,7 @@
       </form>
 
       <aside class="manual-summary manual-summary--list">
-        <h5>Current institutions</h5>
+        <h5>Latest added institutions</h5>
         <ul>
           @foreach (collect($institutions)->take(6) as $institution)
             <li>
