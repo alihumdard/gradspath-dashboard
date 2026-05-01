@@ -3860,16 +3860,22 @@
         const mentorTypeInput = document.getElementById("signup-mentor-type-input");
         const typeLabel = document.getElementById("signup-type-label");
         const typeOptions = document.getElementById("signup-type-options");
-        const roleMap = { Student: "student", Mentor: "mentor" };
-        const levelMap = {
-          Undergrad: "undergrad",
-          Grad: "grad",
-          Professional: "professional",
-        };
-        const mentorTypeMap = {
-          Grad: "graduate",
-          Professional: "professional",
-        };
+
+        function normalizeRole(value) {
+          return value === "Mentor" ? "mentor" : value === "mentor" ? "mentor" : "student";
+        }
+
+        function normalizeLevel(value) {
+          if (value === "Grad" || value === "grad" || value === "graduate") {
+            return "graduate";
+          }
+
+          if (value === "Professional" || value === "professional") {
+            return "professional";
+          }
+
+          return "undergrad";
+        }
 
         function syncSelected(selector, activeValue) {
           document.querySelectorAll(selector).forEach(function (btn) {
@@ -3879,11 +3885,15 @@
             btn.classList.toggle("border-[#D8B4FE]", !isActive);
             btn.classList.toggle("bg-white", !isActive);
             btn.classList.toggle("hover:border-[#6D28D9]", !isActive);
+            btn.dataset.selected = isActive ? "true" : "false";
           });
         }
 
         function findActiveValue(selector) {
-          const activeButton = document.querySelector(selector + ".border-[#6D28D9]");
+          const activeButton = Array.from(document.querySelectorAll(selector)).find(function (btn) {
+            return btn.dataset.selected === "true";
+          });
+
           return activeButton?.getAttribute("data-value") || null;
         }
 
@@ -3902,8 +3912,7 @@
         }
 
         function activeRoleValue() {
-          const activeRole = findActiveValue(".signup-role") || "Student";
-          return roleMap[activeRole] || "student";
+          return normalizeRole(findActiveValue(".signup-role"));
         }
 
         function applyRoleTypeVisibility(roleValue) {
@@ -3946,18 +3955,20 @@
           }
 
           if (mentorTypeInput) {
-            const activeLevel = findVisibleActiveLevel() || "Grad";
-            mentorTypeInput.value = roleValue === "mentor"
-              ? (mentorTypeMap[activeLevel] || "graduate")
-              : "";
+            const activeLevel = normalizeLevel(findVisibleActiveLevel());
+            mentorTypeInput.value = roleValue === "mentor" ? activeLevel : "";
           }
         }
 
         document.querySelectorAll(".signup-role").forEach(function (btn) {
           btn.addEventListener("click", function () {
+            const selectedRole = normalizeRole(btn.getAttribute("data-value"));
+            syncSelected(".signup-role", selectedRole);
+
             if (roleInput) {
-              roleInput.value = roleMap[btn.getAttribute("data-value")] || "student";
+              roleInput.value = selectedRole;
             }
+
             applyRoleTypeVisibility(roleInput?.value || "student");
             syncHiddenInputs();
           });
@@ -3965,6 +3976,7 @@
 
         document.querySelectorAll(".signup-level").forEach(function (btn) {
           btn.addEventListener("click", function () {
+            syncSelected(".signup-level", normalizeLevel(btn.getAttribute("data-value")));
             syncHiddenInputs();
           });
         });
@@ -3973,18 +3985,10 @@
         const oldMentorType = @json(old('mentor_type'));
         const savedRole = window.localStorage?.getItem("gradspaths_signup_role");
         const savedLevel = window.localStorage?.getItem("gradspaths_signup_level");
-        const initialRole = oldRole || roleMap[savedRole] || "student";
+        const initialRole = normalizeRole(oldRole || savedRole);
         const initialLevel = initialRole === "mentor"
-          ? (oldMentorType === "professional" ? "professional" : mentorTypeMap[savedLevel] || "graduate")
+          ? normalizeLevel(oldMentorType || savedLevel)
           : "undergrad";
-        const activeRoleLabel = Object.keys(roleMap).find(function (label) {
-          return roleMap[label] === initialRole;
-        }) || "Student";
-        const activeLevelLabel = initialRole === "mentor"
-          ? (Object.keys(mentorTypeMap).find(function (label) {
-              return mentorTypeMap[label] === initialLevel;
-            }) || "Grad")
-          : "Undergrad";
 
         if (roleInput) {
           roleInput.value = initialRole;
@@ -3998,8 +4002,8 @@
           mentorTypeInput.value = initialRole === "mentor" ? initialLevel : "";
         }
 
-        syncSelected(".signup-role", activeRoleLabel);
-        syncSelected(".signup-level", activeLevelLabel);
+        syncSelected(".signup-role", initialRole);
+        syncSelected(".signup-level", initialLevel);
         applyRoleTypeVisibility(initialRole);
         syncHiddenInputs();
 

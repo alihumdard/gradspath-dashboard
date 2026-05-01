@@ -63,7 +63,7 @@
           <div id="signup-type-options" class="grid grid-cols-1 gap-3">
             <button
               type="button"
-              data-value="Undergrad"
+              data-value="undergrad"
               data-role-scope="student"
               class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#6D28D9] bg-[#EBE0F8] text-[#6D28D9]"
             >
@@ -71,7 +71,7 @@
             </button>
             <button
               type="button"
-              data-value="Grad"
+              data-value="graduate"
               data-role-scope="mentor"
               class="signup-level hidden flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
             >
@@ -79,7 +79,7 @@
             </button>
             <button
               type="button"
-              data-value="Professional"
+              data-value="professional"
               data-role-scope="mentor"
               class="signup-level hidden flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
             >
@@ -100,14 +100,14 @@
           <div class="grid grid-cols-2 gap-3">
             <button
               type="button"
-              data-value="Student"
+              data-value="student"
               class="signup-role flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold border border-[#6D28D9] bg-[#EBE0F8] text-[#6D28D9]"
             >
               <i class="fa-solid fa-book-open"></i> Student
             </button>
             <button
               type="button"
-              data-value="Mentor"
+              data-value="mentor"
               class="signup-role flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
             >
               <i class="fa-solid fa-building-columns"></i> Mentor

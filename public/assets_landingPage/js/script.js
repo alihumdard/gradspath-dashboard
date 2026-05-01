@@ -251,10 +251,11 @@
         try {
           localStorage.setItem("gradspaths_signup_role", val);
         } catch (e) {}
+      var isMentor = val === "mentor" || val === "Mentor";
       var stepsEl = document.getElementById("signup-steps");
       var subtitleEl = document.getElementById("signup-subtitle");
       if (subtitleEl) {
-        if (val === "Mentor") {
+        if (isMentor) {
           if (stepsEl) {
             stepsEl.classList.remove("hidden");
             stepsEl.setAttribute("aria-hidden", "false");

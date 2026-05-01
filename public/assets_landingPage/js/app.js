@@ -212,8 +212,20 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.removeItem("gradspaths_signup_email");
     localStorage.removeItem("gradspaths_signup_institution");
 
-    const savedLevel = localStorage.getItem("gradspaths_signup_level");
-    const savedRole = localStorage.getItem("gradspaths_signup_role");
+    const savedLevelRaw = localStorage.getItem("gradspaths_signup_level");
+    const savedRoleRaw = localStorage.getItem("gradspaths_signup_role");
+    const savedLevel =
+        savedLevelRaw === "Grad" || savedLevelRaw === "grad"
+            ? "graduate"
+            : savedLevelRaw === "Professional"
+              ? "professional"
+              : savedLevelRaw;
+    const savedRole =
+        savedRoleRaw === "Mentor"
+            ? "mentor"
+            : savedRoleRaw === "Student"
+              ? "student"
+              : savedRoleRaw;
 
     if (savedLevel) {
         const levelBtn = document.querySelector(
