@@ -21,10 +21,10 @@ class SendBookingReminderJob implements ShouldQueue
     public function handle(BookingMeetingPresenter $meetingPresenter): void
     {
         $booking = Booking::query()
-            ->with(['booker', 'mentor.user', 'service', 'participantRecords'])
+            ->with(['booker', 'mentor.user', 'service', 'participantRecords', 'officeHourSession'])
             ->find($this->bookingId);
 
-        if (! $booking || $booking->session_type === 'office_hours' || $booking->status !== 'confirmed') {
+        if (! $booking || $booking->status !== 'confirmed') {
             return;
         }
 
@@ -32,6 +32,7 @@ class SendBookingReminderJob implements ShouldQueue
             'booking_id' => $booking->id,
             'service_name' => $booking->service?->service_name ?? 'Service',
             'session_type_label' => match ($booking->session_type) {
+                'office_hours' => 'Office Hours',
                 '1on3' => '1 on 3',
                 '1on5' => '1 on 5',
                 default => '1 on 1',

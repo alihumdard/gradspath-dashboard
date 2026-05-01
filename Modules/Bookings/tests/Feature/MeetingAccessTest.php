@@ -11,8 +11,11 @@ use Modules\Auth\app\Models\User;
 use Modules\Bookings\app\Jobs\SendBookingConfirmationJob;
 use Modules\Bookings\app\Jobs\SendBookingReminderJob;
 use Modules\Bookings\app\Mail\BookingReminderMail;
+use Modules\Bookings\app\Mail\MentorBookingNotificationMail;
 use Modules\Bookings\app\Mail\StudentBookingConfirmationMail;
 use Modules\Bookings\app\Models\Booking;
+use Modules\OfficeHours\app\Models\OfficeHourSchedule;
+use Modules\OfficeHours\app\Models\OfficeHourSession;
 use Modules\Bookings\app\Services\BookingMeetingPresenter;
 use Modules\Institutions\app\Models\University;
 use Modules\Institutions\app\Models\UniversityProgram;
@@ -146,6 +149,97 @@ function createBookingForTime(
     ]);
 
     return $booking;
+}
+
+function createOfficeHoursBookingContext(string $timezone = 'Asia/Karachi'): array
+{
+    $studentUser = createBookingAccessUser('student');
+    $mentorUser = createBookingAccessUser('mentor');
+
+    $mentor = Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'title' => 'Office Hours Mentor',
+        'program_type' => 'mba',
+        'grad_school_display' => 'Wharton',
+        'status' => 'active',
+    ]);
+
+    $service = ServiceConfig::query()->create([
+        'service_name' => 'Office Hours',
+        'service_slug' => 'office-hours',
+        'duration_minutes' => 45,
+        'is_active' => true,
+        'is_office_hours' => true,
+        'price_1on1' => 0,
+        'credit_cost_1on1' => 1,
+        'credit_cost_1on3' => 1,
+        'credit_cost_1on5' => 1,
+        'sort_order' => 0,
+    ]);
+
+    $sessionAtLocal = Carbon::create(2026, 4, 29, 13, 0, 0, $timezone);
+
+    $schedule = OfficeHourSchedule::query()->create([
+        'mentor_id' => $mentor->id,
+        'current_service_id' => $service->id,
+        'day_of_week' => strtolower($sessionAtLocal->format('D')),
+        'start_time' => $sessionAtLocal->format('H:i:s'),
+        'timezone' => $timezone,
+        'frequency' => 'weekly',
+        'max_spots' => 3,
+        'is_active' => true,
+    ]);
+
+    $officeHourSession = OfficeHourSession::query()->create([
+        'schedule_id' => $schedule->id,
+        'current_service_id' => $service->id,
+        'session_date' => $sessionAtLocal->toDateString(),
+        'start_time' => $sessionAtLocal->format('H:i:s'),
+        'timezone' => $timezone,
+        'current_occupancy' => 1,
+        'max_spots' => 3,
+        'is_full' => false,
+        'service_locked' => false,
+        'meeting_link' => 'https://zoom.us/j/office-hours-shared',
+        'external_calendar_event_id' => 'office-hours-meeting-123',
+        'calendar_provider' => 'zoom',
+        'calendar_sync_status' => 'synced',
+        'status' => 'upcoming',
+    ]);
+
+    $booking = Booking::query()->create([
+        'student_id' => $studentUser->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'office_hour_session_id' => $officeHourSession->id,
+        'session_type' => 'office_hours',
+        'session_at' => $sessionAtLocal,
+        'session_timezone' => $timezone,
+        'duration_minutes' => 45,
+        'meeting_link' => 'https://zoom.us/j/office-hours-shared',
+        'meeting_type' => 'zoom',
+        'external_calendar_event_id' => 'office-hours-meeting-123',
+        'calendar_provider' => 'zoom',
+        'calendar_sync_status' => 'synced',
+        'status' => 'confirmed',
+        'approval_status' => 'not_required',
+        'currency' => 'USD',
+    ]);
+
+    DB::table('booking_participants')->insert([
+        'booking_id' => $booking->id,
+        'user_id' => $studentUser->id,
+        'full_name' => $studentUser->name,
+        'email' => $studentUser->email,
+        'participant_role' => 'student',
+        'is_primary' => true,
+        'invite_status' => 'accepted',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return compact('studentUser', 'mentorUser', 'mentor', 'service', 'schedule', 'officeHourSession', 'booking', 'sessionAtLocal');
 }
 
 it('blocks students from joining before the exact start time even when the meeting link exists', function () {
@@ -375,6 +469,36 @@ it('uses the raw zoom link for email-only guests in booking emails', function ()
         return $mail->hasTo('email-only-guest@example.com')
             && $mail->bookingDetails['meeting_link'] === $booking->meeting_link
             && $mail->bookingDetails['meeting_link_label'] === 'Open Zoom Meeting';
+    });
+});
+
+it('sends office-hours confirmation and reminder emails through the shared notification pipeline', function () {
+    Mail::fake();
+
+    $context = createOfficeHoursBookingContext();
+    $booking = $context['booking'];
+    $presenter = app(BookingMeetingPresenter::class);
+
+    (new SendBookingConfirmationJob($booking->id))->handle($presenter);
+    (new SendBookingReminderJob($booking->id, 24))->handle($presenter);
+
+    Mail::assertSent(MentorBookingNotificationMail::class, function (MentorBookingNotificationMail $mail) use ($booking) {
+        return $mail->bookingDetails['session_type_label'] === 'Office Hours'
+            && $mail->bookingDetails['meeting_link'] === route('mentor.bookings.start-meeting', $booking->id)
+            && $mail->bookingDetails['meeting_link_label'] === 'Start Zoom Meeting';
+    });
+
+    Mail::assertSent(StudentBookingConfirmationMail::class, function (StudentBookingConfirmationMail $mail) use ($booking) {
+        return $mail->bookingDetails['session_type_label'] === 'Office Hours'
+            && $mail->bookingDetails['meeting_link'] === route('student.bookings.join-meeting', $booking->id)
+            && $mail->bookingDetails['meeting_link_label'] === 'Join Zoom Meeting';
+    });
+
+    Mail::assertSent(BookingReminderMail::class, function (BookingReminderMail $mail) use ($booking) {
+        return $mail->recipientRole === 'participant'
+            && $mail->bookingDetails['session_type_label'] === 'Office Hours'
+            && $mail->bookingDetails['meeting_link'] === route('student.bookings.join-meeting', $booking->id)
+            && $mail->bookingDetails['meeting_link_label'] === 'Join Zoom Meeting';
     });
 });
 

@@ -19,14 +19,10 @@ class SendBookingConfirmationJob implements ShouldQueue
     public function handle(BookingMeetingPresenter $meetingPresenter): void
     {
         $booking = Booking::query()
-            ->with(['booker', 'mentor.user', 'service', 'participantRecords'])
+            ->with(['booker', 'mentor.user', 'service', 'participantRecords', 'officeHourSession'])
             ->find($this->bookingId);
 
         if (! $booking) {
-            return;
-        }
-
-        if ($booking->session_type === 'office_hours') {
             return;
         }
 
@@ -108,6 +104,7 @@ class SendBookingConfirmationJob implements ShouldQueue
     private function sessionTypeLabel(?string $sessionType): string
     {
         return match ($sessionType) {
+            'office_hours' => 'Office Hours',
             '1on3' => '1 on 3',
             '1on5' => '1 on 5',
             default => '1 on 1',
