@@ -659,6 +659,15 @@ it('resets password through password broker', function () {
     expect(Hash::check('NewPassword123', $user->password))->toBeTrue();
 });
 
+it('shows the reset-password success toast on the login page', function () {
+    $this->withSession([
+        'success' => 'Password reset successfully. Please sign in.',
+    ])->get(route('login'))
+        ->assertOk()
+        ->assertSee('Password reset successfully. Please sign in.')
+        ->assertSee('appToastViewport');
+});
+
 it('returns broker error when password reset fails', function () {
     Password::shouldReceive('reset')
         ->once()
