@@ -148,9 +148,10 @@ function createBookingForTime(
     return $booking;
 }
 
-it('allows students to join before the exact start time when the meeting link exists', function () {
+it('blocks students from joining before the exact start time even when the meeting link exists', function () {
     $context = createBookingAccessContext();
     $booking = $context['booking'];
+    $startLocal = $context['sessionAtLocal'];
 
     Carbon::setTestNow($context['sessionAtLocal']->copy()->utc()->subSecond());
 
@@ -158,7 +159,12 @@ it('allows students to join before the exact start time when the meeting link ex
         ->actingAs($context['studentUser'])
         ->get(route('student.bookings.join-meeting', $booking->id));
 
-    $response->assertRedirect('https://zoom.us/j/9876543210');
+    $response->assertRedirect(route('student.bookings.show', $booking->id));
+    $response->assertSessionHas('error', sprintf(
+        'Meeting access will be enabled at %s on %s.',
+        $startLocal->format('g:i A'),
+        $startLocal->format('F j, Y')
+    ));
 
     $page = $this
         ->actingAs($context['studentUser'])
@@ -166,7 +172,11 @@ it('allows students to join before the exact start time when the meeting link ex
 
     $page->assertOk();
     $page->assertSee('meetingAccessAllowed', false);
-    $page->assertSee('Meeting access is enabled now.', false);
+    $page->assertSee(sprintf(
+        'Meeting access will be enabled at %s on %s.',
+        $startLocal->format('g:i A'),
+        $startLocal->format('F j, Y')
+    ), false);
 });
 
 it('allows students to join exactly at the start time and after the meeting starts', function () {
@@ -215,20 +225,22 @@ it('unlocks bookings independently based on each booking start time', function (
     Carbon::setTestNow(Carbon::create(2026, 4, 29, 13, 30, 0, 'Asia/Karachi')->utc());
 
     expect($bookingAtOnePm->fresh()->meetingAccessAllowed())->toBeTrue();
-    expect($bookingAtTwoPm->fresh()->meetingAccessAllowed())->toBeTrue();
-    expect($bookingAtTwoPm->fresh()->meetingAccessMessage())->toBe('Meeting access is enabled now.');
+    expect($bookingAtTwoPm->fresh()->meetingAccessAllowed())->toBeFalse();
+    expect($bookingAtTwoPm->fresh()->meetingAccessMessage())->toBe('Meeting access will be enabled at 2:00 PM on April 29, 2026.');
 
     $response = $this
         ->actingAs($context['studentUser'])
         ->get(route('student.bookings.join-meeting', $bookingAtTwoPm->id));
 
-    $response->assertRedirect('https://zoom.us/j/zoom-meeting-2pm');
+    $response->assertRedirect(route('student.bookings.show', $bookingAtTwoPm->id));
+    $response->assertSessionHas('error', 'Meeting access will be enabled at 2:00 PM on April 29, 2026.');
 });
 
-it('allows mentors to start before the scheduled start time when zoom is ready', function () {
+it('blocks mentors from starting before the scheduled start time even when zoom is ready', function () {
     $context = createBookingAccessContext();
     $booking = $context['booking'];
     $startUtc = $context['sessionAtLocal']->copy()->utc();
+    $startLocal = $context['sessionAtLocal'];
 
     config([
         'services.zoom.enabled' => true,
@@ -261,7 +273,12 @@ it('allows mentors to start before the scheduled start time when zoom is ready',
         ->actingAs($context['mentorUser'])
         ->get(route('mentor.bookings.start-meeting', $booking->id));
 
-    $atStart->assertRedirect('https://zoom.us/s/host-start-link');
+    $atStart->assertRedirect(route('mentor.bookings.show', $booking->id));
+    $atStart->assertSessionHas('error', sprintf(
+        'Meeting access will be enabled at %s on %s.',
+        $startLocal->format('g:i A'),
+        $startLocal->format('F j, Y')
+    ));
 });
 
 it('uses the gated student route in confirmation and reminder emails for synced zoom bookings', function () {

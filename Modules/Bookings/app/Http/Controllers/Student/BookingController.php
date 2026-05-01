@@ -131,7 +131,7 @@ class BookingController extends Controller
         if (! $booking->meetingAccessAllowed()) {
             return redirect()
                 ->route('student.bookings.show', $booking->id)
-                ->with('error', $booking->meetingAccessMessage());
+                ->with('status', $booking->meetingAccessMessage());
         }
 
         $meetingLink = $this->meetingLink($booking);

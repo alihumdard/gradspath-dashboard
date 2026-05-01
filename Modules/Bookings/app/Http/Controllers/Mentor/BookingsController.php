@@ -88,7 +88,7 @@ class BookingsController extends Controller
 
             return redirect()
                 ->route('mentor.bookings.show', $booking->id)
-                ->with('error', $booking->meetingAccessMessage());
+                ->with('status', $booking->meetingAccessMessage());
         }
 
         if (! $this->zoom->isConfigured()) {
