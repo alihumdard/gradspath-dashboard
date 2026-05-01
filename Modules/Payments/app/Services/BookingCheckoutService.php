@@ -219,10 +219,14 @@ class BookingCheckoutService
             }
 
             if (! $this->zoom->hasConnectedMentor($mentor)) {
-                throw new \RuntimeException('This mentor must connect Zoom before students can book Zoom meetings.');
+                throw new \RuntimeException("This mentor's Zoom connection is unavailable right now. Please try again later.");
             }
 
-            $this->zoom->assertMentorConnectionIsUsable($mentor);
+            try {
+                $this->zoom->assertMentorConnectionIsUsable($mentor);
+            } catch (\RuntimeException $exception) {
+                throw new \RuntimeException("This mentor's Zoom connection is unavailable right now. Please try again later.", 0, $exception);
+            }
         }
 
         if ($sessionType === 'office_hours') {

@@ -290,7 +290,7 @@ class BookingService
         }
 
         if (! $this->zoom->hasConnectedMentor($mentor)) {
-            throw new BookingException('This mentor must connect Zoom before students can book Zoom meetings.');
+            throw new BookingException("This mentor's Zoom connection is unavailable right now. Please try again later.");
         }
     }
 

@@ -378,11 +378,6 @@ function renderZoomUnavailableState() {
 }
 
 async function loadMonths() {
-  if (!isZoomBookable()) {
-    renderZoomUnavailableState();
-    return;
-  }
-
   const service = getServiceById(state.selectedServiceId);
   if (!service) {
     state.availableMonths = [];
@@ -663,9 +658,7 @@ function renderAvailabilityPanelMode() {
   }
 
   if (availabilityPanelSubtext) {
-    availabilityPanelSubtext.textContent = !isZoomBookable()
-      ? zoomUnavailableMessage()
-      : isOfficeHours
+    availabilityPanelSubtext.textContent = isOfficeHours
       ? "Choose the recurring office-hours date and review the session details below."
       : "Choose an available day and then select a time.";
   }
@@ -831,7 +824,7 @@ function updateContinue() {
 
   const service = getServiceById(state.selectedServiceId);
 
-  if (!service || !isZoomBookable()) {
+  if (!service) {
     continueBtn.disabled = true;
     return;
   }
@@ -1094,11 +1087,7 @@ renderCalendar();
 renderTimes();
 updateSummary();
 updateContinue();
-if (isZoomBookable()) {
-  initializeAvailability();
-} else {
-  renderZoomUnavailableState();
-}
+initializeAvailability();
 
 const menuBtn = document.getElementById("mobileMenuToggle");
 const overlay = document.getElementById("sidebarOverlay");

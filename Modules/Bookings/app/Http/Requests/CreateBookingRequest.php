@@ -151,7 +151,7 @@ class CreateBookingRequest extends FormRequest
                 if (! $zoom->isConfigured()) {
                     $validator->errors()->add('booking', 'Zoom booking is not configured right now.');
                 } elseif (! $mentor || ! $zoom->hasConnectedMentor($mentor)) {
-                    $validator->errors()->add('booking', 'This mentor must connect Zoom before students can book Zoom meetings.');
+                    $validator->errors()->add('booking', "This mentor's Zoom connection is unavailable right now. Please try again later.");
                 }
             }
         });

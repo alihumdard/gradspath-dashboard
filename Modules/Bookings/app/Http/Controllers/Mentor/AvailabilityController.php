@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Modules\Bookings\app\Services\MentorAvailabilityManagerService;
+use Modules\Bookings\app\Services\ZoomService;
 use Modules\OfficeHours\app\Models\OfficeHourSchedule;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
@@ -19,7 +20,10 @@ use Modules\Settings\app\Support\TimezoneOptions;
 
 class AvailabilityController extends Controller
 {
-    public function __construct(private readonly MentorAvailabilityManagerService $availability) {}
+    public function __construct(
+        private readonly MentorAvailabilityManagerService $availability,
+        private readonly ZoomService $zoom,
+    ) {}
 
     public function index(): View
     {
@@ -328,6 +332,20 @@ class AvailabilityController extends Controller
                 }
             }
 
+            if ($this->hasEnabledRegularAvailability($request)) {
+                if (! $this->zoom->isConfigured()) {
+                    $validator->errors()->add('date_slots', 'Zoom booking is not configured right now.');
+                } elseif (! $this->zoom->hasConnectedMentor($mentor)) {
+                    $validator->errors()->add('date_slots', 'Connect Zoom before publishing student-bookable availability.');
+                } else {
+                    try {
+                        $this->zoom->assertMentorConnectionIsUsable($mentor);
+                    } catch (\RuntimeException $exception) {
+                        $validator->errors()->add('date_slots', $this->mentorZoomAvailabilityMessage($exception));
+                    }
+                }
+            }
+
             if (!$officeHoursEnabled) {
                 return;
             }
@@ -377,7 +395,7 @@ class AvailabilityController extends Controller
         if ($validator->fails()) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'Please fix the highlighted availability settings before saving.',
+                    'message' => $validator->errors()->first() ?: 'Please fix the highlighted availability settings before saving.',
                     'errors' => $validator->errors(),
                 ], 422);
             }
@@ -480,6 +498,7 @@ class AvailabilityController extends Controller
             'config' => $officeHoursConfig,
             'preview' => $officeHoursPreview,
         ];
+        $schedulerPayload['zoom'] = $this->mentorZoomPayload();
         $schedulerPayload['has_saved_timezone'] = filled(Auth::user()?->setting?->timezone);
         $schedulerPayload['timezone_autosave_url'] = route('settings.timezone.store');
 
@@ -517,5 +536,61 @@ class AvailabilityController extends Controller
     private function normalizeSessionType(string $sessionType): string
     {
         return in_array($sessionType, ['1on1', '1on3', '1on5'], true) ? $sessionType : '1on1';
+    }
+
+    private function hasEnabledRegularAvailability(Request $request): bool
+    {
+        return collect((array) $request->input('date_slots', []))
+            ->contains(function ($dateSlot) {
+                if (! is_array($dateSlot) || ! filter_var($dateSlot['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+                    return false;
+                }
+
+                return collect((array) ($dateSlot['slots'] ?? []))
+                    ->filter(fn ($slot) => is_array($slot))
+                    ->contains(function (array $slot) {
+                        return trim((string) ($slot['start_time'] ?? '')) !== ''
+                            || trim((string) ($slot['end_time'] ?? '')) !== ''
+                            || ! empty($slot['slot_id'])
+                            || ! empty($slot['service_config_id']);
+                    });
+            });
+    }
+
+    private function mentorZoomAvailabilityMessage(\RuntimeException $exception): string
+    {
+        $message = $exception->getMessage();
+
+        if (
+            str_contains($message, 'reconnect Zoom')
+            || str_contains($message, 'revoked')
+            || str_contains($message, 'expired')
+            || str_contains($message, 'missing')
+        ) {
+            return 'Reconnect Zoom before publishing student-bookable availability.';
+        }
+
+        if (str_contains($message, 'not connected') || str_contains($message, 'connected Zoom')) {
+            return 'Connect Zoom before publishing student-bookable availability.';
+        }
+
+        return 'Zoom connection could not be verified right now. Please try again shortly before publishing student-bookable availability.';
+    }
+
+    private function mentorZoomPayload(): array
+    {
+        $user = Auth::user();
+        $status = $user ? $this->zoom->connectionStatusForUser($user) : 'not_connected';
+        $isBookable = $this->zoom->isConfigured() && $status === 'connected';
+
+        return [
+            'status' => $status,
+            'isBookable' => $isBookable,
+            'message' => match ($status) {
+                'error' => 'Reconnect Zoom before adding student-bookable availability.',
+                'connected' => null,
+                default => 'Connect Zoom before adding student-bookable availability.',
+            },
+        ];
     }
 }

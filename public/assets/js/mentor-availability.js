@@ -166,6 +166,11 @@
       serverInsights: input.insights && typeof input.insights === "object" ? input.insights : {},
       hasSavedTimezone: Boolean(input.has_saved_timezone),
       timezoneAutoSaveUrl: String(input.timezone_autosave_url || ""),
+      zoom: {
+        status: String(input.zoom?.status || "connected"),
+        isBookable: input.zoom?.isBookable !== false,
+        message: String(input.zoom?.message || ""),
+      },
       dirty: Boolean(input.uses_old_input),
       saving: false,
       serverErrors: {},
@@ -457,6 +462,14 @@
 
     deleteBlock(state.selectedDayKey, blockId);
     safeRender();
+  }
+
+  function canManageRegularAvailability() {
+    return state.zoom?.isBookable !== false;
+  }
+
+  function regularAvailabilityZoomMessage() {
+    return state.zoom?.message || "Connect Zoom before adding student-bookable availability.";
   }
 
   function render() {
@@ -868,6 +881,7 @@
     const hasSlots = day.blocks.length > 0;
     const hasEditableSlots = day.blocks.some((block) => !block.isBooked);
     const canAddAnotherSlot = hasServiceOptions() && hasRemainingTimeWindow(dayKey);
+    const canManageRegularSlots = canManageRegularAvailability();
     const formattedDate = selectedDate.toLocaleDateString(undefined, {
       weekday: "long",
       month: "long",
@@ -877,15 +891,36 @@
 
     dayPanelTitle.textContent = `${day.label} availability`;
     dayPanelSubtitle.textContent = `${formattedDate} has its own service-specific slots.`;
-    dayPanelStatus.textContent = !hasServiceOptions() ? "Setup needed" : locked ? "Completed" : hasSlots ? "Active" : "No slots";
-    dayPanelStatus.className = `availability-day-status ${locked ? "is-locked" : hasSlots ? "is-active" : "is-empty"}`;
-    dayPanelNote.textContent = hasServiceOptions()
+    const hasZoomWarning = !canManageRegularSlots;
+
+    dayPanelStatus.textContent = hasZoomWarning
+      ? "Warning"
+      : !hasServiceOptions()
+      ? "Setup needed"
+      : locked
+      ? "Completed"
+      : hasSlots
+      ? "Active"
+      : "No slots";
+    dayPanelStatus.className = `availability-day-status ${
+      hasZoomWarning
+        ? "is-warning"
+        : locked
+        ? "is-locked"
+        : hasSlots
+        ? "is-active"
+        : "is-empty"
+    }`;
+    dayPanelNote.textContent = !canManageRegularSlots
+      ? regularAvailabilityZoomMessage()
+      : hasServiceOptions()
       ? day.bookedCount > 0
         ? `Booked slots on ${formattedDate} stay locked. You can only edit or remove the unbooked slots for this date.`
         : `Each slot must be assigned to one mentor service and only applies to ${formattedDate}.`
       : "Add an active mentor service first before opening booking availability for this day.";
+    dayPanelNote.classList.toggle("is-warning", hasZoomWarning);
 
-    addSlotButton.disabled = !canAddAnotherSlot;
+    addSlotButton.disabled = !canAddAnotherSlot || !canManageRegularSlots;
     clearDayButton.disabled = !hasEditableSlots;
 
     const error = getDayError(dayKey);
@@ -894,7 +929,9 @@
     if (!hasSlots) {
       slotList.innerHTML = "";
       emptyState.hidden = false;
-      emptyState.textContent = !hasServiceOptions()
+      emptyState.textContent = !canManageRegularSlots
+        ? regularAvailabilityZoomMessage()
+        : !hasServiceOptions()
         ? "You do not have any active non-office-hours mentor services yet. Add one first to create availability slots."
         : !hasRemainingTimeWindow(dayKey)
         ? `This date cannot accept more slots. Select another day to add availability.`
@@ -1151,7 +1188,7 @@
     safeRender();
 
     if (state.validation.hasErrors) {
-      showToast("Please fix the highlighted availability settings before saving.", {
+      showToast(firstValidationMessage(state.validation) || "Please fix the highlighted availability settings before saving.", {
         type: "error",
         title: "Availability issue",
       });
@@ -1185,15 +1222,16 @@
 
       if (response.status === 422) {
         state.serverErrors = responseData.errors || {};
+        const serverMessage = responseData.message || flattenErrors(state.serverErrors)[0] || "Please fix the highlighted availability settings before saving.";
         state.alert = {
           type: "error",
           title: "Please review the availability form.",
-          message: responseData.message || "Please fix the highlighted availability settings before saving.",
+          message: serverMessage,
           items: flattenErrors(state.serverErrors),
         };
         state.saving = false;
         safeRender();
-        showToast("Please fix the highlighted availability settings before saving.", {
+        showToast(serverMessage, {
           type: "error",
           title: "Availability issue",
         });
@@ -1710,6 +1748,14 @@
   }
 
   function addSuggestedBlock(dayKey) {
+    if (!canManageRegularAvailability()) {
+      showToast(regularAvailabilityZoomMessage(), {
+        type: "error",
+        title: "Zoom required",
+      });
+      return;
+    }
+
     if (!hasServiceOptions()) {
       return;
     }
@@ -2236,6 +2282,23 @@
     return Object.values(errors)
       .flatMap((messages) => Array.isArray(messages) ? messages : [])
       .filter(Boolean);
+  }
+
+  function firstValidationMessage(validation) {
+    const slotMessage = Object.values(validation?.slotErrors || {})
+      .flatMap((messagesByBlock) => Object.values(messagesByBlock || {}))
+      .find(Boolean);
+
+    if (slotMessage) {
+      return slotMessage;
+    }
+
+    const officeHoursMessage = Object.values(validation?.officeHoursErrors || {}).find(Boolean);
+    if (officeHoursMessage) {
+      return officeHoursMessage;
+    }
+
+    return validation?.rangeError || "";
   }
 
   function showToast(message, options = {}) {
