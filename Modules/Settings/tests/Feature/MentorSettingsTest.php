@@ -1,9 +1,12 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Modules\Auth\app\Models\File;
 use Modules\Auth\app\Models\OauthToken;
 use Modules\Auth\app\Models\User;
 use Modules\Institutions\app\Models\University;
@@ -94,6 +97,26 @@ it('renders mentor settings with saved profile data', function () {
     $response->assertSee('Active');
     $response->assertDontSee('Featured Mentor');
     $response->assertDontSee('id="officeHours"', false);
+});
+
+it('renders uploaded mentor avatars on the settings page', function () {
+    $mentorUser = createSettingsUser('mentor');
+    $mentorUser->forceFill([
+        'avatar_url' => '/storage/avatars/mentors/mentor-avatar.jpg',
+    ])->save();
+
+    Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'title' => 'Avatar Mentor',
+        'status' => 'active',
+    ]);
+
+    $response = $this->withoutMiddleware()->actingAs($mentorUser)->get(route('mentor.settings.index'));
+
+    $response->assertOk();
+    $response->assertSee('/storage/avatars/mentors/mentor-avatar.jpg');
+    $response->assertSee('avatar has-image', false);
 });
 
 it('renders paused mentor settings as read only with a status badge', function () {
@@ -732,4 +755,69 @@ it('disconnects the mentor zoom token from settings', function () {
         'user_id' => $mentorUser->id,
         'provider' => 'zoom',
     ]);
+});
+
+it('uploads a mentor avatar, syncs it to the user, and cleans up the replaced file', function () {
+    Storage::fake('public');
+
+    $mentorUser = createSettingsUser('mentor');
+    $mentorUser->forceFill(['avatar_url' => '/storage/avatars/mentors/legacy-mentor.jpg'])->save();
+    Storage::disk('public')->put('avatars/mentors/legacy-mentor.jpg', 'legacy');
+
+    $mentor = Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'status' => 'active',
+        'avatar_url' => '/storage/avatars/mentors/legacy-mentor.jpg',
+    ]);
+
+    $this->withoutMiddleware()->actingAs($mentorUser)->patch(route('mentor.settings.update'), [
+        'name' => 'Mentor Example',
+        'email' => 'mentor@example.com',
+        'mentor_type' => 'graduate',
+        'edu_email' => 'mentor@yale.edu',
+        'timezone' => 'Asia/Karachi',
+        'avatar' => UploadedFile::fake()->image('mentor-first.jpg'),
+    ])->assertRedirect(route('mentor.settings.index'));
+
+    $mentorUser->refresh();
+    $mentor->refresh();
+    $firstPath = Str::after(parse_url($mentorUser->avatar_url, PHP_URL_PATH) ?: '', '/storage/');
+
+    expect($mentor->avatar_url)->toBe($mentorUser->avatar_url);
+    Storage::disk('public')->assertExists($firstPath);
+    Storage::disk('public')->assertMissing('avatars/mentors/legacy-mentor.jpg');
+    expect(File::query()
+        ->where('fileable_type', Mentor::class)
+        ->where('fileable_id', $mentor->id)
+        ->where('type', 'avatar')
+        ->where('is_deleted', false)
+        ->count())->toBe(1);
+
+    $this->withoutMiddleware()->actingAs($mentorUser)->patch(route('mentor.settings.update'), [
+        'name' => 'Mentor Example',
+        'email' => 'mentor@example.com',
+        'mentor_type' => 'graduate',
+        'edu_email' => 'mentor@yale.edu',
+        'timezone' => 'Asia/Karachi',
+        'avatar' => UploadedFile::fake()->image('mentor-second.jpg'),
+    ])->assertRedirect(route('mentor.settings.index'));
+
+    $mentorUser->refresh();
+    $secondPath = Str::after(parse_url($mentorUser->avatar_url, PHP_URL_PATH) ?: '', '/storage/');
+
+    Storage::disk('public')->assertMissing($firstPath);
+    Storage::disk('public')->assertExists($secondPath);
+    expect(File::query()
+        ->where('fileable_type', Mentor::class)
+        ->where('fileable_id', $mentor->id)
+        ->where('type', 'avatar')
+        ->where('is_deleted', false)
+        ->count())->toBe(1);
+    expect(File::query()
+        ->where('fileable_type', Mentor::class)
+        ->where('fileable_id', $mentor->id)
+        ->where('type', 'avatar')
+        ->where('is_deleted', true)
+        ->count())->toBe(1);
 });

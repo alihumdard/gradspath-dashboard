@@ -1,8 +1,8 @@
-@extends('layouts.portal-student')
+@extends($portalLayout ?? 'layouts.portal-student')
 
 @section('title', 'Feedback - Grads Paths')
 @section('portal_css_asset', 'assets/css/demo5.css')
-@section('portal_active_nav', 'feedback')
+@section('portal_active_nav', $portalActiveNav ?? 'feedback')
 
 @section('page_topbar_left')
   <div class="search-wrap">

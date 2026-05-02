@@ -759,6 +759,15 @@ const knowledgeLabels = {
   5: "Excellent — Very strong insight",
 };
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 const categorySections = document.getElementById("categorySections");
 const mentorSearch = document.getElementById("mentorSearch");
 const sortMentors = document.getElementById("sortMentors");
@@ -769,6 +778,12 @@ const mentorModal = document.getElementById("mentorModal");
 const closeModal = document.getElementById("closeModal");
 const directFormView = document.getElementById("directFormView");
 
+const targetMentorId =
+  Number(feedbackPageData.targetMentorId) > 0
+    ? Number(feedbackPageData.targetMentorId)
+    : null;
+const targetProgram = String(feedbackPageData.targetProgram || "").trim();
+const targetProfession = String(feedbackPageData.targetProfession || "").trim();
 let expandedCategories = new Set();
 
 function getActualReviewCount(mentor) {
@@ -779,6 +794,10 @@ function sortMentorList(list) {
   const sortValue = sortMentors.value;
 
   return [...list].sort((a, b) => {
+    if (targetMentorId) {
+      if (a.id === targetMentorId && b.id !== targetMentorId) return -1;
+      if (b.id === targetMentorId && a.id !== targetMentorId) return 1;
+    }
     if (sortValue === "rating") return b.rating - a.rating;
     if (sortValue === "reviews")
       return getActualReviewCount(b) - getActualReviewCount(a);
@@ -907,29 +926,38 @@ function createMentorCard(mentor) {
     mentor.profession === "graduate"
       ? "Graduate Mentor"
       : "Professional Mentor";
+  const avatarMarkup =
+    mentor.avatarUrl && mentor.avatarUrl.trim()
+      ? `<img src="${escapeHtml(mentor.avatarUrl)}" alt="${escapeHtml(mentor.name)}" class="mentor-avatar-image" />`
+      : escapeHtml(mentor.initials || "M");
 
   const reviewCount = getActualReviewCount(mentor);
   const card = document.createElement("article");
   card.className = "mentor-card";
+  card.dataset.mentorId = String(mentor.id);
+  card.id = `mentor-card-${mentor.id}`;
+  if (mentor.id === targetMentorId) {
+    card.classList.add("targeted-feedback-card");
+  }
 
   card.innerHTML = `
     <div class="mentor-card-top">
       <div class="mentor-identity">
-        <div class="mentor-avatar">${mentor.initials}</div>
+        <div class="mentor-avatar">${avatarMarkup}</div>
         <div>
-          <h3 class="mentor-name">${mentor.name}</h3>
-          <p class="mentor-meta">${mentor.degree} • ${mentor.school}</p>
+          <h3 class="mentor-name">${escapeHtml(mentor.name)}</h3>
+          <p class="mentor-meta">${escapeHtml(mentor.degree)} • ${escapeHtml(mentor.school)}</p>
         </div>
       </div>
-      <div class="rating-badge">★ ${mentor.rating.toFixed(1)}</div>
+      <div class="rating-badge">★ ${Number(mentor.rating || 0).toFixed(1)}</div>
     </div>
 
     <div class="mentor-office-hours">
       <span class="office-hours-label">Office Hours:</span>
-      <span class="office-hours-value">${mentor.officeHours || "Available weekly"}</span>
+      <span class="office-hours-value">${escapeHtml(mentor.officeHours || "Available weekly")}</span>
     </div>
 
-    <p class="mentor-description">${mentor.description}</p>
+    <p class="mentor-description">${escapeHtml(mentor.description)}</p>
 
     <div class="description-readmore-wrap">
       <button
@@ -952,7 +980,7 @@ function createMentorCard(mentor) {
 
     <div class="card-bottom">
       <div class="card-stats">${reviewCount} review${reviewCount === 1 ? "" : "s"}</div>
-      <div class="card-type">${professionLabel}</div>
+      <div class="card-type">${escapeHtml(professionLabel)}</div>
     </div>
 
     <button class="book-now-btn" type="button">Book Now</button>
@@ -996,6 +1024,56 @@ function createMentorCard(mentor) {
   }
 
   return card;
+}
+
+function applyTargetMentor() {
+  if (!targetMentorId && !targetProgram && !targetProfession) {
+    return;
+  }
+
+  const targetMentor = mentorData.find(
+    (mentor) => mentor.id === targetMentorId,
+  );
+
+  if (targetMentor) {
+    expandedCategories.add(targetMentor.category);
+    return;
+  }
+
+  if (targetProgram) {
+    expandedCategories.add(targetProgram);
+  }
+
+  if (targetProfession && professionFilter.value === "all") {
+    professionFilter.value = targetProfession;
+  }
+}
+
+function focusTargetMentorCard() {
+  if (!targetMentorId) {
+    return;
+  }
+
+  const targetCard = document.querySelector(
+    `[data-mentor-id="${targetMentorId}"]`,
+  );
+
+  if (!targetCard) {
+    return;
+  }
+
+  const moreReviews = targetCard.querySelector(`#more-reviews-${targetMentorId}`);
+  const toggleBtn = targetCard.querySelector(".toggle-inline-btn");
+
+  if (moreReviews && !moreReviews.classList.contains("open")) {
+    moreReviews.classList.add("open");
+    if (toggleBtn) {
+      toggleBtn.textContent = "Read Less";
+    }
+  }
+
+  targetCard.style.scrollMarginTop = "120px";
+  targetCard.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderCategories() {
@@ -1226,9 +1304,6 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-// Theme Logic
-const themeToggle = document.getElementById("themeToggle");
-
 (function initTheme() {
   const savedTheme = localStorage.getItem("theme") || "light";
   document.body.setAttribute("data-theme", savedTheme);
@@ -1243,7 +1318,11 @@ if (themeToggle) {
   });
 }
 
+applyTargetMentor();
 renderCategories();
+window.requestAnimationFrame(() => {
+  focusTargetMentorCard();
+});
 
 // Mobile sidebar toggle
 const menuBtn = document.getElementById("mobileMenuToggle");

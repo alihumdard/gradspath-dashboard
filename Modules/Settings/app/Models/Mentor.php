@@ -3,10 +3,15 @@
 namespace Modules\Settings\app\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Modules\Auth\app\Models\File;
 use Modules\Auth\app\Models\User;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Models\MentorAvailabilityRule;
@@ -59,6 +64,13 @@ class Mentor extends Model
         'avatar_crop_x' => 'float',
         'avatar_crop_y' => 'float',
     ];
+
+    protected function avatarUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $this->resolveAvatarUrl($value),
+        );
+    }
 
     public function user(): BelongsTo
     {
@@ -121,5 +133,33 @@ class Mentor extends Model
     public function officeHourSchedules(): HasMany
     {
         return $this->hasMany(OfficeHourSchedule::class);
+    }
+
+    public function files(): MorphMany
+    {
+        return $this->morphMany(File::class, 'fileable');
+    }
+
+    protected function resolveAvatarUrl(mixed $value): ?string
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        $value = trim($value);
+
+        if (Str::startsWith($value, ['http://', 'https://', '//', 'data:'])) {
+            return $value;
+        }
+
+        if (Str::startsWith($value, '/storage/')) {
+            return $value;
+        }
+
+        if (Str::startsWith($value, 'storage/')) {
+            return '/'.$value;
+        }
+
+        return Storage::disk('public')->url(ltrim($value, '/'));
     }
 }

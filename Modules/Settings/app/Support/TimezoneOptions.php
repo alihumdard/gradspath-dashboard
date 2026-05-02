@@ -32,16 +32,22 @@ class TimezoneOptions
 
     public static function preferredFor(?User $user, ?string $explicit = null): string
     {
-        if (self::isSupported($explicit)) {
+        if (self::isRecognized($explicit)) {
             return (string) $explicit;
         }
 
         $savedTimezone = $user?->setting?->timezone;
 
-        if (self::isSupported($savedTimezone)) {
+        if (self::isRecognized($savedTimezone)) {
             return (string) $savedTimezone;
         }
 
         return self::fallback();
+    }
+
+    private static function isRecognized(?string $timezone): bool
+    {
+        return is_string($timezone)
+            && in_array($timezone, timezone_identifiers_list(), true);
     }
 }

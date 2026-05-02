@@ -806,6 +806,28 @@ it('falls back to a normal service when an office-hours link is opened for a dis
         ->and($data['selectedServiceId'])->toBe($normalService->service_slug);
 });
 
+it('includes the mentor avatar in booking page data', function () {
+    $student = makeUser('student-booking-avatar');
+    $student->assignRole('student');
+    $mentor = makeMentor();
+    $mentor->user->forceFill([
+        'avatar_url' => '/storage/avatars/mentors/booking-avatar.jpg',
+    ])->save();
+
+    $service = makeService([
+        'service_slug' => 'program-insights-'.Str::lower(Str::random(5)),
+    ]);
+
+    attachMentorService($mentor, $service);
+
+    $data = app(BookingPageService::class)->buildBookingPageData($mentor->fresh('services'), $student, [
+        'portal' => 'student',
+        'allow_office_hours' => true,
+    ]);
+
+    expect($data['mentor']['avatarUrl'])->toBe('/storage/avatars/mentors/booking-avatar.jpg');
+});
+
 it('creates a booking from a selected availability slot and reserves it', function () {
     $student = makeUser('booking-student');
     $student->assignRole('student');
@@ -1812,8 +1834,9 @@ it('queues a confirmation job and sends booking emails for 1on5 to mentor and al
     }
 });
 
-it('does not send standard booking emails for office hours', function () {
+it('queues a confirmation job and sends booking emails for office hours', function () {
     Queue::fake();
+    fakeZoomApi('office-zoom-no-standard-emails', 'https://zoom.us/j/office-no-standard-emails');
 
     $student = makeUser('office-hours-booking-student');
     $student->assignRole('student');
@@ -1900,7 +1923,19 @@ it('does not send standard booking emails for office hours', function () {
 
     app()->call([new SendBookingConfirmationJob($booking->id), 'handle']);
 
-    Mail::assertNothingSent();
+    Mail::assertSent(MentorBookingNotificationMail::class, function (MentorBookingNotificationMail $mail) use ($booking, $mentor, $student) {
+        return $mail->hasTo($mentor->user->email)
+            && $mail->bookingDetails['counterpart_name'] === $student->name
+            && $mail->bookingDetails['meeting_link'] === route('mentor.bookings.start-meeting', $booking->id)
+            && $mail->bookingDetails['meeting_link_label'] === 'Start Zoom Meeting';
+    });
+
+    Mail::assertSent(StudentBookingConfirmationMail::class, function (StudentBookingConfirmationMail $mail) use ($booking, $student, $mentor) {
+        return $mail->hasTo($student->email)
+            && $mail->bookingDetails['counterpart_name'] === $mentor->user->name
+            && $mail->bookingDetails['meeting_link'] === $booking->meeting_link
+            && $mail->bookingDetails['meeting_link_label'] === 'Open Zoom Meeting';
+    });
 });
 
 it('creates one shared zoom meeting for an office-hours session on first booking', function () {

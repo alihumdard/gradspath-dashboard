@@ -239,8 +239,18 @@
         <section class="upcoming-section">
           <div class="upcoming-header">
             <div>
+              <h3>Current Appointments</h3>
+              <p>Meetings that are live and running right now appear here.</p>
+            </div>
+          </div>
+          <div class="upcoming-list" id="currentList">
+          </div>
+        </section>
+        <section class="upcoming-section">
+          <div class="upcoming-header">
+            <div>
               <h3>Upcoming Appointments</h3>
-              <p>All future booked sessions appear here.</p>
+              <p>Future booked sessions that have not started yet appear here.</p>
             </div>
           </div>
           <div class="upcoming-list" id="upcomingList">

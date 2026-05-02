@@ -272,10 +272,11 @@ it('keeps mentor notes locked after the scheduled booking end until the meeting 
     ]);
 });
 
-it('shows notes from multiple mentors on the mentor notes browser page', function () {
+it('shows only the current mentor notes on the mentor notes browser page', function () {
     [$viewerUser, $viewerMentor] = createMentorUser('browser-viewer');
     [$otherMentorUser, $otherMentor] = createMentorUser('browser-other');
     $student = createStudentUser('browser-student');
+    $student->forceFill(['avatar_url' => '/storage/avatars/students/browser-student.jpg'])->save();
     $service = createService();
     $viewerBooking = createBookingForMentor($viewerMentor, $student, $service);
     $otherBooking = createBookingForMentor($otherMentor, $student, $service, [
@@ -311,9 +312,111 @@ it('shows notes from multiple mentors on the mentor notes browser page', functio
     $this->actingAs($viewerUser)
         ->get(route('mentor.notes'))
         ->assertOk()
+        ->assertSee('"viewerRole":"mentor"', false)
         ->assertSee($student->name)
         ->assertSee($viewerUser->name)
-        ->assertSee($otherMentorUser->name)
+        ->assertDontSee($otherMentorUser->name)
+        ->assertSee('"avatarUrl":"\/storage\/avatars\/students\/browser-student.jpg"', false)
         ->assertSee('Viewer mentor note body.')
-        ->assertSee('Other mentor note body.');
+        ->assertDontSee('Other mentor note body.');
+
+    $this->actingAs($otherMentorUser)
+        ->get(route('mentor.notes'))
+        ->assertOk()
+        ->assertSee($student->name)
+        ->assertSee($otherMentorUser->name)
+        ->assertDontSee($viewerUser->name)
+        ->assertSee('Other mentor note body.')
+        ->assertDontSee('Viewer mentor note body.');
+});
+
+it('shows the current student mentor notes from all mentors on the student notes page', function () {
+    [$firstMentorUser, $firstMentor] = createMentorUser('student-notes-first');
+    [$secondMentorUser, $secondMentor] = createMentorUser('student-notes-second');
+    $firstMentorUser->forceFill(['avatar_url' => '/storage/avatars/mentors/student-notes-first.jpg'])->save();
+    $secondMentorUser->forceFill(['avatar_url' => '/storage/avatars/mentors/student-notes-second.jpg'])->save();
+    $student = createStudentUser('student-notes-viewer');
+    $student->forceFill(['avatar_url' => '/storage/avatars/students/student-notes-viewer.jpg'])->save();
+    $otherStudent = createStudentUser('student-notes-other');
+    $service = createService();
+
+    $firstBooking = createBookingForMentor($firstMentor, $student, $service);
+    $secondBooking = createBookingForMentor($secondMentor, $student, $service, [
+        'session_at' => now()->addDay()->utc()->toDateTimeString(),
+    ]);
+    $otherBooking = createBookingForMentor($firstMentor, $otherStudent, $service, [
+        'session_at' => now()->addDays(2)->utc()->toDateTimeString(),
+    ]);
+
+    MentorNote::query()->create([
+        'mentor_id' => $firstMentor->id,
+        'student_id' => $student->id,
+        'booking_id' => $firstBooking->id,
+        'session_date' => now()->toDateString(),
+        'service_type' => 'Application Review',
+        'worked_on' => 'First mentor note body.',
+        'next_steps' => 'First mentor next steps.',
+        'session_result' => 'First mentor result.',
+        'strengths_challenges' => 'First mentor reflection.',
+        'other_notes' => 'First mentor other notes.',
+    ]);
+
+    MentorNote::query()->create([
+        'mentor_id' => $secondMentor->id,
+        'student_id' => $student->id,
+        'booking_id' => $secondBooking->id,
+        'session_date' => now()->addDay()->toDateString(),
+        'service_type' => 'Application Review',
+        'worked_on' => 'Second mentor note body.',
+        'next_steps' => 'Second mentor next steps.',
+        'session_result' => 'Second mentor result.',
+        'strengths_challenges' => 'Second mentor reflection.',
+        'other_notes' => 'Second mentor other notes.',
+    ]);
+
+    MentorNote::query()->create([
+        'mentor_id' => $firstMentor->id,
+        'student_id' => $otherStudent->id,
+        'booking_id' => $otherBooking->id,
+        'session_date' => now()->addDays(2)->toDateString(),
+        'service_type' => 'Application Review',
+        'worked_on' => 'Other student note body.',
+        'next_steps' => 'Other student next steps.',
+        'session_result' => 'Other student result.',
+        'strengths_challenges' => 'Other student reflection.',
+        'other_notes' => 'Other student other notes.',
+    ]);
+
+    $this->actingAs($student)
+        ->get(route('student.notes'))
+        ->assertOk()
+        ->assertSee('Mentor Notes')
+        ->assertSee('"viewerRole":"student"', false)
+        ->assertSee($firstMentorUser->name)
+        ->assertSee($secondMentorUser->name)
+        ->assertSee('"avatarUrl":"\/storage\/avatars\/mentors\/student-notes-first.jpg"', false)
+        ->assertSee('"avatarUrl":"\/storage\/avatars\/mentors\/student-notes-second.jpg"', false)
+        ->assertSee('"studentName":"Student Notes Viewer Student"', false)
+        ->assertDontSee($otherStudent->name)
+        ->assertSee('First mentor note body.')
+        ->assertSee('Second mentor note body.')
+        ->assertDontSee('Other student note body.');
+});
+
+it('shows the empty state on the student notes page when the student has no notes', function () {
+    $student = createStudentUser('student-notes-empty');
+
+    $this->actingAs($student)
+        ->get(route('student.notes'))
+        ->assertOk()
+        ->assertSee('No mentor notes found')
+        ->assertSee('"users":[]', false);
+});
+
+it('forbids mentors from accessing the student notes page', function () {
+    [$mentorUser] = createMentorUser('student-notes-forbidden');
+
+    $this->actingAs($mentorUser)
+        ->get(route('student.notes'))
+        ->assertForbidden();
 });

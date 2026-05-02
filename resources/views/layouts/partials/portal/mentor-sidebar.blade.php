@@ -1,4 +1,6 @@
 @php($activeNav = $activeNav ?? '')
+@php($currentUser = auth()->user())
+@php($sidebarInitials = collect(preg_split('/\s+/', trim($currentUser?->name ?? '')) ?: [])->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode(''))
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-top">
@@ -100,6 +102,19 @@
     </div>
 
     <div class="nav-group">
+      <a href="{{ route('feedback.index') }}" @class(['nav-item single-link', 'active' => $activeNav === 'feedback'])>
+        <span class="nav-left">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+            </svg>
+          </span>
+          <span class="nav-text">Feedback</span>
+        </span>
+      </a>
+    </div>
+
+    <div class="nav-group">
       <a href="{{ route('mentor.bookings.index') }}" @class(['nav-item single-link', 'active' => $activeNav === 'bookings'])>
         <span class="nav-left">
           <span class="nav-icon" aria-hidden="true">
@@ -181,8 +196,18 @@
         </button>
       </form>
 
-      <div class="mt-2 inline-flex max-w-full rounded-lg bg-[#F3EDFF] px-3 py-2 text-sm font-semibold text-[#6D28D9] break-all">
-        {{ auth()->user()?->email }} ({{ ucfirst(auth()->user()?->getRoleNames()->first() ?? 'mentor') }})
+      <div class="mt-2 flex max-w-full items-center gap-3 rounded-lg bg-[#F3EDFF] px-3 py-2 text-sm font-semibold text-[#6D28D9]">
+        <div style="width:40px;height:40px;border-radius:12px;overflow:hidden;background:#e9ddff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          @if ($currentUser?->avatar_url)
+            <img src="{{ $currentUser->avatar_url }}" alt="{{ $currentUser->name ?? 'Mentor' }}" style="width:100%;height:100%;object-fit:cover;" />
+          @else
+            <span>{{ $sidebarInitials }}</span>
+          @endif
+        </div>
+        <div style="min-width:0;">
+          <div style="color:#4c1d95;">{{ $currentUser?->name ?: 'Mentor' }}</div>
+          <div class="break-all">{{ $currentUser?->email }} ({{ ucfirst($currentUser?->getRoleNames()->first() ?? 'mentor') }})</div>
+        </div>
       </div>
     </div>
   </nav>

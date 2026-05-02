@@ -540,3 +540,115 @@ it('includes mentor program name and email in the student feedback payload', fun
     expect($upcomingBooking['mentorProgram'])->toBe('Master of Feedback Systems');
     expect($upcomingBooking['mentorEmail'])->toBe('mentor.feedback@example.edu');
 });
+
+it('excludes completed bookings from the student upcoming list', function () {
+    $context = createBookingAccessContext();
+    $completedBooking = $context['booking']->fresh();
+    $completedBooking->forceFill([
+        'status' => 'completed',
+        'completed_at' => $completedBooking->scheduledEndAt(),
+        'session_outcome' => 'completed',
+    ])->save();
+
+    $response = $this
+        ->actingAs($context['studentUser'])
+        ->get(route('student.bookings.show', $completedBooking->id));
+
+    $response->assertOk();
+
+    $payload = $response->viewData('bookingPageData');
+
+    expect(collect($payload['upcomingBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $completedBooking->id))->toBeFalse();
+});
+
+it('excludes completed bookings from the mentor upcoming list', function () {
+    $context = createBookingAccessContext();
+    $completedBooking = $context['booking']->fresh();
+    $completedBooking->forceFill([
+        'status' => 'completed',
+        'completed_at' => $completedBooking->scheduledEndAt(),
+        'session_outcome' => 'completed',
+    ])->save();
+
+    $response = $this
+        ->actingAs($context['mentorUser'])
+        ->get(route('mentor.bookings.show', $completedBooking->id));
+
+    $response->assertOk();
+
+    $payload = $response->viewData('bookingPageData');
+
+    expect(collect($payload['upcomingBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $completedBooking->id))->toBeFalse();
+});
+
+it('excludes past incomplete bookings from the student upcoming list', function () {
+    $context = createBookingAccessContext();
+    $pastBooking = $context['booking']->fresh();
+
+    Carbon::setTestNow($pastBooking->scheduledEndAt()?->addMinute());
+
+    $response = $this
+        ->actingAs($context['studentUser'])
+        ->get(route('student.bookings.show', $pastBooking->id));
+
+    $response->assertOk();
+
+    $payload = $response->viewData('bookingPageData');
+
+    expect($pastBooking->status)->toBe('confirmed');
+    expect(collect($payload['upcomingBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $pastBooking->id))->toBeFalse();
+});
+
+it('excludes past incomplete bookings from the mentor upcoming list', function () {
+    $context = createBookingAccessContext();
+    $pastBooking = $context['booking']->fresh();
+
+    Carbon::setTestNow($pastBooking->scheduledEndAt()?->addMinute());
+
+    $response = $this
+        ->actingAs($context['mentorUser'])
+        ->get(route('mentor.bookings.show', $pastBooking->id));
+
+    $response->assertOk();
+
+    $payload = $response->viewData('bookingPageData');
+
+    expect($pastBooking->status)->toBe('confirmed');
+    expect(collect($payload['upcomingBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $pastBooking->id))->toBeFalse();
+});
+
+it('moves live bookings from the student upcoming list to the current list', function () {
+    $context = createBookingAccessContext();
+    $liveBooking = $context['booking']->fresh();
+
+    Carbon::setTestNow($liveBooking->session_at->copy()->addMinutes(6));
+
+    $response = $this
+        ->actingAs($context['studentUser'])
+        ->get(route('student.bookings.show', $liveBooking->id));
+
+    $response->assertOk();
+
+    $payload = $response->viewData('bookingPageData');
+
+    expect(collect($payload['currentBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $liveBooking->id))->toBeTrue()
+        ->and(collect($payload['upcomingBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $liveBooking->id))->toBeFalse();
+});
+
+it('moves live bookings from the mentor upcoming list to the current list', function () {
+    $context = createBookingAccessContext();
+    $liveBooking = $context['booking']->fresh();
+
+    Carbon::setTestNow($liveBooking->session_at->copy()->addMinutes(6));
+
+    $response = $this
+        ->actingAs($context['mentorUser'])
+        ->get(route('mentor.bookings.show', $liveBooking->id));
+
+    $response->assertOk();
+
+    $payload = $response->viewData('bookingPageData');
+
+    expect(collect($payload['currentBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $liveBooking->id))->toBeTrue()
+        ->and(collect($payload['upcomingBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $liveBooking->id))->toBeFalse();
+});

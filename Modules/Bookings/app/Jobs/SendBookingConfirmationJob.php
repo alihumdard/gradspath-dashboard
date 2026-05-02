@@ -87,9 +87,12 @@ class SendBookingConfirmationJob implements ShouldQueue
         ];
 
         if ($recipientType === 'student' && $this->isSyncedZoomBooking($booking)) {
-            if (($recipient['user_id'] ?? null) || ($recipient['is_primary'] ?? false)) {
+            if (($recipient['user_id'] ?? null) && ! ($recipient['is_primary'] ?? false)) {
                 $details['meeting_link'] = route('student.bookings.join-meeting', $booking->id);
                 $details['meeting_link_label'] = 'Join Zoom Meeting';
+            } else {
+                $details['meeting_link'] = $booking->meeting_link;
+                $details['meeting_link_label'] = 'Open Zoom Meeting';
             }
         }
 

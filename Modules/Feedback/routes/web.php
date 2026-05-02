@@ -4,7 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Modules\Feedback\app\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use Modules\Feedback\app\Http\Controllers\Student\FeedbackController as StudentFeedbackController;
 
-Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
+Route::middleware(['web', 'auth', 'active'])->group(function () {
+	Route::get('/feedback', [StudentFeedbackController::class, 'index'])->name('feedback.index');
+
 	Route::get('/student/feedback', [StudentFeedbackController::class, 'index'])->name('student.feedback.index');
 });
 

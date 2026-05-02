@@ -225,6 +225,17 @@ class BookingCheckoutService
             try {
                 $this->zoom->assertMentorConnectionIsUsable($mentor);
             } catch (\RuntimeException $exception) {
+                $message = $exception->getMessage();
+
+                if (
+                    str_contains($message, 'reconnect Zoom')
+                    || str_contains($message, 'revoked')
+                    || str_contains($message, 'expired')
+                    || str_contains($message, 'missing')
+                ) {
+                    throw new \RuntimeException('Zoom connection expired or was revoked. Please reconnect Zoom.', 0, $exception);
+                }
+
                 throw new \RuntimeException("This mentor's Zoom connection is unavailable right now. Please try again later.", 0, $exception);
             }
         }

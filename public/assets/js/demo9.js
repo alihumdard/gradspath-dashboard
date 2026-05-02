@@ -20,15 +20,22 @@ const fallbackBooking = {
 const bookingGroups = Array.isArray(bookingDetailsData.bookingGroups)
   ? bookingDetailsData.bookingGroups
   : [];
+const currentBookings =
+  Array.isArray(bookingDetailsData.currentBookings) &&
+  bookingDetailsData.currentBookings.length > 0
+    ? bookingDetailsData.currentBookings
+    : [];
 const upcomingBookings =
   Array.isArray(bookingDetailsData.upcomingBookings) &&
   bookingDetailsData.upcomingBookings.length > 0
     ? bookingDetailsData.upcomingBookings
     : [fallbackBooking];
+const activeBookings = [...currentBookings, ...upcomingBookings];
 
 const selectedBooking =
-  upcomingBookings.find((booking) => booking.id === bookingDetailsData.selectedBookingId) ||
+  activeBookings.find((booking) => booking.id === bookingDetailsData.selectedBookingId) ||
   bookingDetailsData.selectedBooking ||
+  currentBookings[0] ||
   upcomingBookings[0] ||
   fallbackBooking;
 
@@ -43,7 +50,7 @@ const meetingData = {
   viewerId: bookingDetailsData.viewerId || null,
 };
 
-const bookingsById = upcomingBookings.reduce((carry, booking) => {
+const bookingsById = activeBookings.reduce((carry, booking) => {
   if (booking?.id != null) {
     carry[String(booking.id)] = booking;
   }
@@ -53,7 +60,7 @@ const bookingsById = upcomingBookings.reduce((carry, booking) => {
 
 const bookingsByDate = {};
 
-const bookedDates = upcomingBookings.reduce((carry, booking) => {
+const bookedDates = activeBookings.reduce((carry, booking) => {
   if (!booking.sessionDateKey) return carry;
 
   const normalizedBooking = {
@@ -137,6 +144,7 @@ const nextMonthBtn = document.getElementById("nextMonth");
 const todayBtn = document.getElementById("todayBtn");
 const calendarContentEl = document.getElementById("calendarContent");
 const upcomingListEl = document.getElementById("upcomingList");
+const currentListEl = document.getElementById("currentList");
 const serviceCards = document.querySelectorAll(".service-card.locked-card");
 const serviceLockNoteEl = document.getElementById("serviceLockNote");
 const officeHoursServiceChoiceRow = document.getElementById("officeHoursServiceChoiceRow");
@@ -646,7 +654,7 @@ function applyOfficeHoursServiceChoicePayload(bookingId, serviceChoice) {
     booking.officeHoursFocusName = serviceChoice?.currentServiceName || booking.officeHoursFocusName;
   };
 
-  upcomingBookings.forEach(applyToBooking);
+  activeBookings.forEach(applyToBooking);
   Object.values(bookingsById).forEach(applyToBooking);
   Object.values(bookedDates).forEach(applyToBooking);
   bookingGroups.forEach((group) => {
@@ -1621,8 +1629,20 @@ function renderCalendar() {
 
 function renderUpcomingAppointments() {
   upcomingListEl.innerHTML = "";
-  const now = new Date(today);
-  now.setHours(0, 0, 0, 0);
+  if (currentListEl) {
+    currentListEl.innerHTML = "";
+  }
+  const todayStart = new Date(today);
+  todayStart.setHours(0, 0, 0, 0);
+
+  renderAppointmentSection(currentListEl, currentBookings, "No live meetings right now.", todayStart);
+  renderAppointmentSection(upcomingListEl, upcomingBookings, "No future bookings yet.", todayStart);
+}
+
+function renderAppointmentSection(container, sourceBookings, emptyMessage, todayStart) {
+  if (!container) {
+    return;
+  }
 
   if (bookingGroups.length > 0) {
     let renderedGroup = false;
@@ -1630,11 +1650,14 @@ function renderUpcomingAppointments() {
     bookingGroups.forEach((group) => {
       const items = Array.isArray(group?.items)
         ? group.items
+            .filter((booking) =>
+              sourceBookings.some((sourceBooking) => Number(sourceBooking?.id) === Number(booking?.id)),
+            )
             .filter((booking) => booking?.sessionDateKey)
             .filter((booking) => {
               const dateObj = parseDateKey(booking.sessionDateKey);
               dateObj.setHours(0, 0, 0, 0);
-              return dateObj >= now;
+              return dateObj >= todayStart;
             })
             .sort((a, b) => String(a.sessionDateKey).localeCompare(String(b.sessionDateKey)))
         : [];
@@ -1666,12 +1689,12 @@ function renderUpcomingAppointments() {
       });
 
       section.appendChild(list);
-      upcomingListEl.appendChild(section);
+      container.appendChild(section);
     });
 
     if (!renderedGroup) {
-      upcomingListEl.innerHTML = `
-        <div class="upcoming-empty-state">No future bookings yet.</div>
+      container.innerHTML = `
+        <div class="upcoming-empty-state">${escapeHtml(emptyMessage)}</div>
       `;
     }
 
@@ -1683,15 +1706,23 @@ function renderUpcomingAppointments() {
     .filter((key) => {
       const dateObj = parseDateKey(key);
       dateObj.setHours(0, 0, 0, 0);
-      return dateObj >= now;
+      return dateObj >= todayStart;
     });
 
   futureKeys.forEach((key) => {
     const dateObj = parseDateKey(key);
     getBookingsByDateKey(key).forEach((booking) => {
-      upcomingListEl.appendChild(createUpcomingItem(booking, key, dateObj));
+      if (sourceBookings.some((sourceBooking) => Number(sourceBooking?.id) === Number(booking?.id))) {
+        container.appendChild(createUpcomingItem(booking, key, dateObj));
+      }
     });
   });
+
+  if (!container.children.length) {
+    container.innerHTML = `
+      <div class="upcoming-empty-state">${escapeHtml(emptyMessage)}</div>
+    `;
+  }
 }
 
 function createUpcomingItem(booking, key, dateObj) {

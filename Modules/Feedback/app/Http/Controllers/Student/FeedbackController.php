@@ -19,13 +19,16 @@ class FeedbackController extends Controller
 
     public function index(Request $request): View
     {
+        $user = Auth::user();
+        abort_unless($user && ($user->hasRole('student') || $user->hasRole('mentor')), 403);
+
         $items = Feedback::query()
             ->with([
                 'student:id,name',
                 'booking:id,service_config_id,session_at,session_timezone',
                 'booking.service:id,service_name,service_slug',
-                'mentor:id,user_id,title,grad_school_display,mentor_type,program_type,bio,description',
-                'mentor.user:id,name',
+                'mentor:id,user_id,title,grad_school_display,mentor_type,program_type,bio,description,avatar_url',
+                'mentor.user:id,name,avatar_url',
                 'mentor.services:id,service_name',
                 'mentor.rating:id,mentor_id,avg_stars,recommend_rate,total_reviews,total_sessions,top_tag,top_tags_json',
             ])
@@ -40,14 +43,24 @@ class FeedbackController extends Controller
             ->values()
             ->all();
 
+        $targetMentorId = (int) $request->integer('mentor_id');
+        $visibleMentorIds = collect($mentorData)->pluck('id')->filter()->map(fn ($id) => (int) $id);
+        $targetMentorId = $visibleMentorIds->contains($targetMentorId) ? $targetMentorId : null;
+
         $summary = $this->summary($items);
+        $isMentorPortal = $user->hasRole('mentor');
 
         return view('feedback::student.index', [
             'feedbackItems' => $items,
+            'portalLayout' => $isMentorPortal ? 'layouts.portal-mentor' : 'layouts.portal-student',
+            'portalActiveNav' => 'feedback',
             'feedbackPageData' => [
                 'hasDynamicData' => true,
                 'mentors' => $mentorData,
                 'summary' => $summary,
+                'targetMentorId' => $targetMentorId,
+                'targetProgram' => $request->string('program')->toString(),
+                'targetProfession' => $request->string('mentor_type')->toString(),
             ],
             'feedbackSummary' => $summary,
         ]);
@@ -112,6 +125,7 @@ class FeedbackController extends Controller
         return [
             'id' => (int) $mentor->id,
             'name' => $user->name,
+            'avatarUrl' => $user->avatar_url ?: $mentor->avatar_url,
             'initials' => $this->initials($user->name),
             'category' => $this->categoryKey($mentor->program_type),
             'categoryLabel' => $this->categoryLabel($mentor->program_type),

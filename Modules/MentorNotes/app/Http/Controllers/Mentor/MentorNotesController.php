@@ -22,12 +22,13 @@ class MentorNotesController extends Controller
 
         $notes = MentorNote::query()
             ->with([
-                'student:id,name,email',
+                'student:id,name,email,avatar_url',
                 'mentor:id,user_id',
                 'mentor.user:id,name,email',
                 'booking:id,service_config_id,session_at,session_timezone,session_type',
                 'booking.service:id,service_name,service_slug',
             ])
+            ->where('mentor_id', $viewerMentor->id)
             ->where('is_deleted', false)
             ->orderByDesc('session_date')
             ->orderByDesc('id')
@@ -36,6 +37,7 @@ class MentorNotesController extends Controller
         return view('mentor-notes::mentor.index', [
             'mentorNotesPageData' => [
                 'hasDynamicData' => true,
+                'viewerRole' => 'mentor',
                 'viewerMentorId' => (int) $viewerMentor->id,
                 'users' => $this->transformUsers($notes),
             ],
@@ -163,6 +165,10 @@ class MentorNotesController extends Controller
                     'id' => (int) $studentId,
                     'name' => $student->name ?? 'Student',
                     'email' => $student->email ?? '',
+                    'avatarUrl' => $student->avatar_url,
+                    'studentName' => $student->name ?? 'Student',
+                    'studentEmail' => $student->email ?? '',
+                    'studentAvatarUrl' => $student->avatar_url,
                     'sessions' => $sortedNotes->count(),
                     'notes' => $sortedNotes
                         ->map(fn (MentorNote $note) => $this->notePayload($note))

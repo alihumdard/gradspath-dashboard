@@ -127,10 +127,15 @@ function createMentorCard(mentor) {
       ? mentor.reviewExtra
       : "More mentor feedback will appear here as reviews are added.";
 
+  const avatarMarkup =
+    mentor.avatarUrl && mentor.avatarUrl.trim()
+      ? `<img src="${escapeHtml(mentor.avatarUrl)}" alt="${escapeHtml(mentor.name)}" class="mentor-avatar-image" />`
+      : escapeHtml(mentor.initials || "M");
+
   article.innerHTML = `
     <div class="mentor-card-top">
       <div class="mentor-card-identity">
-        <div class="mentor-avatar">${escapeHtml(mentor.initials || "M")}</div>
+        <div class="mentor-avatar">${avatarMarkup}</div>
         <div class="mentor-headings">
           <div class="mentor-name">${escapeHtml(mentor.name)}</div>
           <div class="mentor-role">${escapeHtml(mentor.categoryLabel)} • ${escapeHtml(mentor.school)}</div>
@@ -168,7 +173,11 @@ function createMentorCard(mentor) {
     <div class="feedback-box">
       <div class="feedback-top-row">
         <div class="feedback-title">Recent Feedback</div>
-        <button class="feedback-link-btn" type="button">See more Feedback</button>
+        ${
+          mentor.visibleFeedbackCount >= 2 && mentor.feedbackUrl
+            ? `<a class="feedback-link-btn" href="${escapeHtml(mentor.feedbackUrl)}">See more Feedback</a>`
+            : ""
+        }
       </div>
 
       <p class="feedback-short">“${escapeHtml(mentor.reviewShort)}”</p>

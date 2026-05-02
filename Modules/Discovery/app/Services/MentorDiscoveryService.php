@@ -31,6 +31,9 @@ class MentorDiscoveryService
     {
         return Mentor::query()
             ->with(['user:id,name,email,avatar_url', 'university:id,name,display_name', 'rating', 'services'])
+            ->withCount([
+                'feedback as visible_feedback_count' => fn ($query) => $query->where('is_visible', true),
+            ])
             ->where('status', 'active')
             ->whereHas('user')
             ->get()
@@ -46,6 +49,7 @@ class MentorDiscoveryService
                     'id' => $mentor->id,
                     'type' => $mentor->mentor_type === 'professional' ? 'professionals' : 'graduates',
                     'name' => $name,
+                    'avatarUrl' => $mentor->user?->avatar_url,
                     'initials' => $this->initials($name),
                     'category' => $this->programFamily($mentor->program_type),
                     'categoryLabel' => $mentor->title ?: $this->programLabel($mentor->program_type),
@@ -63,6 +67,14 @@ class MentorDiscoveryService
                         ->filter(fn($tag) => is_string($tag) && $tag !== '')
                         ->take(3)
                         ->implode(' • '),
+                    'visibleFeedbackCount' => (int) ($mentor->visible_feedback_count ?? 0),
+                    'feedbackUrl' => (int) ($mentor->visible_feedback_count ?? 0) >= 2
+                        ? route('feedback.index', [
+                            'mentor_id' => $mentor->id,
+                            'mentor_type' => $mentor->mentor_type === 'professional' ? 'professional' : 'graduate',
+                            'program' => $this->programFamily($mentor->program_type),
+                        ])
+                        : null,
                     'canBook' => $viewerMentorId === null || (int) $mentor->id !== (int) $viewerMentorId,
                     'bookingUrl' => route("{$portal}.mentor.book", $mentor->id),
                 ];
@@ -113,7 +125,10 @@ class MentorDiscoveryService
         return [
             'id' => $mentor->id,
             'name' => $name,
+            'avatarUrl' => $mentor->user?->avatar_url,
             'initials' => $this->initials($name),
+            'category' => $this->programFamily($mentor->program_type),
+            'profession' => $mentor->mentor_type === 'professional' ? 'professional' : 'graduate',
             'role' => ($mentor->title ?: $this->programLabel($mentor->program_type)).' • '.$school,
             'rating' => $mentor->rating?->avg_stars
                 ? number_format((float) $mentor->rating->avg_stars, 1)

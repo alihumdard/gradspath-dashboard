@@ -4,6 +4,7 @@ const mentorNotesData = mentorNotesDataEl
   : {};
 
 const fallbackUsersData = [];
+const viewerRole = mentorNotesData.viewerRole === "student" ? "student" : "mentor";
 
 const usersData =
   Array.isArray(mentorNotesData.users) && mentorNotesData.users.length > 0
@@ -72,6 +73,41 @@ function escapeHtml(text) {
     .replaceAll("'", "&#039;");
 }
 
+function renderAvatarMarkup(user) {
+  return user.avatarUrl && String(user.avatarUrl).trim()
+    ? `<img src="${escapeHtml(user.avatarUrl)}" alt="${escapeHtml(user.name)}" class="user-avatar-image" />`
+    : escapeHtml(getInitials(user.name));
+}
+
+function cardSubtitle(user) {
+  return `${user.sessions} ${user.sessions === 1 ? "session" : "sessions"}`;
+}
+
+function cardResultsLabel(count) {
+  const noun = viewerRole === "student" ? "mentor" : "user";
+  return `${count} ${count === 1 ? noun : `${noun}s`}`;
+}
+
+function notePreviewTitle(user, note) {
+  if (viewerRole === "student") {
+    return escapeHtml(note.service || "Session");
+  }
+
+  return escapeHtml(user.name);
+}
+
+function modalUserNameValue(user) {
+  return viewerRole === "student"
+    ? user.studentName || "User"
+    : user.name || "User";
+}
+
+function modalUserEmailValue(user) {
+  return viewerRole === "student"
+    ? user.studentEmail || "Not available"
+    : user.email || "Not available";
+}
+
 function renderUsers() {
   const userTerm = userSearch?.value.trim().toLowerCase() || "";
   const mentorTerm = mentorSearch?.value.trim().toLowerCase() || "";
@@ -91,7 +127,7 @@ function renderUsers() {
   }
 
   usersGrid.innerHTML = "";
-  resultsCount.textContent = `${filteredUsers.length} ${filteredUsers.length === 1 ? "user" : "users"}`;
+  resultsCount.textContent = cardResultsLabel(filteredUsers.length);
 
   if (!filteredUsers.length) {
     emptyState.classList.remove("hidden");
@@ -111,10 +147,10 @@ function renderUsers() {
 
     card.innerHTML = `
       <div class="user-head">
-        <div class="user-avatar">${getInitials(user.name)}</div>
+        <div class="user-avatar">${renderAvatarMarkup(user)}</div>
         <div class="user-info">
           <h5>${escapeHtml(user.name)}</h5>
-          <p>${user.sessions} ${user.sessions === 1 ? "session" : "sessions"}</p>
+          <p>${cardSubtitle(user)}</p>
         </div>
         <div class="sessions-pill">${notes.length} ${notes.length === 1 ? "Note" : "Notes"}</div>
       </div>
@@ -134,7 +170,7 @@ function renderUsers() {
             <div>
               <div class="note-box-top">
                 <div class="note-box-main">
-                  <p class="note-box-name">${escapeHtml(user.name)}</p>
+                  <p class="note-box-name">${notePreviewTitle(user, note)}</p>
                   <p class="note-box-date">${escapeHtml(note.date)}</p>
                 </div>
                 <span class="note-view-btn">View</span>
@@ -222,15 +258,15 @@ function openModal(user, note) {
     return;
   }
 
-  modalInitials.textContent = getInitials(user.name);
+  modalInitials.innerHTML = renderAvatarMarkup(user);
   modalUserName.textContent = user.name;
   modalMeta.textContent = `${note.mentor} • ${note.service}`;
   modalSessions.textContent = user.sessions;
   modalDate.textContent = note.date;
   modalService.textContent = note.service;
 
-  modalDetailUserName.textContent = user.name;
-  modalUserEmail.textContent = user.email || "Not available";
+  modalDetailUserName.textContent = modalUserNameValue(user);
+  modalUserEmail.textContent = modalUserEmailValue(user);
   modalMentorName.textContent = note.mentor;
   modalMentorEmail.textContent = note.mentorEmail || "Not available";
   modalDetailDate.textContent = note.date;

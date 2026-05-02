@@ -766,6 +766,99 @@ body {
   color: var(--muted);
 }
 
+.avatar-upload-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.avatar-upload-card {
+  width: 100%;
+  min-height: 168px;
+  border: 2px dashed #d6deee;
+  border-radius: 28px;
+  background: #fafcff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.avatar-upload-card:hover,
+.avatar-upload-card:focus,
+.avatar-upload-card.dragover {
+  border-color: #9eaef9;
+  background: #f4f7ff;
+}
+
+.avatar-upload-card.has-image {
+  padding-top: 20px;
+}
+
+.avatar-upload-icon {
+  width: 32px;
+  height: 32px;
+  color: #7278a8;
+  flex-shrink: 0;
+}
+
+.avatar-upload-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 22px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--avatar-bg);
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 800;
+  box-shadow: 0 12px 28px rgba(35, 47, 88, 0.12);
+}
+
+.avatar-upload-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatar-upload-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.avatar-upload-title {
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.avatar-upload-formats,
+.avatar-upload-filename {
+  font-size: 13px;
+  color: #747b9c;
+}
+
+.avatar-upload-filename {
+  font-weight: 600;
+}
+
 .image-actions-row {
   margin-top: 10px;
 }
@@ -1679,5 +1772,15 @@ input[list] {
 @media (max-width: 768px) {
   .topbar-right .credits-box {
     display: none;
+  }
+
+  .avatar-upload-card {
+    min-height: 150px;
+    border-radius: 24px;
+    padding: 20px;
+  }
+
+  .avatar-upload-title {
+    font-size: 16px;
   }
 }

@@ -39,7 +39,10 @@ class BookingController extends Controller
 
         $selectedBooking = $bookings->getCollection()
             ->sortBy('session_at')
-            ->first(fn (Booking $booking) => $booking->session_at?->isFuture())
+            ->first(fn (Booking $booking) => $this->meetingPresenter->scheduledState($booking) === 'live')
+            ?? $bookings->getCollection()
+                ->sortBy('session_at')
+                ->first(fn (Booking $booking) => $booking->session_at?->isFuture())
             ?? $bookings->first();
 
         return view('bookings::student.index', [
@@ -192,13 +195,32 @@ class BookingController extends Controller
             'viewerId' => (int) Auth::id(),
             'viewerName' => Auth::user()?->name,
             'chat' => $this->chatConfiguration(),
+            'currentBookings' => $bookings->getCollection()
+                ->filter(fn (Booking $booking) => $this->isCurrentBooking($booking))
+                ->sortBy('session_at')
+                ->map(fn (Booking $booking) => $this->transformBooking($booking))
+                ->values()
+                ->all(),
             'upcomingBookings' => $bookings->getCollection()
+                ->filter(fn (Booking $booking) => $this->isUpcomingBooking($booking))
                 ->sortBy('session_at')
                 ->map(fn (Booking $booking) => $this->transformBooking($booking))
                 ->values()
                 ->all(),
             'supportUrl' => route('student.support.index'),
         ];
+    }
+
+    private function isUpcomingBooking(Booking $booking): bool
+    {
+        return in_array((string) $booking->status, ['pending', 'confirmed'], true)
+            && $this->meetingPresenter->scheduledState($booking) === 'upcoming';
+    }
+
+    private function isCurrentBooking(Booking $booking): bool
+    {
+        return in_array((string) $booking->status, ['pending', 'confirmed'], true)
+            && $this->meetingPresenter->scheduledState($booking) === 'live';
     }
 
     private function transformBooking(Booking $booking): array
@@ -220,6 +242,7 @@ class BookingController extends Controller
             'id' => $booking->id,
             'counterpartName' => $mentorName,
             'mentorName' => $mentorName,
+            'mentorAvatarUrl' => $booking->mentor?->user?->avatar_url,
             'mentorDisplay' => trim(implode(' • ', array_filter([$mentorName, $mentorMeta]))),
             'mentorEmail' => $booking->mentor?->user?->email,
             'mentorProgram' => $booking->mentor?->universityProgram?->program_name

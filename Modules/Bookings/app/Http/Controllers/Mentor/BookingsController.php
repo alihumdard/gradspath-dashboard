@@ -184,12 +184,30 @@ class BookingsController extends Controller
                     'items' => $booked,
                 ],
             ],
+            'currentBookings' => collect(array_merge($hosted, $booked))
+                ->filter(fn (array $booking) => $this->isCurrentBookingPayload($booking))
+                ->sortBy(fn (array $booking) => $booking['sessionDateKey'] ?? '')
+                ->values()
+                ->all(),
             'upcomingBookings' => collect(array_merge($hosted, $booked))
+                ->filter(fn (array $booking) => $this->isUpcomingBookingPayload($booking))
                 ->sortBy(fn (array $booking) => $booking['sessionDateKey'] ?? '')
                 ->values()
                 ->all(),
             'supportUrl' => route('mentor.support.index'),
         ];
+    }
+
+    private function isUpcomingBookingPayload(array $booking): bool
+    {
+        return in_array((string) ($booking['status'] ?? ''), ['pending', 'confirmed'], true)
+            && (string) ($booking['meetingState'] ?? '') === 'upcoming';
+    }
+
+    private function isCurrentBookingPayload(array $booking): bool
+    {
+        return in_array((string) ($booking['status'] ?? ''), ['pending', 'confirmed'], true)
+            && (string) ($booking['meetingState'] ?? '') === 'live';
     }
 
     private function transformBooking(Booking $booking, string $perspective): array
@@ -358,7 +376,8 @@ class BookingsController extends Controller
             ->sortBy('session_at')
             ->values();
 
-        return $combined->first(fn (Booking $booking) => $booking->session_at?->isFuture())
+        return $combined->first(fn (Booking $booking) => $this->meetingPresenter->scheduledState($booking) === 'live')
+            ?? $combined->first(fn (Booking $booking) => $booking->session_at?->isFuture())
             ?? $combined->sortByDesc('session_at')->first();
     }
 

@@ -34,11 +34,22 @@
               @php
                 $mentorActionUrl = route('student.mentor.book', $mentor['id']);
                 $mentorActionLabel = 'Book Now';
+                $feedbackUrl = route('feedback.index', [
+                    'mentor_id' => $mentor['id'],
+                    'mentor_type' => $mentor['profession'] ?? null,
+                    'program' => $mentor['category'] ?? null,
+                ]);
               @endphp
               <article class="mentor-card">
                 <div class="mentor-card-header">
                   <div class="mentor-card-identity">
-                    <div class="mentor-avatar">{{ $mentor['initials'] }}</div>
+                    <div class="mentor-avatar">
+                      @if (! empty($mentor['avatarUrl']))
+                        <img src="{{ $mentor['avatarUrl'] }}" alt="{{ $mentor['name'] }}" class="mentor-avatar-image" />
+                      @else
+                        {{ $mentor['initials'] }}
+                      @endif
+                    </div>
                     <div>
                       <div class="mentor-name">{{ $mentor['name'] }}</div>
                       <div class="mentor-role">{{ $mentor['role'] }}</div>
@@ -80,9 +91,9 @@
                 <div class="student-note-box">
                   <div class="feedback-header">
                     <div class="student-note-title">Recent Feedback</div>
-                    <button class="see-more-feedback" type="button">
+                    <a href="{{ $feedbackUrl }}" class="see-more-feedback">
                       See more Feedback
-                    </button>
+                    </a>
                   </div>
 
                   <div class="read-more-block feedback-read-more">

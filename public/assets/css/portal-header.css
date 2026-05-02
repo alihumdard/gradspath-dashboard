@@ -1,7 +1,7 @@
 .topbar {
   height: 72px;
-  background: #fff;
-  border-bottom: 1px solid #ececf1;
+  background: var(--sidebar-bg, #fff);
+  border-bottom: 1px solid var(--line, #ececf1);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -30,9 +30,9 @@
   height: 40px;
   padding: 0 14px;
   border-radius: 13px;
-  border: 1px solid #ececf1;
-  background: #fafafa;
-  color: #111827;
+  border: 1px solid var(--line, #ececf1);
+  background: var(--panel-soft-2, #fafafa);
+  color: var(--purple-dark, #111827);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -40,15 +40,15 @@
 }
 
 .theme-toggle:hover {
-  background: #f7f3ff;
-  border-color: #d7c8ff;
+  background: var(--hover-bg, #f7f3ff);
+  border-color: var(--hover-line, #d7c8ff);
   transform: translateY(-1px);
 }
 
 .credits-box {
   min-height: 40px;
-  border: 1px solid #ececf1;
-  background: #fff;
+  border: 1px solid var(--line, #ececf1);
+  background: var(--panel, #fff);
   border-radius: 14px;
   display: flex;
   align-items: center;
@@ -56,12 +56,12 @@
   padding: 10px 18px;
   font-size: 14px;
   font-weight: 700;
-  color: #111827;
+  color: var(--text, #111827);
   white-space: nowrap;
 }
 
 .credits-box strong {
-  color: #6f4cf6;
+  color: var(--purple, #6f4cf6);
   font-size: 14px;
 }
 

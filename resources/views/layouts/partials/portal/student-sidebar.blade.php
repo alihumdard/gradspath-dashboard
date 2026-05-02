@@ -1,5 +1,7 @@
 @php($activeNav = $activeNav ?? '')
 @php($roleLabel = ucfirst(auth()->user()?->getRoleNames()->first() ?? 'student'))
+@php($currentUser = auth()->user())
+@php($sidebarInitials = collect(preg_split('/\s+/', trim($currentUser?->name ?? '')) ?: [])->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode(''))
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-top">
@@ -86,7 +88,21 @@
     </div>
 
     <div class="nav-group">
-      <a href="/student/feedback" @class(['nav-item single-link', 'active' => $activeNav === 'feedback'])>
+      <a href="{{ route('student.notes') }}" @class(['nav-item single-link', 'active' => $activeNav === 'mentor-notes'])>
+        <span class="nav-left">
+          <span class="nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+            </svg>
+          </span>
+          <span class="nav-text">Mentor Notes</span>
+        </span>
+      </a>
+    </div>
+
+    <div class="nav-group">
+      <a href="{{ route('feedback.index') }}" @class(['nav-item single-link', 'active' => $activeNav === 'feedback'])>
         <span class="nav-left">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -162,8 +178,18 @@
         </button>
       </form>
 
-      <div class="mt-2 inline-flex max-w-full rounded-lg bg-[#F3EDFF] px-3 py-2 text-sm font-semibold text-[#6D28D9] break-all">
-        {{ auth()->user()?->email }} ({{ $roleLabel }})
+      <div class="mt-2 flex max-w-full items-center gap-3 rounded-lg bg-[#F3EDFF] px-3 py-2 text-sm font-semibold text-[#6D28D9]">
+        <div style="width:40px;height:40px;border-radius:12px;overflow:hidden;background:#e9ddff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          @if ($currentUser?->avatar_url)
+            <img src="{{ $currentUser->avatar_url }}" alt="{{ $currentUser->name ?? 'Student' }}" style="width:100%;height:100%;object-fit:cover;" />
+          @else
+            <span>{{ $sidebarInitials }}</span>
+          @endif
+        </div>
+        <div style="min-width:0;">
+          <div style="color:#4c1d95;">{{ $currentUser?->name ?: 'Student' }}</div>
+          <div class="break-all">{{ $currentUser?->email }} ({{ $roleLabel }})</div>
+        </div>
       </div>
     </div>
   </nav>

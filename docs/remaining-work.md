@@ -190,3 +190,41 @@ Remaining:
 5. Feedback analytics and review browsing polish.
 6. Settings polish: avatars, payout copy, optional provider settings.
 7. Production runbooks for Stripe, queues, scheduler, and webhooks.
+
+
+
+f we check only docx.plan.md, the remaining app work from that plan is:
+
+Mentor password approval flow for mentor signup.
+Professional-user signup exemption from .edu email.
+Exact “Mentors of the Week” ranking logic.
+Full dashboard polish and visible light/dark preference integration.
+Program-type filtering in university explore flow.
+Full university -> program -> mentor navigation as described.
+Dedicated office-hours management backend beyond the current availability flow.
+Biweekly office-hours automation, if you still want it.
+Feedback analytics:
+most-mentioned tags/keywords
+mentor replies to reviews
+richer public browsing/filtering/sorting
+realtime stats updates
+Mentor notes completion:
+admin soft delete/moderation
+search/filter
+final visibility rules
+full “view/read more” style browsing if you want it exactly as planned
+Booking reschedule flow.
+Final meeting-provider/Zoom production verification.
+Support ticket user history pages.
+Support ticket rate limiting / anti-spam.
+Threaded email follow-up for tickets.
+Avatar upload with old-file cleanup.
+Clearer payout/settings UX.
+Optional Slack/community integration.
+Optional mentor Zoom/provider settings.
+Admin audit-log consistency and large-list pagination/search polish.
+Stripe/production ops work:
+webhook/queue/scheduler runbook
+office-hours payout verification
+refund review/admin workflow polish
+One important note: if we use only docx.plan.md, it reads like a target product spec, not a status file. So “remaining” here means “features still implied by the plan,” not necessarily “missing in code right now.” If you want, I can make a docx-plan-only checklist with just two groups: implemented and still not matched to the plan.

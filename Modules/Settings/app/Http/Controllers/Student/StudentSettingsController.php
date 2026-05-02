@@ -10,10 +10,13 @@ use Illuminate\View\View;
 use Modules\Institutions\app\Models\University;
 use Modules\Settings\app\Http\Requests\UpdateStudentProfileRequest;
 use Modules\Settings\app\Models\StudentProfile;
+use Modules\Settings\app\Support\AvatarUploadService;
 use Modules\Settings\app\Support\TimezoneOptions;
 
 class StudentSettingsController extends Controller
 {
+    public function __construct(private readonly AvatarUploadService $avatars) {}
+
     public function index(): View
     {
         $user = Auth::user()->loadMissing('studentProfile.university', 'setting');
@@ -37,6 +40,7 @@ class StudentSettingsController extends Controller
     {
         $user = Auth::user()->loadMissing('studentProfile', 'setting');
         $data = $request->validated();
+        $avatar = $request->file('avatar');
 
         DB::transaction(function () use ($user, $data): void {
             $user->forceFill([
@@ -71,6 +75,10 @@ class StudentSettingsController extends Controller
             ]);
             $profile->save();
         });
+
+        if ($avatar) {
+            $this->avatars->replaceStudentAvatar($user->fresh(), $avatar);
+        }
 
         return redirect()
             ->route('student.settings.index')

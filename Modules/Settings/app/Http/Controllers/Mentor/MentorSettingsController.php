@@ -15,11 +15,15 @@ use Modules\Institutions\app\Models\University;
 use Modules\Institutions\app\Models\UniversityProgram;
 use Modules\Settings\app\Http\Requests\UpdateMentorSettingsRequest;
 use Modules\Settings\app\Models\Mentor;
+use Modules\Settings\app\Support\AvatarUploadService;
 use Modules\Settings\app\Support\TimezoneOptions;
 
 class MentorSettingsController extends Controller
 {
-    public function __construct(private readonly ZoomService $zoom) {}
+    public function __construct(
+        private readonly ZoomService $zoom,
+        private readonly AvatarUploadService $avatars,
+    ) {}
 
     public function index(): View
     {
@@ -90,8 +94,10 @@ class MentorSettingsController extends Controller
     {
         $user = Auth::user()->loadMissing('mentor.services', 'setting');
         $data = $request->validated();
+        $avatar = $request->file('avatar');
+        $mentor = null;
 
-        DB::transaction(function () use ($user, $data): void {
+        DB::transaction(function () use ($user, $data, &$mentor): void {
             $user->forceFill([
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -135,6 +141,10 @@ class MentorSettingsController extends Controller
             $mentor->save();
 
         });
+
+        if ($avatar && $mentor) {
+            $this->avatars->replaceMentorAvatar($user->fresh(), $mentor->fresh(), $avatar);
+        }
 
         return redirect()
             ->route('mentor.settings.index')

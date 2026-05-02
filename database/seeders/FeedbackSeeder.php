@@ -10,15 +10,23 @@ class FeedbackSeeder extends Seeder
 {
     public function run(): void
     {
+        $seededComments = [
+            'https://meet.example.com/booking-1001' => 'Very helpful session with clear guidance and practical advice.',
+            'https://meet.example.com/booking-1002' => 'Very helpful session with clear guidance and practical advice.',
+            'https://meet.example.com/booking-2001' => 'Abdul gave me a much clearer MBA application strategy and broke down what to prioritize first.',
+            'https://meet.example.com/booking-2002' => 'Excellent interview prep with direct feedback, better framing, and practical examples I could use right away.',
+            'https://meet.example.com/booking-2003' => 'Supportive office hours session with thoughtful answers and actionable next steps for my profile.',
+        ];
+
         $bookings = Booking::query()
             ->with('service:id,service_name')
             ->where('status', 'completed')
             ->orderBy('session_at')
-            ->take(3)
             ->get();
 
         foreach ($bookings as $index => $booking) {
             $stars = max(4, 5 - $index);
+            $comment = $seededComments[$booking->meeting_link] ?? 'Very helpful session with clear guidance and practical advice.';
 
             Feedback::query()->updateOrCreate(
                 [
@@ -29,7 +37,7 @@ class FeedbackSeeder extends Seeder
                     'mentor_id' => $booking->mentor_id,
                     'stars' => $stars,
                     'preparedness_rating' => $stars,
-                    'comment' => 'Very helpful session with clear guidance and practical advice.',
+                    'comment' => $comment,
                     'recommend' => true,
                     'service_type' => $booking->service?->service_name,
                     'is_verified' => true,

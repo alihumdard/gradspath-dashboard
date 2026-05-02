@@ -395,7 +395,7 @@ class AvailabilityController extends Controller
         if ($validator->fails()) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => $validator->errors()->first() ?: 'Please fix the highlighted availability settings before saving.',
+                    'message' => 'Please fix the highlighted availability settings before saving.',
                     'errors' => $validator->errors(),
                 ], 422);
             }
@@ -555,26 +555,6 @@ class AvailabilityController extends Controller
                             || ! empty($slot['service_config_id']);
                     });
             });
-    }
-
-    private function mentorZoomAvailabilityMessage(\RuntimeException $exception): string
-    {
-        $message = $exception->getMessage();
-
-        if (
-            str_contains($message, 'reconnect Zoom')
-            || str_contains($message, 'revoked')
-            || str_contains($message, 'expired')
-            || str_contains($message, 'missing')
-        ) {
-            return 'Reconnect Zoom before publishing student-bookable availability.';
-        }
-
-        if (str_contains($message, 'not connected') || str_contains($message, 'connected Zoom')) {
-            return 'Connect Zoom before publishing student-bookable availability.';
-        }
-
-        return 'Zoom connection could not be verified right now. Please try again shortly before publishing student-bookable availability.';
     }
 
     private function mentorZoomPayload(): array

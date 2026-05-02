@@ -7,6 +7,9 @@
 
 @php
   $viewErrors = $errors ?? new \Illuminate\Support\ViewErrorBag();
+  $mentorName = trim(old('name', $user->name ?? ''));
+  $mentorInitials = collect(preg_split('/\s+/', $mentorName) ?: [])->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('');
+  $mentorAvatarUrl = $user->avatar_url ?: $mentor->avatar_url;
   $payoutButtonLabel = $mentor->payouts_enabled || $mentor->stripe_onboarding_complete
       ? 'Update payout details'
       : ($mentor->stripe_account_id ? 'Continue payout setup' : 'Enable Payouts');
@@ -51,7 +54,7 @@
           </div>
         @endif
         <div class="availability-alert availability-alert--error" id="mentorFormAlert" hidden></div>
-        <form id="mentorForm" method="POST" action="{{ route('mentor.settings.update') }}" novalidate>
+        <form id="mentorForm" method="POST" action="{{ route('mentor.settings.update') }}" enctype="multipart/form-data" novalidate data-avatar-upload-form>
           @csrf
           @method('PATCH')
           <fieldset class="mentor-settings-fieldset" @disabled($mentorProfileBlocked)>
@@ -61,6 +64,47 @@
                 <div class="settings-card-head">
                   <h2>Profile Basics</h2>
                   <p>Your account identity and verification details.</p>
+                </div>
+
+                <div class="field">
+                  <label for="avatar">Profile Image</label>
+                  <input
+                    type="file"
+                    id="avatar"
+                    name="avatar"
+                    class="avatar-upload-input"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    data-avatar-input
+                  />
+                  <label
+                    for="avatar"
+                    class="avatar-upload-card{{ $mentorAvatarUrl ? ' has-image' : '' }}"
+                    data-avatar-dropzone
+                  >
+                    <div
+                      class="avatar-upload-preview"
+                      data-avatar-preview
+                      @if (! $mentorAvatarUrl) hidden @endif
+                    >
+                      @if ($mentorAvatarUrl)
+                        <img src="{{ $mentorAvatarUrl }}" alt="{{ $mentorName ?: 'Mentor' }}" data-avatar-preview-image />
+                      @else
+                        <span data-avatar-preview-fallback>{{ $mentorInitials }}</span>
+                      @endif
+                    </div>
+                    <svg class="avatar-upload-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path fill="currentColor" d="M11 20v-9.17l-3.59 3.58L6 13l6-6 6 6-1.41 1.41L13 10.83V20zM5 4h14v2H5z" />
+                    </svg>
+                    <div class="avatar-upload-copy">
+                      <span class="avatar-upload-title">Drop image here to upload, or click here to browse</span>
+                      <span class="avatar-upload-formats">PNG, JPG, or JPEG</span>
+                      <span class="avatar-upload-filename" data-avatar-file-name @if (! $mentorAvatarUrl) hidden @endif>
+                        {{ $mentorAvatarUrl ? 'Current image selected' : '' }}
+                      </span>
+                    </div>
+                  </label>
+                  <p class="helper-text">Upload a JPG, PNG, or WebP image up to 5 MB.</p>
+                  <p class="error-text">{{ $viewErrors->first('avatar') }}</p>
                 </div>
 
                 <div class="field-row">
@@ -339,4 +383,77 @@
       </section>
     </div>
   </div>
+@endsection
+
+@section('page_js')
+  <script>
+    const mentorAvatarForm = document.querySelector("[data-avatar-upload-form]");
+    const mentorAvatarInput = mentorAvatarForm?.querySelector("[data-avatar-input]");
+    const mentorAvatarDropzone = mentorAvatarForm?.querySelector("[data-avatar-dropzone]");
+    const mentorAvatarPreview = mentorAvatarForm?.querySelector("[data-avatar-preview]");
+    const mentorAvatarPreviewImage = mentorAvatarForm?.querySelector("[data-avatar-preview-image]");
+    const mentorAvatarPreviewFallback = mentorAvatarForm?.querySelector("[data-avatar-preview-fallback]");
+    const mentorAvatarFileName = mentorAvatarForm?.querySelector("[data-avatar-file-name]");
+
+    function renderMentorAvatarFile(file) {
+      if (!mentorAvatarDropzone || !mentorAvatarPreview || !mentorAvatarFileName || !file) {
+        return;
+      }
+
+      mentorAvatarDropzone.classList.add("has-image");
+      mentorAvatarPreview.hidden = false;
+      mentorAvatarFileName.hidden = false;
+      mentorAvatarFileName.textContent = file.name;
+
+      const objectUrl = URL.createObjectURL(file);
+
+      if (mentorAvatarPreviewImage) {
+        mentorAvatarPreviewImage.src = objectUrl;
+      } else {
+        const image = document.createElement("img");
+        image.src = objectUrl;
+        image.alt = "Mentor profile image preview";
+        image.setAttribute("data-avatar-preview-image", "");
+        mentorAvatarPreview.innerHTML = "";
+        mentorAvatarPreview.appendChild(image);
+      }
+
+      if (mentorAvatarPreviewFallback) {
+        mentorAvatarPreviewFallback.remove();
+      }
+    }
+
+    if (mentorAvatarInput && mentorAvatarDropzone) {
+      mentorAvatarInput.addEventListener("change", () => {
+        const [file] = mentorAvatarInput.files || [];
+        renderMentorAvatarFile(file);
+      });
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        mentorAvatarDropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          mentorAvatarDropzone.classList.add("dragover");
+        });
+      });
+
+      ["dragleave", "dragend", "drop"].forEach((eventName) => {
+        mentorAvatarDropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          mentorAvatarDropzone.classList.remove("dragover");
+        });
+      });
+
+      mentorAvatarDropzone.addEventListener("drop", (event) => {
+        const [file] = event.dataTransfer?.files || [];
+        if (!file) {
+          return;
+        }
+
+        const transfer = new DataTransfer();
+        transfer.items.add(file);
+        mentorAvatarInput.files = transfer.files;
+        renderMentorAvatarFile(file);
+      });
+    }
+  </script>
 @endsection

@@ -19,7 +19,7 @@ class BookingPageService
     {
         return Mentor::query()
             ->with([
-                'user:id,name',
+                'user:id,name,avatar_url',
                 'university:id,name,display_name',
                 'rating:id,mentor_id,avg_stars',
                 'services' => fn ($query) => $query
@@ -107,6 +107,7 @@ class BookingPageService
             'mentor' => [
                 'id' => $mentor->id,
                 'name' => $mentorName,
+                'avatarUrl' => $mentor->user?->avatar_url ?: $mentor->avatar_url,
                 'initials' => $this->initials($mentorName),
                 'meta' => trim($programLabel.' • '.$school, ' •'),
                 'description' => $mentor->bio

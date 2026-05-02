@@ -35,7 +35,11 @@
               <div class="mentor-card">
                 <div class="mentor-top">
                   <div class="mentor-icon-wrap">
-                    <span id="mentorInitials">{{ $bookingPageData['mentor']['initials'] ?? 'M' }}</span>
+                    @if (! empty($bookingPageData['mentor']['avatarUrl']))
+                      <img src="{{ $bookingPageData['mentor']['avatarUrl'] }}" alt="{{ $bookingPageData['mentor']['name'] ?? 'Mentor' }}" class="mentor-icon-image" />
+                    @else
+                      <span id="mentorInitials">{{ $bookingPageData['mentor']['initials'] ?? 'M' }}</span>
+                    @endif
                   </div>
                   <div class="mentor-main">
                     <h2 id="mentorDisplayName">{{ $bookingPageData['mentor']['name'] ?? 'Mentor' }}</h2>
