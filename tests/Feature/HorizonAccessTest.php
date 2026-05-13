@@ -28,7 +28,7 @@ function createHorizonUser(string $role = 'student', bool $isActive = true): Use
 }
 
 it('redirects guests away from the horizon dashboard', function () {
-    $this->get('/horizon')->assertRedirect(route('login'));
+    $this->get('/horizon')->assertRedirect(route('admin.login'));
 });
 
 it('blocks non-admin users from the horizon dashboard', function () {
@@ -44,7 +44,7 @@ it('redirects inactive admins away from the horizon dashboard', function () {
 
     $this->actingAs($user)
         ->get('/horizon')
-        ->assertRedirect(route('login'));
+        ->assertRedirect(route('admin.login'));
 });
 
 it('allows active admins to open the horizon dashboard', function () {
@@ -52,7 +52,7 @@ it('allows active admins to open the horizon dashboard', function () {
 
     $this->actingAs($admin)
         ->get('/horizon')
-        ->assertForbidden();
+        ->assertOk();
 });
 
 it('uses redis for queues and horizon supervisors', function () {

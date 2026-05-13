@@ -14,12 +14,16 @@ class EnsureActiveAccount
         $user = Auth::user();
 
         if ($user && !$user->is_active) {
+            $loginRoute = $user->hasRole('admin') || $request->is('admin') || $request->is('admin/*') || $request->is('horizon') || $request->is('horizon/*')
+                ? 'admin.login'
+                : 'login';
+
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
             return redirect()
-                ->route('login')
+                ->route($loginRoute)
                 ->withErrors(['email' => 'Your account has been suspended. Please contact support.']);
         }
 
