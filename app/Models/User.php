@@ -74,7 +74,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function sendEmailVerificationNotification(): void
     {
-        $this->notify(new QueuedVerifyEmail());
+        $this->notify(new QueuedVerifyEmail($this));
     }
 
     public function oauthTokens(): HasMany
