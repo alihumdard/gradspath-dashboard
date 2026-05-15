@@ -1,3 +1,19 @@
+body:has(.availability-main) {
+  overflow: auto;
+}
+
+body:has(.availability-main) .app-shell {
+  min-height: 100vh;
+  height: auto;
+  overflow: visible;
+}
+
+body:has(.availability-main) .main-content {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+}
+
 .availability-main {
   --availability-danger: #ef4444;
   --availability-danger-soft: rgba(239, 68, 68, 0.08);
@@ -5,7 +21,6 @@
   --availability-success-soft: rgba(39, 199, 184, 0.12);
   width: 100%;
   max-width: 1240px;
-  min-height: calc(100vh - 72px);
   margin: 0 auto;
   padding: 18px 18px 28px;
   color: var(--text);
