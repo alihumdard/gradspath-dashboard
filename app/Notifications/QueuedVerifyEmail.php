@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Queue\SerializesModels;
 
 class QueuedVerifyEmail extends VerifyEmail implements ShouldQueue
@@ -14,6 +15,19 @@ class QueuedVerifyEmail extends VerifyEmail implements ShouldQueue
 
     public function __construct(protected ?User $user = null)
     {
+    }
+
+    public function toMail($notifiable): MailMessage
+    {
+        $userName = trim((string) ($notifiable->name ?? '')) ?: 'there';
+
+        return (new MailMessage)
+            ->subject('Verify your email address')
+            ->view('emails.verify-email', [
+                'url' => $this->verificationUrl($notifiable),
+                'userName' => $userName,
+                'expiresIn' => config('auth.verification.expire', 60),
+            ]);
     }
 
     /**

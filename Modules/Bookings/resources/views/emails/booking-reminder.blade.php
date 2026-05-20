@@ -11,6 +11,11 @@
             <td align="center">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px; background:#ffffff; border-radius:24px; overflow:hidden; box-shadow:0 18px 50px rgba(17, 24, 39, 0.08);">
                     <tr>
+                        <td style="padding:24px 32px 16px; background:linear-gradient(135deg, #0f172a 0%, #2563eb 100%); text-align:center;">
+                            <img src="{{ asset('Logo.jpeg') }}" width="76" alt="Grads Paths Logo" style="width:76px; max-width:76px; height:auto; display:inline-block; border:0; outline:none; text-decoration:none;">
+                        </td>
+                    </tr>
+                    <tr>
                         <td style="padding:32px 32px 24px; background:linear-gradient(135deg, #0f172a 0%, #2563eb 100%); color:#ffffff;">
                             <div style="font-size:12px; letter-spacing:1.6px; text-transform:uppercase; opacity:0.82;">Grads Paths</div>
                             <h1 style="margin:14px 0 10px; font-size:28px; line-height:1.2;">Your session starts soon</h1>
