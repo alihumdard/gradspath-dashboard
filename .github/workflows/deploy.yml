@@ -36,6 +36,7 @@ jobs:
             php artisan route:cache
             php artisan view:cache
             sudo chown -R www-data:www-data storage bootstrap/cache
-            sudo chmod -R 775 storage bootstrap/cache
+            sudo find storage bootstrap/cache -type d -exec chmod 775 {} \;
+            sudo find storage bootstrap/cache -type f -not -name '.gitignore' -exec chmod 664 {} \;
             sudo systemctl reload php8.3-fpm
             sudo systemctl reload nginx
