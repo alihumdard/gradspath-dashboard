@@ -186,7 +186,7 @@
             </div>
 
             <div class="btn-wrap">
-                <a href="{{ $url }}" class="btn">Verify Email Address</a>
+                <a href="{{ $url }}" class="btn" style="color: #ffffff !important; text-decoration: none;">Verify Email Address</a>
             </div>
 
             <hr>
