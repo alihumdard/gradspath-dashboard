@@ -1,7 +1,7 @@
 @extends('layouts.portal-student')
 
 @section('title', 'Support - Grads Paths')
-@section('portal_css_asset', 'assets/css/demo15.css')
+@section('portal_css_asset', 'assets/css/support.css')
 @section('portal_active_nav', 'support')
 
 @section('page_topbar_left')
@@ -22,5 +22,5 @@
 @endsection
 
 @section('page_js')
-  <script src="{{ asset('assets/js/demo15.js') }}"></script>
+  <script src="{{ asset('assets/js/support.js') }}"></script>
 @endsection

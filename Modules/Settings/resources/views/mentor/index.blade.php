@@ -1,8 +1,8 @@
 @extends('layouts.portal-mentor')
 
 @section('title', 'Mentor Settings - Grads Paths')
-@section('portal_css_asset', 'assets/css/demo10.css')
-@section('portal_js_asset', 'assets/js/demo10.js')
+@section('portal_css_asset', 'assets/css/profile-settings.css')
+@section('portal_js_asset', 'assets/js/profile-settings.js')
 @section('portal_active_nav', 'settings')
 
 @php

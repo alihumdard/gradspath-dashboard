@@ -1,8 +1,8 @@
 @extends('layouts.portal-mentor')
 
 @section('title', 'Mentor Dashboard - Grads Paths')
-@section('portal_css_asset', 'assets/css/demo1.css')
-@section('portal_js_asset', 'assets/js/demo1.js')
+@section('portal_css_asset', 'assets/css/discovery.css')
+@section('portal_js_asset', 'assets/js/discovery.js')
 @section('portal_active_nav', 'dashboard')
 
 @php

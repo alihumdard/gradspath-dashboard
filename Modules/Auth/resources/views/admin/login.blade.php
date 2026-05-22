@@ -3,7 +3,7 @@
 @section('title', 'Admin Sign In - Grads Paths')
 
 @section('css')
-<link rel="stylesheet" href="{{ asset('assets/css/demo12.css') }}" />
+<link rel="stylesheet" href="{{ asset('assets/css/admin-auth.css') }}" />
 <style>
   .login-card .message {
     margin: 0 0 16px;

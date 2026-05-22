@@ -1,7 +1,7 @@
 @extends($portalLayout ?? 'layouts.portal-student')
 
 @section('title', 'Feedback - Grads Paths')
-@section('portal_css_asset', 'assets/css/demo5.css')
+@section('portal_css_asset', 'assets/css/feedback.css')
 @section('portal_active_nav', $portalActiveNav ?? 'feedback')
 
 @section('page_topbar_left')
@@ -95,5 +95,5 @@
 
 @section('page_js')
   <script id="feedbackPageData" type="application/json">@json($feedbackPageData ?? [])</script>
-  <script src="{{ asset('assets/js/demo5.js') }}"></script>
+  <script src="{{ asset('assets/js/feedback.js') }}"></script>
 @endsection

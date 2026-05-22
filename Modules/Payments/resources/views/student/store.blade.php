@@ -1,8 +1,8 @@
 @extends('layouts.portal-student')
 
 @section('title', 'Student Store - Grads Paths')
-@section('portal_css_asset', 'assets/css/demo2.css')
-@section('portal_js_asset', 'assets/js/demo2.js')
+@section('portal_css_asset', 'assets/css/payments.css')
+@section('portal_js_asset', 'assets/js/payments.js')
 @section('portal_active_nav', 'dashboard')
 
 @section('portal_css')

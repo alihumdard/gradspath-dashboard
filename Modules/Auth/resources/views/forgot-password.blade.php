@@ -3,7 +3,7 @@
 @section('title', 'Forgot Password - Grads Paths')
 
 @section('css')
-<link rel="stylesheet" href="{{ asset('assets/css/demo12.css') }}" />
+<link rel="stylesheet" href="{{ asset('assets/css/admin-auth.css') }}" />
 @endsection
 
 @section('content')
@@ -38,5 +38,5 @@
 @endsection
 
 @section('js')
-<script src="{{ asset('assets/js/demo12.js') }}"></script>
+<script src="{{ asset('assets/js/admin-auth.js') }}"></script>
 @endsection

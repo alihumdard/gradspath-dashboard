@@ -1,6 +1,6 @@
 @extends($portalLayout ?? 'layouts.portal-student')
 @section('title', 'Book with Mentor - Grads Paths')
-@section('portal_css_asset', 'assets/css/demo11.css')
+@section('portal_css_asset', 'assets/css/booking-create.css')
 @section('portal_active_nav', 'bookings')
 @section('page_topbar_left')
         <div class="search-wrap">
@@ -280,6 +280,6 @@
         </script>
         @endif
         <script id="bookingPageData" type="application/json">@json($bookingPageData)</script>
-        <script src="{{ asset('assets/js/demo11.js') }}">
+        <script src="{{ asset('assets/js/booking-create.js') }}">
         </script>
 @endsection

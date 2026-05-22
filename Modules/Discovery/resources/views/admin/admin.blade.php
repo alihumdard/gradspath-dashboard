@@ -46,7 +46,7 @@
       rel="stylesheet"
     />
     <!-- <link rel="stylesheet" href="demo14.css" /> -->
-    <link rel="stylesheet" href="{{ asset('assets/css/demo12.css') }}?v={{ filemtime(public_path('assets/css/demo12.css')) }}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/admin-auth.css') }}?v={{ filemtime(public_path('assets/css/admin-auth.css')) }}" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
 
@@ -717,7 +717,7 @@
     </div>
 
     <script id="adminRevenueData" type="application/json">@json($adminRevenueData ?? [])</script>
-    <script src="{{ asset('assets/js/demo12.js') }}?v={{ filemtime(public_path('assets/js/demo12.js')) }}"></script>
+    <script src="{{ asset('assets/js/admin-auth.js') }}?v={{ filemtime(public_path('assets/js/admin-auth.js')) }}"></script>
     <!-- <script src="demo14.js"></script> -->
   </body>
 </html>

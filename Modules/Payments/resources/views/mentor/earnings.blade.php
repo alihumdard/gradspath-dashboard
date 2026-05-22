@@ -1,6 +1,6 @@
 @extends('layouts.portal-mentor')
 @section('title', 'Earnings - Grads Paths')
-@section('portal_css_asset', 'assets/css/demo2.css')
+@section('portal_css_asset', 'assets/css/payments.css')
 @section('page_topbar_left')
       <div class="search-wrap">
         <input
@@ -164,6 +164,6 @@
 @endsection
 
 @section('page_js')
-      <script src="{{ asset('assets/js/demo2.js') }}">
+      <script src="{{ asset('assets/js/payments.js') }}">
       </script>
 @endsection

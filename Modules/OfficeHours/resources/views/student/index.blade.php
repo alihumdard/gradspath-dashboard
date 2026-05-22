@@ -1,7 +1,7 @@
 @extends('layouts.portal-student')
 
 @section('title', 'Office Hours This Week - Grads Paths')
-@section('portal_css_asset', 'assets/css/demo13.css')
+@section('portal_css_asset', 'assets/css/office-hours.css')
 @section('portal_active_nav', 'office-hours')
 
 @section('portal_content')
@@ -108,5 +108,5 @@
 
 @section('page_js')
   <script id="officeHoursData" type="application/json">@json($officeHoursData)</script>
-  <script src="{{ asset('assets/js/demo13.js') }}"></script>
+  <script src="{{ asset('assets/js/office-hours.js') }}"></script>
 @endsection

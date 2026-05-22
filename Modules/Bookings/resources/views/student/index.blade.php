@@ -1,6 +1,6 @@
 @extends('layouts.portal-student')
 @section('title', 'Bookings - Grads Paths')
-@section('portal_css_asset', 'assets/css/demo9.css')
+@section('portal_css_asset', 'assets/css/bookings.css')
 @section('portal_active_nav', 'bookings')
 @section('page_topbar_left')
         <div class="search-wrap">
@@ -529,6 +529,6 @@
         <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
         <script src="https://unpkg.com/lucide@latest">
         </script>
-        <script src="{{ asset('assets/js/demo9.js') }}">
+        <script src="{{ asset('assets/js/bookings.js') }}">
         </script>
 @endsection

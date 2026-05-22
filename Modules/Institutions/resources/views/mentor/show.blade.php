@@ -1,8 +1,8 @@
 @extends('layouts.portal-mentor')
 
 @section('title', 'Institution - Grads Paths')
-@section('portal_css_asset', 'assets/css/demo3a.css')
-@section('portal_js_asset', 'assets/js/demo3a.js')
+@section('portal_css_asset', 'assets/css/institutions.css')
+@section('portal_js_asset', 'assets/js/institutions.js')
 @section('portal_active_nav', 'institutions')
 
 @section('portal_content')

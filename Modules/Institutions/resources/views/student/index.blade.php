@@ -1,6 +1,6 @@
 @extends('layouts.portal-student')
 @section('title', 'Institutions - Grads Paths')
-@section('portal_css_asset', 'assets/css/demo3a.css')
+@section('portal_css_asset', 'assets/css/institutions.css')
 @section('portal_active_nav', 'institutions')
 @section('page_topbar_left')
         <div class="search-wrap">
@@ -142,6 +142,6 @@
         <script src="https://unpkg.com/lucide@latest">
         </script>
         <script>window.institutionsData = @json($institutionsData);</script>
-        <script src="{{ asset('assets/js/demo3a.js') }}">
+        <script src="{{ asset('assets/js/institutions.js') }}">
         </script>
 @endsection

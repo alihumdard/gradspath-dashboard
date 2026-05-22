@@ -1,7 +1,7 @@
 @extends('layouts.portal-mentor')
 
 @section('title', 'Users Notes - Grads Paths')
-@section('portal_css_asset', 'assets/css/demo8.css')
+@section('portal_css_asset', 'assets/css/mentor-notes.css')
 @section('portal_active_nav', 'mentor-notes')
 
 @section('page_topbar_left')
@@ -163,5 +163,5 @@
 
 @section('page_js')
   <script id="mentorNotesData" type="application/json">@json($mentorNotesPageData ?? [])</script>
-  <script src="{{ asset('assets/js/demo8.js') }}"></script>
+  <script src="{{ asset('assets/js/mentor-notes.js') }}"></script>
 @endsection

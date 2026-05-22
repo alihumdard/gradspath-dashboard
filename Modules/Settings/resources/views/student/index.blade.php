@@ -1,7 +1,7 @@
 @extends('layouts.portal-student')
 
 @section('title', 'Student Profile - Grads Paths')
-@section('portal_css_asset', 'assets/css/demo10.css')
+@section('portal_css_asset', 'assets/css/profile-settings.css')
 @section('portal_active_nav', 'settings')
 
 @php

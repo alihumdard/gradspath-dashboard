@@ -1,6 +1,6 @@
 @extends('layouts.portal-student')
 @section('title', 'Explore Mentors | Grads Paths')
-@section('portal_css_asset', 'assets/css/demo4.css')
+@section('portal_css_asset', 'assets/css/mentor-explore.css')
 @section('portal_active_nav', 'mentors')
 @section('portal_content')
         <div class="page-wrap">
@@ -88,6 +88,6 @@
 
 @section('page_js')
         <script>window.mentorsData = @json($mentorsData);</script>
-        <script src="{{ asset('assets/js/demo4.js') }}">
+        <script src="{{ asset('assets/js/mentor-explore.js') }}">
         </script>
 @endsection
