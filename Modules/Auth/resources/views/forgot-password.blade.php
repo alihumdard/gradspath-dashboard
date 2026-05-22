@@ -32,10 +32,6 @@
             <button type="submit" class="primary-btn">Send Reset Link</button>
           </form>
 
-          <div class="auth-links">
-            <p>Remember your password? <a href="{{ route('login') }}">Sign in</a></p>
-            <p>Don't have an account? <a href="{{ route('auth.register') }}">Sign up</a></p>
-          </div>
         </div>
       </section>
     </div>

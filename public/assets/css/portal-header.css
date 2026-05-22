@@ -88,6 +88,100 @@
   box-shadow: 0 14px 26px rgba(122, 77, 255, 0.28);
 }
 
+.portal-account-card {
+  width: 100%;
+  max-width: 100%;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--purple, #6f4cf6) 16%, transparent);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(122, 77, 255, 0.08), rgba(39, 199, 184, 0.08)),
+    var(--panel, #ffffff);
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  overflow: hidden;
+}
+
+.portal-account-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #efe7ff, #dff8f5);
+  color: var(--purple, #6f4cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.portal-account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.portal-account-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.portal-account-name,
+.portal-account-email {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portal-account-name {
+  color: var(--purple-dark, #252c3c);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.portal-account-email {
+  color: var(--muted, #6b7285);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.portal-account-role {
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(111, 76, 246, 0.12);
+  color: var(--purple, #6f4cf6);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+[data-theme="dark"] .portal-account-card {
+  border-color: rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(135deg, rgba(122, 77, 255, 0.14), rgba(39, 199, 184, 0.1)),
+    var(--panel, #1f1a28);
+}
+
+[data-theme="dark"] .portal-account-avatar {
+  background: linear-gradient(135deg, rgba(122, 77, 255, 0.34), rgba(39, 199, 184, 0.22));
+  color: #f7f3ff;
+}
+
 @media (max-width: 720px) {
   .topbar {
     height: auto;

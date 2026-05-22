@@ -25,14 +25,24 @@
             </div>
 
             <div class="form-group">
-              <input type="password" name="password" id="password" placeholder="New Password" required />
+              <div class="password-field">
+                <input type="password" name="password" id="password" placeholder="New Password" required />
+                <button type="button" class="password-toggle" aria-label="Show password" data-target="password">
+                  <i class="fa-solid fa-eye-slash toggle-icon" aria-hidden="true"></i>
+                </button>
+              </div>
               @error('password')
                 <span class="error">{{ $message }}</span>
               @enderror
             </div>
 
             <div class="form-group">
-              <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Confirm Password" required />
+              <div class="password-field">
+                <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Confirm Password" required />
+                <button type="button" class="password-toggle" aria-label="Show password confirmation" data-target="password_confirmation">
+                  <i class="fa-solid fa-eye-slash toggle-icon" aria-hidden="true"></i>
+                </button>
+              </div>
               @error('password_confirmation')
                 <span class="error">{{ $message }}</span>
               @enderror
@@ -40,10 +50,6 @@
 
             <button type="submit" class="primary-btn">Reset Password</button>
           </form>
-
-          <div class="auth-links">
-            <p>Remember your password? <a href="{{ route('login') }}">Sign in</a></p>
-          </div>
         </div>
       </section>
     </div>

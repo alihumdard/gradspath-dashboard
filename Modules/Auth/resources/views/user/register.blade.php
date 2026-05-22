@@ -38,17 +38,6 @@
         community secure.
       </p>
 
-      @if($errors->any() && $activeAuthModal === 'signup')
-        <div class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          <p class="font-semibold">We could not create your account:</p>
-          <ul class="mt-1 list-disc pl-5">
-            @foreach($errors->all() as $error)
-              <li>{{ $error }}</li>
-            @endforeach
-          </ul>
-        </div>
-      @endif
-
       <form id="signup-form" method="POST" action="{{ route('auth.register.post') }}" class="space-y-4" novalidate>
         @csrf
         <input type="hidden" name="auth_context" value="signup" />

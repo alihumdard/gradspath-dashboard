@@ -6,6 +6,28 @@ const reloadBtn = document.getElementById("reloadBtn");
 const showPassword = document.getElementById("showPassword");
 const passwordInput = document.getElementById("password");
 
+document.querySelectorAll(".password-toggle[data-target]").forEach((button) => {
+    const input = document.getElementById(button.dataset.target);
+    const icon = button.querySelector(".toggle-icon");
+
+    if (!input) return;
+
+    button.addEventListener("click", () => {
+        const isVisible = input.type === "text";
+
+        input.type = isVisible ? "password" : "text";
+        button.setAttribute(
+            "aria-label",
+            isVisible ? "Show password" : "Hide password",
+        );
+
+        if (icon) {
+            icon.classList.toggle("fa-eye", !isVisible);
+            icon.classList.toggle("fa-eye-slash", isVisible);
+        }
+    });
+});
+
 function readJsonScript(id) {
     const element = document.getElementById(id);
     if (!element) return null;

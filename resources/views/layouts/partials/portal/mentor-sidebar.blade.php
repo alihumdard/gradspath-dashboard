@@ -1,5 +1,6 @@
 @php($activeNav = $activeNav ?? '')
 @php($currentUser = auth()->user())
+@php($roleLabel = ucfirst($currentUser?->getRoleNames()->first() ?? 'mentor'))
 @php($sidebarInitials = collect(preg_split('/\s+/', trim($currentUser?->name ?? '')) ?: [])->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode(''))
 
 <aside class="sidebar" id="sidebar">
@@ -178,7 +179,7 @@
           <span class="nav-text">Settings</span>
         </span>
       </a>
-      <div class="helper-note">Users and mentors can update profile details and displayed information</div>
+      <div class="helper-note">Profile and display preferences</div>
 
       <form method="POST" action="{{ route('auth.logout') }}" class="mt-3">
         @csrf
@@ -196,17 +197,18 @@
         </button>
       </form>
 
-      <div class="mt-2 flex max-w-full items-center gap-3 rounded-lg bg-[#F3EDFF] px-3 py-2 text-sm font-semibold text-[#6D28D9]">
-        <div style="width:40px;height:40px;border-radius:12px;overflow:hidden;background:#e9ddff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <div class="portal-account-card">
+        <div class="portal-account-avatar">
           @if ($currentUser?->avatar_url)
-            <img src="{{ $currentUser->avatar_url }}" alt="{{ $currentUser->name ?? 'Mentor' }}" style="width:100%;height:100%;object-fit:cover;" />
+            <img src="{{ $currentUser->avatar_url }}" alt="{{ $currentUser->name ?? 'Mentor' }}" />
           @else
             <span>{{ $sidebarInitials }}</span>
           @endif
         </div>
-        <div style="min-width:0;">
-          <div style="color:#4c1d95;">{{ $currentUser?->name ?: 'Mentor' }}</div>
-          <div class="break-all">{{ $currentUser?->email }} ({{ ucfirst($currentUser?->getRoleNames()->first() ?? 'mentor') }})</div>
+        <div class="portal-account-copy">
+          <div class="portal-account-name">{{ $currentUser?->name ?: 'Mentor' }}</div>
+          <div class="portal-account-email" title="{{ $currentUser?->email }}">{{ $currentUser?->email }}</div>
+          <div class="portal-account-role">{{ $roleLabel }}</div>
         </div>
       </div>
     </div>

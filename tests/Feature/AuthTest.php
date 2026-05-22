@@ -1,5 +1,6 @@
 <?php
 
+use App\Notifications\QueuedResetPassword;
 use App\Notifications\QueuedVerifyEmail;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Auth;
@@ -36,11 +37,16 @@ it('renders auth pages', function () {
         ->assertOk()
         ->assertViewHas('authModal', 'signup');
 
-    $this->get('/forgot-password')->assertOk();
+    $this->get('/forgot-password')
+        ->assertOk()
+        ->assertDontSee('Remember your password?')
+        ->assertDontSee("Don't have an account?");
 
     $this->get('/reset-password/test-token')
         ->assertOk()
-        ->assertViewHas('token', 'test-token');
+        ->assertViewHas('token', 'test-token')
+        ->assertSee('password-toggle', false)
+        ->assertDontSee('Remember your password?');
 });
 
 it('renders the email verification notice for unverified users', function () {
@@ -406,6 +412,38 @@ it('does not accept graduate or professional program levels for student signup',
     ]);
 });
 
+it('shows duplicate signup email errors inline without global alerts', function () {
+    $existing = User::factory()->create([
+        'email' => 'duplicate-signup-' . Str::uuid() . '@example.edu',
+    ]);
+
+    $payload = [
+        'auth_context' => 'signup',
+        'name' => 'Duplicate Student',
+        'email' => $existing->email,
+        'password' => 'Password123',
+        'password_confirmation' => 'Password123',
+        'role' => 'student',
+        'program_level' => 'undergrad',
+        'institution' => 'State University',
+    ];
+
+    $this->from('/')
+        ->post('/register', $payload)
+        ->assertRedirect('/')
+        ->assertSessionHasErrors('email');
+
+    $response = $this->get('/');
+
+    $response
+        ->assertOk()
+        ->assertSee('An account with this email already exists.')
+        ->assertDontSee('We could not create your account:')
+        ->assertDontSee('Something went wrong');
+
+    expect(substr_count($response->getContent(), 'An account with this email already exists.'))->toBe(1);
+});
+
 it('logs in an unverified student and redirects to verification notice', function () {
     $email = 'login-student-' . Str::uuid() . '@example.edu';
 
@@ -623,6 +661,28 @@ it('sends reset link through password broker', function () {
 
     $this->post('/forgot-password', ['email' => 'forgot@example.com'])
         ->assertSessionHas('status');
+});
+
+it('sends branded reset password emails', function () {
+    Notification::fake();
+
+    $user = User::factory()->create([
+        'name' => 'Reset Student',
+        'email' => 'branded-reset-' . Str::uuid() . '@example.edu',
+        'is_active' => true,
+    ]);
+
+    $this->post('/forgot-password', ['email' => $user->email])
+        ->assertSessionHas('status');
+
+    Notification::assertSentTo($user, QueuedResetPassword::class, function (QueuedResetPassword $notification) use ($user) {
+        $mail = $notification->toMail($user);
+
+        return $mail->view === 'emails.reset-password'
+            && $mail->subject === 'Reset your Grads Paths password'
+            && $mail->viewData['userName'] === 'Reset Student'
+            && str_contains($mail->viewData['url'], '/reset-password/');
+    });
 });
 
 it('returns validation error for invalid forgot password email', function () {
