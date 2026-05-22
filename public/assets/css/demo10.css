@@ -624,6 +624,7 @@ body {
   border-radius: 18px;
   padding: 14px 16px;
   font-size: 15px;
+  font-family: inherit;
   outline: none;
   background: var(--card);
   color: var(--text);
@@ -637,11 +638,29 @@ body {
   -webkit-appearance: none;
   -moz-appearance: none;
   background-image: none;
-  padding-right: 16px;
+  padding-right: 44px;
 }
 
 .select-wrap select::-ms-expand {
   display: none;
+}
+
+.select-wrap {
+  position: relative;
+}
+
+.select-wrap::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-65%) rotate(45deg);
+  color: var(--muted);
+  pointer-events: none;
 }
 
 .settings-university-picker {
@@ -650,6 +669,24 @@ body {
 
 .settings-picker-anchor {
   position: relative;
+}
+
+.settings-university-picker [data-university-search] {
+  padding-right: 44px;
+}
+
+.settings-university-picker .settings-picker-anchor::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-65%) rotate(45deg);
+  color: var(--muted);
+  pointer-events: none;
 }
 
 .settings-picker-results {
@@ -699,6 +736,7 @@ body {
 .field input::placeholder,
 .field textarea::placeholder {
   color: var(--muted);
+  font-family: inherit;
 }
 
 .field input:focus,

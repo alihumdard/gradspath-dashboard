@@ -209,7 +209,12 @@
                         @endforeach
                       </select>
                     </div>
-                    <p class="helper-text">
+                    <p
+                      class="helper-text"
+                      data-program-helper
+                      data-default-text="Select a university first to load related programs."
+                      data-active-template="Showing active programs for :university."
+                    >
                       @if ($selectedUniversity)
                         Showing active programs for {{ $selectedUniversity->display_name ?: $selectedUniversity->name }}.
                       @else

@@ -26,6 +26,7 @@ const universitySearch = universityPicker?.querySelector("[data-university-searc
 const universityIdInput = universityPicker?.querySelector("[data-university-id]");
 const universityResults = universityPicker?.querySelector("[data-university-results]");
 const universityProgramSelect = document.querySelector("[data-program-select]");
+const programHelper = document.querySelector("[data-program-helper]");
 
 const nameError = document.getElementById("nameError");
 const eduEmailError = document.getElementById("eduEmailError");
@@ -196,6 +197,23 @@ function initializeMentorUniversityPicker() {
   let programToken = 0;
   let latestUniversities = [];
 
+  function updateProgramHelper(universityLabel) {
+    if (!programHelper) {
+      return;
+    }
+
+    const defaultText = programHelper.dataset.defaultText || "Select a university first to load related programs.";
+    const activeTemplate = programHelper.dataset.activeTemplate || "Showing active programs for :university.";
+    const label = (universityLabel || "").trim();
+
+    if (!label) {
+      programHelper.textContent = defaultText;
+      return;
+    }
+
+    programHelper.textContent = activeTemplate.replace(":university", label);
+  }
+
   function hideResults() {
     universityResults.hidden = true;
   }
@@ -292,6 +310,7 @@ function initializeMentorUniversityPicker() {
 
     if (!universityId) {
       renderPrograms([]);
+      updateProgramHelper("");
       return;
     }
 
@@ -340,6 +359,7 @@ function initializeMentorUniversityPicker() {
         school.value = "";
       }
       renderPrograms([]);
+      updateProgramHelper("");
     }
 
     window.clearTimeout(debounceTimer);
@@ -361,6 +381,7 @@ function initializeMentorUniversityPicker() {
     if (school) {
       school.value = selectedLabel;
     }
+    updateProgramHelper(selectedLabel);
     hideResults();
     loadPrograms(universityIdInput.value);
   });
@@ -372,7 +393,10 @@ function initializeMentorUniversityPicker() {
   });
 
   if (universityIdInput.value && universityProgramSelect?.dataset.selectedProgramId) {
+    updateProgramHelper(selectedLabel);
     loadPrograms(universityIdInput.value, universityProgramSelect.dataset.selectedProgramId);
+  } else {
+    updateProgramHelper(selectedLabel);
   }
 
 }
