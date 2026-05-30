@@ -2,6 +2,7 @@
 @php($roleLabel = ucfirst(auth()->user()?->getRoleNames()->first() ?? 'student'))
 @php($currentUser = auth()->user())
 @php($sidebarInitials = collect(preg_split('/\s+/', trim($currentUser?->name ?? '')) ?: [])->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode(''))
+@php($isActiveNav = fn (string $nav, array $routePatterns, array $pathPatterns) => $activeNav === $nav || request()->routeIs(...$routePatterns) || request()->is(...$pathPatterns))
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-top">
@@ -21,7 +22,7 @@
 
   <nav class="sidebar-nav">
     <div class="nav-group">
-      <a href="{{ route('student.dashboard') }}" @class(['nav-item single-link', 'active' => $activeNav === 'dashboard'])>
+      <a href="{{ route('student.dashboard') }}" @class(['nav-item single-link', 'active' => $isActiveNav('dashboard', ['student.dashboard'], ['student/dashboard'])])>
         <span class="nav-left">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -37,7 +38,7 @@
     </div>
 
     <div class="nav-group">
-      <a href="/student/institutions" @class(['nav-item single-link', 'active' => $activeNav === 'institutions'])>
+      <a href="/student/institutions" @class(['nav-item single-link', 'active' => $isActiveNav('institutions', ['student.institutions.*'], ['student/institutions*'])])>
         <span class="nav-left">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -57,7 +58,7 @@
     </div>
 
     <div class="nav-group">
-      <a href="/student/mentors" @class(['nav-item single-link', 'active' => $activeNav === 'mentors'])>
+      <a href="/student/mentors" @class(['nav-item single-link', 'active' => $isActiveNav('mentors', ['student.mentors.*'], ['student/mentors*'])])>
         <span class="nav-left">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -72,7 +73,7 @@
     </div>
 
     <div class="nav-group">
-      <a href="{{ route('student.office-hours') }}" @class(['nav-item single-link', 'active' => $activeNav === 'office-hours'])>
+      <a href="{{ route('student.office-hours') }}" @class(['nav-item single-link', 'active' => $isActiveNav('office-hours', ['student.office-hours*'], ['student/office-hours*'])])>
         <span class="nav-left">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -88,7 +89,7 @@
     </div>
 
     <div class="nav-group">
-      <a href="{{ route('student.notes') }}" @class(['nav-item single-link', 'active' => $activeNav === 'mentor-notes'])>
+      <a href="{{ route('student.notes') }}" @class(['nav-item single-link', 'active' => $isActiveNav('mentor-notes', ['student.notes*'], ['student/notes*'])])>
         <span class="nav-left">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -102,7 +103,7 @@
     </div>
 
     <div class="nav-group">
-      <a href="{{ route('feedback.index') }}" @class(['nav-item single-link', 'active' => $activeNav === 'feedback'])>
+      <a href="{{ route('feedback.index') }}" @class(['nav-item single-link', 'active' => $isActiveNav('feedback', ['feedback.*', 'student.feedback.*'], ['feedback*', 'student/feedback*'])])>
         <span class="nav-left">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -115,7 +116,7 @@
     </div>
 
     <div class="nav-group">
-      <a href="{{ route('student.bookings.index') }}" @class(['nav-item single-link', 'active' => $activeNav === 'bookings'])>
+      <a href="{{ route('student.bookings.index') }}" @class(['nav-item single-link', 'active' => $isActiveNav('bookings', ['student.bookings.*'], ['student/bookings*'])])>
         <span class="nav-left">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -131,7 +132,7 @@
     </div>
 
     <div class="nav-group">
-      <a href="/student/support" @class(['nav-item single-link', 'active' => $activeNav === 'support'])>
+      <a href="/student/support" @class(['nav-item single-link', 'active' => $isActiveNav('support', ['student.support.*'], ['student/support*'])])>
         <span class="nav-left">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -149,7 +150,7 @@
     <div class="nav-section-label">Settings</div>
 
     <div class="nav-group">
-      <a href="{{ route('student.settings.index') }}" @class(['nav-item single-link', 'active' => $activeNav === 'settings'])>
+      <a href="{{ route('student.settings.index') }}" @class(['nav-item single-link', 'active' => $isActiveNav('settings', ['student.settings.*'], ['student/settings*'])])>
         <span class="nav-left">
           <span class="nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">

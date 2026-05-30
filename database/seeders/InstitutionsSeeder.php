@@ -59,6 +59,7 @@ class InstitutionsSeeder extends Seeder
                 'domains' => ['uol.edu.pk'],
                 'web_pages' => ['https://www.uol.edu.pk'],
                 'state_province' => 'Punjab',
+                'logo_url' => 'university_logo/lahore.jfif',
                 'is_active' => true,
             ],
         ];

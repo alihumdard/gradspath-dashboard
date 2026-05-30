@@ -38,9 +38,7 @@ Route::middleware(['web'])->prefix('admin')->name('admin.')->group(function () {
 
 Route::middleware(['web', 'auth', 'active'])->group(function () {
     Route::get('/email/verify', [AuthController::class, 'showVerifyEmailNotice'])->name('verification.notice');
-    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
-        ->middleware('signed')
-        ->name('verification.verify');
+    Route::post('/email/verify', [AuthController::class, 'verifyEmail'])->name('verification.verify');
     Route::post('/email/verification-notification', [AuthController::class, 'resendVerificationEmail'])
         ->middleware('throttle:6,1')
         ->name('verification.send');

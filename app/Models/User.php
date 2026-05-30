@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Notifications\QueuedResetPassword;
-use App\Notifications\QueuedVerifyEmail;
+use App\Services\EmailVerificationCodeService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -75,7 +75,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function sendEmailVerificationNotification(): void
     {
-        $this->notify(new QueuedVerifyEmail($this));
+        app(EmailVerificationCodeService::class)->send($this, true);
     }
 
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void

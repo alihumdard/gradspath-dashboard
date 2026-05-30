@@ -80,6 +80,7 @@ class InstitutionService
                     'id' => $university->id,
                     'school' => $university->display_name ?: $university->name,
                     'fullName' => $university->name,
+                    'logo_url' => $university->logo_url,
                     'programs' => $programs->all(),
                 ];
             });

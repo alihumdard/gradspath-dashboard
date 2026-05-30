@@ -510,8 +510,8 @@ body {
 
 .filter-shell {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 24px;
   margin-bottom: 18px;
 }
 
@@ -519,7 +519,7 @@ body {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  padding: 20px;
+  padding: 20px 24px;
   box-shadow: var(--shadow);
 }
 
@@ -569,8 +569,8 @@ body {
 
 .chip-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-wrap: nowrap;
+  gap: 14px;
 }
 
 .chip-row.compact {
@@ -581,10 +581,11 @@ body {
   border: 1px solid var(--border);
   background: var(--panel-soft-2);
   color: var(--text);
-  padding: 12px 16px;
+  padding: 12px 18px;
   border-radius: 999px;
   font-size: 0.94rem;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.18s ease;
 }
@@ -759,6 +760,7 @@ body {
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .university-tier-pill {
@@ -1256,15 +1258,29 @@ body {
   font-size: 1.05rem;
 }
 
-@media (max-width: 1400px) {
+@media (max-width: 1530px) {
   .university-grid {
     grid-template-columns: repeat(5, minmax(180px, 1fr));
   }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1330px) {
   .filter-shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .filter-card {
+    padding: 20px 18px;
+  }
+
+  .chip-row {
+    gap: 10px;
+  }
+
+  .filter-chip {
+    padding: 11px 14px;
+    font-size: 0.9rem;
   }
 
   .university-grid {
@@ -1280,7 +1296,17 @@ body {
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
+  .filter-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .chip-row {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 1130px) {
   .university-grid {
     grid-template-columns: repeat(3, minmax(180px, 1fr));
   }
@@ -1294,6 +1320,12 @@ body {
   .mentor-card-top {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 930px) {
+  .university-grid {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
   }
 }
 
@@ -1402,4 +1434,20 @@ body {
 
 .top-bar h1 {
   color: var(--text);
+}
+
+/* University Logo Styles */
+.university-logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 22px;
+  padding: 10px;
+  background-color: #ffffff;
+  display: block;
+}
+
+.selected-school-icon .university-logo-image {
+  border-radius: 18px;
+  padding: 8px;
 }

@@ -3,214 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Email - Grads Paths</title>
+    <title>Verify your Grads Paths Account</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background-color: #EEFAF7;
+            background-color: #f4f6fa;
+            color: #111827;
             font-family: 'Segoe UI', Arial, sans-serif;
-            color: #333333;
         }
 
-        .wrapper {
-            max-width: 580px;
-            margin: 48px auto;
+        .email-shell {
+            width: 100%;
+            background-color: #f4f6fa;
+            padding: 42px 18px 34px;
         }
 
-        .top-bar {
-            background-color: #1a1a1a;
-            border-radius: 8px 8px 0 0;
-            padding: 24px 40px;
+        .brand {
+            max-width: 640px;
+            height: 112px;
+            margin: 0 auto 26px;
+            overflow: hidden;
             text-align: center;
         }
 
         .logo {
-            width: 76px;
-            max-width: 76px;
+            width: 340px;
+            max-width: 340px;
             height: auto;
-            margin: 0 auto 14px;
             display: block;
+            margin: -94px auto 0;
             border: 0;
             outline: none;
             text-decoration: none;
-        }
-
-        .top-bar h1 {
-            margin: 0;
-            font-size: 22px;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: 1px;
+            background-color: transparent;
+            mix-blend-mode: multiply;
         }
 
         .card {
+            max-width: 540px;
+            margin: 0 auto;
             background-color: #ffffff;
-            border: 1px solid #e0e0e0;
-            border-top: none;
-            padding: 44px 48px 36px;
+            border: 1px solid #e6e8ef;
+            border-radius: 10px;
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.10);
+            padding: 38px 40px 34px;
         }
 
-        .card h2 {
-            font-size: 22px;
-            font-weight: 700;
-            color: #1a1a1a;
-            margin: 0 0 12px;
+        .card h1 {
+            margin: 0 0 16px;
+            color: #111827;
+            font-size: 30px;
+            line-height: 1.15;
+            font-weight: 800;
+            letter-spacing: -0.02em;
         }
 
         .card p {
-            font-size: 15px;
-            line-height: 1.75;
-            color: #555555;
-            margin: 0 0 16px;
-        }
-
-        .highlight-box {
-            background-color: #EEFAF7;
-            border-left: 4px solid #1a1a1a;
-            border-radius: 0 6px 6px 0;
-            padding: 16px 20px;
-            margin: 28px 0;
-        }
-
-        .highlight-box p {
             margin: 0;
-            font-size: 14px;
-            color: #444444;
-        }
-
-        .btn-wrap {
-            margin: 32px 0;
-        }
-
-        .btn {
-            display: inline-block;
-            background-color: #1a1a1a;
-            color: #ffffff;
-            text-decoration: none;
+            color: #4b5563;
             font-size: 15px;
-            font-weight: 600;
-            padding: 15px 38px;
-            border-radius: 6px;
-            letter-spacing: 0.3px;
-        }
-
-        hr {
-            border: none;
-            border-top: 1px solid #ebebeb;
-            margin: 32px 0;
-        }
-
-        .signature {
-            font-size: 15px;
-            color: #555555;
             line-height: 1.7;
         }
 
-        .support-box {
-            background-color: #EEFAF7;
-            border-radius: 6px;
-            padding: 16px 20px;
-            margin-top: 28px;
+        .card p strong {
+            color: #344054;
+            font-weight: 800;
+        }
+
+        .code-panel {
+            margin: 28px 0 22px;
+            padding: 34px 24px 30px;
+            background-color: #fafbfe;
+            border: 1px solid #e1e4ec;
+            border-radius: 12px;
             text-align: center;
         }
 
-        .support-box p {
-            font-size: 13px;
-            color: #666666;
-            margin: 0;
-            line-height: 1.6;
+        .code {
+            color: #111827;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 44px;
+            line-height: 1;
+            font-weight: 800;
+            letter-spacing: 12px;
         }
 
-        .support-box a {
-            color: #1a1a1a;
-            font-weight: 600;
-            text-decoration: none;
+        .expiry {
+            margin-top: 14px;
+            color: #6b7280;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.5;
         }
 
-        .url-section {
-            margin-top: 28px;
-        }
-
-        .url-section p {
-            font-size: 13px;
-            color: #888888;
-            line-height: 1.6;
-            margin: 0 0 8px;
-        }
-
-        .url-box {
-            background-color: #f7f7f7;
-            border: 1px solid #e5e5e5;
-            border-radius: 6px;
-            padding: 12px 16px;
-            font-size: 12px;
-            color: #555555;
-            word-break: break-all;
-            line-height: 1.6;
+        .divider {
+            border: 0;
+            border-top: 1px solid #e5e7eb;
+            margin: 24px 0;
         }
 
         .footer {
-            background-color: #1a1a1a;
-            border-radius: 0 0 8px 8px;
+            max-width: 540px;
+            margin: 24px auto 0;
             text-align: center;
-            padding: 20px 40px;
-            font-size: 12px;
-            color: #888888;
-            line-height: 1.8;
+            color: #9ca3af;
+            font-size: 14px;
+            line-height: 1.6;
         }
 
         .footer a {
-            color: #aaaaaa;
-            text-decoration: none;
+            color: #4f7fd9;
+            font-weight: 700;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .email-shell {
+                padding: 28px 12px 26px;
+            }
+
+            .logo {
+                width: 300px;
+                max-width: 300px;
+                margin-top: -82px;
+            }
+
+            .card {
+                padding: 30px 22px 28px;
+            }
+
+            .card h1 {
+                font-size: 25px;
+            }
+
+            .code {
+                font-size: 36px;
+                letter-spacing: 8px;
+            }
         }
     </style>
 </head>
-<body>
-    @php
-        $userName = trim((string) ($userName ?? '')) ?: 'there';
-    @endphp
-
-    <div class="wrapper">
-        <div class="top-bar">
-            <img src="{{ asset('Logo.jpeg') }}" alt="Grads Paths Logo" class="logo">
-            <h1>Grads Paths</h1>
+<body bgcolor="#f4f6fa">
+    <div class="email-shell" bgcolor="#f4f6fa">
+        <div class="brand">
+            <img src="{{ asset('Logo.jpeg') }}" alt="Grads Paths" class="logo">
         </div>
 
         <div class="card">
-            <h2>Verify your email address</h2>
-            <p>Hello {{ $userName }}! Thanks for joining Grads Paths. Please confirm your email address by clicking the button below to complete your registration.</p>
+            <h1>Verify your account</h1>
+            <p>Use the following verification code to verify your <strong>Grads Paths</strong> account.</p>
 
-            <div class="highlight-box">
-                <p>This verification link will expire in <strong>{{ $expiresIn }} minutes</strong>. If you did not create an account, you can safely ignore this email.</p>
+            <div class="code-panel">
+                <div class="code">{{ $code }}</div>
+                <div class="expiry">This code will expire in {{ $expiresIn }} minutes.</div>
             </div>
 
-            <div class="btn-wrap">
-                <a href="{{ $url }}" class="btn" style="color: #ffffff !important; text-decoration: none;">Verify Email Address</a>
-            </div>
+            <hr class="divider">
 
-            <hr>
-
-            <div class="signature">
-                Regards,<br>
-                <strong>The Grads Paths Team</strong>
-            </div>
-
-            <div class="url-section">
-                <p>If the button above doesn't work, copy and paste this URL into your browser:</p>
-                <div class="url-box">
-                    {{ $url }}
-                </div>
-            </div>
-
-            <div class="support-box">
-                <p>Need help? Reach out to our support team at<br>
-                <a href="mailto:support@gradspaths.com">support@gradspaths.com</a></p>
-            </div>
+            <p>If you didn't request this, you can safely ignore this email.</p>
         </div>
 
         <div class="footer">
-            &copy; {{ date('Y') }} Grads Paths. All rights reserved.<br>
+            &copy; {{ date('Y') }} Grads Paths &nbsp;&bull;&nbsp;
+            <a href="mailto:support@gradspaths.com">Help</a>
+            &nbsp;&bull;&nbsp;
+            <a href="mailto:support@gradspaths.com">Contact</a>
         </div>
     </div>
 </body>

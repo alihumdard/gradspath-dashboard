@@ -38,13 +38,14 @@ function createDashboardUser(): User
     return User::query()->findOrFail($created->id);
 }
 
-function createDashboardMentor(string $name): Mentor
+function createDashboardMentor(string $name, ?University $university = null): Mentor
 {
     $user = createDashboardUser();
     $user->forceFill(['name' => $name])->save();
 
     return Mentor::query()->create([
         'user_id' => $user->id,
+        'university_id' => $university?->id,
         'mentor_type' => 'graduate',
         'program_type' => 'mba',
         'title' => 'MBA Mentor',
@@ -84,12 +85,13 @@ function createDashboardBooking(Mentor $mentor, ServiceConfig $service, Carbon $
     ]);
 }
 
-function createDashboardUniversity(string $name, bool $isActive = true): University
+function createDashboardUniversity(string $name, bool $isActive = true, ?string $displayName = null, ?string $logoUrl = null): University
 {
     return University::query()->create([
         'name' => $name,
-        'display_name' => $name,
+        'display_name' => $displayName ?? $name,
         'country' => 'US',
+        'logo_url' => $logoUrl,
         'is_active' => $isActive,
     ]);
 }
@@ -167,7 +169,7 @@ it('renders see more feedback links on the mentor dashboard that target the clic
     $response->assertSee(route('feedback.index', ['mentor_id' => $mentor->id]), false);
 });
 
-it('shows only active universities with active programs on the student dashboard', function () {
+it('shows active universities on the student dashboard even when some do not have active programs', function () {
     $student = createDashboardUser();
     $visible = createDashboardUniversity('Visible Dashboard University');
     $inactive = createDashboardUniversity('Inactive Dashboard University', false);
@@ -182,12 +184,53 @@ it('shows only active universities with active programs on the student dashboard
 
     $response->assertOk();
     $response->assertSee('Visible Dashboard University');
+    $response->assertSee('No Program Dashboard University');
+    $response->assertSee('Inactive Program Dashboard University');
     $response->assertDontSee('Inactive Dashboard University');
-    $response->assertDontSee('No Program Dashboard University');
-    $response->assertDontSee('Inactive Program Dashboard University');
 });
 
-it('shows only active universities with active programs on the mentor dashboard', function () {
+it('shows the top six student dashboard universities by confirmed and completed bookings with full names and logos', function () {
+    $student = createDashboardUser();
+    $service = createDashboardService();
+
+    $universities = collect(range(1, 7))->map(function (int $index): University {
+        $university = createDashboardUniversity(
+            "Full Dashboard University {$index}",
+            true,
+            "Short U{$index}",
+            $index === 1 ? 'https://example.com/logo-one.png' : null
+        );
+        createDashboardProgram($university);
+
+        return $university;
+    });
+
+    $universities->each(function (University $university, int $index) use ($service): void {
+        $mentor = createDashboardMentor("University {$index} Mentor", $university);
+
+        foreach (range(1, 7 - $index) as $bookingIndex) {
+            createDashboardBooking($mentor, $service, now()->addDays($bookingIndex), $bookingIndex === 1 ? 'completed' : 'confirmed');
+        }
+    });
+
+    createDashboardBooking(
+        createDashboardMentor('Cancelled Booking Mentor', $universities->last()),
+        $service,
+        now()->addDay(),
+        'cancelled'
+    );
+
+    $response = $this->withoutMiddleware()->actingAs($student)->get(route('student.dashboard'));
+
+    $response->assertOk();
+    $response->assertSee('Full Dashboard University 1');
+    $response->assertSee('https://example.com/logo-one.png', false);
+    $response->assertSee(route('student.institutions.show', $universities->first()->id), false);
+    $response->assertDontSee('Short U1');
+    $response->assertDontSee('Full Dashboard University 7');
+});
+
+it('shows active universities on the mentor dashboard even when some do not have active programs', function () {
     $mentor = createDashboardUser();
     $visible = createDashboardUniversity('Visible Mentor Dashboard University');
     $inactive = createDashboardUniversity('Inactive Mentor Dashboard University', false);
@@ -202,9 +245,9 @@ it('shows only active universities with active programs on the mentor dashboard'
 
     $response->assertOk();
     $response->assertSee('Visible Mentor Dashboard University');
+    $response->assertSee('No Program Mentor Dashboard University');
+    $response->assertSee('Inactive Program Mentor Dashboard University');
     $response->assertDontSee('Inactive Mentor Dashboard University');
-    $response->assertDontSee('No Program Mentor Dashboard University');
-    $response->assertDontSee('Inactive Program Mentor Dashboard University');
 });
 
 it('ranks mentors of the week by current week bookings', function () {

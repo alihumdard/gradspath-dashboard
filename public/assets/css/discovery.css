@@ -812,14 +812,16 @@ button,
 }
 
 .school-card {
-  height: 110px;
+  min-height: 132px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 18px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  gap: 12px;
+  padding: 16px 12px;
   text-align: center;
   font-weight: 700;
   color: var(--text);
@@ -828,6 +830,48 @@ button,
   overflow-wrap: anywhere;
   text-decoration: none;
   cursor: pointer;
+}
+
+.school-logo {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 8px 18px rgba(18, 24, 38, 0.06);
+  flex: 0 0 auto;
+}
+
+.school-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  padding: 8px;
+}
+
+.school-logo span {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(122, 77, 255, 0.14), rgba(39, 199, 184, 0.16));
+  color: var(--purple);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.school-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .school-card:hover {

@@ -27,34 +27,33 @@
       </svg>
     </button>
     <div class="px-6 py-8 pb-6 overflow-y-auto flex-1 min-h-0">
-      <h2 class="text-2xl font-bold text-[#3730A3] mb-2">
+      <h2 class="text-2xl leading-tight font-bold text-[#3730A3] mb-2 pr-10">
         Create Your Account
       </h2>
       <p
         id="signup-subtitle"
         class="text-[13px] leading-snug text-[#6D28D9] mb-5"
       >
-        Tell us who you are so we can personalize your experience and keep this
-        community secure.
+        Begin helping students achieve their dreams.
       </p>
 
       <form id="signup-form" method="POST" action="{{ route('auth.register.post') }}" class="space-y-4" novalidate>
         @csrf
         <input type="hidden" name="auth_context" value="signup" />
-        <input type="hidden" name="role" id="signup-role-input" value="{{ old('role', 'student') }}" />
-        <input type="hidden" name="program_level" id="signup-program-level-input" value="{{ old('program_level', 'undergrad') }}" />
+        <input type="hidden" name="role" id="signup-role-input" value="{{ old('role', 'mentor') }}" />
+        <input type="hidden" name="program_level" id="signup-program-level-input" value="{{ old('program_level') }}" />
         <input type="hidden" name="mentor_type" id="signup-mentor-type-input" value="{{ old('mentor_type', 'graduate') }}" />
         <input type="hidden" name="institution_id" id="signup-institution-id" value="{{ old('institution_id') }}" />
         <div id="signup-type-section">
           <label id="signup-type-label" class="block text-sm font-bold text-[#1D1440] mb-2"
-            >Student level</label
+            >Program level</label
           >
-          <div id="signup-type-options" class="grid grid-cols-1 gap-3">
+          <div id="signup-type-options" class="grid grid-cols-3 gap-3">
             <button
               type="button"
               data-value="undergrad"
               data-role-scope="student"
-              class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#6D28D9] bg-[#EBE0F8] text-[#6D28D9]"
+              class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
             >
               <i class="fa-solid fa-graduation-cap"></i> Undergrad
             </button>
@@ -62,17 +61,17 @@
               type="button"
               data-value="graduate"
               data-role-scope="mentor"
-              class="signup-level hidden flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
+              class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#6D28D9] bg-[#EBE0F8] text-[#6D28D9]"
             >
-              <i class="fa-solid fa-graduation-cap"></i> Grad Mentor
+              <i class="fa-solid fa-graduation-cap"></i> Grad
             </button>
             <button
               type="button"
               data-value="professional"
               data-role-scope="mentor"
-              class="signup-level hidden flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
+              class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
             >
-              <i class="fa-solid fa-briefcase"></i> Professional Mentor
+              <i class="fa-solid fa-briefcase"></i> Professional
             </button>
           </div>
           @error('program_level')
@@ -90,14 +89,14 @@
             <button
               type="button"
               data-value="student"
-              class="signup-role flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold border border-[#6D28D9] bg-[#EBE0F8] text-[#6D28D9]"
+              class="signup-role flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
             >
               <i class="fa-solid fa-book-open"></i> Student
             </button>
             <button
               type="button"
               data-value="mentor"
-              class="signup-role flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
+              class="signup-role flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold border border-[#6D28D9] bg-[#EBE0F8] text-[#6D28D9]"
             >
               <i class="fa-solid fa-building-columns"></i> Mentor
             </button>

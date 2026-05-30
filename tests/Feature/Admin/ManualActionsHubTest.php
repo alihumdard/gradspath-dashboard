@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\AdminLog;
 use Modules\Bookings\app\Models\Booking;
@@ -134,6 +135,9 @@ it('renders the manual actions hub with grouped sections', function () {
         ->assertSee('Amend mentor account')
         ->assertSee('Adjust user credits')
         ->assertSee('Update service pricing')
+        ->assertSee('Upload logo')
+        ->assertSee('Logo URL or public path')
+        ->assertDontSee('Alpha-2 code')
         ->assertSee('Update feedback')
         ->assertDontSee('Admin note')
         ->assertDontSee('1 on 1 credits')
@@ -194,15 +198,16 @@ it('writes an admin log for mentor updates and returns to the mentor section', f
 it('writes admin logs for institution and service pricing actions', function () {
     $admin = createManualActionsAdmin();
     $service = createManualService();
+    $logo = UploadedFile::fake()->create('manual-actions-logo.png', 4, 'image/png');
 
     $this->actingAs($admin)
         ->post(route('admin.manual-actions.institutions.store'), [
             'name' => 'Manual Actions University',
             'display_name' => 'Manual University',
             'country' => 'US',
-            'alpha_two_code' => 'US',
             'city' => 'Chicago',
             'state_province' => 'Illinois',
+            'logo_file' => $logo,
             'is_active' => '1',
             'manual_section' => 'institutions',
         ])
@@ -228,10 +233,11 @@ it('writes admin logs for institution and service pricing actions', function () 
         ->assertRedirect(route('admin.manual-actions'))
         ->assertSessionHas('manual_section', 'pricing');
 
-    $this->assertDatabaseHas('universities', [
-        'name' => 'Manual Actions University',
-        'display_name' => 'Manual University',
-    ]);
+    $university = University::query()->where('name', 'Manual Actions University')->firstOrFail();
+    expect($university->display_name)->toBe('Manual University')
+        ->and($university->logo_url)->toStartWith('university_logo/manual-actions-university-');
+    expect(is_file(public_path($university->logo_url)))->toBeTrue();
+    @unlink(public_path($university->logo_url));
 
     $this->assertDatabaseHas('services_config', [
         'id' => $service->id,

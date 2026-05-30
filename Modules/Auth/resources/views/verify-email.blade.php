@@ -6,21 +6,22 @@
     <title>Verify your email</title>
     <style>
         :root {
-            --bg: #f5f5f8;
-            --panel: #ffffff;
-            --panel-soft: #f3eef9;
-            --line: #ececf1;
-            --purple: #6f4cf6;
-            --purple-strong: #7a4dff;
-            --purple-dark: #252c3c;
-            --muted: #6b7285;
-            --text: #252c3c;
-            --teal: #27c7b8;
-            --shadow: 0 18px 38px rgba(18, 24, 38, 0.08);
-            --hover-shadow: 0 20px 40px rgba(122, 77, 255, 0.18);
-            --radius-xl: 28px;
-            --radius-lg: 20px;
-            --radius-md: 16px;
+            --bg: #f7f7fb;
+            --card: #ffffff;
+            --line: #e5e7ef;
+            --line-strong: #cfd3e1;
+            --text: #111827;
+            --muted: #667085;
+            --purple: #5d2eea;
+            --purple-soft: #7557ff;
+            --footer: #fafafa;
+            --danger-bg: #fef2f2;
+            --danger-border: #fecaca;
+            --danger-text: #991b1b;
+            --success-bg: #ecfdf5;
+            --success-border: #bbf7d0;
+            --success-text: #047857;
+            --shadow: 0 18px 45px rgba(15, 23, 42, 0.1);
         }
 
         * {
@@ -32,346 +33,376 @@
             margin: 0;
             min-height: 100%;
             font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background:
-                radial-gradient(circle at top left, rgba(111, 76, 246, 0.14), transparent 28%),
-                radial-gradient(circle at bottom right, rgba(39, 199, 184, 0.12), transparent 24%),
-                var(--bg);
+            background: var(--bg);
             color: var(--text);
         }
 
-        a,
         button {
-            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+            font: inherit;
         }
 
         .page {
             min-height: 100vh;
-            padding: 32px 20px;
+            padding: 24px 16px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .card {
-            width: min(920px, 100%);
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow);
+            width: min(475px, 100%);
             overflow: hidden;
-            display: grid;
-            grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
-        }
-
-        .hero {
-            padding: 36px 30px;
-            background: linear-gradient(160deg, #f3eef9 0%, #efe8ff 55%, #edf9f7 100%);
-            border-right: 1px solid var(--line);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: 28px;
-        }
-
-        .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 14px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.72);
-            color: var(--purple);
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            width: fit-content;
-        }
-
-        .hero h1 {
-            margin: 18px 0 12px;
-            font-size: clamp(2.1rem, 4vw, 3rem);
-            line-height: 1;
-            letter-spacing: -0.04em;
-            color: var(--purple-dark);
-        }
-
-        .hero p {
-            margin: 0;
-            color: var(--muted);
-            font-size: 15px;
-            line-height: 1.7;
-            max-width: 28ch;
-        }
-
-        .hero-list {
-            display: grid;
-            gap: 12px;
-        }
-
-        .hero-list-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 14px 16px;
-            border-radius: var(--radius-md);
-            background: rgba(255, 255, 255, 0.78);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-        }
-
-        .hero-list-icon {
-            width: 30px;
-            height: 30px;
+            border: 1px solid var(--line);
             border-radius: 10px;
-            background: rgba(111, 76, 246, 0.12);
-            color: var(--purple);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 800;
-            flex-shrink: 0;
-        }
-
-        .hero-list-copy strong {
-            display: block;
-            margin-bottom: 4px;
-            font-size: 14px;
-            color: var(--purple-dark);
-        }
-
-        .hero-list-copy span {
-            font-size: 13px;
-            color: var(--muted);
-            line-height: 1.5;
+            background: var(--card);
+            box-shadow: var(--shadow);
         }
 
         .content {
-            padding: 40px 36px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 24px;
+            padding: 32px 34px 22px;
+            text-align: center;
         }
 
-        .content-header h2 {
+        .brand {
+            display: grid;
+            justify-items: center;
+            height: 82px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .brand img {
+            width: 190px;
+            height: auto;
+            display: block;
+            margin-top: -52px;
+        }
+
+        h1 {
             margin: 0 0 10px;
-            font-size: 30px;
-            line-height: 1.05;
-            letter-spacing: -0.03em;
-            color: var(--purple-dark);
+            color: var(--text);
+            font-size: clamp(1.62rem, 5vw, 1.86rem);
+            line-height: 1.08;
+            letter-spacing: -0.04em;
         }
 
-        .content-header p {
-            margin: 0;
+        .subtitle {
+            margin: 0 0 28px;
             color: var(--muted);
-            font-size: 15px;
-            line-height: 1.7;
-            max-width: 56ch;
+            font-size: 14px;
+            line-height: 1.55;
+        }
+
+        .subtitle strong {
+            color: #344054;
+            font-weight: 800;
         }
 
         .status {
-            border-radius: var(--radius-md);
-            padding: 16px 18px;
-            border: 1px solid rgba(39, 199, 184, 0.2);
-            background: rgba(39, 199, 184, 0.1);
-            color: #12786d;
+            margin: 0 0 18px;
+            border: 1px solid var(--success-border);
+            border-radius: 8px;
+            background: var(--success-bg);
+            color: var(--success-text);
+            padding: 12px 14px;
             font-size: 14px;
-            font-weight: 600;
-            line-height: 1.6;
+            font-weight: 700;
+            line-height: 1.45;
+            text-align: left;
         }
 
-        .info-grid {
+        .status.error {
+            border-color: var(--danger-border);
+            background: var(--danger-bg);
+            color: var(--danger-text);
+        }
+
+        .code-form {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
+            gap: 20px;
         }
 
-        .info-card {
-            border: 1px solid var(--line);
-            background: #fafafe;
-            border-radius: var(--radius-md);
-            padding: 18px;
+        .code-inputs {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 16px;
         }
 
-        .info-card .label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--purple);
+        .code-input {
+            width: 100%;
+            aspect-ratio: 1;
+            border: 2px solid var(--line-strong);
+            border-radius: 7px;
+            background: #fff;
+            color: var(--text);
+            font-size: clamp(1.8rem, 7vw, 2.25rem);
+            font-weight: 800;
+            line-height: 1;
+            text-align: center;
+            outline: none;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
         }
 
-        .info-card .value {
-            color: var(--purple-dark);
-            font-size: 15px;
-            line-height: 1.6;
+        .code-input:focus {
+            border-color: var(--purple-soft);
+            box-shadow: 0 0 0 4px rgba(93, 46, 234, 0.12);
         }
 
-        .actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .actions form {
-            margin: 0;
-        }
-
-        .primary-btn,
-        .secondary-btn {
-            min-height: 48px;
-            border-radius: 14px;
-            padding: 0 18px;
-            border: 1px solid transparent;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
+        .expiry {
+            margin: -4px 0 0;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            text-decoration: none;
+            gap: 9px;
+            color: #7a8498;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .expiry svg,
+        .link-button svg,
+        .security svg {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
         }
 
         .primary-btn {
-            background: linear-gradient(135deg, var(--purple-strong), #9f55ff);
+            width: 100%;
+            min-height: 40px;
+            border: 0;
+            border-radius: 7px;
+            background: linear-gradient(135deg, var(--purple), #4d2ce0);
             color: #fff;
-            box-shadow: 0 12px 24px rgba(122, 77, 255, 0.24);
+            box-shadow: 0 12px 24px rgba(93, 46, 234, 0.24);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 800;
         }
 
         .primary-btn:hover {
             transform: translateY(-1px);
-            box-shadow: var(--hover-shadow);
+            box-shadow: 0 16px 28px rgba(93, 46, 234, 0.28);
         }
 
-        .secondary-btn {
-            background: #fff;
-            border-color: var(--line);
-            color: var(--purple-dark);
+        .secondary-actions {
+            margin-top: 20px;
+            display: grid;
+            gap: 14px;
+            justify-items: center;
         }
 
-        .secondary-btn:hover {
-            background: #f8f6ff;
-            border-color: #d7c8ff;
-            color: var(--purple);
-            transform: translateY(-1px);
+        .inline-form {
+            margin: 0;
         }
 
-        .footer-note {
-            font-size: 13px;
-            line-height: 1.6;
-            color: var(--muted);
-        }
-
-        .footer-note a {
-            color: var(--purple);
-            font-weight: 700;
+        .link-button {
+            border: 0;
+            background: transparent;
+            color: var(--purple-soft);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 800;
             text-decoration: none;
         }
 
-        .footer-note a:hover {
-            text-decoration: underline;
+        .link-button:hover {
+            color: var(--purple);
         }
 
-        @media (max-width: 860px) {
-            .card {
-                grid-template-columns: 1fr;
-            }
+        .divider {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 14px;
+            color: #8b95a7;
+            font-size: 14px;
+        }
 
-            .hero {
-                border-right: none;
-                border-bottom: 1px solid var(--line);
-            }
+        .divider::before,
+        .divider::after {
+            content: "";
+            height: 1px;
+            background: var(--line);
+        }
 
+        .security {
+            border-top: 1px solid var(--line);
+            background: var(--footer);
+            color: #667085;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        @media (max-width: 560px) {
             .content {
-                padding: 28px 22px;
+                padding: 28px 18px 22px;
             }
 
-            .info-grid {
-                grid-template-columns: 1fr;
+            .brand {
+                height: 72px;
+                margin-bottom: 22px;
+            }
+
+            .brand img {
+                width: 170px;
+                margin-top: -46px;
+            }
+
+            .code-inputs {
+                gap: 9px;
+            }
+
+            .subtitle {
+                margin-bottom: 24px;
+                font-size: 14px;
             }
         }
     </style>
 </head>
 <body>
     <main class="page">
-        <section class="card">
-            <aside class="hero">
-                <div>
-                    <span class="eyebrow">Email verification</span>
-                    <h1>Check your inbox</h1>
-                    <p>
-                        Your account is almost ready. Open the verification email to unlock the full dashboard experience.
-                    </p>
-                </div>
-
-                <div class="hero-list">
-                    <div class="hero-list-item">
-                        <span class="hero-list-icon">1</span>
-                        <div class="hero-list-copy">
-                            <strong>Open the message</strong>
-                            <span>Look for the latest email from Grads Path in your inbox or spam folder.</span>
-                        </div>
-                    </div>
-                    <div class="hero-list-item">
-                        <span class="hero-list-icon">2</span>
-                        <div class="hero-list-copy">
-                            <strong>Tap the link</strong>
-                            <span>Use the verification link to confirm your address and activate your account.</span>
-                        </div>
-                    </div>
-                    <div class="hero-list-item">
-                        <span class="hero-list-icon">3</span>
-                        <div class="hero-list-copy">
-                            <strong>Return to your dashboard</strong>
-                            <span>Once verified, you can continue with mentor discovery, bookings, and account setup.</span>
-                        </div>
-                    </div>
-                </div>
-            </aside>
-
+        <section class="card" aria-labelledby="verification-title">
             <div class="content">
-                <div class="content-header">
-                    <h2>We sent a verification link to your email address.</h2>
-                    <p>
-                        Click the link in your email to finish setting up your Grads Path account. If nothing arrives in a minute or two, request a fresh verification email below.
-                    </p>
+                <div class="brand">
+                    <img src="{{ asset('Logo.jpeg') }}" alt="Grads Paths">
                 </div>
+
+                <h1 id="verification-title">Enter verification code</h1>
+                <p class="subtitle">
+                    We sent a 6-digit verification code to <strong>{{ auth()->user()?->email }}</strong>
+                </p>
 
                 @if (session('status'))
                     <div class="status">{{ session('status') }}</div>
                 @endif
 
-                <div class="info-grid">
-                    <article class="info-card">
-                        <span class="label">Why this matters</span>
-                        <div class="value">Verification keeps the community trusted and helps protect student and mentor accounts.</div>
-                    </article>
-                    <article class="info-card">
-                        <span class="label">Need another email?</span>
-                        <div class="value">Use the resend button and we will queue a fresh verification message right away.</div>
-                    </article>
-                </div>
+                @if ($errors->has('code') || $errors->has('resend'))
+                    <div class="status error">{{ $errors->first('code') ?: $errors->first('resend') }}</div>
+                @endif
 
-                <div class="actions">
-                    <form method="POST" action="{{ route('verification.send') }}">
+                <form method="POST" action="{{ route('verification.verify') }}" class="code-form">
+                    @csrf
+                    <input type="hidden" name="code" id="verification-code" value="{{ old('code') }}">
+
+                    <div class="code-inputs" aria-label="Verification code">
+                        @for ($i = 0; $i < 6; $i++)
+                            <input
+                                class="code-input"
+                                type="text"
+                                name="code_digits[]"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                maxlength="1"
+                                autocomplete="{{ $i === 0 ? 'one-time-code' : 'off' }}"
+                                aria-label="Digit {{ $i + 1 }}"
+                                value="{{ old('code_digits.' . $i) }}"
+                            >
+                        @endfor
+                    </div>
+
+                    <p class="expiry">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Code expires in 30 minutes.
+                    </p>
+
+                    <button type="submit" class="primary-btn">Verify account</button>
+                </form>
+
+                <div class="secondary-actions">
+                    <form method="POST" action="{{ route('verification.send') }}" class="inline-form">
                         @csrf
-                        <button type="submit" class="primary-btn">Resend verification email</button>
+                        <button type="submit" class="link-button">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M3 12a9 9 0 0 1 15.36-6.36M21 12a9 9 0 0 1-15.36 6.36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M18 3v4h-4M6 21v-4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Resend code
+                        </button>
                     </form>
 
-                    <form method="POST" action="{{ route('auth.logout') }}">
+                    <div class="divider">or</div>
+
+                    <form method="POST" action="{{ route('auth.logout') }}" class="inline-form">
                         @csrf
-                        <button type="submit" class="secondary-btn">Sign out</button>
+                        <button type="submit" class="link-button">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M20 21a8 8 0 0 0-16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            Use a different email
+                        </button>
                     </form>
                 </div>
+            </div>
 
-                <p class="footer-note">
-                    Still not seeing the email? Wait a moment, check spam or promotions, then try again.
-                </p>
+            <div class="security">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 3 5 6v5c0 4.3 2.9 8.3 7 9.5 4.1-1.2 7-5.2 7-9.5V6l-7-3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    <path d="m9 12 2 2 4-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                For your security, this code can only be used once.
             </div>
         </section>
     </main>
+
+    <script>
+        const codeInputs = Array.from(document.querySelectorAll(".code-input"));
+        const codeField = document.getElementById("verification-code");
+
+        function syncCode() {
+            if (codeField) {
+                codeField.value = codeInputs.map((input) => input.value).join("");
+            }
+        }
+
+        codeInputs.forEach((input, index) => {
+            input.addEventListener("input", () => {
+                input.value = input.value.replace(/\D/g, "").slice(0, 1);
+                if (input.value && codeInputs[index + 1]) {
+                    codeInputs[index + 1].focus();
+                }
+                syncCode();
+            });
+
+            input.addEventListener("keydown", (event) => {
+                if (event.key === "Backspace" && !input.value && codeInputs[index - 1]) {
+                    codeInputs[index - 1].focus();
+                }
+            });
+
+            input.addEventListener("paste", (event) => {
+                const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+
+                if (!pasted) {
+                    return;
+                }
+
+                event.preventDefault();
+                pasted.split("").forEach((digit, digitIndex) => {
+                    if (codeInputs[digitIndex]) {
+                        codeInputs[digitIndex].value = digit;
+                    }
+                });
+                codeInputs[Math.min(pasted.length, 6) - 1]?.focus();
+                syncCode();
+            });
+        });
+
+        syncCode();
+    </script>
 </body>
 </html>

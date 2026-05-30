@@ -5,7 +5,7 @@
   $activeAuthModal = $authModal ?: ($errors->any() ? ($submittedAuthContext === 'signup' || $registerOldInput ? 'signup' : 'login') : null);
 @endphp
 <!doctype html>
-<html lang="en" class="scroll-smooth dark">
+<html lang="en" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -18,10 +18,10 @@
     <link rel="stylesheet" href="{{ asset('assets_landingPage/css/style.css') }}" />
 
     <script>
-      if (localStorage.getItem("theme") === "light") {
-        document.documentElement.classList.remove("dark");
-      } else {
+      if (localStorage.getItem("theme") === "dark") {
         document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
       }
     </script>
 
@@ -3879,6 +3879,12 @@
           return "undergrad";
         }
 
+        function normalizeMentorType(value) {
+          const level = normalizeLevel(value);
+
+          return level === "professional" ? "professional" : "graduate";
+        }
+
         function syncSelected(selector, activeValue) {
           document.querySelectorAll(selector).forEach(function (btn) {
             const isActive = btn.getAttribute("data-value") === activeValue;
@@ -3908,9 +3914,7 @@
         }
 
         function visibleLevelButtons() {
-          return Array.from(document.querySelectorAll(".signup-level")).filter(function (btn) {
-            return !btn.classList.contains("hidden");
-          });
+          return Array.from(document.querySelectorAll(".signup-level"));
         }
 
         function activeRoleValue() {
@@ -3921,18 +3925,16 @@
           const isMentor = roleValue === "mentor";
 
           if (typeLabel) {
-            typeLabel.textContent = isMentor ? "Mentor type" : "Student level";
+            typeLabel.textContent = "Program level";
           }
 
           if (typeOptions) {
-            typeOptions.classList.toggle("grid-cols-1", !isMentor);
-            typeOptions.classList.toggle("grid-cols-2", isMentor);
+            typeOptions.classList.remove("grid-cols-1", "grid-cols-2");
+            typeOptions.classList.add("grid-cols-3");
           }
 
           document.querySelectorAll(".signup-level").forEach(function (btn) {
-            const scope = btn.getAttribute("data-role-scope");
-            const shouldShow = isMentor ? scope === "mentor" : scope === "student";
-            btn.classList.toggle("hidden", !shouldShow);
+            btn.classList.remove("hidden");
           });
 
           const visibleButtons = visibleLevelButtons();
@@ -3941,7 +3943,7 @@
           });
 
           if (!activeButton && visibleButtons[0]) {
-            syncSelected(".signup-level", visibleButtons[0].getAttribute("data-value"));
+            syncSelected(".signup-level", isMentor ? "graduate" : "undergrad");
           }
         }
 
@@ -3957,7 +3959,7 @@
           }
 
           if (mentorTypeInput) {
-            const activeLevel = normalizeLevel(findVisibleActiveLevel());
+            const activeLevel = normalizeMentorType(findVisibleActiveLevel());
             mentorTypeInput.value = roleValue === "mentor" ? activeLevel : "";
           }
         }
@@ -3966,6 +3968,7 @@
           btn.addEventListener("click", function () {
             const selectedRole = normalizeRole(btn.getAttribute("data-value"));
             syncSelected(".signup-role", selectedRole);
+            syncSelected(".signup-level", selectedRole === "mentor" ? normalizeMentorType(findVisibleActiveLevel()) : "undergrad");
 
             if (roleInput) {
               roleInput.value = selectedRole;
@@ -3978,7 +3981,13 @@
 
         document.querySelectorAll(".signup-level").forEach(function (btn) {
           btn.addEventListener("click", function () {
-            syncSelected(".signup-level", normalizeLevel(btn.getAttribute("data-value")));
+            const selectedLevel = normalizeLevel(btn.getAttribute("data-value"));
+            syncSelected(".signup-level", selectedLevel);
+            syncSelected(".signup-role", selectedLevel === "undergrad" ? "student" : "mentor");
+            if (roleInput) {
+              roleInput.value = selectedLevel === "undergrad" ? "student" : "mentor";
+            }
+            applyRoleTypeVisibility(roleInput?.value || "student");
             syncHiddenInputs();
           });
         });
@@ -3987,7 +3996,7 @@
         const oldMentorType = @json(old('mentor_type'));
         const savedRole = window.localStorage?.getItem("gradspaths_signup_role");
         const savedLevel = window.localStorage?.getItem("gradspaths_signup_level");
-        const initialRole = normalizeRole(oldRole || savedRole);
+        const initialRole = normalizeRole(oldRole || savedRole || "mentor");
         const initialLevel = initialRole === "mentor"
           ? normalizeLevel(oldMentorType || savedLevel)
           : "undergrad";
@@ -4001,7 +4010,7 @@
         }
 
         if (mentorTypeInput) {
-          mentorTypeInput.value = initialRole === "mentor" ? initialLevel : "";
+          mentorTypeInput.value = initialRole === "mentor" ? normalizeMentorType(initialLevel) : "";
         }
 
         syncSelected(".signup-role", initialRole);

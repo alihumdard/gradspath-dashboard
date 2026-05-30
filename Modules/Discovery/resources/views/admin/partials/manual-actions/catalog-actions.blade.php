@@ -22,7 +22,7 @@
     </div>
 
     <div class="manual-panel__grid">
-      <form class="manual-form" method="POST" action="{{ route('admin.manual-actions.institutions.store') }}">
+      <form class="manual-form" method="POST" action="{{ route('admin.manual-actions.institutions.store') }}" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="manual_section" value="institutions" />
 
@@ -36,7 +36,7 @@
 
         <label class="manual-field">
           <span>Display name</span>
-          <input name="display_name" type="text" value="{{ old('display_name') }}" />
+          <input name="display_name" type="text" value="{{ old('display_name') }}" required />
           @error('display_name')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror
@@ -44,23 +44,15 @@
 
         <label class="manual-field">
           <span>Country</span>
-          <input name="country" type="text" value="{{ old('country', 'US') }}" />
+          <input name="country" type="text" value="{{ old('country') }}" required />
           @error('country')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror
         </label>
 
         <label class="manual-field">
-          <span>Alpha-2 code</span>
-          <input name="alpha_two_code" type="text" maxlength="2" value="{{ old('alpha_two_code', 'US') }}" />
-          @error('alpha_two_code')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-
-        <label class="manual-field">
           <span>City</span>
-          <input name="city" type="text" value="{{ old('city') }}" />
+          <input name="city" type="text" value="{{ old('city') }}" required />
           @error('city')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror
@@ -68,8 +60,24 @@
 
         <label class="manual-field">
           <span>State / province</span>
-          <input name="state_province" type="text" value="{{ old('state_province') }}" />
+          <input name="state_province" type="text" value="{{ old('state_province') }}" required />
           @error('state_province')
+            <small class="manual-field__error">{{ $message }}</small>
+          @enderror
+        </label>
+
+        <label class="manual-field">
+          <span>Upload logo</span>
+          <input name="logo_file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" required />
+          @error('logo_file')
+            <small class="manual-field__error">{{ $message }}</small>
+          @enderror
+        </label>
+
+        <label class="manual-field">
+          <span>Logo URL or public path</span>
+          <input name="logo_url" type="text" value="{{ old('logo_url') }}" placeholder="Optional: university_logo/lahore.jfif" />
+          @error('logo_url')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror
         </label>

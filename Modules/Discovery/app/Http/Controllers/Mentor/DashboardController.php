@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Modules\Discovery\app\Services\MentorDiscoveryService;
-use Modules\Institutions\app\Models\University;
+use Modules\Discovery\app\Services\TopInstitutionService;
 use Modules\Payments\app\Services\CreditService;
 use Modules\Settings\app\Models\Mentor;
 
@@ -14,6 +14,7 @@ class DashboardController extends Controller
 {
     public function __construct(
         private readonly MentorDiscoveryService $discovery,
+        private readonly TopInstitutionService $topInstitutions,
         private readonly CreditService $credits
     ) {}
 
@@ -25,11 +26,7 @@ class DashboardController extends Controller
         return view('discovery::mentor.dashboard', [
             'featuredMentors' => $this->discovery->featured(6, 'mentor', $viewerMentor?->id),
             'creditBalance' => $user ? $this->credits->getBalance($user) : 0,
-            'institutions' => University::query()
-                ->activeWithPrograms()
-                ->orderByRaw('COALESCE(display_name, name)')
-                ->limit(6)
-                ->get(['id', 'name', 'display_name']),
+            'institutions' => $this->topInstitutions->forDashboard(),
         ]);
     }
 }

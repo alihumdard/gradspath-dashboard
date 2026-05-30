@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,12 +22,16 @@ use Modules\Auth\app\Http\Requests\LoginRequest;
 use Modules\Auth\app\Http\Requests\RegisterRequest;
 use Modules\Auth\app\Http\Requests\ResetPasswordRequest;
 use Modules\Auth\app\Services\AuthService;
+use App\Services\EmailVerificationCodeService;
 use Modules\Institutions\app\Models\University;
 use Throwable;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly AuthService $authService) {}
+    public function __construct(
+        private readonly AuthService $authService,
+        private readonly EmailVerificationCodeService $verificationCodes,
+    ) {}
 
     public function showLogin(): View
     {
@@ -253,17 +257,36 @@ class AuthController extends Controller
         return view('auth::verify-email');
     }
 
-    public function verifyEmail(EmailVerificationRequest $request): RedirectResponse
+    public function verifyEmail(Request $request): RedirectResponse
     {
-        if ($request->user()->hasVerifiedEmail()) {
-            return $this->redirectAfterAuth($request->user(), false)
+        $user = $request->user();
+
+        if ($user->hasVerifiedEmail()) {
+            return $this->redirectAfterAuth($user, false)
                 ->with('status', 'Your email address is already verified.');
         }
 
-        $request->fulfill();
+        $validated = $request->validate([
+            'code' => ['nullable', 'string'],
+            'code_digits' => ['nullable', 'array', 'size:6'],
+            'code_digits.*' => ['nullable', 'string', 'regex:/^\d?$/'],
+        ]);
 
-        return $this->redirectAfterAuth($request->user(), false)
-            ->with('status', 'Your email address has been verified.');
+        $code = $validated['code'] ?? implode('', $validated['code_digits'] ?? []);
+        $result = $this->verificationCodes->verify($user, $code);
+
+        if (!$result->valid) {
+            return back()
+                ->withErrors(['code' => $result->message])
+                ->withInput();
+        }
+
+        if ($user->markEmailAsVerified()) {
+            event(new Verified($user));
+        }
+
+        return $this->redirectAfterAuth($user, false)
+            ->with('status', $result->message);
     }
 
     public function resendVerificationEmail(Request $request): RedirectResponse
@@ -275,9 +298,13 @@ class AuthController extends Controller
                 ->with('status', 'Your email address is already verified.');
         }
 
-        $user->sendEmailVerificationNotification();
+        if (!$this->verificationCodes->send($user)) {
+            return back()->withErrors([
+                'resend' => 'Please wait a moment before requesting another verification code.',
+            ]);
+        }
 
-        return back()->with('status', 'A fresh verification link has been sent to your email address.');
+        return back()->with('status', 'A fresh 6-digit verification code has been sent to your email address.');
     }
 
     private function redirectAfterAuth(User $user, bool $enforceVerification = true): RedirectResponse

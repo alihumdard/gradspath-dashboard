@@ -21,6 +21,7 @@ const selectedSchoolProgramTag = document.getElementById(
   "selectedSchoolProgramTag",
 );
 const backBtn = document.getElementById("backBtn");
+const selectedSchoolIcon = document.querySelector(".selected-school-icon");
 const tierFiltersContainer = document.getElementById("tierFilters");
 const programFiltersContainer = document.getElementById("programFilters");
 const schoolProgramFiltersContainer = document.getElementById(
@@ -74,6 +75,7 @@ const normalizedInstitutions = institutions
     id: item.id,
     school: item.school,
     fullName: item.fullName || item.school,
+    logo_url: item.logo_url,
     programs: normalizePrograms(item.programs),
   }))
   .sort((a, b) => a.school.localeCompare(b.school));
@@ -238,7 +240,10 @@ function renderInstitutions() {
       return `
         <div class="university-card" data-school-id="${escapeHtml(school.id)}">
           <div class="university-icon-wrap">
-            <i data-lucide="building-2"></i>
+            ${school.logo_url && school.logo_url.trim() !== "" ?
+              `<img class="university-logo-image" src="${escapeHtml(school.logo_url.startsWith('http') || school.logo_url.startsWith('/') ? school.logo_url : '/' + school.logo_url)}" alt="${escapeHtml(school.school)}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" /><i data-lucide="building-2" class="university-logo-fallback-icon" style="display:none;"></i>` :
+              `<i data-lucide="building-2"></i>`
+            }
           </div>
 
           <div class="university-name">${escapeHtml(school.school)}</div>
@@ -330,6 +335,12 @@ function renderProgramsForSelectedSchool() {
   selectedSchoolTierTag.textContent = getTierSummary(toplinePrograms);
   selectedSchoolProgramTag.textContent = getProgramsLabel(toplinePrograms);
   selectedSchoolSubtext.textContent = `${visiblePrograms.length} available program${visiblePrograms.length === 1 ? "" : "s"} shown at this institution`;
+
+  if (selectedSchoolIcon) {
+    selectedSchoolIcon.innerHTML = school.logo_url && school.logo_url.trim() !== "" ?
+      `<img class="university-logo-image" src="${escapeHtml(school.logo_url.startsWith('http') || school.logo_url.startsWith('/') ? school.logo_url : '/' + school.logo_url)}" alt="${escapeHtml(school.school)}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-flex';" /><i data-lucide="building-2" class="university-logo-fallback-icon" style="display:none;"></i>` :
+      `<i data-lucide="building-2"></i>`;
+  }
 
   renderSchoolProgramFilters(school);
 

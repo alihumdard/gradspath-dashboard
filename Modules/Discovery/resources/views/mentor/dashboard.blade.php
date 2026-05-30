@@ -152,8 +152,28 @@
 
           <div class="school-grid">
             @forelse ($institutions as $institution)
-              <a href="{{ $institutionsUrl }}" class="school-card">
-                {{ $institution->display_name ?: $institution->name }}
+              @php
+                $schoolName = $institution->name;
+                $schoolWords = preg_split('/\s+/', preg_replace('/[^A-Za-z0-9 ]/', ' ', $schoolName)) ?: [];
+                $schoolInitials = collect($schoolWords)
+                    ->filter()
+                    ->take(2)
+                    ->map(fn ($word) => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($word, 0, 1)))
+                    ->implode('') ?: 'GP';
+                $logoUrl = trim((string) $institution->logo_url);
+                if ($logoUrl !== '' && ! \Illuminate\Support\Str::startsWith($logoUrl, ['http://', 'https://', '//', '/'])) {
+                    $logoUrl = asset($logoUrl);
+                }
+              @endphp
+              <a href="{{ route('mentor.institutions.show', $institution->id) }}" class="school-card">
+                <span class="school-logo" aria-hidden="true">
+                  @if ($logoUrl !== '')
+                    <img src="{{ $logoUrl }}" alt="" loading="lazy">
+                  @else
+                    <span>{{ $schoolInitials }}</span>
+                  @endif
+                </span>
+                <span class="school-name">{{ $schoolName }}</span>
               </a>
             @empty
               <div class="school-card">Universities coming soon</div>

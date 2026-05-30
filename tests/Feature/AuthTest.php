@@ -2,12 +2,12 @@
 
 use App\Notifications\QueuedResetPassword;
 use App\Notifications\QueuedVerifyEmail;
+use App\Models\EmailVerificationCode;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\User;
 use Modules\Institutions\app\Models\University;
@@ -60,7 +60,7 @@ it('renders the email verification notice for unverified users', function () {
     $this->actingAs($user)
         ->get(route('verification.notice'))
         ->assertOk()
-        ->assertSee('Check your inbox');
+        ->assertSee('Enter verification code');
 });
 
 it('renders the admin login page at /admin for guests', function () {
@@ -148,7 +148,11 @@ it('registers a student, creates defaults, and sends verification email', functi
         'program_level' => 'undergrad',
     ]);
 
-    Notification::assertSentTo($user, QueuedVerifyEmail::class);
+    Notification::assertSentTo(
+        $user,
+        QueuedVerifyEmail::class,
+        fn (QueuedVerifyEmail $notification): bool => preg_match('/^\d{6}$/', $notification->code) === 1
+    );
 
     $this->assertAuthenticated();
     expect(Auth::id())->toBe($user->id);
@@ -213,7 +217,7 @@ it('registers a student from the landing page and sends them to verification not
 
     $this->get(route('verification.notice'))
         ->assertOk()
-        ->assertSee('Check your inbox');
+        ->assertSee('Enter verification code');
 
     $this->assertDatabaseHas('users', ['email' => $payload['email']]);
 });
@@ -573,7 +577,7 @@ it('resends the verification email for unverified users', function () {
     Notification::assertSentTo($user, QueuedVerifyEmail::class);
 });
 
-it('marks the user email as verified from the signed verification link', function () {
+it('marks the user email as verified with the correct 6 digit code', function () {
     $user = User::factory()->create([
         'email' => 'verify-' . Str::uuid() . '@example.edu',
         'is_active' => true,
@@ -581,20 +585,98 @@ it('marks the user email as verified from the signed verification link', functio
     ]);
     $user->assignRole('student');
 
-    $verificationUrl = URL::temporarySignedRoute(
-        'verification.verify',
-        now()->addMinutes(60),
-        [
-            'id' => $user->id,
-            'hash' => sha1($user->getEmailForVerification()),
-        ]
-    );
+    EmailVerificationCode::query()->create([
+        'user_id' => $user->id,
+        'code_hash' => Hash::make('123456'),
+        'expires_at' => now()->addMinutes(15),
+        'attempts' => 0,
+        'last_sent_at' => now(),
+    ]);
 
     $this->actingAs($user)
-        ->get($verificationUrl)
+        ->post(route('verification.verify'), ['code' => '123456'])
         ->assertRedirect(route('student.dashboard'));
 
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
+    $this->assertDatabaseMissing('email_verification_codes', ['user_id' => $user->id]);
+});
+
+it('rejects an incorrect 6 digit verification code and records an attempt', function () {
+    $user = User::factory()->create([
+        'email' => 'wrong-code-' . Str::uuid() . '@example.edu',
+        'is_active' => true,
+        'email_verified_at' => null,
+    ]);
+    $user->assignRole('student');
+
+    EmailVerificationCode::query()->create([
+        'user_id' => $user->id,
+        'code_hash' => Hash::make('123456'),
+        'expires_at' => now()->addMinutes(15),
+        'attempts' => 0,
+        'last_sent_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->from(route('verification.notice'))
+        ->post(route('verification.verify'), ['code' => '654321'])
+        ->assertRedirect(route('verification.notice'))
+        ->assertSessionHasErrors('code');
+
+    expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+    expect(EmailVerificationCode::query()->where('user_id', $user->id)->value('attempts'))->toBe(1);
+});
+
+it('rejects an expired verification code', function () {
+    $user = User::factory()->create([
+        'email' => 'expired-code-' . Str::uuid() . '@example.edu',
+        'is_active' => true,
+        'email_verified_at' => null,
+    ]);
+    $user->assignRole('student');
+
+    EmailVerificationCode::query()->create([
+        'user_id' => $user->id,
+        'code_hash' => Hash::make('123456'),
+        'expires_at' => now()->subMinute(),
+        'attempts' => 0,
+        'last_sent_at' => now()->subMinutes(20),
+    ]);
+
+    $this->actingAs($user)
+        ->from(route('verification.notice'))
+        ->post(route('verification.verify'), ['code' => '123456'])
+        ->assertRedirect(route('verification.notice'))
+        ->assertSessionHasErrors('code');
+
+    expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+});
+
+it('throttles resend requests for recent verification codes', function () {
+    Notification::fake();
+
+    $user = User::factory()->create([
+        'email' => 'resend-throttle-' . Str::uuid() . '@example.edu',
+        'is_active' => true,
+        'email_verified_at' => null,
+    ]);
+    $user->assignRole('student');
+
+    EmailVerificationCode::query()->create([
+        'user_id' => $user->id,
+        'code_hash' => Hash::make('123456'),
+        'expires_at' => now()->addMinutes(15),
+        'attempts' => 0,
+        'last_sent_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->from(route('verification.notice'))
+        ->post(route('verification.send'))
+        ->assertRedirect(route('verification.notice'))
+        ->assertSessionHasErrors('resend');
+
+    Notification::assertNothingSent();
 });
 
 it('redirects verified users away from the verification notice', function () {
