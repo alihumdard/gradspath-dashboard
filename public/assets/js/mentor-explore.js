@@ -122,21 +122,16 @@ function createMentorCard(mentor) {
   const article = document.createElement("article");
   article.className = "mentor-card";
 
-  const feedbackExtra =
-    mentor.reviewExtra && mentor.reviewExtra.trim()
-      ? mentor.reviewExtra
-      : "More mentor feedback will appear here as reviews are added.";
-
   const avatarMarkup =
     mentor.avatarUrl && mentor.avatarUrl.trim()
       ? `<img src="${escapeHtml(mentor.avatarUrl)}" alt="${escapeHtml(mentor.name)}" class="mentor-avatar-image" />`
       : escapeHtml(mentor.initials || "M");
 
   article.innerHTML = `
-    <div class="mentor-card-top">
+    <div class="mentor-card-header">
       <div class="mentor-card-identity">
         <div class="mentor-avatar">${avatarMarkup}</div>
-        <div class="mentor-headings">
+        <div>
           <div class="mentor-name">${escapeHtml(mentor.name)}</div>
           <div class="mentor-role">${escapeHtml(mentor.categoryLabel)} • ${escapeHtml(mentor.school)}</div>
         </div>
@@ -149,16 +144,20 @@ function createMentorCard(mentor) {
       <span class="mentor-office-hours-time">${escapeHtml(mentor.officeHours)}</span>
     </div>
 
-    <div class="bio-read-block">
-      <div class="bio-short">${escapeHtml(mentor.bio)}</div>
-      <div class="bio-full">${escapeHtml(mentor.bioExtra)}</div>
-      <button class="read-more-btn mentor-bio-btn" type="button">Read More ▼</button>
+    <div class="read-more-block">
+      <div class="mentor-note-box read-more-text">
+        ${escapeHtml(mentor.bio)}
+      </div>
+      <button class="read-more-btn" type="button">
+        <span class="read-more-label">Read More</span>
+        <span class="read-more-chevron">⌄</span>
+      </button>
     </div>
 
-    <div class="services-accordion">
-      <button class="services-toggle" type="button">
-        <span class="services-toggle-text">Services Offered</span>
-        <span class="services-toggle-icon">▼</span>
+    <div class="services-accordion open">
+      <button class="services-toggle" type="button" aria-expanded="true">
+        <span class="services-toggle-text">SERVICES OFFERED</span>
+        <span class="services-toggle-icon">∨</span>
       </button>
 
       <div class="services-dropdown">
@@ -170,19 +169,23 @@ function createMentorCard(mentor) {
       </div>
     </div>
 
-    <div class="feedback-box">
-      <div class="feedback-top-row">
-        <div class="feedback-title">Recent Feedback</div>
+    <div class="student-note-box">
+      <div class="feedback-header">
+        <div class="student-note-title">Recent Feedback</div>
         ${
           mentor.visibleFeedbackCount >= 2 && mentor.feedbackUrl
-            ? `<a class="feedback-link-btn" href="${escapeHtml(mentor.feedbackUrl)}">See more Feedback</a>`
+            ? `<a class="see-more-feedback" href="${escapeHtml(mentor.feedbackUrl)}">See more Feedback</a>`
             : ""
         }
       </div>
 
-      <p class="feedback-short">“${escapeHtml(mentor.reviewShort)}”</p>
-      <div class="feedback-full">“${escapeHtml(feedbackExtra)}”</div>
-      <button class="feedback-read-more-btn" type="button">Read More ▼</button>
+      <div class="read-more-block feedback-read-more">
+        <p class="read-more-text">“${escapeHtml(mentor.reviewShort)}”</p>
+        <button class="read-more-btn" type="button">
+          <span class="read-more-label">Read More</span>
+          <span class="read-more-chevron">⌄</span>
+        </button>
+      </div>
     </div>
 
     <button class="book-now-btn" type="button" ${mentor.canBook === false ? "disabled" : ""}>
@@ -190,16 +193,17 @@ function createMentorCard(mentor) {
     </button>
   `;
 
-  const bioBtn = article.querySelector(".mentor-bio-btn");
-  bioBtn.addEventListener("click", () => {
-    const expanded = article.classList.toggle("bio-expanded");
-    bioBtn.textContent = expanded ? "Read Less ▲" : "Read More ▼";
-  });
+  article.querySelectorAll(".read-more-btn").forEach((button) => {
+    const block = button.closest(".read-more-block");
+    const label = button.querySelector(".read-more-label");
 
-  const feedbackBtn = article.querySelector(".feedback-read-more-btn");
-  feedbackBtn.addEventListener("click", () => {
-    const expanded = article.classList.toggle("feedback-expanded");
-    feedbackBtn.textContent = expanded ? "Read Less ▲" : "Read More ▼";
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (!block || !label) return;
+
+      const expanded = block.classList.toggle("expanded");
+      label.textContent = expanded ? "Read Less" : "Read More";
+    });
   });
 
   const bookNowBtn = article.querySelector(".book-now-btn");
@@ -217,7 +221,8 @@ function createMentorCard(mentor) {
 
   servicesToggle.addEventListener("click", () => {
     const open = servicesAccordion.classList.toggle("open");
-    servicesIcon.textContent = open ? "▲" : "▼";
+    servicesIcon.textContent = "∨";
+    servicesToggle.setAttribute("aria-expanded", open ? "true" : "false");
   });
 
   return article;

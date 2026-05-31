@@ -160,12 +160,12 @@
 
   if (dashboardBtn) {
     dashboardBtn.addEventListener("click", function () {
-      window.location.href = "https://gradspath-dashboard.vercel.app";
+      window.location.href = window.location.origin;
     });
   }
   if (dashboardBtnMob) {
     dashboardBtnMob.addEventListener("click", function () {
-      window.location.href = "https://gradspath-dashboard.vercel.app";
+      window.location.href = window.location.origin;
     });
   }
   if (logoutBtn) logoutBtn.addEventListener("click", signOut);
@@ -311,7 +311,7 @@
   function handleSelectMentorClick(e) {
     e.preventDefault();
     if (isSignedIn()) {
-      window.location.href = "https://gradspath-dashboard.vercel.app";
+      window.location.href = window.location.origin;
     } else {
       openLogin();
     }

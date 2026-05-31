@@ -78,17 +78,15 @@
         class="w-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between relative h-full"
       >
         <a
-          href="index.html"
-          class="flex items-center gap-2 shrink-0 z-10"
+          href="{{ url('/') }}"
+          class="flex items-center shrink-0 z-10"
           aria-label="Home - Grads Paths"
         >
-          <i
-            class="fa-solid fa-graduation-cap text-black dark:text-white text-2xl"
-          ></i>
-          <span
-            class="font-display font-bold text-base tracking-wide text-black dark:text-white whitespace-nowrap"
-            >Grads Paths</span
-          >
+          <img
+            src="{{ asset('gradspaths_logo/Gradspaths_logo_transparent.png') }}"
+            alt="Grads Paths"
+            class="h-12 sm:h-14 w-auto max-w-[150px] sm:max-w-[180px] object-contain"
+          />
         </a>
 
         <nav
@@ -96,12 +94,12 @@
           aria-label="Primary"
         >
           <a
-            href="index.html"
+            href="{{ url('/') }}"
             class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
             >Home</a
           >
           <a
-            href="https://gradspath-dashboard.vercel.app"
+            href="{{ url('/') }}"
             class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
             >Find Mentors</a
           >
@@ -190,12 +188,12 @@
       >
         <nav class="flex flex-col py-2 font-semibold text-sm">
           <a
-            href="index.html"
+            href="{{ url('/') }}"
             class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
             >Home</a
           >
           <a
-            href="https://gradspath-dashboard.vercel.app"
+            href="{{ url('/') }}"
             class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
             >Find Mentors</a
           >
@@ -286,7 +284,7 @@
         </div>
         <div class="flex flex-wrap justify-center gap-4 w-full sm:w-auto">
           <a
-            href="https://gradspath-dashboard.vercel.app"
+            href="{{ url('/') }}"
             class="hero-btn-pink group relative inline-flex items-center justify-center min-w-[240px] h-[54px] px-[28px] rounded-full bg-transparent outline-none select-none cursor-pointer decoration-0 transition-transform duration-200 ease-out hover:-translate-y-px focus-visible:ring-4 focus-visible:ring-[#E47AB4]/25 w-full sm:w-auto"
           >
             <span
@@ -324,7 +322,7 @@
           </a>
 
           <a
-            href="https://gradspath-dashboard.vercel.app"
+            href="{{ url('/') }}"
             class="hero-btn-blue group relative inline-flex items-center justify-center min-w-[240px] h-[54px] px-[28px] rounded-full bg-transparent outline-none select-none cursor-pointer decoration-0 transition-transform duration-200 ease-out hover:-translate-y-px focus-visible:ring-4 focus-visible:ring-[#71A4F4]/25 w-full sm:w-auto"
           >
             <span
@@ -2033,7 +2031,7 @@
               (no group discount).
             </p>
             <a
-              href="https://gradspath-dashboard.vercel.app"
+              href="{{ url('/') }}"
               class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
             >
               Book Today
@@ -2140,7 +2138,7 @@
               </li>
             </ul>
             <a
-              href="https://gradspath-dashboard.vercel.app#get-in-touch"
+              href="{{ url('/#get-in-touch') }}"
               class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
             >
               Special Request Meeting
@@ -2232,7 +2230,7 @@
               </li>
             </ul>
             <a
-              href="https://gradspath-dashboard.vercel.app#get-in-touch"
+              href="{{ url('/#get-in-touch') }}"
               class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
             >
               Special Request Meeting
@@ -2338,7 +2336,7 @@
               </li>
             </ul>
             <a
-              href="https://gradspath-dashboard.vercel.app#get-in-touch"
+              href="{{ url('/#get-in-touch') }}"
               class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
             >
               Subscribe Today
@@ -3152,7 +3150,7 @@
           </div>
           <div class="text-center mt-8">
             <a
-              href="https://gradspath-dashboard.vercel.app#feedback"
+              href="{{ url('/#feedback') }}"
               id="btn-see-feedback"
               class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--primary)] text-white text-sm font-bold hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 no-underline"
             >
@@ -3713,7 +3711,7 @@
             class="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto justify-center"
           >
             <a
-              href="https://gradspath-dashboard.vercel.app"
+              href="{{ url('/') }}"
               class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white text-black text-sm font-bold uppercase tracking-wide hover:bg-gray-100 transition-colors shadow-lg no-underline"
             >
               BOOK FREE CONSULTATION
@@ -3727,7 +3725,7 @@
               </span>
             </a>
             <a
-              href="index.html#how"
+              href="{{ url('/#how') }}"
               class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-[#2dd4bf] text-black text-sm font-bold uppercase tracking-wide hover:opacity-95 transition-opacity shadow-lg no-underline"
             >
               HOW IT WORKS
@@ -3746,7 +3744,7 @@
         <!-- Brand and tagline -->
         <div class="flex flex-col gap-4 mb-12">
           <a
-            href="index.html"
+            href="{{ url('/') }}"
             class="inline-flex items-center gap-2 no-underline"
           >
             <i
@@ -3784,23 +3782,23 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8 mb-12">
           <div class="footer-col">
             <h3 class="footer-col-title">Explore</h3>
-            <a href="index.html">Home</a>
+            <a href="{{ url('/') }}">Home</a>
             <a href="#how">How It Works</a>
-            <a href="index.html#services">Our Services</a>
+            <a href="{{ url('/#services') }}">Our Services</a>
             <a href="#why-us">Why Grads Paths</a>
           </div>
           <div class="footer-col">
             <h3 class="footer-col-title">Services</h3>
-            <a href="https://gradspath-dashboard.vercel.app"  >Find Mentors</a>
-            <a href="index.html#meeting-types">Meeting Types</a>
+            <a href="{{ url('/') }}"  >Find Mentors</a>
+            <a href="{{ url('/#meeting-types') }}">Meeting Types</a>
             <a href="#programs-disciplines">Programs Offered</a>
             <a href="#programs-disciplines">Professional Disciplines</a>
-            <a href="index.html#signup" >Sign Up</a>
-            <a href="index.html#login" >Log In</a>
+            <a href="{{ url('/#signup') }}" id="footer-signup">Sign Up</a>
+            <a href="{{ url('/#login') }}" id="footer-login">Log In</a>
           </div>
           <div class="footer-col">
             <h3 class="footer-col-title">Connect</h3>
-            <a href="index.html#get-in-touch"
+            <a href="{{ route('public.support') }}"
               ><i
                 class="fa-solid fa-envelope mr-1.5 text-sm opacity-90"
                 aria-hidden="true"
@@ -3818,15 +3816,15 @@
             class="flex flex-wrap items-center gap-x-5 gap-y-1"
             aria-label="Footer legal and contact"
           >
-            <a href="index.html#get-in-touch"
+            <a href="{{ route('public.support') }}"
               ><i
                 class="fa-solid fa-envelope mr-1 text-sm opacity-90"
                 aria-hidden="true"
               ></i>
               Contact Us</a
             >
-            <a href="privacy-policy.html">Privacy Policy</a>
-            <a href="terms-of-service.html">Terms of Service</a>
+            <a href="{{ route('public.privacy') }}">Privacy Policy</a>
+            <a href="{{ route('public.terms') }}">Terms of Service</a>
           </nav>
           <div class="text-left sm:text-right">
             <p>

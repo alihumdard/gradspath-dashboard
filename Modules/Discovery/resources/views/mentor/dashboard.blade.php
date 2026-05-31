@@ -75,10 +75,10 @@
                   </button>
                 </div>
 
-                <div class="services-accordion">
-                  <button class="services-toggle" type="button">
+                <div class="services-accordion open">
+                  <button class="services-toggle" type="button" aria-expanded="true">
                     <span class="services-toggle-text">SERVICES OFFERED</span>
-                    <span class="services-toggle-icon">&#8964;</span>
+                    <span class="services-toggle-icon">&or;</span>
                   </button>
 
                   <div class="services-dropdown">

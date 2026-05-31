@@ -170,7 +170,8 @@ servicesToggles.forEach((toggle) => {
   toggle.addEventListener("click", () => {
     const accordion = toggle.closest(".services-accordion");
     if (!accordion) return;
-    accordion.classList.toggle("open");
+    const open = accordion.classList.toggle("open");
+    toggle.setAttribute("aria-expanded", open ? "true" : "false");
   });
 });
 

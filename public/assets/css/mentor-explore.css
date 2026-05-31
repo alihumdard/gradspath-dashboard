@@ -621,7 +621,7 @@ select {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 24px;
-  padding: 24px;
+  padding: 18px;
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
@@ -629,33 +629,41 @@ select {
 }
 
 .mentor-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+  background: var(--hover-bg);
+  border-color: var(--hover-line);
+  box-shadow: var(--hover-shadow);
+  transform: translateY(-2px);
 }
 
-.mentor-card-top {
+.mentor-card:hover .mentor-name {
+  color: var(--purple);
+}
+
+.mentor-card-header {
   display: flex;
   justify-content: space-between;
+  gap: 14px;
   align-items: flex-start;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .mentor-card-identity {
   display: flex;
-  gap: 16px;
+  align-items: flex-start;
+  gap: 14px;
 }
 
 .mentor-avatar {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 14px;
-  background: var(--hero-bg);
-  color: var(--purple);
+  background: var(--avatar-bg);
+  color: var(--text);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -668,33 +676,33 @@ select {
 }
 
 .mentor-name {
-  font-size: 17px;
-  font-weight: 700;
-  margin-bottom: 4px;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--text);
+  margin-bottom: 3px;
 }
 
 .mentor-role {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.4;
+  font-size: 12.5px;
+  color: var(--text);
+  opacity: 0.9;
+  font-weight: 500;
 }
 
 .mentor-rating {
   background: var(--rating-bg);
   color: var(--rating-text);
-  padding: 6px 10px;
-  border-radius: 8px;
+  font-weight: 600;
   font-size: 12px;
-  font-weight: 700;
+  border-radius: 8px;
+  padding: 6px 10px;
+  white-space: nowrap;
 }
 
 .mentor-office-hours {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   font-size: 13px;
-  padding: 12px;
-  background: var(--panel-soft-2);
-  border-radius: 12px;
+  line-height: 1.45;
 }
 
 .mentor-office-hours-title {
@@ -704,44 +712,66 @@ select {
 }
 
 .mentor-office-hours-time {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.read-more-block {
+  margin-bottom: 14px;
+}
+
+.read-more-text {
+  overflow: hidden;
+  max-height: 2.9em;
+  position: relative;
+}
+
+.read-more-block.expanded .read-more-text {
+  max-height: none;
+  overflow: visible;
+}
+
+.mentor-note-box {
   color: var(--text);
-}
-
-.bio-read-block {
-  margin-bottom: 20px;
-}
-
-.bio-short,
-.bio-full {
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--text);
-}
-
-.bio-full {
-  display: none;
-  margin-top: 10px;
-}
-
-.mentor-card.bio-expanded .bio-full {
-  display: block;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 500;
+  margin-bottom: 0;
 }
 
 .read-more-btn {
+  margin-top: 10px;
+  width: 100%;
   border: none;
   background: transparent;
   color: var(--purple);
   font-size: 13px;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   cursor: pointer;
-  padding: 8px 0 0;
+  padding: 0;
+}
+
+.read-more-btn:hover {
+  color: var(--purple-dark);
+}
+
+.read-more-chevron {
+  font-size: 16px;
+  line-height: 1;
+  transition: transform var(--ease);
+}
+
+.read-more-block.expanded .read-more-chevron {
+  transform: rotate(180deg);
 }
 
 /* Services */
 .services-accordion {
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .services-toggle {
@@ -757,15 +787,26 @@ select {
 
 .services-toggle-text {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--muted);
+}
+
+.services-toggle-icon {
+  color: var(--purple);
+  font-size: 16px;
+  line-height: 1;
+  transition: transform var(--ease);
+}
+
+.services-accordion.open .services-toggle-icon {
+  transform: rotate(180deg);
 }
 
 .services-dropdown {
   display: none;
-  padding-top: 16px;
+  padding-top: 12px;
 }
 
 .services-accordion.open .services-dropdown {
@@ -774,76 +815,87 @@ select {
 
 .service-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .service-pill {
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  font-size: 12px;
+  min-height: 44px;
+  border: 1.5px solid var(--service-line);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  background: var(--panel-soft-2);
-  color: var(--text);
+  padding: 8px 10px;
+  color: var(--purple);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  user-select: none;
+  pointer-events: none;
 }
 
 /* Feedback */
-.feedback-box {
-  background: var(--panel-soft-2);
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 24px;
+.student-note-box {
+  margin-bottom: 16px;
 }
 
-.feedback-top-row {
+.feedback-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
-.feedback-title {
-  font-size: 11px;
-  font-weight: 700;
+.student-note-title {
+  font-size: 12px;
+  font-weight: 600;
   text-transform: uppercase;
   color: var(--teal);
+  letter-spacing: 0.02em;
+  margin-bottom: 0;
 }
 
-.feedback-link-btn {
+.see-more-feedback {
   border: none;
   background: transparent;
   color: var(--purple);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
   text-decoration: none;
 }
 
-.feedback-short,
-.feedback-full {
+.see-more-feedback:hover {
+  text-decoration: underline;
+  color: var(--purple-dark);
+}
+
+.student-note-box p {
+  margin: 0;
+  color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
-  color: var(--text);
-  font-style: italic;
+  font-weight: 500;
 }
 
-.feedback-full {
-  display: none;
-  margin-top: 8px;
-}
-
-.mentor-card.feedback-expanded .feedback-full {
-  display: block;
+.feedback-read-more {
+  margin-bottom: 0;
 }
 
 .book-now-btn {
   width: 100%;
   height: 52px;
-  border-radius: 16px;
+  border-radius: 18px;
   background: var(--purple);
   color: white;
   border: none;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   margin-top: auto;
