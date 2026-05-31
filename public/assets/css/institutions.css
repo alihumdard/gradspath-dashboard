@@ -510,7 +510,7 @@ body {
 
 .filter-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
   gap: 24px;
   margin-bottom: 18px;
 }
@@ -569,8 +569,12 @@ body {
 
 .chip-row {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 14px;
+}
+
+.filter-card-tier .chip-row {
+  gap: clamp(10px, 1.2vw, 16px);
 }
 
 .chip-row.compact {
@@ -578,10 +582,13 @@ body {
 }
 
 .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border);
   background: var(--panel-soft-2);
   color: var(--text);
-  padding: 12px 18px;
+  padding: 11px 15px;
   border-radius: 999px;
   font-size: 0.94rem;
   font-weight: 600;
@@ -1266,7 +1273,7 @@ body {
 
 @media (max-width: 1330px) {
   .filter-shell {
-    grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
     gap: 18px;
   }
 
@@ -1275,6 +1282,10 @@ body {
   }
 
   .chip-row {
+    gap: 10px;
+  }
+
+  .filter-card-tier .chip-row {
     gap: 10px;
   }
 

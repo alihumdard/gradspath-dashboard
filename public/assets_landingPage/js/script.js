@@ -71,7 +71,7 @@
     if (!el) return;
     if (show) {
       el.classList.remove("hidden");
-      el.style.display = mobile ? "block" : "inline-flex";
+      el.style.display = "";
     } else {
       el.classList.add("hidden");
       el.style.display = "none";

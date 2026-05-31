@@ -85,7 +85,7 @@
           <img
             src="{{ asset('gradspaths_logo/Gradspaths_logo_transparent.png') }}"
             alt="Grads Paths"
-            class="h-12 sm:h-14 w-auto max-w-[150px] sm:max-w-[180px] object-contain"
+            class="h-8 sm:h-14 w-auto max-w-[110px] sm:max-w-[180px] object-contain"
           />
         </a>
 
@@ -115,7 +115,7 @@
           >
         </nav>
 
-        <div class="flex items-center gap-3 shrink-0 z-10">
+        <div class="flex items-center gap-1.5 sm:gap-3 shrink-0 z-10">
           <button
             id="theme-toggle"
             class="w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-surface flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-[var(--primary)] hover:border-[var(--primary)]/40 transition-all"
@@ -162,13 +162,13 @@
           </button> -->
           <button
             id="btn-login"
-            class="hidden sm:inline-flex items-center justify-center gap-2 px-[30px] py-[10px] rounded-full min-w-[112px] text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
+            class="inline-flex items-center justify-center gap-2 px-3 sm:px-[30px] py-1.5 sm:py-[10px] rounded-full min-w-0 sm:min-w-[112px] text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
           >
             Login
           </button>
           <button
             id="btn-signup"
-            class="hidden sm:inline-flex items-center justify-center gap-2 px-7 py-2 rounded-full min-w-[124px] text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
+            class="inline-flex items-center justify-center gap-2 px-3 sm:px-7 py-1.5 sm:py-2 rounded-full min-w-0 sm:min-w-[124px] text-xs sm:text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
           >
             Sign Up
           </button>
@@ -3823,8 +3823,20 @@
               ></i>
               Contact Us</a
             >
-            <a href="{{ route('public.privacy') }}">Privacy Policy</a>
-            <a href="{{ route('public.terms') }}">Terms of Service</a>
+            <a href="{{ route('public.privacy') }}"
+              ><i
+                class="fa-solid fa-shield-halved mr-1 text-sm opacity-90"
+                aria-hidden="true"
+              ></i>
+              Privacy Policy</a
+            >
+            <a href="{{ route('public.terms') }}"
+              ><i
+                class="fa-solid fa-file-contract mr-1 text-sm opacity-90"
+                aria-hidden="true"
+              ></i>
+              Terms of Service</a
+            >
           </nav>
           <div class="text-left sm:text-right">
             <p>
