@@ -55,11 +55,6 @@
               </div>
               <div class="selection-card" id="selectionCard">
                 <div class="section-title-row">
-                  <button class="small-back-arrow" type="button" aria-label="Go back to previous section">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M15.5 19 8.5 12l7-7" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </button>
                   <h3>Type of Session</h3>
                 </div>
                 <div class="service-grid" id="serviceGrid">

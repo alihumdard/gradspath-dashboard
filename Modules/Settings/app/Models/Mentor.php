@@ -47,6 +47,7 @@ class Mentor extends Model
         'calendly_link',
         'slack_link',
         'is_featured',
+        'featured_sort_order',
         'stripe_account_id',
         'payouts_enabled',
         'stripe_onboarding_complete',
@@ -57,6 +58,7 @@ class Mentor extends Model
 
     protected $casts = [
         'is_featured' => 'boolean',
+        'featured_sort_order' => 'integer',
         'payouts_enabled' => 'boolean',
         'stripe_onboarding_complete' => 'boolean',
         'approved_at' => 'datetime',

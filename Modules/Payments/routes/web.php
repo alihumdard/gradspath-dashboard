@@ -43,6 +43,7 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->nam
 	Route::prefix('manual-actions')->name('manual-actions.')->group(function () {
 		Route::post('/credits/adjust', [ManualActionsController::class, 'adjustCredits'])->name('credits.adjust');
 		Route::post('/mentors/update', [ManualActionsController::class, 'amendMentor'])->name('mentors.update');
+		Route::post('/mentors/featured', [ManualActionsController::class, 'updateFeaturedMentors'])->name('mentors.featured.update');
 		Route::post('/services', [ServicesController::class, 'store'])->name('services.store');
 		Route::patch('/services/pricing', [ServicesController::class, 'update'])->name('services.pricing.update');
 	});

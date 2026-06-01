@@ -44,15 +44,15 @@ Fix all issues that can block users from entering or navigating the platform.
 
 Scope:
 
-- Light mode default.
-- Auth protection and guest redirect behavior.
+- [x] Light mode default.
+- [x] Auth protection and guest redirect behavior.
 - Login/signup modal closing bug.
-- Signup UI restore.
+- [x] Signup UI restore.
 - `.edu` validation by audience.
 - 6-digit verification code flow.
 - Admin secret link and admin user access.
 - Reset password entry points for website and admin.
-- Landing page/footer/header broken links.
+- [x] Landing page/footer/header broken links.
 - Support landing redirects.
 
 ### Phase 2 - Portal UI Consistency
@@ -68,7 +68,7 @@ Scope:
 - Remove student Settings and Mentor Notes.
 - Mentor Notes on Users view only for mentors.
 - Initials/avatar rules.
-- Booking page back arrows and unnecessary arrows.
+- [x] Booking page back arrows and unnecessary arrows.
 
 ### Phase 3 - Dynamic Admin Controls
 
@@ -119,7 +119,7 @@ Scope:
 
 ## Client Questions and Implementation Answers
 
-### 1. Default platform theme should be light mode
+### 1. Default platform theme should be light mode - (Done)
 
 **Client question:** When first going on the platform, default should be light mode, not dark.
 
@@ -127,14 +127,14 @@ Scope:
 
 **Current finding:** The landing page starts with `<html class="scroll-smooth dark">` in `resources/views/landing_page/index.blade.php`, which forces dark mode on first visit. Portal JS generally defaults to light via `localStorage.getItem("theme") || "light"`.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Remove the default `dark` class from the landing page HTML.
-- Update the landing inline theme script so only `localStorage.theme === "dark"` applies dark mode.
-- Keep portal defaults as light.
-- Verify landing, student portal, mentor portal, admin login, and public pages.
+- [x] Remove the default `dark` class from the landing page HTML.
+- [x] Update the landing inline theme script so only `localStorage.theme === "dark"` applies dark mode.
+- [x] Keep portal defaults as light.
+- [x] Verify landing, student portal, mentor portal, admin login, and public pages.
 
-### 2. No user or mentor can reach dashboard unless logged in
+### 2. No user or mentor can reach dashboard unless logged in - (Done)
 
 **Client question:** No user of any kind or mentor can get to the dashboard unless logged in, including submit feedback.
 
@@ -142,11 +142,11 @@ Scope:
 
 **Current finding:** Most routes already use `auth` and role middleware. Feedback index allows authenticated students or mentors; feedback submit is student-only. The website may still expose buttons/links that should redirect guests to login.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Audit all portal routes and confirm `auth`, `active`, role, and `mentor.approved` where needed.
-- For guest clicks like Submit Feedback, redirect to login with an intended URL.
-- Add feature tests for guest access to dashboards, feedback submit, bookings, support, and settings.
+- [x] Audit all portal routes and confirm `auth`, `active`, role, and `mentor.approved` where needed.
+- [x] For guest clicks like Submit Feedback, redirect to login with an intended URL.
+- [x] Add feature tests for guest access to dashboards, feedback submit, bookings, support, and settings.
 
 ### 2a. Website and portal text/numbers/logos/sections/graphs must be dynamic
 
@@ -170,7 +170,7 @@ Scope:
 - Replace hard-coded landing data with database-backed view models.
 - Cache public content and add admin cache invalidation after saves.
 
-### 3. Signup popup must match the screenshot
+### 3. Signup popup must match the screenshot - (Done)
 
 **Client question:** Signup popup was changed and needs to look like `image1`.
 
@@ -178,12 +178,12 @@ Scope:
 
 **Current finding:** Signup is rendered through `resources/views/landing_page/index.blade.php`, styled by `public/assets_landingPage/css/style.css`, and controlled by `public/assets_landingPage/js/script.js` / `app.js`.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Use `image1.png` as the visual target.
-- Adjust modal width, spacing, selected role/student level controls, form order, button styles, and typography.
-- Preserve Laravel validation and old input behavior.
-- Add browser QA on desktop and mobile.
+- [x] Use `image1.png` as the visual target.
+- [x] Adjust modal width, spacing, selected role/student level controls, form order, button styles, and typography.
+- [x] Preserve Laravel validation and old input behavior.
+- [x] Add browser QA on desktop and mobile.
 
 ### 4. Only undergrads and grads require `.edu`; professionals can use any email
 
@@ -283,7 +283,7 @@ Scope:
 - Update button href to route or valid section anchor.
 - Confirm no 404.
 
-### 10. "How it works" broken link
+### 10. "How it works" broken link - (Done)
 
 **Client question:** The How It Works link errors instead of scrolling/navigating to the section.
 
@@ -291,13 +291,13 @@ Scope:
 
 **Current finding:** Static `how-it-works.html` exists. Landing section IDs and footer/header links need audit.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Add `id="how-it-works"` on the landing section or route `/how-it-works`.
-- Update header, hero, and footer links consistently.
-- Test from landing page, logged-out state, and logged-in redirect state.
+- [x] Add `id="how-it-works"` on the landing section or route `/how-it-works`.
+- [x] Update header, hero, and footer links consistently.
+- [x] Test from landing page, logged-out state, and logged-in redirect state.
 
-### 11. Footer/home/menu/logo links show 404
+### 11. Footer/home/menu/logo links show 404 - (Done)
 
 **Client question:** Footer links Home, Our Services, Meeting Types, Sign up, Log in, Contact Us, Privacy Policy, Terms of Service, navbar Home, and logo must work.
 
@@ -305,19 +305,19 @@ Scope:
 
 **Current finding:** Routes exist for `/`, `/home`, `/terms`, `/privacy`, `/support`, but not necessarily every footer label. Signup/login routes exist at `/register` and `/login`.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Map links:
-  - Home and logo: `route('public.home')` or `/`.
-  - Our Services: landing section or `/services`.
-  - Meeting Types: landing section.
-  - Sign up: `/register` or modal opener.
-  - Log in: `/login` or modal opener.
-  - Contact Us: `/support` for guests, portal support for logged-in users.
-  - Privacy Policy: `/privacy`.
-  - Terms of Service: `/terms`.
-- Add missing public routes/sections if required.
-- Add a route smoke test for all footer links.
+- [x] Map links:
+  - [x] Home and logo: `route('public.home')` or `/`.
+  - [x] Our Services: landing section or `/services`.
+  - [x] Meeting Types: landing section.
+  - [x] Sign up: `/register` or modal opener.
+  - [x] Log in: `/login` or modal opener.
+  - [x] Contact Us: `/support` for guests, portal support for logged-in users.
+  - [x] Privacy Policy: `/privacy`.
+  - [x] Terms of Service: `/terms`.
+- [x] Add missing public routes/sections if required.
+- [x] Add a route smoke test for all footer links.
 
 ### 12. Universal mentor card UI and Services Offered open by default
 
@@ -377,20 +377,19 @@ Scope:
 - Add admin UI to override visible institutions.
 - Make dashboard consume this service instead of direct query.
 
-### 14. Mentors of the Week top rated 6 or admin-chosen
+### 14. Mentors of the Week top rated 6 or admin-chosen - Done
 
 **Client question:** Mentors of the Week must be top-rated 6 automatically weekly, with admin manual swap option.
 
-**Answer:** Add a weekly featured mentor ranking service with manual overrides.
+**Answer:** Done. Mentors of the Week now uses admin-selected `is_featured` mentors first, fills remaining slots from top-rated active mentors, and has a weekly command to refresh the automatic set.
 
-**Current finding:** `mentors.is_featured` exists, but `MentorDiscoveryService::featured()` currently orders by current-week booking count, then ID, not rating. Admin has manual mentor actions but no obvious weekly featured override UI.
+**Implemented:**
 
-**Implementation plan:**
-
-- Change automatic default to top 6 by rating, with review/session minimum if required.
-- Add weekly scheduled command to refresh featured mentors.
-- Add admin manual override/swap UI.
-- Keep `is_featured` or add a dedicated featured table with effective dates and order.
+- [x] Added `FeaturedMentorService` to rank active mentors by `mentor_ratings.avg_stars`, then review/session counts.
+- [x] Updated `MentorDiscoveryService::featured()` to show admin-featured mentors first and auto-fill to 6 by rating.
+- [x] Added `discovery:refresh-featured-mentors` and scheduled it weekly.
+- [x] Added admin manual-action UI and route for choosing up to 6 featured mentors.
+- [x] Kept `mentors.is_featured` as the featured/manual selection flag.
 
 ### 15. Admin Institutions / Explore by University program tier/type and logos
 
@@ -463,7 +462,7 @@ Scope:
 - Default services accordion to open.
 - Ensure student and mentor portals both behave the same.
 
-### 19. Book with Mentor back arrows and type-of-session arrow
+### 19. Book with Mentor back arrows and type-of-session arrow - (Done)
 
 **Client question:** Back arrows do not work in Book with Mentor; remove unnecessary type-of-session arrow on the left.
 
@@ -471,12 +470,12 @@ Scope:
 
 **Current finding:** Booking create view has a `Back to Dashboard` link and JS-driven steps. Back behavior is in `public/assets/js/booking-create.js`.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Audit all booking step back buttons.
-- Ensure each step returns to previous step or correct source page.
-- Remove the left arrow from type-of-session if decorative/unneeded.
-- Add browser QA for booking from dashboard, Find Mentors, and institution detail.
+- [x] Audit all booking step back buttons.
+- [x] Ensure each step returns to previous step or correct source page.
+- [x] Remove the left arrow from type-of-session if decorative/unneeded.
+- [x] Add browser QA for booking from dashboard, Find Mentors, and institution detail.
 
 ### 19a. Recent Feedback in mentor notes comes from latest Quick Feedback
 

@@ -7,6 +7,7 @@ use Modules\Auth\app\Models\User;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Discovery\app\Services\MentorDiscoveryService;
 use Modules\Feedback\app\Models\Feedback;
+use Modules\Feedback\app\Models\MentorRating;
 use Modules\Institutions\app\Models\University;
 use Modules\Institutions\app\Models\UniversityProgram;
 use Modules\Payments\app\Models\ServiceConfig;
@@ -82,6 +83,18 @@ function createDashboardBooking(Mentor $mentor, ServiceConfig $service, Carbon $
         'status' => $status,
         'approval_status' => 'not_required',
         'currency' => 'USD',
+    ]);
+}
+
+function rateDashboardMentor(Mentor $mentor, float $stars, int $reviews = 1, int $sessions = 1): MentorRating
+{
+    return MentorRating::query()->create([
+        'mentor_id' => $mentor->id,
+        'avg_stars' => $stars,
+        'recommend_rate' => 100,
+        'total_reviews' => $reviews,
+        'total_sessions' => $sessions,
+        'recalculated_at' => now(),
     ]);
 }
 
@@ -250,27 +263,46 @@ it('shows active universities on the mentor dashboard even when some do not have
     $response->assertDontSee('Inactive Mentor Dashboard University');
 });
 
-it('ranks mentors of the week by current week bookings', function () {
+it('ranks mentors of the week by top rating', function () {
     Carbon::setTestNow(Carbon::create(2026, 4, 29, 12, 0, 0, 'UTC'));
 
     $service = createDashboardService();
-    $lightlyBooked = createDashboardMentor('One Booking Mentor');
-    $mostBooked = createDashboardMentor('Three Booking Mentor');
-    $outsideWeek = createDashboardMentor('Outside Week Mentor');
+    $lowerRated = createDashboardMentor('Lower Rated Mentor');
+    $topRated = createDashboardMentor('Top Rated Mentor');
+    $unrated = createDashboardMentor('Unrated Mentor');
 
-    createDashboardBooking($lightlyBooked, $service, now()->addDay());
-    createDashboardBooking($mostBooked, $service, now()->addDay());
-    createDashboardBooking($mostBooked, $service, now()->addDays(2));
-    createDashboardBooking($mostBooked, $service, now()->addDays(3));
-    createDashboardBooking($mostBooked, $service, now()->addDay(), 'cancelled');
-    createDashboardBooking($outsideWeek, $service, now()->addWeek());
+    rateDashboardMentor($lowerRated, 4.50, 10, 12);
+    rateDashboardMentor($topRated, 4.90, 3, 5);
+    createDashboardBooking($lowerRated, $service, now()->addDay());
+    createDashboardBooking($lowerRated, $service, now()->addDays(2));
+    createDashboardBooking($lowerRated, $service, now()->addDays(3));
+    createDashboardBooking($topRated, $service, now()->addDay());
 
     $mentors = app(MentorDiscoveryService::class)->featured();
 
     expect($mentors->pluck('name')->take(3)->all())->toBe([
-        'Three Booking Mentor',
-        'One Booking Mentor',
-        'Outside Week Mentor',
+        'Top Rated Mentor',
+        'Lower Rated Mentor',
+        'Unrated Mentor',
+    ]);
+});
+
+it('shows admin-chosen featured mentors before automatic rating fill', function () {
+    $manual = createDashboardMentor('Admin Pick Mentor');
+    $topRated = createDashboardMentor('Automatic Top Mentor');
+    $secondRated = createDashboardMentor('Automatic Second Mentor');
+
+    $manual->forceFill(['is_featured' => true])->save();
+    rateDashboardMentor($manual, 3.00, 1, 1);
+    rateDashboardMentor($topRated, 5.00, 5, 5);
+    rateDashboardMentor($secondRated, 4.80, 5, 5);
+
+    $mentors = app(MentorDiscoveryService::class)->featured(3);
+
+    expect($mentors->pluck('name')->all())->toBe([
+        'Admin Pick Mentor',
+        'Automatic Top Mentor',
+        'Automatic Second Mentor',
     ]);
 });
 

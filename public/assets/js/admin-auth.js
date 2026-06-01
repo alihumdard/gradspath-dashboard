@@ -2338,6 +2338,18 @@ function initializeManualActionsHub() {
 
     const mentorSelect = document.getElementById("manualMentorSelect");
     const mentorSummary = document.getElementById("manualMentorSummary");
+    const featuredMentorList = document.getElementById(
+        "manualFeaturedMentorSelect",
+    );
+    const featuredMentorSearch = document.getElementById(
+        "manualFeaturedMentorSearch",
+    );
+    const featuredMentorOrderInput = document.getElementById(
+        "manualFeaturedMentorOrder",
+    );
+    const featuredMentorSummary = document.getElementById(
+        "manualFeaturedMentorSummary",
+    );
     const userSelect = document.getElementById("manualUserSelect");
     const userSummary = document.getElementById("manualUserSummary");
     const pricingSelect = document.getElementById("manualPricingServiceSelect");
@@ -2353,6 +2365,32 @@ function initializeManualActionsHub() {
         : [];
     const feedbackSelect = document.getElementById("manualFeedbackSelect");
     const feedbackSummary = document.getElementById("manualFeedbackSummary");
+    let featuredMentorOrder = featuredMentorOrderInput?.value
+        ? featuredMentorOrderInput.value
+              .split(",")
+              .map((id) => id.trim())
+              .filter(Boolean)
+        : [];
+
+    function syncFeaturedMentorOrderInput() {
+        if (featuredMentorOrderInput) {
+            featuredMentorOrderInput.value = featuredMentorOrder.join(",");
+        }
+
+        featuredMentorList
+            ?.querySelectorAll(".manual-featured-mentor-option")
+            .forEach((option) => {
+                const input = option.querySelector('input[name="mentor_ids[]"]');
+                const rank = option.querySelector("[data-featured-rank]");
+                const index = input
+                    ? featuredMentorOrder.indexOf(String(input.value))
+                    : -1;
+
+                if (rank) {
+                    rank.textContent = index >= 0 ? `#${index + 1}` : "";
+                }
+            });
+    }
 
     function syncMentorSummary() {
         const mentor = mentors.find(
@@ -2366,6 +2404,8 @@ function initializeManualActionsHub() {
         renderSummary(mentorSummary, [
             { label: "Mentor", value: `${mentor.name} (${mentor.email})` },
             { label: "Current status", value: mentor.status },
+            { label: "Mentors of the Week", value: mentor.is_featured ? "Yes" : "No" },
+            { label: "Rating", value: `${mentor.rating || "New"} (${mentor.total_reviews || 0} reviews)` },
             { label: "Institution", value: mentor.institution },
             {
                 label: "Services",
@@ -2373,6 +2413,62 @@ function initializeManualActionsHub() {
             },
             { label: "Description", value: mentor.description || "-" },
         ]);
+    }
+
+    function syncFeaturedMentorSummary() {
+        const selectedIds = featuredMentorList
+            ? Array.from(
+                  featuredMentorList.querySelectorAll(
+                      'input[name="mentor_ids[]"]:checked',
+                  ),
+              ).map((input) => input.value)
+            : [];
+        const selectedMentors = selectedIds
+            .sort((a, b) => {
+                const aIndex = featuredMentorOrder.indexOf(String(a));
+                const bIndex = featuredMentorOrder.indexOf(String(b));
+
+                return (aIndex < 0 ? 999 : aIndex) - (bIndex < 0 ? 999 : bIndex);
+            })
+            .map((id) => mentors.find((mentor) => String(mentor.id) === String(id)))
+            .filter(Boolean);
+
+        if (!selectedMentors.length) {
+            renderSummary(featuredMentorSummary, [
+                {
+                    label: "Selection",
+                    value: "No manual mentors selected; dashboard uses top-rated active mentors.",
+                },
+            ]);
+            return;
+        }
+
+        renderSummary(
+            featuredMentorSummary,
+            selectedMentors.map((mentor, index) => ({
+                label: `#${index + 1}`,
+                value: `${mentor.name} - ${mentor.rating || "New"} stars - ${mentor.institution || "-"}`,
+            })),
+        );
+    }
+
+    function syncFeaturedMentorSearch() {
+        if (!featuredMentorList || !featuredMentorSearch) {
+            return;
+        }
+
+        const query = featuredMentorSearch.value.trim().toLowerCase();
+        const options = Array.from(
+            featuredMentorList.querySelectorAll(".manual-featured-mentor-option"),
+        );
+
+        options.forEach((option) => {
+            const checkbox = option.querySelector('input[name="mentor_ids[]"]');
+            const isSelected = Boolean(checkbox?.checked);
+            const matches = !query || (option.dataset.searchText || "").includes(query);
+
+            option.hidden = !matches && !isSelected;
+        });
     }
 
     function syncUserSummary() {
@@ -2524,6 +2620,56 @@ function initializeManualActionsHub() {
     }
 
     mentorSelect?.addEventListener("change", syncMentorSummary);
+    featuredMentorList?.addEventListener("change", (event) => {
+        const changedInput = event.target?.matches?.('input[name="mentor_ids[]"]')
+            ? event.target
+            : null;
+
+        if (changedInput?.checked) {
+            featuredMentorOrder = featuredMentorOrder.filter(
+                (id) => id !== String(changedInput.value),
+            );
+            featuredMentorOrder.push(String(changedInput.value));
+        } else if (changedInput) {
+            featuredMentorOrder = featuredMentorOrder.filter(
+                (id) => id !== String(changedInput.value),
+            );
+        }
+
+        const checkedInputs = Array.from(
+            featuredMentorList.querySelectorAll(
+                'input[name="mentor_ids[]"]:checked',
+            ),
+        );
+
+        if (checkedInputs.length > 6 && event.target?.checked) {
+            event.target.checked = false;
+            featuredMentorOrder = featuredMentorOrder.filter(
+                (id) => id !== String(event.target.value),
+            );
+            window.AppToast?.show({
+                type: "warning",
+                title: "Limit reached",
+                message: "Choose up to 6 mentors for the dashboard.",
+            });
+        }
+
+        const checkedIds = checkedInputs
+            .filter((input) => input.checked)
+            .map((input) => String(input.value));
+        featuredMentorOrder = featuredMentorOrder.filter((id) =>
+            checkedIds.includes(id),
+        );
+        checkedIds.forEach((id) => {
+            if (!featuredMentorOrder.includes(id)) {
+                featuredMentorOrder.push(id);
+            }
+        });
+        syncFeaturedMentorOrderInput();
+        syncFeaturedMentorSummary();
+        syncFeaturedMentorSearch();
+    });
+    featuredMentorSearch?.addEventListener("input", syncFeaturedMentorSearch);
     userSelect?.addEventListener("change", syncUserSummary);
     pricingSelect?.addEventListener("change", syncPricingSummary);
     feedbackSelect?.addEventListener("change", syncFeedbackSummary);
@@ -2719,6 +2865,9 @@ function initializeManualActionsHub() {
     syncPricingSummary();
     syncFeedbackSummary();
     setSection(initialSection);
+    syncFeaturedMentorOrderInput();
+    syncFeaturedMentorSummary();
+    syncFeaturedMentorSearch();
 }
 
 initializeManualActionsHub();

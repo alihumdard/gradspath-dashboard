@@ -1075,6 +1075,21 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+// Back navigation logic
+const backArrowBtn = document.querySelector(".back-arrow-btn");
+const secondaryBackBtn = document.querySelector(".secondary-btn");
+
+function handleBackNavigation() {
+  if (document.referrer && document.referrer.includes(window.location.hostname)) {
+    window.history.back();
+  } else {
+    window.location.href = bookingPageData?.dashboardUrl || "/student/dashboard";
+  }
+}
+
+backArrowBtn?.addEventListener("click", handleBackNavigation);
+secondaryBackBtn?.addEventListener("click", handleBackNavigation);
+
 closeModal(creditModal);
 closeModal(storeModal);
 hydrateMentorDetails();

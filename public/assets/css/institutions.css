@@ -432,7 +432,7 @@ body {
   font-size: 13px;
   cursor: pointer;
   background: var(--purple);
-  color: var(--text);
+  color: #ffffff;
   box-shadow: 0 10px 22px rgba(122, 77, 255, 0.2);
   text-decoration: none;
   display: inline-flex;
@@ -1113,7 +1113,7 @@ body {
 .see-all-btn {
   border: none;
   background: var(--purple);
-  color: var(--text);
+  color: #ffffff;
   padding: 13px 18px;
   border-radius: 14px;
   font-size: 0.92rem;

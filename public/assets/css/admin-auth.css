@@ -3131,6 +3131,112 @@ td span {
   margin: 0;
 }
 
+.manual-featured-mentor-list {
+  display: grid;
+  gap: 10px;
+  max-height: 430px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.manual-featured-mentor-search {
+  margin-bottom: 4px;
+}
+
+.manual-featured-mentor-option {
+  display: grid;
+  grid-template-columns: 18px 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.manual-featured-mentor-option:hover {
+  border-color: rgba(98, 169, 255, 0.35);
+  background: rgba(98, 169, 255, 0.08);
+}
+
+.manual-featured-mentor-option:has(input:checked) {
+  border-color: rgba(98, 169, 255, 0.55);
+  background: rgba(98, 169, 255, 0.14);
+}
+
+.manual-featured-mentor-option.is-disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.manual-featured-mentor-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #62a9ff;
+}
+
+.manual-featured-mentor-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.manual-featured-mentor-option:has(input:checked) .manual-featured-mentor-rank {
+  background: #62a9ff;
+  color: #08111f;
+}
+
+.manual-featured-mentor-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.manual-featured-mentor-copy strong,
+.manual-featured-mentor-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manual-featured-mentor-copy strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.manual-featured-mentor-copy small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.manual-featured-mentor-meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 74px;
+  min-height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .manual-summary {
   align-self: start;
   display: grid;

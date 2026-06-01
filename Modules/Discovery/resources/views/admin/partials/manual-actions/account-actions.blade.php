@@ -2,6 +2,12 @@
   $mentors = $adminManualActionsData['mentors'] ?? [];
   $users = $adminManualActionsData['users'] ?? [];
   $mentorStatuses = $adminManualActionsData['options']['mentor_statuses'] ?? [];
+  $featuredMentorIds = collect($mentors)
+      ->filter(fn ($mentor) => (bool) ($mentor['is_featured'] ?? false))
+      ->sortBy(fn ($mentor) => $mentor['featured_sort_order'] ?? 9999)
+      ->pluck('id')
+      ->map(fn ($id) => (string) $id)
+      ->all();
 @endphp
 
 <section class="manual-group" data-section-group="mentor credits">
@@ -23,6 +29,7 @@
       <form class="manual-form" method="POST" action="{{ route('admin.manual-actions.mentors.update') }}">
         @csrf
         <input type="hidden" name="manual_section" value="mentor" />
+        <input type="hidden" name="featured_order" id="manualFeaturedMentorOrder" value="{{ implode(',', old('featured_order') ? explode(',', (string) old('featured_order')) : $featuredMentorIds) }}" />
 
         <label class="manual-field">
           <span>Mentor</span>
@@ -56,6 +63,72 @@
       <aside class="manual-summary" id="manualMentorSummary">
         <h5>Current mentor state</h5>
         <p>Select a mentor to review their current profile state before saving.</p>
+      </aside>
+    </div>
+  </div>
+
+  <div class="manual-panel" id="manual-section-featured-mentors" data-section-panel="mentor">
+    <div class="manual-panel__copy">
+      <h4>Mentors of the Week</h4>
+      <p>Choose up to 6 mentors for the dashboard. If none are selected, the dashboard falls back to the top-rated active mentors.</p>
+    </div>
+
+    <div class="manual-panel__grid">
+      <form class="manual-form" method="POST" action="{{ route('admin.manual-actions.mentors.featured.update') }}">
+        @csrf
+        <input type="hidden" name="manual_section" value="mentor" />
+
+        <label class="manual-field manual-field--full">
+          <span>Featured mentors</span>
+          <input
+            type="search"
+            id="manualFeaturedMentorSearch"
+            class="manual-featured-mentor-search"
+            placeholder="Search by mentor name, email, or institution..."
+            autocomplete="off"
+          />
+          <div class="manual-featured-mentor-list" id="manualFeaturedMentorSelect">
+            @foreach ($mentors as $mentor)
+              @php
+                $canFeatureMentor = ($mentor['status'] ?? null) === 'active';
+                $isChecked = $canFeatureMentor && in_array((string) $mentor['id'], old('mentor_ids', $featuredMentorIds), true);
+              @endphp
+              <label
+                class="manual-featured-mentor-option{{ $canFeatureMentor ? '' : ' is-disabled' }}"
+                data-search-text="{{ \Illuminate\Support\Str::lower(($mentor['name'] ?? '').' '.($mentor['email'] ?? '').' '.($mentor['institution'] ?? '').' '.($mentor['program_type'] ?? '')) }}"
+              >
+                <input
+                  type="checkbox"
+                  name="mentor_ids[]"
+                  value="{{ $mentor['id'] }}"
+                  @checked($isChecked)
+                  @disabled(! $canFeatureMentor)
+                />
+                <span class="manual-featured-mentor-rank" data-featured-rank></span>
+                <span class="manual-featured-mentor-copy">
+                  <strong>{{ $mentor['name'] }}</strong>
+                  <small>{{ $mentor['institution'] ?? '-' }}</small>
+                </span>
+                <span class="manual-featured-mentor-meta">
+                  {{ $mentor['rating'] ?? 'New' }} {{ ($mentor['rating'] ?? 'New') === 'New' ? '' : 'stars' }}
+                </span>
+              </label>
+            @endforeach
+          </div>
+          @error('mentor_ids')
+            <small class="manual-field__error">{{ $message }}</small>
+          @enderror
+          @error('mentor_ids.*')
+            <small class="manual-field__error">{{ $message }}</small>
+          @enderror
+        </label>
+
+        <button class="primary-btn manual-submit-btn" type="submit">Save Mentors of the Week</button>
+      </form>
+
+      <aside class="manual-summary" id="manualFeaturedMentorSummary">
+        <h5>Current featured mentors</h5>
+        <p>The selected mentors appear first on the dashboard, with top-rated mentors filling any open slots.</p>
       </aside>
     </div>
   </div>

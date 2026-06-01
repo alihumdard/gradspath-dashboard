@@ -60,8 +60,11 @@ class AdminManualActionsService
             ->with([
                 'user:id,name,email',
                 'university:id,name,display_name',
+                'rating',
                 'services:id,service_name',
             ])
+            ->orderByDesc('is_featured')
+            ->orderByRaw('COALESCE(featured_sort_order, 9999)')
             ->orderBy('id')
             ->get();
 
@@ -150,12 +153,26 @@ class AdminManualActionsService
                 'name' => $mentor->user?->name ?: 'Unknown mentor',
                 'email' => $mentor->user?->email ?: '-',
                 'status' => $mentor->status ?: 'pending',
+                'is_featured' => (bool) $mentor->is_featured,
+                'featured_sort_order' => $mentor->featured_sort_order,
+                'rating' => $mentor->rating?->avg_stars ? number_format((float) $mentor->rating->avg_stars, 1) : 'New',
+                'total_reviews' => (int) ($mentor->rating?->total_reviews ?? 0),
+                'total_sessions' => (int) ($mentor->rating?->total_sessions ?? 0),
                 'type' => $mentor->title ?: ($mentor->mentor_type === 'professional' ? 'Professional Mentor' : 'Graduate Mentor'),
                 'institution' => $mentor->university?->display_name ?: $mentor->university?->name ?: ($mentor->grad_school_display ?: '-'),
                 'program_type' => $mentor->program_type ?: '-',
                 'services' => $mentor->services->pluck('service_name')->values()->all(),
                 'description' => $mentor->description ?: ($mentor->bio ?: 'No description added yet.'),
             ])->values()->all(),
+            'featured_mentors' => $mentors
+                ->filter(fn (Mentor $mentor) => (bool) $mentor->is_featured)
+                ->map(fn (Mentor $mentor) => [
+                    'id' => $mentor->id,
+                    'name' => $mentor->user?->name ?: 'Unknown mentor',
+                    'rating' => $mentor->rating?->avg_stars ? number_format((float) $mentor->rating->avg_stars, 1) : 'New',
+                ])
+                ->values()
+                ->all(),
             'users' => $users->map(fn (User $user) => [
                 'id' => $user->id,
                 'label' => trim(($user->name ?: 'Unknown user').' ('.$user->email.')'),

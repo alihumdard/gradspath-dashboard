@@ -8,6 +8,8 @@ use Modules\Settings\app\Models\Mentor;
 
 class MentorDiscoveryService
 {
+    public function __construct(private readonly FeaturedMentorService $featuredMentors) {}
+
     public function search(array $filters): LengthAwarePaginator
     {
         return Mentor::query()
@@ -85,8 +87,16 @@ class MentorDiscoveryService
 
     public function featured(int $limit = 6, string $portal = 'student', ?int $viewerMentorId = null)
     {
-        $weekStart = now()->startOfWeek()->utc();
-        $weekEnd = now()->endOfWeek()->utc();
+        $featuredIds = $this->featuredMentors->idsForDisplay($limit);
+
+        if ($featuredIds->isEmpty()) {
+            return collect();
+        }
+
+        $positionSql = $featuredIds
+            ->values()
+            ->map(fn ($id, $index) => 'WHEN '.((int) $id).' THEN '.$index)
+            ->implode(' ');
 
         return Mentor::query()
             ->with([
@@ -96,16 +106,8 @@ class MentorDiscoveryService
                 'services',
                 'latestVisibleFeedback:feedback.id,feedback.mentor_id,feedback.comment,feedback.created_at',
             ])
-            ->withCount([
-                'bookings as current_week_bookings_count' => fn ($query) => $query
-                    ->whereBetween('session_at', [$weekStart, $weekEnd])
-                    ->whereNotIn('status', ['cancelled', 'cancelled_pending_refund']),
-            ])
-            ->where('status', 'active')
-            ->whereHas('user')
-            ->orderByDesc('current_week_bookings_count')
-            ->orderByDesc('id')
-            ->limit($limit)
+            ->whereIn('id', $featuredIds->all())
+            ->orderByRaw("CASE mentors.id {$positionSql} ELSE {$featuredIds->count()} END")
             ->get()
             ->values()
             ->map(fn(Mentor $mentor): array => $this->mapMentorCard($mentor, $portal, $viewerMentorId))

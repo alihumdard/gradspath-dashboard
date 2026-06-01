@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Modules\Auth\app\Services\AdminAuditService;
 use Modules\Auth\app\Models\User;
 use Modules\Payments\app\Services\CreditService;
@@ -83,6 +85,74 @@ class ManualActionsController extends Controller
         );
 
         return $this->redirectToManualActions('mentor', 'Mentor status updated successfully.');
+    }
+
+    public function updateFeaturedMentors(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'mentor_ids' => ['nullable', 'array', 'max:6'],
+            'mentor_ids.*' => [
+                'integer',
+                Rule::exists('mentors', 'id')->where('status', 'active'),
+            ],
+            'featured_order' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+            'manual_section' => ['nullable', 'string'],
+        ]);
+
+        $admin = Auth::user();
+        $selectedIds = collect($data['mentor_ids'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+        $orderedIds = collect(explode(',', (string) ($data['featured_order'] ?? '')))
+            ->map(fn ($id) => (int) trim($id))
+            ->filter(fn (int $id) => $selectedIds->contains($id))
+            ->unique()
+            ->values();
+        $mentorIds = $orderedIds
+            ->merge($selectedIds->reject(fn (int $id) => $orderedIds->contains($id)))
+            ->take(6)
+            ->values();
+        $before = Mentor::query()
+            ->where('is_featured', true)
+            ->orderByRaw('COALESCE(featured_sort_order, 9999)')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+
+        DB::transaction(function () use ($mentorIds): void {
+            Mentor::query()->update([
+                'is_featured' => false,
+                'featured_sort_order' => null,
+            ]);
+
+            $mentorIds->each(function (int $mentorId, int $index): void {
+                Mentor::query()
+                    ->whereKey($mentorId)
+                    ->update([
+                        'is_featured' => true,
+                        'featured_sort_order' => $index + 1,
+                    ]);
+            });
+        });
+
+        $this->audit->log(
+            $admin,
+            'update_featured_mentors',
+            'mentors',
+            null,
+            ['featured_mentor_ids' => $before],
+            ['featured_mentor_ids' => $mentorIds->all()],
+            $data['notes'] ?? null
+        );
+
+        $message = $mentorIds->isEmpty()
+            ? 'Featured mentors cleared. Dashboard will fall back to top-rated mentors.'
+            : 'Featured mentors updated successfully.';
+
+        return $this->redirectToManualActions('mentor', $message);
     }
 
     private function redirectToManualActions(string $section, string $message): RedirectResponse
