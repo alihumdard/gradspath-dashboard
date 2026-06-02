@@ -6,8 +6,6 @@
 
 @php
   $viewErrors = $errors ?? new \Illuminate\Support\ViewErrorBag();
-  $studentName = trim(old('name', $user->name ?? ''));
-  $studentInitials = collect(preg_split('/\s+/', $studentName) ?: [])->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('');
 @endphp
 
 @section('portal_content')
@@ -18,50 +16,9 @@
         <p class="subtitle">
           Keep your study profile up to date so the platform can show relevant programs and mentors.
         </p>
-        <form method="POST" action="{{ route('student.settings.update') }}" enctype="multipart/form-data" novalidate data-avatar-upload-form>
+        <form method="POST" action="{{ route('student.settings.update') }}" novalidate>
           @csrf
           @method('PATCH')
-
-          <div class="field">
-            <label for="avatar">Profile Image</label>
-            <input
-              type="file"
-              id="avatar"
-              name="avatar"
-              class="avatar-upload-input"
-              accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-              data-avatar-input
-            />
-            <label
-              for="avatar"
-              class="avatar-upload-card{{ $user->avatar_url ? ' has-image' : '' }}"
-              data-avatar-dropzone
-            >
-              <div
-                class="avatar-upload-preview"
-                data-avatar-preview
-                @if (! $user->avatar_url) hidden @endif
-              >
-                @if ($user->avatar_url)
-                  <img src="{{ $user->avatar_url }}" alt="{{ $studentName ?: 'Student' }}" data-avatar-preview-image />
-                @else
-                  <span data-avatar-preview-fallback>{{ $studentInitials }}</span>
-                @endif
-              </div>
-              <svg class="avatar-upload-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="currentColor" d="M11 20v-9.17l-3.59 3.58L6 13l6-6 6 6-1.41 1.41L13 10.83V20zM5 4h14v2H5z" />
-              </svg>
-              <div class="avatar-upload-copy">
-                <span class="avatar-upload-title">Drop image here to upload, or click here to browse</span>
-                <span class="avatar-upload-formats">PNG, JPG, or JPEG</span>
-                <span class="avatar-upload-filename" data-avatar-file-name @if (! $user->avatar_url) hidden @endif>
-                  {{ $user->avatar_url ? 'Current image selected' : '' }}
-                </span>
-              </div>
-            </label>
-            <p class="helper-text">Upload a JPG, PNG, or WebP image up to 5 MB.</p>
-            <p class="error-text">{{ $viewErrors->first('avatar') }}</p>
-          </div>
 
           <div class="field">
             <label for="fullName">Full Name</label>
@@ -159,45 +116,6 @@
         </form>
       </section>
 
-      <aside class="preview-panel">
-        <h2>Profile Summary</h2>
-
-        <div class="mentor-card">
-          <div class="card-top">
-            <div class="avatar{{ $user->avatar_url ? ' has-image' : '' }}">
-              @if ($user->avatar_url)
-                <img src="{{ $user->avatar_url }}" alt="{{ $studentName ?: 'Student' }}" style="width:100%;height:100%;object-fit:cover;" />
-              @else
-                <span>{{ $studentInitials }}</span>
-              @endif
-            </div>
-
-            <div class="card-main">
-              <h3>{{ old('name', $user->name ?? '') }}</h3>
-              <p class="card-subtitle">
-                {{ collect([
-                  old('program_level', $profile->program_level),
-                  old('program_type', $profile->program_type),
-                ])->filter()->map(fn ($value) => ucfirst(str_replace('_', ' ', (string) $value)))->implode(' â€¢ ') }}
-              </p>
-            </div>
-          </div>
-
-          <div class="card-description-wrap">
-            <p class="card-description">
-              Institution:
-              <strong>
-                {{
-                  old('institution_text', $profile->institution_text)
-                  ?: $profile->university?->display_name
-                  ?: $profile->university?->name
-                  ?: 'Not set yet'
-                }}
-              </strong>
-            </p>
-          </div>
-        </div>
-      </aside>
     </div>
   </div>
 @endsection
@@ -268,75 +186,6 @@
 
     if (overlay && shell) {
       overlay.addEventListener("click", () => shell.classList.remove("sidebar-active"));
-    }
-
-    const avatarForm = document.querySelector("[data-avatar-upload-form]");
-    const avatarInput = avatarForm?.querySelector("[data-avatar-input]");
-    const avatarDropzone = avatarForm?.querySelector("[data-avatar-dropzone]");
-    const avatarPreview = avatarForm?.querySelector("[data-avatar-preview]");
-    const avatarPreviewImage = avatarForm?.querySelector("[data-avatar-preview-image]");
-    const avatarPreviewFallback = avatarForm?.querySelector("[data-avatar-preview-fallback]");
-    const avatarFileName = avatarForm?.querySelector("[data-avatar-file-name]");
-
-    function renderAvatarFile(file) {
-      if (!avatarDropzone || !avatarPreview || !avatarFileName || !file) {
-        return;
-      }
-
-      avatarDropzone.classList.add("has-image");
-      avatarPreview.hidden = false;
-      avatarFileName.hidden = false;
-      avatarFileName.textContent = file.name;
-
-      const objectUrl = URL.createObjectURL(file);
-
-      if (avatarPreviewImage) {
-        avatarPreviewImage.src = objectUrl;
-      } else {
-        const image = document.createElement("img");
-        image.src = objectUrl;
-        image.alt = "Student profile image preview";
-        image.setAttribute("data-avatar-preview-image", "");
-        avatarPreview.innerHTML = "";
-        avatarPreview.appendChild(image);
-      }
-
-      if (avatarPreviewFallback) {
-        avatarPreviewFallback.remove();
-      }
-    }
-
-    if (avatarInput && avatarDropzone) {
-      avatarInput.addEventListener("change", () => {
-        const [file] = avatarInput.files || [];
-        renderAvatarFile(file);
-      });
-
-      ["dragenter", "dragover"].forEach((eventName) => {
-        avatarDropzone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          avatarDropzone.classList.add("dragover");
-        });
-      });
-
-      ["dragleave", "dragend", "drop"].forEach((eventName) => {
-        avatarDropzone.addEventListener(eventName, (event) => {
-          event.preventDefault();
-          avatarDropzone.classList.remove("dragover");
-        });
-      });
-
-      avatarDropzone.addEventListener("drop", (event) => {
-        const [file] = event.dataTransfer?.files || [];
-        if (!file) {
-          return;
-        }
-
-        const transfer = new DataTransfer();
-        transfer.items.add(file);
-        avatarInput.files = transfer.files;
-        renderAvatarFile(file);
-      });
     }
 
     autoSaveDetectedTimezone();

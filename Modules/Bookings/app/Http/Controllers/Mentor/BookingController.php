@@ -63,7 +63,7 @@ class BookingController extends Controller
         }
 
         try {
-            $booking = $this->bookings->createBooking(Auth::user(), $data, ['charge_credits' => false]);
+            $booking = $this->bookings->createBooking(Auth::user(), $data, ['charge_credits' => (bool) $service->is_office_hours]);
         } catch (BookingException $exception) {
             return back()->withErrors(['booking' => $exception->getMessage()])->withInput();
         }

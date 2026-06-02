@@ -106,6 +106,8 @@ class RolePermissionSeeder extends Seeder
             'mentor_notes.manage_own',
             'support.create',
             'support.read_own',
+            'credits.read',
+            'credits.purchase',
             'files.upload',
             'files.delete_own',
         ]);

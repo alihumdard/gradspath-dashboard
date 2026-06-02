@@ -1,6 +1,6 @@
-@extends('layouts.portal-student')
+@extends($portalLayout ?? 'layouts.portal-student')
 
-@section('title', 'Student Store - Grads Paths')
+@section('title', 'Store - Grads Paths')
 @section('portal_css_asset', 'assets/css/payments.css')
 @section('portal_js_asset', 'assets/js/payments.js')
 @section('portal_active_nav', 'dashboard')
@@ -24,7 +24,7 @@
 
 @php
   $storePageData = [
-      'checkoutUrl' => route('student.store.checkout'),
+      'checkoutUrl' => route(($portalContext ?? 'student').'.store.checkout'),
       'creditPackCredits' => $creditPackCredits ?? 5,
       'creditPackPrice' => $creditPackPrice ?? 200,
       'selectedProgram' => 'mba',

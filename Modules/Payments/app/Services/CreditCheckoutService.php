@@ -11,9 +11,10 @@ class CreditCheckoutService
         private readonly StripeClient $stripe,
     ) {}
 
-    public function createCheckoutSession(User $user, int $credits, ?string $program = null): array
+    public function createCheckoutSession(User $user, int $credits, ?string $program = null, string $portalContext = 'student'): array
     {
         $packCredits = (int) config('payments.office_hours.credit_pack_credits', 5);
+        $portalContext = $portalContext === 'mentor' ? 'mentor' : 'student';
 
         if ($credits !== $packCredits) {
             throw new \RuntimeException('Only the 5-credit pack is available right now.');
@@ -24,14 +25,15 @@ class CreditCheckoutService
 
         return $this->stripe->createCheckoutSession([
             'mode' => 'payment',
-            'success_url' => $this->successUrl(),
-            'cancel_url' => $this->cancelUrl(),
+            'success_url' => $this->successUrl($portalContext),
+            'cancel_url' => $this->cancelUrl($portalContext),
             'customer_email' => $user->email,
             'metadata' => [
                 'payment_type' => 'credits',
                 'user_id' => (string) $user->id,
                 'credits' => (string) $credits,
                 'office_hours_program' => $program,
+                'portal_context' => $portalContext,
             ],
             'line_items' => [[
                 'quantity' => 1,
@@ -55,7 +57,7 @@ class CreditCheckoutService
         $session = $this->stripe->retrieveCheckoutSession($checkoutSessionId);
 
         if ((int) data_get($session, 'metadata.user_id') !== (int) $user->id) {
-            throw new \RuntimeException('This checkout session does not belong to the current student.');
+            throw new \RuntimeException('This checkout session does not belong to the current user.');
         }
 
         if ((string) data_get($session, 'payment_status') !== 'paid') {
@@ -81,13 +83,13 @@ class CreditCheckoutService
         ];
     }
 
-    private function successUrl(): string
+    private function successUrl(string $portalContext): string
     {
-        return route('student.store.success').'?session_id={CHECKOUT_SESSION_ID}';
+        return route("{$portalContext}.store.success").'?session_id={CHECKOUT_SESSION_ID}';
     }
 
-    private function cancelUrl(): string
+    private function cancelUrl(string $portalContext): string
     {
-        return route('student.store', ['checkout' => 'cancelled']);
+        return route("{$portalContext}.store", ['checkout' => 'cancelled']);
     }
 }

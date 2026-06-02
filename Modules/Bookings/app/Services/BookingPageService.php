@@ -145,7 +145,7 @@ class BookingPageService
             ],
             'bookingSubmitUrl' => route("{$portal}.bookings.store"),
             'bookingCheckoutUrl' => route("{$portal}.bookings.checkout.store"),
-            'creditBalanceUrl' => $portal === 'student' ? route('student.credits.balance') : null,
+            'creditBalanceUrl' => route("{$portal}.credits.balance"),
             'dashboardUrl' => route("{$portal}.dashboard"),
             'officeHoursDirectoryUrl' => $portal === 'student'
                 ? route('student.office-hours')

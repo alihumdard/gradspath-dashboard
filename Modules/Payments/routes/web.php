@@ -20,6 +20,11 @@ Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () 
 });
 
 Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->group(function () {
+	Route::get('/mentor/store', [CreditsController::class, 'index'])->name('mentor.store');
+	Route::get('/mentor/credits/balance', [CreditsController::class, 'balance'])->name('mentor.credits.balance');
+	Route::post('/mentor/store/purchase', [CreditsController::class, 'purchase'])->name('mentor.store.purchase');
+	Route::post('/mentor/store/checkout', [CreditsController::class, 'checkout'])->name('mentor.store.checkout');
+	Route::get('/mentor/store/success', [CreditsController::class, 'success'])->name('mentor.store.success');
 	Route::post('/mentor/bookings/checkout', [BookingCheckoutController::class, 'store'])->name('mentor.bookings.checkout.store');
 	Route::get('/mentor/bookings/checkout/success', [BookingCheckoutController::class, 'success'])->name('mentor.bookings.checkout.success');
 	Route::get('/mentor/payouts/connect', [MentorPayoutController::class, 'connect'])->name('mentor.payouts.connect');

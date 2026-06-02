@@ -1,7 +1,8 @@
 @php($activeNav = $activeNav ?? '')
 @php($roleLabel = ucfirst(auth()->user()?->getRoleNames()->first() ?? 'student'))
 @php($currentUser = auth()->user())
-@php($sidebarInitials = collect(preg_split('/\s+/', trim($currentUser?->name ?? '')) ?: [])->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode(''))
+@php($sidebarNameParts = collect(preg_split('/\s+/', trim($currentUser?->name ?? '')) ?: [])->filter()->values())
+@php($sidebarInitials = $sidebarNameParts->isEmpty() ? '' : mb_strtoupper(mb_substr($sidebarNameParts->first(), 0, 1).($sidebarNameParts->count() > 1 ? mb_substr($sidebarNameParts->last(), 0, 1) : '')))
 @php($isActiveNav = fn (string $nav, array $routePatterns, array $pathPatterns) => $activeNav === $nav || request()->routeIs(...$routePatterns) || request()->is(...$pathPatterns))
 
 <aside class="sidebar" id="sidebar">
@@ -181,11 +182,7 @@
 
       <div class="portal-account-card">
         <div class="portal-account-avatar">
-          @if ($currentUser?->avatar_url)
-            <img src="{{ $currentUser->avatar_url }}" alt="{{ $currentUser->name ?? 'Student' }}" />
-          @else
-            <span>{{ $sidebarInitials }}</span>
-          @endif
+          <span>{{ $sidebarInitials }}</span>
         </div>
         <div class="portal-account-copy">
           <div class="portal-account-name">{{ $currentUser?->name ?: 'Student' }}</div>

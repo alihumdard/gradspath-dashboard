@@ -1,10 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Modules\Auth\app\Models\File;
 use Modules\Auth\app\Models\User;
 use Modules\Institutions\app\Models\University;
 use Modules\Settings\app\Models\Mentor;
@@ -67,17 +64,22 @@ it('renders the student profile page with student-specific fields', function () 
     $response->assertDontSee('Mentor Settings');
 });
 
-it('renders uploaded student avatars on the settings page', function () {
+it('renders student initials instead of uploaded avatars on the settings page', function () {
     $student = createProfileUser('student');
     $student->forceFill([
+        'name' => 'Tyler James Cogan',
         'avatar_url' => '/storage/avatars/students/student-avatar.jpg',
     ])->save();
 
     $response = $this->actingAs($student)->get(route('student.settings.index'));
 
     $response->assertOk();
-    $response->assertSee('/storage/avatars/students/student-avatar.jpg');
-    $response->assertSee('avatar has-image', false);
+    $response->assertSee('<span>TC</span>', false);
+    $response->assertSee('<div class="avatar">', false);
+    $response->assertDontSee('/storage/avatars/students/student-avatar.jpg');
+    $response->assertDontSee('Profile Image');
+    $response->assertDontSee('name="avatar"', false);
+    $response->assertDontSee('avatar has-image', false);
 });
 
 it('updates the student profile using student_profiles instead of mentor data', function () {
@@ -132,56 +134,27 @@ it('keeps student and mentor profile routes separated by role', function () {
     $this->actingAs($admin)->get(route('mentor.settings.index'))->assertForbidden();
 });
 
-it('uploads a student avatar and cleans up the replaced file', function () {
-    Storage::fake('public');
-
+it('ignores student avatar uploads and keeps initials-only display', function () {
     $student = createProfileUser('student');
     $student->forceFill(['avatar_url' => '/storage/avatars/students/legacy-avatar.jpg'])->save();
-    Storage::disk('public')->put('avatars/students/legacy-avatar.jpg', 'legacy');
 
     $this->actingAs($student)->patch(route('student.settings.update'), [
-        'name' => 'Student Example',
+        'name' => 'Tyler Cogan',
+        'institution_text' => 'State U',
         'program_level' => 'grad',
         'program_type' => 'mba',
         'timezone' => 'Asia/Karachi',
-        'avatar' => UploadedFile::fake()->image('student-first.jpg'),
+        'avatar' => 'not-used-by-student-profile',
     ])->assertRedirect(route('student.settings.index'));
 
     $student->refresh();
-    $firstPath = Str::after(parse_url($student->avatar_url, PHP_URL_PATH) ?: '', '/storage/');
 
-    Storage::disk('public')->assertExists($firstPath);
-    Storage::disk('public')->assertMissing('avatars/students/legacy-avatar.jpg');
-    expect(File::query()
-        ->where('fileable_type', \App\Models\User::class)
-        ->where('fileable_id', $student->id)
-        ->where('type', 'avatar')
-        ->where('is_deleted', false)
-        ->count())->toBe(1);
+    expect($student->name)->toBe('Tyler Cogan');
+    expect($student->avatar_url)->toBe('/storage/avatars/students/legacy-avatar.jpg');
 
-    $this->actingAs($student)->patch(route('student.settings.update'), [
-        'name' => 'Student Example',
-        'program_level' => 'grad',
-        'program_type' => 'mba',
-        'timezone' => 'Asia/Karachi',
-        'avatar' => UploadedFile::fake()->image('student-second.jpg'),
-    ])->assertRedirect(route('student.settings.index'));
-
-    $student->refresh();
-    $secondPath = Str::after(parse_url($student->avatar_url, PHP_URL_PATH) ?: '', '/storage/');
-
-    Storage::disk('public')->assertMissing($firstPath);
-    Storage::disk('public')->assertExists($secondPath);
-    expect(File::query()
-        ->where('fileable_type', \App\Models\User::class)
-        ->where('fileable_id', $student->id)
-        ->where('type', 'avatar')
-        ->where('is_deleted', false)
-        ->count())->toBe(1);
-    expect(File::query()
-        ->where('fileable_type', \App\Models\User::class)
-        ->where('fileable_id', $student->id)
-        ->where('type', 'avatar')
-        ->where('is_deleted', true)
-        ->count())->toBe(1);
+    $this->actingAs($student)
+        ->get(route('student.settings.index'))
+        ->assertOk()
+        ->assertSee('TC')
+        ->assertDontSee('/storage/avatars/students/legacy-avatar.jpg');
 });

@@ -21,6 +21,8 @@ class CreditsController extends Controller
     public function index(): View
     {
         return view('payments::student.store', [
+            'portalLayout' => "layouts.portal-{$this->portalContext()}",
+            'portalContext' => $this->portalContext(),
             'creditBalance' => $this->credits->getBalance(Auth::user()),
             'creditPackPrice' => (float) config('payments.office_hours.credit_pack_price', 200),
             'creditPackCredits' => (int) config('payments.office_hours.credit_pack_credits', 5),
@@ -56,7 +58,8 @@ class CreditsController extends Controller
             $session = $this->creditCheckout->createCheckoutSession(
                 Auth::user(),
                 (int) $request->validated()['credits'],
-                $request->validated()['office_hours_program'] ?? null
+                $request->validated()['office_hours_program'] ?? null,
+                $this->portalContext()
             );
         } catch (\RuntimeException $exception) {
             return response()->json([
@@ -79,12 +82,19 @@ class CreditsController extends Controller
             $result = $this->creditCheckout->completeSuccessfulCheckout(Auth::user(), $sessionId);
         } catch (\Throwable $exception) {
             return redirect()
-                ->route('student.store')
+                ->route("{$this->portalContext()}.store")
                 ->with('error', $exception->getMessage());
         }
 
         return redirect()
-            ->route('student.store')
+            ->route("{$this->portalContext()}.store")
             ->with('success', "Payment successful. {$result['credits']} credits were added to your balance.");
+    }
+
+    private function portalContext(): string
+    {
+        $routeName = (string) request()->route()?->getName();
+
+        return str_starts_with($routeName, 'mentor.') ? 'mentor' : 'student';
     }
 }
