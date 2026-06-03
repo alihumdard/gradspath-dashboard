@@ -4,8 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
-use Modules\Auth\app\Models\User;
 use Modules\Auth\database\seeders\RolePermissionSeeder;
 
 class DatabaseSeeder extends Seeder
@@ -30,15 +28,6 @@ class DatabaseSeeder extends Seeder
         $this->call(MentorNotesSeeder::class);
         $this->call(FeedbackSeeder::class);
 
-        $admin = User::query()->updateOrCreate(
-            ['email' => 'admin@admin.com'],
-            [
-                'name' => 'Admin User',
-                'password' => Hash::make('password'),
-                'is_active' => true,
-                'email_verified_at' => now(),
-            ]
-        );
-        $admin->assignRole('admin');
+        $this->call(AdminUsersSeeder::class);
     }
 }
