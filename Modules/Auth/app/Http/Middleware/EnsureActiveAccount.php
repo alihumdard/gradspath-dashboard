@@ -14,7 +14,8 @@ class EnsureActiveAccount
         $user = Auth::user();
 
         if ($user && !$user->is_active) {
-            $loginRoute = $user->hasRole('admin') || $request->is('admin') || $request->is('admin/*') || $request->is('horizon') || $request->is('horizon/*')
+            $adminPath = trim((string) config('auth.admin_path'), '/');
+            $loginRoute = $user->hasRole('admin') || $request->is($adminPath) || $request->is($adminPath.'/*') || $request->is('horizon') || $request->is('horizon/*')
                 ? 'admin.login'
                 : 'login';
 

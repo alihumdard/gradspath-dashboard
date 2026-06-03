@@ -13,7 +13,7 @@ Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->
     Route::get('/mentor/mentors/{id}', [MentorMentorSearchController::class, 'show'])->name('mentor.mentors.show');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix(config('auth.admin_path'))->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/overview', [AdminDashboardController::class, 'overview'])->name('overview');
     Route::get('/dashboard/users', [AdminDashboardController::class, 'users'])->name('users');

@@ -16,20 +16,20 @@ Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->
 	Route::get('/mentor/institutions/{id}', [MentorInstitutionsController::class, 'show'])->name('mentor.institutions.show');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->name('admin.institutions.')->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix(config('auth.admin_path'))->name('admin.institutions.')->group(function () {
 	Route::get('/institutions', [AdminInstitutionsController::class, 'index'])->name('index');
 	Route::post('/institutions', [AdminInstitutionsController::class, 'store'])->name('store');
 	Route::patch('/institutions/{id}', [AdminInstitutionsController::class, 'update'])->name('update');
 	Route::delete('/institutions/{id}', [AdminInstitutionsController::class, 'destroy'])->name('destroy');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin/manual-actions')->name('admin.manual-actions.')->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix(config('auth.admin_path').'/manual-actions')->name('admin.manual-actions.')->group(function () {
 	Route::post('/institutions', [AdminInstitutionsController::class, 'store'])->name('institutions.store');
 	Route::get('/universities/search', [AdminUniversityProgramsController::class, 'searchUniversities'])->name('universities.search');
 	Route::post('/programs', [AdminUniversityProgramsController::class, 'store'])->name('programs.store');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->name('admin.programs.')->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix(config('auth.admin_path'))->name('admin.programs.')->group(function () {
 	Route::get('/programs', [AdminUniversityProgramsController::class, 'index'])->name('index');
 	Route::post('/programs', [AdminUniversityProgramsController::class, 'store'])->name('store');
 	Route::patch('/programs/{id}', [AdminUniversityProgramsController::class, 'update'])->name('update');

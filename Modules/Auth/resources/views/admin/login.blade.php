@@ -20,6 +20,12 @@
     color: #ffd6dd;
   }
 
+  .login-card .message.success {
+    background: rgba(69, 196, 148, 0.14);
+    border-color: rgba(69, 196, 148, 0.32);
+    color: #d8fff0;
+  }
+
   .login-links {
     display: flex;
     justify-content: space-between;
@@ -52,6 +58,12 @@
         @if ($errors->any())
           <div class="message error">
             {{ $errors->first('email') }}
+          </div>
+        @endif
+
+        @if (session('success'))
+          <div class="message success">
+            {{ session('success') }}
           </div>
         @endif
 
@@ -91,7 +103,7 @@
 
         <div class="login-links">
           <a href="{{ route('login') }}">Use regular login</a>
-          <a href="{{ route('password.request') }}">Forgot password?</a>
+          <a href="{{ route('admin.password.request') }}">Forgot password?</a>
         </div>
       </div>
     </section>

@@ -13,12 +13,12 @@
           <h1>Reset Password</h1>
           <p>Enter your new password</p>
 
-          <form method="POST" action="{{ route('password.update') }}" class="login-form">
+          <form method="POST" action="{{ $passwordUpdateRoute ?? route('password.update') }}" class="login-form">
             @csrf
             <input type="hidden" name="token" value="{{ $token }}">
             
             <div class="form-group">
-              <input type="email" name="email" placeholder="Email" required value="{{ old('email') }}" />
+              <input type="email" name="email" placeholder="Email" required value="{{ old('email', $email ?? '') }}" />
               @error('email')
                 <span class="error">{{ $message }}</span>
               @enderror

@@ -47,11 +47,11 @@ Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->
     Route::patch('/mentor/availability', [MentorAvailabilityController::class, 'update'])->name('mentor.availability.update');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin/manual-actions')->name('admin.manual-actions.')->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix(config('auth.admin_path').'/manual-actions')->name('admin.manual-actions.')->group(function () {
     Route::patch('/bookings/outcome', [BookingOutcomeController::class, 'update'])->name('bookings.outcome.update');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin/bookings')->name('admin.bookings.')->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix(config('auth.admin_path').'/bookings')->name('admin.bookings.')->group(function () {
     Route::get('/related/{entityType}/{entityId}', [BookingManagementController::class, 'related'])->name('related');
     Route::patch('/{booking}', [BookingManagementController::class, 'update'])->name('update');
     Route::delete('/{booking}', [BookingManagementController::class, 'destroy'])->name('destroy');

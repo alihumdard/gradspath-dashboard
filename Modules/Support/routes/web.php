@@ -15,7 +15,7 @@ Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
 	Route::post('/mentor/support', [MentorTicketsController::class, 'store'])->middleware('throttle:5,60')->name('mentor.support.store');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->name('admin.support.')->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix(config('auth.admin_path'))->name('admin.support.')->group(function () {
 	Route::get('/tickets', [SupportTicketsController::class, 'index'])->name('tickets.index');
 	Route::get('/tickets/{id}', [SupportTicketsController::class, 'show'])->name('tickets.show');
 	Route::patch('/tickets/{id}', [SupportTicketsController::class, 'update'])->name('tickets.update');

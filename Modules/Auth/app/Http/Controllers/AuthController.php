@@ -62,7 +62,7 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->route('admin.dashboard');
+        return redirect()->intended(route('admin.dashboard'));
     }
 
     public function showRegister(): View
@@ -98,12 +98,34 @@ class AuthController extends Controller
 
     public function showForgotPassword(): View
     {
-        return view('auth::forgot-password');
+        return view('auth::forgot-password', [
+            'passwordEmailRoute' => route('password.email'),
+        ]);
     }
 
-    public function showResetPassword(string $token): View
+    public function showResetPassword(Request $request, string $token): View
     {
-        return view('auth::reset-password', ['token' => $token]);
+        return view('auth::reset-password', [
+            'token' => $token,
+            'email' => $request->query('email'),
+            'passwordUpdateRoute' => route('password.update'),
+        ]);
+    }
+
+    public function showAdminForgotPassword(): View
+    {
+        return view('auth::forgot-password', [
+            'passwordEmailRoute' => route('admin.password.email'),
+        ]);
+    }
+
+    public function showAdminResetPassword(Request $request, string $token): View
+    {
+        return view('auth::reset-password', [
+            'token' => $token,
+            'email' => $request->query('email'),
+            'passwordUpdateRoute' => route('admin.password.update'),
+        ]);
     }
 
     public function login(LoginRequest $request): RedirectResponse
@@ -219,6 +241,25 @@ class AuthController extends Controller
         return back()->with('status', __($status));
     }
 
+    public function sendAdminResetLink(ForgotPasswordRequest $request): RedirectResponse
+    {
+        $status = __(Password::RESET_LINK_SENT);
+        $email = (string) $request->input('email');
+        $user = User::query()->where('email', $email)->first();
+
+        if ($user && $user->hasRole('admin')) {
+            $token = Password::broker()->createToken($user);
+
+            $user->notify(new \App\Notifications\QueuedResetPassword(
+                $token,
+                $user,
+                route('admin.password.reset', ['token' => $token, 'email' => $user->email]),
+            ));
+        }
+
+        return back()->with('status', $status);
+    }
+
     public function resetPassword(ResetPasswordRequest $request): RedirectResponse
     {
         $status = Password::reset(
@@ -239,6 +280,35 @@ class AuthController extends Controller
         }
 
         return redirect()->route('login')
+            ->with('success', 'Password reset successfully. Please sign in.');
+    }
+
+    public function resetAdminPassword(ResetPasswordRequest $request): RedirectResponse
+    {
+        $user = User::query()->where('email', (string) $request->input('email'))->first();
+
+        if (! $user || ! $user->hasRole('admin')) {
+            return back()->withErrors(['email' => __(Password::INVALID_TOKEN)]);
+        }
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function (User $user, string $password): void {
+                $user->forceFill([
+                    'password' => Hash::make($password),
+                ])->setRememberToken(Str::random(60));
+
+                $user->save();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            return back()->withErrors(['email' => __($status)]);
+        }
+
+        return redirect()->route('admin.login')
             ->with('success', 'Password reset successfully. Please sign in.');
     }
 

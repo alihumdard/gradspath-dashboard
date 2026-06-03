@@ -20,6 +20,8 @@ return [
         'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
     ],
 
+    'admin_path' => trim(env('ADMIN_PORTAL_PATH', 'control-9x7k2m'), '/') ?: 'control-9x7k2m',
+
     /*
     |--------------------------------------------------------------------------
     | Authentication Guards

@@ -37,7 +37,9 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $middleware->redirectGuestsTo(function ($request): string {
-            return $request->is('admin') || $request->is('admin/*') || $request->is('horizon') || $request->is('horizon/*')
+            $adminPath = trim((string) config('auth.admin_path'), '/');
+
+            return $request->is($adminPath) || $request->is($adminPath.'/*') || $request->is('horizon') || $request->is('horizon/*')
                 ? route('admin.login')
                 : route('login');
         });

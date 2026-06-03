@@ -1,9 +1,9 @@
 <dialog
   class="admin-bookings-dialog"
   id="adminBookingsModal"
-  data-related-url-template="{{ url('/admin/bookings/related/__ENTITY_TYPE__/__ENTITY_ID__') }}"
-  data-update-url-template="{{ url('/admin/bookings/__BOOKING_ID__') }}"
-  data-destroy-url-template="{{ url('/admin/bookings/__BOOKING_ID__') }}"
+  data-related-url-template="{{ route('admin.bookings.related', ['entityType' => '__ENTITY_TYPE__', 'entityId' => '__ENTITY_ID__']) }}"
+  data-update-url-template="{{ route('admin.bookings.update', ['booking' => '__BOOKING_ID__']) }}"
+  data-destroy-url-template="{{ route('admin.bookings.destroy', ['booking' => '__BOOKING_ID__']) }}"
 >
   <div class="modal-card admin-bookings-modal" role="dialog" aria-modal="true" aria-labelledby="adminBookingsModalTitle">
     <button class="admin-bookings-modal__close" id="adminBookingsModalClose" type="button" aria-label="Close">×</button>

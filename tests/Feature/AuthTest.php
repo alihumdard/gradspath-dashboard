@@ -29,7 +29,7 @@ it('renders auth pages', function () {
         ->assertOk()
         ->assertViewHas('authModal', 'login');
 
-    $this->get('/admin')
+    $this->get(route('admin.login'))
         ->assertOk()
         ->assertViewIs('auth::admin.login');
 
@@ -63,14 +63,19 @@ it('renders the email verification notice for unverified users', function () {
         ->assertSee('Enter verification code');
 });
 
-it('renders the admin login page at /admin for guests', function () {
-    $this->get('/admin')
+it('renders the admin login page at the secret admin path for guests', function () {
+    $this->get(route('admin.login'))
         ->assertOk()
         ->assertViewIs('auth::admin.login');
 });
 
+it('hides the old admin path when the secret admin path is configured', function () {
+    $this->get('/admin')->assertNotFound();
+    $this->get('/admin/dashboard')->assertNotFound();
+});
+
 it('redirects guests to the admin login page for protected admin routes', function () {
-    $this->get('/admin/dashboard')
+    $this->get(route('admin.dashboard'))
         ->assertRedirect(route('admin.login'));
 });
 
@@ -84,7 +89,7 @@ it('authenticates an admin from the admin login form', function () {
     ]);
     $user->assignRole('admin');
 
-    $this->post('/admin/login', [
+    $this->post(route('admin.login.post'), [
         'email' => $email,
         'password' => 'Password123',
     ])->assertRedirect(route('admin.dashboard'));
@@ -92,7 +97,7 @@ it('authenticates an admin from the admin login form', function () {
     expect(Auth::id())->toBe($user->id);
 });
 
-it('redirects authenticated admins from /admin to the admin dashboard', function () {
+it('redirects authenticated admins from the secret admin login to the admin dashboard', function () {
     $created = User::factory()->create([
         'email' => 'existing-admin-' . Str::uuid() . '@example.com',
         'password' => Hash::make('Password123'),
@@ -102,7 +107,7 @@ it('redirects authenticated admins from /admin to the admin dashboard', function
     $user->assignRole('admin');
 
     $this->actingAs($user)
-        ->get('/admin')
+        ->get(route('admin.login'))
         ->assertRedirect(route('admin.dashboard'));
 });
 
@@ -765,6 +770,80 @@ it('sends branded reset password emails', function () {
             && $mail->viewData['userName'] === 'Reset Student'
             && str_contains($mail->viewData['url'], '/reset-password/');
     });
+});
+
+it('renders the admin forgot-password page under the secret admin path', function () {
+    $this->get(route('admin.password.request'))
+        ->assertOk()
+        ->assertViewIs('auth::forgot-password');
+});
+
+it('sends admin reset emails with the secret admin reset URL', function () {
+    Notification::fake();
+
+    $admin = User::factory()->create([
+        'name' => 'Reset Admin',
+        'email' => 'admin-reset-' . Str::uuid() . '@example.com',
+        'is_active' => true,
+    ]);
+    $admin->assignRole('admin');
+
+    $this->post(route('admin.password.email'), ['email' => $admin->email])
+        ->assertSessionHas('status');
+
+    $notifiableAdmin = \App\Models\User::query()->findOrFail($admin->id);
+
+    Notification::assertSentTo($notifiableAdmin, QueuedResetPassword::class, function (QueuedResetPassword $notification) use ($notifiableAdmin) {
+        $mail = $notification->toMail($notifiableAdmin);
+
+        return $mail->view === 'emails.reset-password'
+            && $mail->subject === 'Reset your Grads Paths password'
+            && str_contains($mail->viewData['url'], '/'.config('auth.admin_path').'/reset-password/')
+            && str_contains($mail->viewData['url'], 'email='.urlencode($notifiableAdmin->email));
+    });
+});
+
+it('does not send admin reset emails to non-admin users or unknown emails', function () {
+    Notification::fake();
+
+    $student = User::factory()->create([
+        'email' => 'student-reset-' . Str::uuid() . '@example.edu',
+        'is_active' => true,
+    ]);
+    $student->assignRole('student');
+
+    $this->post(route('admin.password.email'), ['email' => $student->email])
+        ->assertSessionHas('status');
+
+    $this->post(route('admin.password.email'), ['email' => 'missing-admin@example.com'])
+        ->assertSessionHas('status');
+
+    $notifiableStudent = \App\Models\User::query()->findOrFail($student->id);
+
+    Notification::assertNotSentTo($notifiableStudent, QueuedResetPassword::class);
+});
+
+it('resets an admin password through the admin reset route', function () {
+    $admin = User::factory()->create([
+        'email' => 'admin-password-reset-' . Str::uuid() . '@example.com',
+        'password' => Hash::make('OldPassword123'),
+        'is_active' => true,
+    ]);
+    $admin->assignRole('admin');
+    $token = Password::broker()->createToken($admin);
+
+    $this->post(route('admin.password.update'), [
+        'token' => $token,
+        'email' => $admin->email,
+        'password' => 'NewPassword123',
+        'password_confirmation' => 'NewPassword123',
+    ])
+        ->assertRedirect(route('admin.login'))
+        ->assertSessionHas('success');
+
+    $admin->refresh();
+
+    expect(Hash::check('NewPassword123', $admin->password))->toBeTrue();
 });
 
 it('returns validation error for invalid forgot password email', function () {

@@ -31,9 +31,15 @@ Route::middleware(['web'])->group(function () {
     Route::get('/universities/search', [AuthController::class, 'searchUniversities'])->name('universities.search');
 });
 
-Route::middleware(['web'])->prefix('admin')->name('admin.')->group(function () {
+$adminPath = config('auth.admin_path');
+
+Route::middleware(['web'])->prefix($adminPath)->name('admin.')->group(function () {
     Route::get('/', [AuthController::class, 'showAdminLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'adminLogin'])->name('login.post');
+    Route::get('/forgot-password', [AuthController::class, 'showAdminForgotPassword'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendAdminResetLink'])->name('password.email');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showAdminResetPassword'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'resetAdminPassword'])->name('password.update');
 });
 
 Route::middleware(['web', 'auth', 'active'])->group(function () {
@@ -45,7 +51,7 @@ Route::middleware(['web', 'auth', 'active'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
-    Route::prefix('admin')->name('admin.')->middleware('role:admin')->group(function () {
+    Route::prefix(config('auth.admin_path'))->name('admin.')->middleware('role:admin')->group(function () {
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/{id}', [AdminUserController::class, 'show'])->name('users.show');
         Route::delete('/users/{id}', [AdminUserController::class, 'destroy'])->name('users.destroy');

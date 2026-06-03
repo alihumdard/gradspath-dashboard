@@ -222,22 +222,26 @@ Scope:
 - [x] Added tests for correct code, wrong code, expired code, resend throttling, and verified redirect.
 - [x] Verified with `php artisan test tests/Feature/AuthTest.php` - 38 passed, 155 assertions.
 
-### 6. Admin dashboard secret link, admin user, and reset password workflow
+### 6. Admin dashboard secret link, admin user, and reset password workflow - (Done)
 
 **Client question:** Admin dashboard must be accessible through a secret link; admin user must be set up; reset password must work for website and admin dashboard.
 
 **Answer:** Yes. Admin access must be reliable but protected.
 
-**Current finding:** Admin routes exist under `/admin` and `/admin/dashboard`. Admin login exists. Password reset routes exist for guest users, but the admin-specific reset entry point is not separate.
+**Current finding:** Implemented. Admin routes now use the configurable `ADMIN_PORTAL_PATH` secret path. Old `/admin` routes are hidden, admin reset password is separate from public user reset, and Horizon guests redirect through the secret admin login.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Add configurable secret admin path, e.g. `ADMIN_PORTAL_PATH`, instead of exposing only `/admin`.
-- Keep admin routes role-protected.
-- Add admin seeder/command to create or update the launch admin user safely.
-- Add reset password links on public login and admin login pages.
-- Ensure reset redirects correctly based on admin vs portal user.
-- Add tests for admin login, non-admin rejection, reset request, reset complete, and old `/admin` behavior.
+- [x] Added configurable secret admin path through `ADMIN_PORTAL_PATH`.
+- [x] Moved admin routes from `/admin` to the configured secret path.
+- [x] Kept admin routes protected by `auth`, `active`, and `role:admin`.
+- [x] Hid old `/admin` and `/admin/dashboard` with 404 behavior.
+- [x] Added admin-only forgot/reset password routes under the secret path.
+- [x] Updated admin reset emails to use the secret admin reset URL.
+- [x] Kept public user password reset unchanged.
+- [x] Redirected Horizon guests to the secret admin login and back to `/horizon` after login.
+- [x] Verified with `php artisan test tests/Feature/AuthTest.php` - 43 passed, 168 assertions.
+- [x] Verified with `php artisan test tests/Feature/HorizonAccessTest.php` - 6 passed, 14 assertions.
 
 ### 7. Highlighting text in login/signup popups closes the popup
 
@@ -424,28 +428,22 @@ Scope:
 - Replace the dark button class with the lighter purple/white scheme from reference.
 - Verify both Programs and Mentors tabs.
 
-### 17. Multiple tiers behavior and four program filter options
+### 17. Multiple tiers behavior and four program filter options - (Done)
 
 **Client question:** If All is selected and a college has programs in multiple tiers, show "Multiple Tiers"; if Top 25 or Regional is selected, show that selected tier. Only options: All, Elite Programs, Top 25 Programs, Regional Programs.
 
-**Answer:** Implement tier-aware institution display logic exactly as described.
+**Answer:** Done. Institution tier filters and display labels now match the requested four-option tier model.
 
-**Current finding:** `InstitutionService` has tier labels for `elite`, `top`, and `regional`, but the browse UI needs the exact display logic. Current label for `top` is sometimes "Top Rated" instead of "Top 25 Programs".
+**Current finding:** Implemented. `InstitutionService` maps all tiers to the exact client labels, and the institutions UI displays "Multiple Tiers" when an institution has more than one tier under the All filter.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Normalize tier enum labels:
-  - `all`: All.
-  - `elite`: Elite Programs.
-  - `top`: Top 25 Programs.
-  - `regional`: Regional Programs.
-- For All filter:
-  - If institution has more than one tier, show "Multiple Tiers".
-  - If one tier, show that tier.
-- For specific tier:
-  - Show only programs in that tier.
-  - Show that selected tier label.
-- Add test cases using one institution with Law/Therapy Top 25 and MBA Regional as described.
+- [x] Kept tier filter options as All, Elite Programs, Top 25 Programs, and Regional Programs.
+- [x] Normalized `top` labels to "Top 25 Programs" everywhere in institution browse data.
+- [x] Updated multi-tier institution cards to show "Multiple Tiers" with exact capitalization.
+- [x] Confirmed selected tier filtering continues to show the selected tier label.
+- [x] Added coverage for exact client tier labels.
+- [x] Verified with `php artisan test tests/Feature/Admin/UniversityProgramsCrudTest.php` - 15 passed, 48 assertions.
 
 ### 18. Find Mentors UI matches item 12
 
@@ -620,19 +618,20 @@ Scope:
 - Add admin dashboard notification count/badge.
 - Add tests for student ticket, mentor ticket, admin reply.
 
-### 25. Active portal tab outline
+### 25. Active portal tab outline - (Done)
 
 **Client question:** Current tab in portal sidebar should have an outline like `image23`.
 
-**Answer:** Update sidebar active styling.
+**Answer:** Done. Active portal sidebar items now have a clear outline/ring state.
 
-**Current finding:** Sidebar already applies `active` class using `@class`, but CSS may not visually match the requested outline.
+**Current finding:** Implemented through shared portal CSS so student and mentor portal sidebars get the same active outline treatment.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Update active nav CSS in portal styles used by all portal pages.
-- Ensure active state is visible in light and dark mode.
-- Ensure student/mentor sidebars use named routes consistently.
+- [x] Updated shared active nav CSS in `public/assets/css/portal-header.css`.
+- [x] Added an outline-style active ring plus inset border for current sidebar tabs.
+- [x] Ensured active state remains visible in light and dark mode.
+- [x] Existing student/mentor sidebars continue to apply active state through route/path matching.
 
 ### 26. Users no settings page, automatic timezone, initials for users, mentor faces
 
@@ -653,20 +652,20 @@ Scope:
 - Fallback should be Eastern Time, e.g. `America/New_York`, not app timezone.
 - Verify uploaded mentor avatars are stored and served from `public/storage`.
 
-### 27. Mentor portal topbar same as user portal
+### 27. Mentor portal topbar same as user portal - (Done)
 
 **Client question:** Mentor topbar should match user portal, including credits/store/light-dark toggle, because mentors can book other mentors.
 
-**Answer:** Add student-style credits/store controls to mentor portal too.
+**Answer:** Done. Mentor portal now uses the same credits, Store, and light/dark toggle topbar controls as the student portal.
 
-**Current finding:** `portal-student.blade.php` includes credits and Store. `portal-mentor.blade.php` only yields page topbar content.
+**Current finding:** Implemented. Both student and mentor portal layouts include the shared `credits-store-controls` partial and shared `credits-store-script`.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Move shared credits/store controls into common portal component.
-- Add credit balance route access for mentors or create shared route.
-- Ensure mentor can purchase/use credits when booking another mentor.
-- Keep mentor-specific controls from pages.
+- [x] Added shared credits/store controls to mentor portal topbar.
+- [x] Mentor portal uses `mentor.credits.balance` and `mentor.store` routes.
+- [x] Mentor portal keeps the shared icon-only light/dark toggle from the base portal layout.
+- [x] Mentor-specific page topbar content still renders after shared controls.
 
 ### 28. Mentor left tab ordering is good
 

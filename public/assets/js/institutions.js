@@ -116,7 +116,7 @@ function getTierSummary(programs) {
   const tiers = [...new Set(programs.map((program) => program.tierLabel || program.tier))];
   if (tiers.length === 0) return "Programs";
   if (tiers.length === 1) return tiers[0];
-  return "Multiple tiers";
+  return "Multiple Tiers";
 }
 
 function matchesGlobalFilters(program) {

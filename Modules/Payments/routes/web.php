@@ -36,7 +36,7 @@ Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->
 Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');
 Route::post('/webhooks/stripe/connect', [StripeWebhookController::class, 'handleConnect'])->name('webhooks.stripe.connect');
 
-Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix(config('auth.admin_path'))->name('admin.')->group(function () {
 	Route::get('/payouts', [PayoutsController::class, 'index'])->name('payouts');
 	Route::get('/payouts/{id}', [PayoutsController::class, 'show'])->name('payouts.show');
 

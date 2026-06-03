@@ -5,6 +5,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Modules\Institutions\app\Models\University;
 use Modules\Institutions\app\Models\UniversityProgram;
+use Modules\Institutions\app\Services\InstitutionService;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -333,4 +334,44 @@ it('index passes active universities needed for the dropdown', function () {
             return $universities->pluck('id')->contains($activeUniversity->id)
                 && ! $universities->pluck('name')->contains('Inactive University');
         });
+});
+
+it('institution browse data uses exact client tier labels', function () {
+    $university = createUniversity([
+        'name' => 'Client Tier University',
+        'display_name' => 'Client Tier U',
+    ]);
+
+    UniversityProgram::query()->create([
+        'university_id' => $university->id,
+        'program_name' => 'Law Top 25',
+        'program_type' => 'law',
+        'tier' => 'top',
+        'description' => 'Top 25 law program.',
+        'duration_months' => 36,
+        'is_active' => true,
+    ]);
+
+    UniversityProgram::query()->create([
+        'university_id' => $university->id,
+        'program_name' => 'MBA Regional',
+        'program_type' => 'mba',
+        'tier' => 'regional',
+        'description' => 'Regional MBA program.',
+        'duration_months' => 24,
+        'is_active' => true,
+    ]);
+
+    $school = app(InstitutionService::class)
+        ->browseData()
+        ->firstWhere('id', $university->id);
+
+    expect($school)->not->toBeNull();
+
+    $programs = collect($school['programs']);
+
+    expect($programs->firstWhere('name', 'Law Top 25')['tier'])->toBe('Top 25 Programs');
+    expect($programs->firstWhere('name', 'Law Top 25')['tierLabel'])->toBe('Top 25 Programs');
+    expect($programs->firstWhere('name', 'MBA Regional')['tier'])->toBe('Regional Programs');
+    expect($programs->firstWhere('name', 'MBA Regional')['tierLabel'])->toBe('Regional Programs');
 });

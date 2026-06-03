@@ -116,7 +116,7 @@ class InstitutionService
     {
         return match ($tier) {
             'elite' => 'Elite Programs',
-            'top' => 'Top Rated',
+            'top' => 'Top 25 Programs',
             'regional' => 'Regional Programs',
             default => 'Programs',
         };
