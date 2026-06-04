@@ -4,8 +4,6 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\User;
-use Modules\Bookings\app\Events\ChatMessageSent;
-use Modules\Bookings\app\Mail\BookingChatNotificationMail;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Models\Chat;
 use Modules\Payments\app\Models\ServiceConfig;
@@ -126,7 +124,7 @@ it('lets a student load a booking chat thread and marks received messages as rea
     ]);
 });
 
-it('lets a student send a chat message and broadcasts it', function () {
+it('lets a student send a chat message and broadcasts it without sending email', function () {
     Mail::fake();
 
     [$booking, $student, $mentor, $mentorUser] = makeChatBooking('1on3');
@@ -148,9 +146,7 @@ it('lets a student send a chat message and broadcasts it', function () {
         'message_text' => 'I will upload my interview notes tonight.',
     ]);
 
-    Mail::assertSent(BookingChatNotificationMail::class, function (BookingChatNotificationMail $mail) use ($mentorUser) {
-        return $mail->hasTo($mentorUser->email);
-    });
+    Mail::assertNothingSent();
 
     expect(Chat::query()->where('booking_id', $booking->id)->count())->toBe(1);
 });

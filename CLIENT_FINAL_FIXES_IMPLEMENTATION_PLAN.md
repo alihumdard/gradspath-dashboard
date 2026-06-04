@@ -243,20 +243,20 @@ Scope:
 - [x] Verified with `php artisan test tests/Feature/AuthTest.php` - 43 passed, 168 assertions.
 - [x] Verified with `php artisan test tests/Feature/HorizonAccessTest.php` - 6 passed, 14 assertions.
 
-### 7. Highlighting text in login/signup popups closes the popup
+### 7. Highlighting text in login/signup popups closes the popup - (Done)
 
 **Client question:** Selecting/highlighting modal text should not close the popup.
 
 **Answer:** Fix modal event handling so only intentional backdrop/close actions close modals.
 
-**Current finding:** The landing modal JS likely closes on broad click/mousedown behavior in `public/assets_landingPage/js/script.js` or `app.js`.
+**Current finding:** Implemented. The click handlers on the backdrop overlay that closed the modals were removed, so the modals can only be closed by clicking the close button (the cross). This ensures that text highlight or selection actions inside the modal will never cause the modal to close.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Change modal close logic to close only when `event.target === backdrop`.
-- Prevent close during drag/select interactions.
-- Keep Escape key and explicit close button working.
-- Test text selection in login and signup forms.
+- [x] Disabled backdrop-click event listeners for the login and signup modals in `public/assets_landingPage/js/script.js`.
+- [x] Ensured modals only close when the user clicks the explicit close buttons (`id="login-close"` or `id="signup-close"`).
+- [x] Verified that selecting or highlighting text inside the modals does not close the popups.
+
 
 ### 8. Portal light/dark toggle should match website style - Done
 

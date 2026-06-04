@@ -9,12 +9,17 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Modules\Auth\app\Services\AdminAuditService;
+use Modules\Discovery\app\Services\TopInstitutionService;
 use Modules\Institutions\app\Models\University;
 
 class InstitutionsController extends Controller
 {
-    public function __construct(private readonly AdminAuditService $audit) {}
+    public function __construct(
+        private readonly AdminAuditService $audit,
+        private readonly TopInstitutionService $topInstitutions
+    ) {}
 
     public function index(Request $request): View
     {
@@ -72,6 +77,41 @@ class InstitutionsController extends Controller
         $university->delete();
 
         return back()->with('success', 'Institution deleted successfully.');
+    }
+
+    public function updateFeatured(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'institutions' => ['nullable', 'array', 'max:5'],
+            'institutions.*.university_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('universities', 'id')->where(fn ($query) => $query->where('is_active', true)),
+            ],
+            'institutions.*.sort_order' => ['nullable', 'integer', 'min:1', 'max:5'],
+            'manual_section' => ['nullable', 'string'],
+        ]);
+
+        $before = [
+            'institution_ids' => $this->topInstitutions->manualSelections()->pluck('id')->values()->all(),
+        ];
+
+        $this->topInstitutions->saveManual($data['institutions'] ?? []);
+
+        $after = [
+            'institution_ids' => $this->topInstitutions->manualSelections()->pluck('id')->values()->all(),
+        ];
+
+        $this->audit->log(
+            Auth::user(),
+            'update_featured_institutions',
+            'featured_institutions',
+            null,
+            $before,
+            $after
+        );
+
+        return $this->redirectToManualActions('institutions', 'Featured institutions updated successfully.');
     }
 
     private function validateUniversityData(Request $request, bool $isUpdate = false): array

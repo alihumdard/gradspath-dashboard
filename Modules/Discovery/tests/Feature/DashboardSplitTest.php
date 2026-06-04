@@ -8,10 +8,13 @@ use Modules\Bookings\app\Models\Booking;
 use Modules\Discovery\app\Services\MentorDiscoveryService;
 use Modules\Feedback\app\Models\Feedback;
 use Modules\Feedback\app\Models\MentorRating;
+use Modules\Institutions\app\Models\FeaturedInstitution;
+use Modules\Institutions\app\Models\FeaturedInstitutionSetting;
 use Modules\Institutions\app\Models\University;
 use Modules\Institutions\app\Models\UniversityProgram;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
+use Modules\Discovery\app\Services\TopInstitutionService;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -23,6 +26,7 @@ beforeEach(function () {
 
     Role::findOrCreate('student', 'web');
     Role::findOrCreate('mentor', 'web');
+    Role::findOrCreate('admin', 'web');
 });
 
 afterEach(function () {
@@ -202,7 +206,7 @@ it('shows active universities on the student dashboard even when some do not hav
     $response->assertDontSee('Inactive Dashboard University');
 });
 
-it('shows the top six student dashboard universities by confirmed and completed bookings with full names and logos', function () {
+it('shows the top five student dashboard universities by confirmed and completed bookings with full names and logos', function () {
     $student = createDashboardUser();
     $service = createDashboardService();
 
@@ -240,7 +244,112 @@ it('shows the top six student dashboard universities by confirmed and completed 
     $response->assertSee('https://example.com/logo-one.png', false);
     $response->assertSee(route('student.institutions.show', $universities->first()->id), false);
     $response->assertDontSee('Short U1');
+    $response->assertDontSee('Full Dashboard University 6');
     $response->assertDontSee('Full Dashboard University 7');
+});
+
+it('refreshes automatic featured institutions by confirmed and completed mentor bookings', function () {
+    $service = createDashboardService();
+    $eligibleUniversities = collect(range(1, 5))->map(function (int $index) use ($service): University {
+        $university = createDashboardUniversity("Eligible Featured University {$index}");
+        $mentor = createDashboardMentor("Eligible Featured Mentor {$index}", $university);
+
+        createDashboardBooking($mentor, $service, now()->addDays($index), $index % 2 === 0 ? 'completed' : 'confirmed');
+
+        return $university;
+    });
+
+    $cancelledUniversity = createDashboardUniversity('ZZZ Cancelled Featured University');
+    $cancelledMentor = createDashboardMentor('Cancelled Featured Mentor', $cancelledUniversity);
+    foreach (range(1, 10) as $index) {
+        createDashboardBooking($cancelledMentor, $service, now()->addDays($index), 'cancelled');
+    }
+
+    $this->artisan('institutions:refresh-featured')->assertExitCode(0);
+
+    $featured = app(TopInstitutionService::class)->forDashboard();
+
+    expect($featured->pluck('id')->all())
+        ->toEqual($eligibleUniversities->pluck('id')->all())
+        ->and($featured->pluck('name')->all())
+        ->not->toContain('ZZZ Cancelled Featured University')
+        ->and(FeaturedInstitutionSetting::query()->first()?->last_recalculated_at)
+        ->not->toBeNull();
+});
+
+it('pins admin-selected featured institutions before automatic fill', function () {
+    $first = createDashboardUniversity('Manual Featured First');
+    $second = createDashboardUniversity('Manual Featured Second');
+    $automatic = createDashboardUniversity('Automatic Featured Only');
+    $service = createDashboardService();
+
+    createDashboardBooking(createDashboardMentor('Automatic Mentor', $automatic), $service, now()->addDay(), 'confirmed');
+
+    app(TopInstitutionService::class)->saveManual([
+        ['university_id' => $second->id, 'sort_order' => 1],
+        ['university_id' => $first->id, 'sort_order' => 2],
+    ]);
+
+    $featured = app(TopInstitutionService::class)->forDashboard();
+
+    $featuredNames = $featured->pluck('name')->all();
+
+    expect(array_slice($featuredNames, 0, 2))->toBe([
+        'Manual Featured Second',
+        'Manual Featured First',
+    ])->and($featuredNames)->toContain('Automatic Featured Only');
+});
+
+it('excludes inactive universities from manual featured institutions', function () {
+    $active = createDashboardUniversity('Active Manual Featured');
+    $inactive = createDashboardUniversity('Inactive Manual Featured', false);
+
+    app(TopInstitutionService::class)->saveManual([
+        ['university_id' => $inactive->id, 'sort_order' => 1],
+        ['university_id' => $active->id, 'sort_order' => 2],
+    ]);
+
+    $featured = app(TopInstitutionService::class)->forDashboard();
+
+    expect($featured->pluck('name')->all())->toBe(['Active Manual Featured']);
+});
+
+it('lets an admin save featured institution selections', function () {
+    $admin = createDashboardUser();
+    $admin->assignRole('admin');
+    $first = createDashboardUniversity('Admin Saved Featured First');
+    $second = createDashboardUniversity('Admin Saved Featured Second');
+
+    $response = $this->actingAs($admin)->post(route('admin.manual-actions.institutions.featured.update'), [
+        'manual_section' => 'institutions',
+        'institutions' => [
+            ['university_id' => $second->id, 'sort_order' => 1],
+            ['university_id' => $first->id, 'sort_order' => 2],
+        ],
+    ]);
+
+    $response->assertRedirect(route('admin.manual-actions'));
+
+    expect(FeaturedInstitution::query()->where('source', FeaturedInstitution::SOURCE_MANUAL)->orderBy('sort_order')->pluck('university_id')->all())
+        ->toBe([$second->id, $first->id]);
+});
+
+it('searches active universities for manual action institution pickers', function () {
+    $admin = createDashboardUser();
+    $admin->assignRole('admin');
+
+    createDashboardUniversity('University of Lahore', true, 'UOL');
+    createDashboardUniversity('Unrelated Search University');
+
+    $response = $this->actingAs($admin)->getJson(route('admin.manual-actions.universities.search', [
+        'q' => 'uo',
+        'per_page' => 10,
+    ]));
+
+    $response->assertOk();
+
+    expect(collect($response->json('data'))->pluck('label')->all())
+        ->toContain('UOL');
 });
 
 it('shows active universities on the mentor dashboard even when some do not have active programs', function () {

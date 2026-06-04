@@ -195,16 +195,6 @@
   if (loginToSignup) loginToSignup.addEventListener("click", openSignup);
   if (signupToLogin) signupToLogin.addEventListener("click", openLogin);
 
-  if (loginModal) {
-    loginModal.addEventListener("click", function (e) {
-      if (e.target === loginModal) closeLogin();
-    });
-  }
-  if (signupModal) {
-    signupModal.addEventListener("click", function (e) {
-      if (e.target === signupModal) closeSignup();
-    });
-  }
 
   // Password toggle (eyeball): show/hide password in Login and Signup
   document.querySelectorAll(".password-toggle").forEach(function (btn) {

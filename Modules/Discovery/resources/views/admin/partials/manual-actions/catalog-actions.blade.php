@@ -4,6 +4,18 @@
   $services = $adminManualActionsData['services'] ?? [];
   $programTypes = $adminManualActionsData['options']['program_types'] ?? [];
   $programTiers = $adminManualActionsData['options']['program_tiers'] ?? [];
+  $featuredInstitutions = $adminManualActionsData['featured_institutions'] ?? [];
+  $featuredOptions = $featuredInstitutions['options'] ?? [];
+  $featuredManualRows = old('institutions', $featuredInstitutions['manual'] ?? []);
+  $featuredAutomaticRows = $featuredInstitutions['automatic'] ?? [];
+  $lastFeaturedRefresh = $featuredInstitutions['last_recalculated_at'] ?? null;
+  $featuredInstitutionLimit = 5;
+  $featuredInstitutionIds = collect($featuredManualRows)
+      ->map(fn ($row) => (string) ($row['university_id'] ?? $row['id'] ?? ''))
+      ->filter()
+      ->take($featuredInstitutionLimit)
+      ->values()
+      ->all();
 @endphp
 
 <section class="manual-group" data-section-group="institutions programs services pricing">
@@ -105,6 +117,98 @@
     </div>
   </div>
 
+  <div class="manual-panel" id="manual-section-featured-institutions" data-section-panel="institutions">
+    <div class="manual-panel__copy">
+      <h4>Featured institutions</h4>
+      <p>Use automatic meeting-count ranking by default, or choose the dashboard institutions manually.</p>
+    </div>
+
+    <div class="manual-panel__grid">
+      <form class="manual-form" method="POST" action="{{ route('admin.manual-actions.institutions.featured.update') }}">
+        @csrf
+        <input type="hidden" name="manual_section" value="institutions" />
+
+        <label class="manual-field manual-field--full">
+          <span>Manual institutions</span>
+          <input
+            type="search"
+            id="manualFeaturedInstitutionSearch"
+            class="manual-featured-mentor-search"
+            placeholder="Search by institution name..."
+            autocomplete="off"
+          />
+          <div id="manualFeaturedInstitutionFields">
+            @foreach ($featuredInstitutionIds as $index => $institutionId)
+              <input type="hidden" name="institutions[{{ $index }}][university_id]" value="{{ $institutionId }}" />
+              <input type="hidden" name="institutions[{{ $index }}][sort_order]" value="{{ $index + 1 }}" />
+            @endforeach
+          </div>
+          <div
+            class="manual-featured-mentor-list"
+            id="manualFeaturedInstitutionSelect"
+            data-search-url="{{ route('admin.manual-actions.universities.search', [], false) }}"
+          >
+            @foreach ($featuredOptions as $institution)
+              @php
+                $institutionId = (string) ($institution['id'] ?? '');
+                $isChecked = in_array($institutionId, $featuredInstitutionIds, true);
+              @endphp
+              <label
+                class="manual-featured-mentor-option"
+                data-institution-option
+                data-institution-id="{{ $institutionId }}"
+                data-institution-label="{{ $institution['label'] ?? $institution['name'] ?? 'Institution' }}"
+                data-institution-name="{{ $institution['name'] ?? '' }}"
+                data-search-text="{{ \Illuminate\Support\Str::lower(($institution['label'] ?? '').' '.($institution['name'] ?? '')) }}"
+              >
+                <input
+                  type="checkbox"
+                  value="{{ $institutionId }}"
+                  @checked($isChecked)
+                />
+                <span class="manual-featured-mentor-rank" data-featured-institution-rank></span>
+                <span class="manual-featured-mentor-copy">
+                  <strong>{{ $institution['label'] ?? $institution['name'] ?? 'Institution' }}</strong>
+                  <small>{{ $institution['name'] ?? '' }}</small>
+                </span>
+              </label>
+            @endforeach
+          </div>
+          @error('institutions')
+            <small class="manual-field__error">{{ $message }}</small>
+          @enderror
+          @error('institutions.*.university_id')
+            <small class="manual-field__error">{{ $message }}</small>
+          @enderror
+        </label>
+
+        <button class="primary-btn manual-submit-btn" type="submit">Save featured institutions</button>
+      </form>
+
+      <aside class="manual-summary manual-summary--list">
+        <h5>Automatic ranking preview</h5>
+        @if ($lastFeaturedRefresh)
+          <p>Last refreshed {{ \Illuminate\Support\Carbon::parse($lastFeaturedRefresh)->diffForHumans() }}.</p>
+        @else
+          <p>Automatic ranking will be stored after the first daily refresh.</p>
+        @endif
+        <ul>
+          @forelse ($featuredAutomaticRows as $institution)
+            <li>
+              <strong>{{ $institution['rank'] }}. {{ $institution['label'] }}</strong>
+              <span>{{ $institution['meetings_count'] }} meetings</span>
+            </li>
+          @empty
+            <li>
+              <strong>No ranking available yet</strong>
+              <span>The dashboard can still fall back to live institution counts.</span>
+            </li>
+          @endforelse
+        </ul>
+      </aside>
+    </div>
+  </div>
+
   <div class="manual-panel" id="manual-section-programs" data-section-panel="programs">
     <div class="manual-panel__copy">
       <h4>Create program</h4>
@@ -116,7 +220,7 @@
         @csrf
         <input type="hidden" name="manual_section" value="programs" />
 
-        <label class="manual-field manual-university-picker" data-university-picker data-search-url="{{ route('admin.manual-actions.universities.search') }}">
+        <label class="manual-field manual-university-picker" data-university-picker data-search-url="{{ route('admin.manual-actions.universities.search', [], false) }}">
           <span>University</span>
           <input
             id="manualUniversitySearch"

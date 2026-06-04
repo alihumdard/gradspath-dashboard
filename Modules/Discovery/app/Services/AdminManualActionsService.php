@@ -12,6 +12,8 @@ use Modules\Settings\app\Models\Mentor;
 
 class AdminManualActionsService
 {
+    public function __construct(private readonly TopInstitutionService $topInstitutions) {}
+
     public function build(): array
     {
         $institutionsCount = University::query()->count();
@@ -108,6 +110,32 @@ class AdminManualActionsService
             ->limit(100)
             ->get();
 
+        $featuredSetting = $this->topInstitutions->setting();
+        $manualFeaturedInstitutions = $this->topInstitutions->manualSelections();
+        $automaticFeaturedInstitutions = $this->topInstitutions->automaticPreview();
+        $initialActiveInstitutionOptions = University::query()
+            ->where('is_active', true)
+            ->orderByRaw('COALESCE(display_name, name)')
+            ->orderBy('name')
+            ->limit(10)
+            ->get(['id', 'name', 'display_name']);
+
+        $manualFeaturedIds = $manualFeaturedInstitutions
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $selectedActiveInstitutionOptions = University::query()
+            ->where('is_active', true)
+            ->whereIn('id', $manualFeaturedIds)
+            ->get(['id', 'name', 'display_name']);
+
+        $activeInstitutionOptions = $initialActiveInstitutionOptions
+            ->merge($selectedActiveInstitutionOptions)
+            ->unique('id')
+            ->sortBy(fn (University $institution) => $institution->display_name ?: $institution->name)
+            ->values();
+
         return [
             'summary' => [
                 'mentor_actions' => $mentors->count(),
@@ -191,6 +219,26 @@ class AdminManualActionsService
                 'is_active' => (bool) $institution->is_active,
                 'programs_count' => (int) $institution->programs_count,
             ])->values()->all(),
+            'featured_institutions' => [
+                'mode' => $featuredSetting->mode,
+                'last_recalculated_at' => $featuredSetting->last_recalculated_at?->toIso8601String(),
+                'options' => $activeInstitutionOptions->map(fn (University $institution) => [
+                    'id' => $institution->id,
+                    'label' => $institution->display_name ?: $institution->name,
+                    'name' => $institution->name,
+                ])->values()->all(),
+                'manual' => $manualFeaturedInstitutions->map(fn (University $institution, int $index) => [
+                    'id' => $institution->id,
+                    'label' => $institution->display_name ?: $institution->name,
+                    'sort_order' => $index + 1,
+                ])->values()->all(),
+                'automatic' => $automaticFeaturedInstitutions->map(fn (University $institution, int $index) => [
+                    'id' => $institution->id,
+                    'label' => $institution->display_name ?: $institution->name,
+                    'rank' => $index + 1,
+                    'meetings_count' => (int) $institution->bookings_count,
+                ])->values()->all(),
+            ],
             'programs' => $programs->map(fn (UniversityProgram $program) => [
                 'id' => $program->id,
                 'label' => $program->program_name.' - '.($program->university?->display_name ?: $program->university?->name ?: 'Unknown university'),

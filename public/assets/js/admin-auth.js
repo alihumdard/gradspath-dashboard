@@ -2335,7 +2335,6 @@ function initializeManualActionsHub() {
     const feedbackItems = Array.isArray(adminManualActionsData.feedback)
         ? adminManualActionsData.feedback
         : [];
-
     const mentorSelect = document.getElementById("manualMentorSelect");
     const mentorSummary = document.getElementById("manualMentorSummary");
     const featuredMentorList = document.getElementById(
@@ -2469,6 +2468,222 @@ function initializeManualActionsHub() {
 
             option.hidden = !matches && !isSelected;
         });
+    }
+
+    function initializeFeaturedInstitutionPickers() {
+        const list = document.getElementById("manualFeaturedInstitutionSelect");
+        const search = document.getElementById("manualFeaturedInstitutionSearch");
+        const fields = document.getElementById("manualFeaturedInstitutionFields");
+        const searchUrl = list?.dataset.searchUrl;
+        const limit = 5;
+        const optionCache = new Map();
+        let featuredInstitutionOrder = fields
+            ? Array.from(fields.querySelectorAll('input[name$="[university_id]"]'))
+                  .map((input) => String(input.value || "").trim())
+                  .filter(Boolean)
+            : [];
+        let requestToken = 0;
+        let debounceTimer = null;
+
+        if (!list || !search || !fields || !searchUrl) {
+            return;
+        }
+
+        function rememberOption(option) {
+            if (!option?.id) {
+                return;
+            }
+
+            optionCache.set(String(option.id), {
+                id: String(option.id),
+                label: option.label || option.name || "Institution",
+                name: option.name || "",
+            });
+        }
+
+        function optionFromElement(element) {
+            return {
+                id: element.dataset.institutionId || "",
+                label: element.dataset.institutionLabel || "",
+                name: element.dataset.institutionName || "",
+            };
+        }
+
+        Array.from(list.querySelectorAll("[data-institution-option]")).forEach(
+            (element) => rememberOption(optionFromElement(element)),
+        );
+
+        function selectedOptionIds() {
+            return featuredInstitutionOrder.slice(0, limit);
+        }
+
+        function checkedInputs() {
+            return Array.from(list.querySelectorAll('input[type="checkbox"]:checked'));
+        }
+
+        function optionMarkup(option) {
+            const id = String(option.id);
+            const checked = selectedOptionIds().includes(id) ? " checked" : "";
+            const label = option.label || option.name || "Institution";
+            const name = option.name || "";
+
+            return `
+                <label
+                    class="manual-featured-mentor-option"
+                    data-institution-option
+                    data-institution-id="${escapeHtml(id)}"
+                    data-institution-label="${escapeHtml(label)}"
+                    data-institution-name="${escapeHtml(name)}"
+                    data-search-text="${escapeHtml(`${label} ${name}`.toLowerCase())}"
+                >
+                    <input type="checkbox" value="${escapeHtml(id)}"${checked} />
+                    <span class="manual-featured-mentor-rank" data-featured-institution-rank></span>
+                    <span class="manual-featured-mentor-copy">
+                        <strong>${escapeHtml(label)}</strong>
+                        <small>${escapeHtml(name)}</small>
+                    </span>
+                </label>
+            `;
+        }
+
+        function renderOptions(options = []) {
+            options.forEach(rememberOption);
+
+            const selectedOptions = selectedOptionIds()
+                .map((id) => optionCache.get(String(id)))
+                .filter(Boolean);
+            const visibleOptions = options.filter(
+                (option) => !selectedOptionIds().includes(String(option.id)),
+            );
+            const mergedOptions = [...selectedOptions, ...visibleOptions].slice(0, 15);
+
+            list.innerHTML = mergedOptions.length
+                ? mergedOptions.map(optionMarkup).join("")
+                : '<div class="manual-picker-empty">No institutions found</div>';
+        }
+
+        function renderSearchError() {
+            const selectedOptions = selectedOptionIds()
+                .map((id) => optionCache.get(String(id)))
+                .filter(Boolean);
+
+            list.innerHTML = [
+                ...selectedOptions.map(optionMarkup),
+                '<div class="manual-picker-empty">Search failed. Please try again.</div>',
+            ].join("");
+        }
+
+        function syncHiddenFields() {
+            const checkedIds = checkedInputs().map((input) => String(input.value));
+
+            featuredInstitutionOrder = featuredInstitutionOrder.filter((id) =>
+                checkedIds.includes(id),
+            );
+            checkedIds.forEach((id) => {
+                if (!featuredInstitutionOrder.includes(id)) {
+                    featuredInstitutionOrder.push(id);
+                }
+            });
+
+            fields.innerHTML = featuredInstitutionOrder
+                .slice(0, limit)
+                .map(
+                    (id, index) => `
+                        <input type="hidden" name="institutions[${index}][university_id]" value="${escapeHtml(id)}" />
+                        <input type="hidden" name="institutions[${index}][sort_order]" value="${index + 1}" />
+                    `,
+                )
+                .join("");
+
+            list.querySelectorAll(".manual-featured-mentor-option").forEach((option) => {
+                const input = option.querySelector('input[type="checkbox"]');
+                const rank = option.querySelector("[data-featured-institution-rank]");
+                const index = input
+                    ? featuredInstitutionOrder.indexOf(String(input.value))
+                    : -1;
+
+                if (rank) {
+                    rank.textContent = index >= 0 ? `#${index + 1}` : "";
+                }
+            });
+        }
+
+        async function fetchInstitutions(query = "") {
+            const token = ++requestToken;
+            const url = new URL(searchUrl, window.location.origin);
+
+            if (query) {
+                url.searchParams.set("q", query);
+            }
+
+            url.searchParams.set("per_page", "10");
+
+            try {
+                const response = await fetch(url.toString(), {
+                    headers: { Accept: "application/json" },
+                });
+
+                if (!response.ok || token !== requestToken) {
+                    return;
+                }
+
+                const payload = await response.json();
+                renderOptions(Array.isArray(payload.data) ? payload.data : []);
+                syncHiddenFields();
+            } catch (error) {
+                renderSearchError();
+                syncHiddenFields();
+            }
+        }
+
+        list.addEventListener("change", (event) => {
+            const changedInput = event.target?.matches?.('input[type="checkbox"]')
+                ? event.target
+                : null;
+
+            if (!changedInput) {
+                return;
+            }
+
+            if (changedInput.checked) {
+                featuredInstitutionOrder = featuredInstitutionOrder.filter(
+                    (id) => id !== String(changedInput.value),
+                );
+                featuredInstitutionOrder.push(String(changedInput.value));
+            } else {
+                featuredInstitutionOrder = featuredInstitutionOrder.filter(
+                    (id) => id !== String(changedInput.value),
+                );
+            }
+
+            if (checkedInputs().length > limit && changedInput.checked) {
+                changedInput.checked = false;
+                featuredInstitutionOrder = featuredInstitutionOrder.filter(
+                    (id) => id !== String(changedInput.value),
+                );
+                window.AppToast?.show({
+                    type: "warning",
+                    title: "Limit reached",
+                    message: "Choose up to 5 institutions for the dashboard.",
+                });
+            }
+
+            syncHiddenFields();
+        });
+
+        search.addEventListener("focus", () => {
+            fetchInstitutions(search.value.trim());
+        });
+
+        search.addEventListener("input", () => {
+            window.clearTimeout(debounceTimer);
+            debounceTimer = window.setTimeout(() => {
+                fetchInstitutions(search.value.trim());
+            }, 220);
+        });
+
+        renderOptions(Array.from(optionCache.values()).slice(0, 10));
+        syncHiddenFields();
     }
 
     function syncUserSummary() {
@@ -2673,6 +2888,7 @@ function initializeManualActionsHub() {
     userSelect?.addEventListener("change", syncUserSummary);
     pricingSelect?.addEventListener("change", syncPricingSummary);
     feedbackSelect?.addEventListener("change", syncFeedbackSummary);
+    initializeFeaturedInstitutionPickers();
 
     function initializeUniversityPicker() {
         const picker = app.querySelector("[data-university-picker]");
