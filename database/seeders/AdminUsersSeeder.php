@@ -18,7 +18,7 @@ class AdminUsersSeeder extends Seeder
             ],
             [
                 'name' => 'Tyler Cogan',
-                'email' => 'tcogan5@gmail.com',
+                'email' => 'tcogan5@yopmail.com',
                 'password' => 'Password123!',
             ],
         ];
