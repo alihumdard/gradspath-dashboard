@@ -10,6 +10,10 @@
   $featuredAutomaticRows = $featuredInstitutions['automatic'] ?? [];
   $lastFeaturedRefresh = $featuredInstitutions['last_recalculated_at'] ?? null;
   $featuredInstitutionLimit = 5;
+  $institutionUpdateRouteTemplate = route('admin.manual-actions.institutions.update', ['id' => '__ID__'], false);
+  $programUpdateRouteTemplate = route('admin.manual-actions.programs.update', ['id' => '__ID__'], false);
+  $initialInstitution = collect($institutions)->first();
+  $initialProgram = collect($programs)->first();
   $featuredInstitutionIds = collect($featuredManualRows)
       ->map(fn ($row) => (string) ($row['university_id'] ?? $row['id'] ?? ''))
       ->filter()
@@ -108,11 +112,116 @@
         <ul>
           @foreach (collect($institutions)->take(6) as $institution)
             <li>
-              <strong>{{ $institution['label'] }}</strong>
+              @if (! empty($institution['logo_preview_url']))
+                <span class="manual-logo-row">
+                  <img src="{{ $institution['logo_preview_url'] }}" alt="" loading="lazy">
+                  <strong>{{ $institution['label'] }}</strong>
+                </span>
+              @else
+                <strong>{{ $institution['label'] }}</strong>
+              @endif
               <span>{{ $institution['country'] }} · {{ $institution['programs_count'] }} programs</span>
             </li>
           @endforeach
         </ul>
+      </aside>
+    </div>
+  </div>
+
+  <div class="manual-panel" id="manual-section-institution-edit" data-section-panel="institutions">
+    <div class="manual-panel__copy">
+      <h4>Edit institution</h4>
+      <p>Update institution names, location, active status, and logo assets used across dashboards and Explore by University.</p>
+    </div>
+
+    <div class="manual-panel__grid">
+      <form
+        class="manual-form"
+        method="POST"
+        action=""
+        enctype="multipart/form-data"
+        id="manualInstitutionEditForm"
+        data-update-route-template="{{ $institutionUpdateRouteTemplate }}"
+      >
+        @csrf
+        @method('PATCH')
+        <input type="hidden" name="manual_section" value="institutions" />
+
+        <label
+          class="manual-field manual-field--full manual-university-picker"
+          data-institution-edit-picker
+          data-search-url="{{ route('admin.manual-actions.universities.search', [], false) }}"
+        >
+          <span>Institution to edit</span>
+          <input
+            id="manualInstitutionEditSearch"
+            type="text"
+            value="{{ $initialInstitution['label'] ?? '' }}"
+            placeholder="Search institutions..."
+            autocomplete="off"
+            data-institution-edit-search
+          />
+          <input id="manualInstitutionEditId" type="hidden" value="{{ $initialInstitution['id'] ?? '' }}" data-institution-edit-id required />
+          <div class="manual-picker-results" data-institution-edit-results hidden></div>
+        </label>
+
+        <label class="manual-field">
+          <span>Institution name</span>
+          <input name="name" type="text" required data-institution-field="name" />
+        </label>
+
+        <label class="manual-field">
+          <span>Display name</span>
+          <input name="display_name" type="text" required data-institution-field="display_name" />
+        </label>
+
+        <label class="manual-field">
+          <span>Country</span>
+          <input name="country" type="text" required data-institution-field="country" />
+        </label>
+
+        <label class="manual-field">
+          <span>City</span>
+          <input name="city" type="text" required data-institution-field="city" />
+        </label>
+
+        <label class="manual-field">
+          <span>State / province</span>
+          <input name="state_province" type="text" required data-institution-field="state_province" />
+        </label>
+
+        <label class="manual-field manual-field--full">
+          <span>Domains</span>
+          <textarea name="domains" rows="2" data-institution-field="domains"></textarea>
+        </label>
+
+        <label class="manual-field manual-field--full">
+          <span>Web pages</span>
+          <textarea name="web_pages" rows="2" data-institution-field="web_pages"></textarea>
+        </label>
+
+        <label class="manual-field">
+          <span>Replace logo upload</span>
+          <input name="logo_file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+        </label>
+
+        <label class="manual-field">
+          <span>Logo URL or public path</span>
+          <input name="logo_url" type="text" data-institution-field="logo_url" />
+        </label>
+
+        <label class="manual-check">
+          <input name="is_active" type="hidden" value="0" />
+          <input name="is_active" type="checkbox" value="1" data-institution-field="is_active" />
+          <span>Institution is active</span>
+        </label>
+
+        <button class="primary-btn manual-submit-btn" type="submit">Save institution</button>
+      </form>
+
+      <aside class="manual-summary" id="manualInstitutionEditSummary">
+        <h5>Institution preview</h5>
+        <p>Select an institution to preview its logo and saved details.</p>
       </aside>
     </div>
   </div>
@@ -306,6 +415,104 @@
             </li>
           @endforeach
         </ul>
+      </aside>
+    </div>
+  </div>
+
+  <div class="manual-panel" id="manual-section-program-edit" data-section-panel="programs">
+    <div class="manual-panel__copy">
+      <h4>Edit program</h4>
+      <p>Update program type, tier, description, duration, and active state for existing university programs.</p>
+    </div>
+
+    <div class="manual-panel__grid">
+      <form
+        class="manual-form"
+        method="POST"
+        action=""
+        id="manualProgramEditForm"
+        data-update-route-template="{{ $programUpdateRouteTemplate }}"
+      >
+        @csrf
+        @method('PATCH')
+        <input type="hidden" name="manual_section" value="programs" />
+
+        <label
+          class="manual-field manual-field--full manual-university-picker"
+          data-program-edit-picker
+          data-search-url="{{ route('admin.manual-actions.programs.search', [], false) }}"
+        >
+          <span>Program to edit</span>
+          <input
+            id="manualProgramEditSearch"
+            type="text"
+            value="{{ $initialProgram['label'] ?? '' }}"
+            placeholder="Search programs..."
+            autocomplete="off"
+            data-program-edit-search
+          />
+          <input id="manualProgramEditId" type="hidden" value="{{ $initialProgram['id'] ?? '' }}" data-program-edit-id required />
+          <div class="manual-picker-results" data-program-edit-results hidden></div>
+        </label>
+
+        <label class="manual-field manual-university-picker" data-university-picker data-search-url="{{ route('admin.manual-actions.universities.search', [], false) }}">
+          <span>University</span>
+          <input
+            type="text"
+            value=""
+            placeholder="Search universities..."
+            autocomplete="off"
+            data-university-search
+          />
+          <input name="university_id" type="hidden" value="" data-university-id data-program-field="university_id" required />
+          <div class="manual-picker-results" data-university-results hidden></div>
+        </label>
+
+        <label class="manual-field">
+          <span>Program name</span>
+          <input name="program_name" type="text" required data-program-field="name" />
+        </label>
+
+        <label class="manual-field">
+          <span>Program type</span>
+          <select name="program_type" required data-program-field="program_type">
+            @foreach ($programTypes as $value => $label)
+              <option value="{{ $value }}">{{ $label }}</option>
+            @endforeach
+          </select>
+        </label>
+
+        <label class="manual-field">
+          <span>Tier</span>
+          <select name="tier" required data-program-field="tier">
+            @foreach ($programTiers as $value => $label)
+              <option value="{{ $value }}">{{ $label }}</option>
+            @endforeach
+          </select>
+        </label>
+
+        <label class="manual-field">
+          <span>Duration (months)</span>
+          <input name="duration_months" type="number" min="1" data-program-field="duration_months" />
+        </label>
+
+        <label class="manual-field manual-field--full">
+          <span>Description</span>
+          <textarea name="description" rows="3" data-program-field="description"></textarea>
+        </label>
+
+        <label class="manual-check">
+          <input name="is_active" type="hidden" value="0" />
+          <input name="is_active" type="checkbox" value="1" data-program-field="is_active" />
+          <span>Program is active</span>
+        </label>
+
+        <button class="primary-btn manual-submit-btn" type="submit">Save program</button>
+      </form>
+
+      <aside class="manual-summary" id="manualProgramEditSummary">
+        <h5>Program preview</h5>
+        <p>Select a program to preview its saved details.</p>
       </aside>
     </div>
   </div>

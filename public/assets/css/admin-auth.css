@@ -3272,6 +3272,39 @@ td span {
   gap: 3px;
 }
 
+.manual-logo-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.manual-logo-row img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  padding: 4px;
+}
+
+.manual-logo-preview {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.88);
+  padding: 10px;
+}
+
+.manual-logo-preview--empty {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .manual-summary__meta {
   display: grid;
   gap: 10px;

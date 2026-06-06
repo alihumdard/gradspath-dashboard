@@ -395,24 +395,25 @@ Scope:
 - [x] Added admin manual-action UI and route for choosing up to 6 featured mentors.
 - [x] Kept `mentors.is_featured` as the featured/manual selection flag.
 
-### 15. Admin Institutions / Explore by University program tier/type and logos
+### 15. Admin Institutions / Explore by University program tier/type and logos - (Done)
 
 **Client question:** Admin must manage Institutions, Program Tier, Program Type, and logos as in `image8`.
 
-**Answer:** Extend admin institutions/program UI.
+**Answer:** Done. Admin can create and edit institutions/programs, including institution logos and program tier/type settings.
 
 **Current finding:** `UniversityProgram` already has `program_type` and `tier`. `University` already has `logo_url`. Admin routes/controllers exist for institutions and programs.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Add logo upload/display to admin institution forms.
-- Add/edit full institution name and display name separately.
-- Ensure program form supports:
+- [x] Added logo upload/display and preview to admin institution forms.
+- [x] Added/edit full institution name and display name separately.
+- [x] Ensured program create/edit forms support:
   - Program Type.
   - Program Tier.
   - Active/inactive.
   - Description.
-- Add validation and preview.
+- [x] Added validation and admin preview.
+- [x] Added focused feature test coverage for manual institution/program edits.
 
 ### 16. Institution detail mentor cards and dark button color
 

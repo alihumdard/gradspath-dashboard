@@ -2332,6 +2332,12 @@ function initializeManualActionsHub() {
     const services = Array.isArray(adminManualActionsData.services)
         ? adminManualActionsData.services
         : [];
+    const institutions = Array.isArray(adminManualActionsData.institutions)
+        ? adminManualActionsData.institutions
+        : [];
+    const programs = Array.isArray(adminManualActionsData.programs)
+        ? adminManualActionsData.programs
+        : [];
     const feedbackItems = Array.isArray(adminManualActionsData.feedback)
         ? adminManualActionsData.feedback
         : [];
@@ -2364,6 +2370,22 @@ function initializeManualActionsHub() {
         : [];
     const feedbackSelect = document.getElementById("manualFeedbackSelect");
     const feedbackSummary = document.getElementById("manualFeedbackSummary");
+    const institutionEditId = document.getElementById("manualInstitutionEditId");
+    const institutionEditForm = document.getElementById(
+        "manualInstitutionEditForm",
+    );
+    const institutionEditSummary = document.getElementById(
+        "manualInstitutionEditSummary",
+    );
+    const programEditId = document.getElementById("manualProgramEditId");
+    const programEditForm = document.getElementById("manualProgramEditForm");
+    const programEditSummary = document.getElementById("manualProgramEditSummary");
+    const institutionEditCache = new Map(
+        institutions.map((institution) => [String(institution.id), institution]),
+    );
+    const programEditCache = new Map(
+        programs.map((program) => [String(program.id), program]),
+    );
     let featuredMentorOrder = featuredMentorOrderInput?.value
         ? featuredMentorOrderInput.value
               .split(",")
@@ -2812,6 +2834,339 @@ function initializeManualActionsHub() {
         ].some((field) => service[field] !== null && service[field] !== undefined && service[field] !== "");
     }
 
+    function setFormRoute(form, id) {
+        if (!form) {
+            return;
+        }
+
+        const template = form.dataset.updateRouteTemplate || "";
+        form.action = id && template ? template.replace("__ID__", encodeURIComponent(id)) : "";
+    }
+
+    function setFieldValue(form, selector, value) {
+        const input = form?.querySelector(selector);
+
+        if (!input) {
+            return;
+        }
+
+        if (input.type === "checkbox") {
+            input.checked = Boolean(value);
+            return;
+        }
+
+        input.value = value === null || value === undefined || value === "-" ? "" : value;
+    }
+
+    function syncInstitutionEditForm() {
+        const institution = institutionEditCache.get(
+            String(institutionEditId?.value || ""),
+        );
+
+        if (!institution || !institutionEditForm) {
+            return;
+        }
+
+        setFormRoute(institutionEditForm, institution.id);
+        setFieldValue(institutionEditForm, '[data-institution-field="name"]', institution.name);
+        setFieldValue(
+            institutionEditForm,
+            '[data-institution-field="display_name"]',
+            institution.display_name || institution.label,
+        );
+        setFieldValue(institutionEditForm, '[data-institution-field="country"]', institution.country);
+        setFieldValue(institutionEditForm, '[data-institution-field="city"]', institution.city);
+        setFieldValue(
+            institutionEditForm,
+            '[data-institution-field="state_province"]',
+            institution.state_province,
+        );
+        setFieldValue(institutionEditForm, '[data-institution-field="domains"]', institution.domains);
+        setFieldValue(institutionEditForm, '[data-institution-field="web_pages"]', institution.web_pages);
+        setFieldValue(institutionEditForm, '[data-institution-field="logo_url"]', institution.logo_url);
+        setFieldValue(
+            institutionEditForm,
+            '[data-institution-field="is_active"]',
+            institution.is_active,
+        );
+
+        const logoMarkup = institution.logo_preview_url
+            ? `<img class="manual-logo-preview" src="${escapeHtml(institution.logo_preview_url)}" alt="" loading="lazy">`
+            : '<div class="manual-logo-preview manual-logo-preview--empty">No logo</div>';
+
+        if (institutionEditSummary) {
+            institutionEditSummary.innerHTML = `
+                <h5>Institution preview</h5>
+                ${logoMarkup}
+                <div class="manual-summary__meta">
+                    <div><strong>${escapeHtml(institution.label || institution.name)}</strong><div>${escapeHtml(institution.name || "-")}</div></div>
+                    <div><strong>Location</strong><div>${escapeHtml([institution.city, institution.state_province, institution.country].filter(Boolean).join(" · ") || "-")}</div></div>
+                    <div><strong>Programs</strong><div>${escapeHtml(institution.programs_count ?? 0)} programs</div></div>
+                    <div><strong>Status</strong><div>${institution.is_active ? "Active" : "Inactive"}</div></div>
+                </div>
+            `;
+        }
+    }
+
+    function syncProgramEditForm() {
+        const program = programEditCache.get(String(programEditId?.value || ""));
+
+        if (!program || !programEditForm) {
+            return;
+        }
+
+        setFormRoute(programEditForm, program.id);
+        setFieldValue(programEditForm, '[data-program-field="university_id"]', program.university_id);
+        const universitySearchInput = programEditForm.querySelector("[data-university-search]");
+        if (universitySearchInput) {
+            universitySearchInput.value = program.university || "";
+        }
+        setFieldValue(programEditForm, '[data-program-field="name"]', program.name);
+        setFieldValue(programEditForm, '[data-program-field="program_type"]', program.program_type);
+        setFieldValue(programEditForm, '[data-program-field="tier"]', program.tier);
+        setFieldValue(programEditForm, '[data-program-field="duration_months"]', program.duration_months);
+        setFieldValue(programEditForm, '[data-program-field="description"]', program.description);
+        setFieldValue(programEditForm, '[data-program-field="is_active"]', program.is_active);
+
+        if (programEditSummary) {
+            renderSummary(programEditSummary, [
+                { label: "Program", value: `${program.name} at ${program.university}` },
+                { label: "Type", value: String(program.program_type || "-").toUpperCase() },
+                { label: "Tier", value: program.tier || "-" },
+                { label: "Duration", value: program.duration_months ? `${program.duration_months} months` : "-" },
+                { label: "Status", value: program.is_active ? "Active" : "Inactive" },
+                { label: "Description", value: program.description || "-" },
+            ]);
+        }
+    }
+
+    function initializeRemotePicker({
+        picker,
+        searchInput,
+        idInput,
+        results,
+        searchUrl,
+        includeInactive = false,
+        emptyText = "No results found",
+        optionAttr = "data-picker-option",
+        loadMoreAttr = "data-picker-load-more",
+        meta = () => "",
+        remember = () => {},
+        onSelect = () => {},
+    }) {
+        let currentQuery = "";
+        let nextPage = null;
+        let selectedLabel = searchInput.value || "";
+        let requestToken = 0;
+        let debounceTimer = null;
+        const cache = new Map();
+
+        function hideResults() {
+            results.hidden = true;
+        }
+
+        function showResults() {
+            results.hidden = false;
+        }
+
+        function rememberItems(items = []) {
+            items.forEach((item) => {
+                if (!item?.id) return;
+                cache.set(String(item.id), item);
+                remember(item);
+            });
+        }
+
+        function renderItems(items, append = false) {
+            rememberItems(items);
+
+            const html = items.length
+                ? items
+                      .map((item) => {
+                          const itemMeta = meta(item);
+
+                          return `
+                            <button class="manual-picker-option" type="button" ${optionAttr}="${escapeHtml(item.id)}" data-picker-label="${escapeHtml(item.label || item.name || "Result")}">
+                                <strong>${escapeHtml(item.label || item.name || "Result")}</strong>
+                                <small>${escapeHtml(itemMeta || "")}</small>
+                            </button>
+                        `;
+                      })
+                      .join("")
+                : `<div class="manual-picker-empty">${escapeHtml(emptyText)}</div>`;
+
+            results.innerHTML = append ? results.innerHTML + html : html;
+
+            if (nextPage) {
+                results.insertAdjacentHTML(
+                    "beforeend",
+                    `<button class="manual-picker-load" type="button" ${loadMoreAttr}>Load more</button>`,
+                );
+            }
+
+            showResults();
+        }
+
+        async function fetchItems({ query = "", page = 1, selectedId = "" } = {}) {
+            const token = ++requestToken;
+            const url = new URL(searchUrl, window.location.origin);
+
+            if (query) url.searchParams.set("q", query);
+            if (page > 1) url.searchParams.set("page", String(page));
+            if (selectedId) url.searchParams.set("selected_id", selectedId);
+            if (includeInactive) url.searchParams.set("include_inactive", "1");
+            url.searchParams.set("per_page", "10");
+
+            const response = await fetch(url.toString(), {
+                headers: { Accept: "application/json" },
+            });
+
+            if (!response.ok || token !== requestToken) {
+                return null;
+            }
+
+            return response.json();
+        }
+
+        async function searchItems(query = "", page = 1, append = false) {
+            currentQuery = query;
+            const payload = await fetchItems({ query, page });
+
+            if (!payload) return;
+
+            nextPage = payload.next_page;
+            renderItems(Array.isArray(payload.data) ? payload.data : [], append);
+        }
+
+        async function hydrateSelectedItem() {
+            if (!idInput.value) return;
+
+            const existing = cache.get(String(idInput.value));
+
+            if (existing) {
+                selectedLabel = existing.label || existing.name || "";
+                searchInput.value = selectedLabel;
+                onSelect(existing);
+                return;
+            }
+
+            const payload = await fetchItems({ selectedId: idInput.value });
+            const item = payload?.data?.[0];
+
+            if (!item) return;
+
+            rememberItems([item]);
+            selectedLabel = item.label || item.name || "";
+            searchInput.value = selectedLabel;
+            onSelect(item);
+        }
+
+        searchInput.addEventListener("focus", () => {
+            searchItems(searchInput.value.trim());
+        });
+
+        searchInput.addEventListener("input", () => {
+            if (searchInput.value !== selectedLabel) {
+                selectedLabel = "";
+                idInput.value = "";
+            }
+
+            window.clearTimeout(debounceTimer);
+            debounceTimer = window.setTimeout(() => {
+                searchItems(searchInput.value.trim());
+            }, 220);
+        });
+
+        results.addEventListener("click", (event) => {
+            const option = event.target.closest(`[${optionAttr}]`);
+            const loadMore = event.target.closest(`[${loadMoreAttr}]`);
+
+            if (option) {
+                const id = option.getAttribute(optionAttr) || "";
+                idInput.value = id;
+                selectedLabel = option.dataset.pickerLabel || "";
+                searchInput.value = selectedLabel;
+                hideResults();
+                onSelect(cache.get(String(id)) || { id, label: selectedLabel });
+                return;
+            }
+
+            if (loadMore && nextPage) {
+                loadMore.remove();
+                searchItems(currentQuery, nextPage, true);
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!picker.contains(event.target)) {
+                hideResults();
+            }
+        });
+
+        hydrateSelectedItem();
+    }
+
+    function initializeInstitutionEditPicker() {
+        const picker = app.querySelector("[data-institution-edit-picker]");
+        const searchInput = picker?.querySelector("[data-institution-edit-search]");
+        const idInput = picker?.querySelector("[data-institution-edit-id]");
+        const results = picker?.querySelector("[data-institution-edit-results]");
+        const searchUrl = picker?.dataset.searchUrl;
+
+        if (!picker || !searchInput || !idInput || !results || !searchUrl) {
+            return;
+        }
+
+        initializeRemotePicker({
+            picker,
+            searchInput,
+            idInput,
+            results,
+            searchUrl,
+            includeInactive: true,
+            emptyText: "No institutions found",
+            optionAttr: "data-edit-institution-option",
+            loadMoreAttr: "data-edit-institution-load-more",
+            meta: (item) => [item.country, item.state_province].filter(Boolean).join(" · "),
+            remember: (item) => institutionEditCache.set(String(item.id), item),
+            onSelect: (item) => {
+                institutionEditCache.set(String(item.id), item);
+                syncInstitutionEditForm();
+            },
+        });
+    }
+
+    function initializeProgramEditPicker() {
+        const picker = app.querySelector("[data-program-edit-picker]");
+        const searchInput = picker?.querySelector("[data-program-edit-search]");
+        const idInput = picker?.querySelector("[data-program-edit-id]");
+        const results = picker?.querySelector("[data-program-edit-results]");
+        const searchUrl = picker?.dataset.searchUrl;
+
+        if (!picker || !searchInput || !idInput || !results || !searchUrl) {
+            return;
+        }
+
+        initializeRemotePicker({
+            picker,
+            searchInput,
+            idInput,
+            results,
+            searchUrl,
+            emptyText: "No programs found",
+            optionAttr: "data-edit-program-option",
+            loadMoreAttr: "data-edit-program-load-more",
+            meta: (item) => [item.university, String(item.program_type || "").toUpperCase(), item.tier]
+                .filter(Boolean)
+                .join(" · "),
+            remember: (item) => programEditCache.set(String(item.id), item),
+            onSelect: (item) => {
+                programEditCache.set(String(item.id), item);
+                syncProgramEditForm();
+            },
+        });
+    }
+
     function syncFeedbackSummary() {
         const item = feedbackItems.find(
             (feedback) =>
@@ -2889,146 +3244,34 @@ function initializeManualActionsHub() {
     pricingSelect?.addEventListener("change", syncPricingSummary);
     feedbackSelect?.addEventListener("change", syncFeedbackSummary);
     initializeFeaturedInstitutionPickers();
+    initializeInstitutionEditPicker();
+    initializeProgramEditPicker();
 
     function initializeUniversityPicker() {
-        const picker = app.querySelector("[data-university-picker]");
-        const searchInput = picker?.querySelector("[data-university-search]");
-        const idInput = picker?.querySelector("[data-university-id]");
-        const results = picker?.querySelector("[data-university-results]");
-        const searchUrl = picker?.dataset.searchUrl;
+        app.querySelectorAll("[data-university-picker]").forEach((picker, index) => {
+            const searchInput = picker.querySelector("[data-university-search]");
+            const idInput = picker.querySelector("[data-university-id]");
+            const results = picker.querySelector("[data-university-results]");
+            const searchUrl = picker.dataset.searchUrl;
 
-        if (!picker || !searchInput || !idInput || !results || !searchUrl) {
-            return;
-        }
-
-        let currentQuery = "";
-        let nextPage = null;
-        let selectedLabel = "";
-        let requestToken = 0;
-        let debounceTimer = null;
-
-        function hideResults() {
-            results.hidden = true;
-        }
-
-        function showResults() {
-            results.hidden = false;
-        }
-
-        function universityMeta(university) {
-            return [university.country, university.state_province]
-                .filter(Boolean)
-                .join(" · ");
-        }
-
-        function renderUniversities(universities, append = false) {
-            const html = universities.length
-                ? universities
-                      .map(
-                          (university) => `
-                            <button class="manual-picker-option" type="button" data-university-option="${escapeHtml(university.id)}" data-university-label="${escapeHtml(university.label)}">
-                                <strong>${escapeHtml(university.label)}</strong>
-                                <small>${escapeHtml(universityMeta(university))}</small>
-                            </button>
-                        `,
-                      )
-                      .join("")
-                : '<div class="manual-picker-empty">No universities found</div>';
-
-            results.innerHTML = append ? results.innerHTML + html : html;
-
-            if (nextPage) {
-                results.insertAdjacentHTML(
-                    "beforeend",
-                    '<button class="manual-picker-load" type="button" data-university-load-more>Load more universities</button>',
-                );
-            }
-
-            showResults();
-        }
-
-        async function fetchUniversities({ query = "", page = 1, selectedId = "" } = {}) {
-            const token = ++requestToken;
-            const url = new URL(searchUrl, window.location.origin);
-
-            if (query) url.searchParams.set("q", query);
-            if (page > 1) url.searchParams.set("page", String(page));
-            if (selectedId) url.searchParams.set("selected_id", selectedId);
-
-            const response = await fetch(url.toString(), {
-                headers: { Accept: "application/json" },
-            });
-
-            if (!response.ok || token !== requestToken) {
-                return null;
-            }
-
-            return response.json();
-        }
-
-        async function searchUniversities(query = "", page = 1, append = false) {
-            currentQuery = query;
-            const payload = await fetchUniversities({ query, page });
-
-            if (!payload) return;
-
-            nextPage = payload.next_page;
-            renderUniversities(Array.isArray(payload.data) ? payload.data : [], append);
-        }
-
-        async function hydrateSelectedUniversity() {
-            if (!idInput.value) return;
-
-            const payload = await fetchUniversities({ selectedId: idInput.value });
-            const university = payload?.data?.[0];
-
-            if (!university) return;
-
-            selectedLabel = university.label;
-            searchInput.value = university.label;
-        }
-
-        searchInput.addEventListener("focus", () => {
-            searchUniversities(searchInput.value.trim());
-        });
-
-        searchInput.addEventListener("input", () => {
-            if (searchInput.value !== selectedLabel) {
-                selectedLabel = "";
-                idInput.value = "";
-            }
-
-            window.clearTimeout(debounceTimer);
-            debounceTimer = window.setTimeout(() => {
-                searchUniversities(searchInput.value.trim());
-            }, 220);
-        });
-
-        results.addEventListener("click", (event) => {
-            const option = event.target.closest("[data-university-option]");
-            const loadMore = event.target.closest("[data-university-load-more]");
-
-            if (option) {
-                idInput.value = option.dataset.universityOption || "";
-                selectedLabel = option.dataset.universityLabel || "";
-                searchInput.value = selectedLabel;
-                hideResults();
+            if (!searchInput || !idInput || !results || !searchUrl) {
                 return;
             }
 
-            if (loadMore && nextPage) {
-                loadMore.remove();
-                searchUniversities(currentQuery, nextPage, true);
-            }
+            initializeRemotePicker({
+                picker,
+                searchInput,
+                idInput,
+                results,
+                searchUrl,
+                emptyText: "No universities found",
+                optionAttr: `data-university-option-${index}`,
+                loadMoreAttr: `data-university-load-more-${index}`,
+                meta: (university) => [university.country, university.state_province]
+                    .filter(Boolean)
+                    .join(" · "),
+            });
         });
-
-        document.addEventListener("click", (event) => {
-            if (!picker.contains(event.target)) {
-                hideResults();
-            }
-        });
-
-        hydrateSelectedUniversity();
     }
 
     initializeUniversityPicker();
@@ -3080,6 +3323,8 @@ function initializeManualActionsHub() {
     syncUserSummary();
     syncPricingSummary();
     syncFeedbackSummary();
+    syncInstitutionEditForm();
+    syncProgramEditForm();
     setSection(initialSection);
     syncFeaturedMentorOrderInput();
     syncFeaturedMentorSummary();

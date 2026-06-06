@@ -25,9 +25,12 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix(config('auth.
 
 Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix(config('auth.admin_path').'/manual-actions')->name('admin.manual-actions.')->group(function () {
 	Route::post('/institutions', [AdminInstitutionsController::class, 'store'])->name('institutions.store');
+	Route::patch('/institutions/{id}', [AdminInstitutionsController::class, 'update'])->name('institutions.update');
 	Route::post('/institutions/featured', [AdminInstitutionsController::class, 'updateFeatured'])->name('institutions.featured.update');
 	Route::get('/universities/search', [AdminUniversityProgramsController::class, 'searchUniversities'])->name('universities.search');
+	Route::get('/programs/search', [AdminUniversityProgramsController::class, 'searchPrograms'])->name('programs.search');
 	Route::post('/programs', [AdminUniversityProgramsController::class, 'store'])->name('programs.store');
+	Route::patch('/programs/{id}', [AdminUniversityProgramsController::class, 'update'])->name('programs.update');
 });
 
 Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix(config('auth.admin_path'))->name('admin.programs.')->group(function () {

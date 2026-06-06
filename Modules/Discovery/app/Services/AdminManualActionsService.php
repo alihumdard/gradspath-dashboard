@@ -22,7 +22,7 @@ class AdminManualActionsService
             ->withCount('programs')
             ->latest('created_at')
             ->latest('id')
-            ->limit(20)
+            ->limit(10)
             ->get([
                 'id',
                 'name',
@@ -30,6 +30,10 @@ class AdminManualActionsService
                 'country',
                 'city',
                 'state_province',
+                'alpha_two_code',
+                'domains',
+                'web_pages',
+                'logo_url',
                 'is_active',
             ]);
 
@@ -79,6 +83,7 @@ class AdminManualActionsService
         $programs = UniversityProgram::query()
             ->with('university:id,name,display_name')
             ->latest('id')
+            ->limit(10)
             ->get([
                 'id',
                 'university_id',
@@ -216,6 +221,11 @@ class AdminManualActionsService
                 'country' => $institution->country ?: '-',
                 'city' => $institution->city ?: '-',
                 'state_province' => $institution->state_province ?: '-',
+                'alpha_two_code' => $institution->alpha_two_code ?: '',
+                'domains' => implode("\n", $institution->domains ?? []),
+                'web_pages' => implode("\n", $institution->web_pages ?? []),
+                'logo_url' => $institution->logo_url ?: '',
+                'logo_preview_url' => $this->assetUrl($institution->logo_url),
                 'is_active' => (bool) $institution->is_active,
                 'programs_count' => (int) $institution->programs_count,
             ])->values()->all(),
@@ -243,6 +253,7 @@ class AdminManualActionsService
                 'id' => $program->id,
                 'label' => $program->program_name.' - '.($program->university?->display_name ?: $program->university?->name ?: 'Unknown university'),
                 'name' => $program->program_name,
+                'university_id' => $program->university_id,
                 'university' => $program->university?->display_name ?: $program->university?->name ?: '-',
                 'program_type' => $program->program_type,
                 'tier' => $program->tier,
@@ -297,5 +308,20 @@ class AdminManualActionsService
                 'session_outcome_note' => $booking->session_outcome_note ?? '',
             ])->values()->all(),
         ];
+    }
+
+    private function assetUrl(?string $path): string
+    {
+        $path = trim((string) $path);
+
+        if ($path === '') {
+            return '';
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, '//') || str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        return asset($path);
     }
 }

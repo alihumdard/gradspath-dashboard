@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Modules\Bookings\app\Models\Booking;
 use Modules\Feedback\app\Http\Requests\StoreFeedbackRequest;
 use Modules\Feedback\app\Models\Feedback;
 use Modules\Feedback\app\Services\FeedbackService;
@@ -145,6 +146,10 @@ class FeedbackController extends Controller
     private function summary(Collection $items): array
     {
         $total = $items->count();
+        $completedSessions = Booking::query()
+            ->where('status', 'completed')
+            ->count();
+
         $averageRating = $total > 0 ? round((float) $items->avg('stars'), 1) : 0.0;
         $recommendRate = $total > 0 ? round(((int) $items->where('recommend', true)->count() / $total) * 100) : 0;
 
@@ -159,7 +164,7 @@ class FeedbackController extends Controller
 
         return [
             'averageRating' => $averageRating,
-            'completedSessions' => $total,
+            'completedSessions' => $completedSessions,
             'recommendRate' => $recommendRate,
             'topMentioned' => $topMentioned,
             'topMentionedOthers' => $otherMentions,

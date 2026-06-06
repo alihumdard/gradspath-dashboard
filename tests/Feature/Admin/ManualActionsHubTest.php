@@ -8,6 +8,7 @@ use Modules\Auth\app\Models\AdminLog;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Feedback\app\Models\Feedback;
 use Modules\Institutions\app\Models\University;
+use Modules\Institutions\app\Models\UniversityProgram;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
 use Spatie\Permission\Models\Role;
@@ -256,6 +257,125 @@ it('writes admin logs for institution and service pricing actions', function () 
 
     expect(AdminLog::query()->where('action', 'manual_institution_create')->exists())->toBeTrue();
     expect(AdminLog::query()->where('action', 'manual_service_update')->exists())->toBeTrue();
+});
+
+it('renders and saves manual institution and program edits', function () {
+    $admin = createManualActionsAdmin();
+    $university = createManualUniversity([
+        'name' => 'Existing University',
+        'display_name' => 'Existing U',
+        'logo_url' => 'university_logo/existing.png',
+    ]);
+    $program = UniversityProgram::query()->create([
+        'university_id' => $university->id,
+        'program_name' => 'Existing MBA',
+        'program_type' => 'mba',
+        'tier' => 'top',
+        'description' => 'Original description',
+        'duration_months' => 18,
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.manual-actions'))
+        ->assertOk()
+        ->assertSee('Edit institution')
+        ->assertSee('Edit program')
+        ->assertSee('manualInstitutionEditForm', false)
+        ->assertSee('manualProgramEditForm', false)
+        ->assertSee('university_logo/existing.png', false);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.manual-actions.institutions.update', $university), [
+            'name' => 'Edited University',
+            'display_name' => 'Edited U',
+            'country' => 'US',
+            'alpha_two_code' => 'us',
+            'city' => 'New York',
+            'state_province' => 'New York',
+            'domains' => "edited.edu\nalumni.edited.edu",
+            'web_pages' => "https://edited.edu",
+            'logo_url' => 'university_logo/edited.png',
+            'is_active' => '1',
+            'manual_section' => 'institutions',
+        ])
+        ->assertRedirect(route('admin.manual-actions'))
+        ->assertSessionHas('manual_section', 'institutions');
+
+    $this->actingAs($admin)
+        ->patch(route('admin.manual-actions.programs.update', $program), [
+            'university_id' => $university->id,
+            'program_name' => 'Edited MBA',
+            'program_type' => 'law',
+            'tier' => 'elite',
+            'duration_months' => 24,
+            'description' => 'Edited description',
+            'is_active' => '0',
+            'manual_section' => 'programs',
+        ])
+        ->assertRedirect(route('admin.manual-actions'))
+        ->assertSessionHas('manual_section', 'programs');
+
+    $this->assertDatabaseHas('universities', [
+        'id' => $university->id,
+        'name' => 'Edited University',
+        'display_name' => 'Edited U',
+        'alpha_two_code' => 'US',
+        'city' => 'New York',
+        'logo_url' => 'university_logo/edited.png',
+    ]);
+
+    expect($university->fresh()->domains)->toBe(['edited.edu', 'alumni.edited.edu'])
+        ->and($university->fresh()->web_pages)->toBe(['https://edited.edu']);
+
+    $this->assertDatabaseHas('university_programs', [
+        'id' => $program->id,
+        'program_name' => 'Edited MBA',
+        'program_type' => 'law',
+        'tier' => 'elite',
+        'duration_months' => 24,
+        'description' => 'Edited description',
+        'is_active' => false,
+    ]);
+
+    expect(AdminLog::query()->where('action', 'manual_institution_update')->exists())->toBeTrue();
+    expect(AdminLog::query()->where('action', 'manual_program_update')->exists())->toBeTrue();
+});
+
+it('limits manual action institution and program searches to ten results', function () {
+    $admin = createManualActionsAdmin();
+
+    foreach (range(1, 12) as $index) {
+        $university = createManualUniversity([
+            'name' => "Searchable University {$index}",
+            'display_name' => "Searchable U {$index}",
+        ]);
+
+        UniversityProgram::query()->create([
+            'university_id' => $university->id,
+            'program_name' => "Searchable Program {$index}",
+            'program_type' => 'mba',
+            'tier' => 'top',
+            'is_active' => true,
+        ]);
+    }
+
+    $this->actingAs($admin)
+        ->getJson(route('admin.manual-actions.universities.search', [
+            'q' => 'Searchable',
+            'per_page' => 50,
+            'include_inactive' => 1,
+        ]))
+        ->assertOk()
+        ->assertJsonCount(10, 'data');
+
+    $this->actingAs($admin)
+        ->getJson(route('admin.manual-actions.programs.search', [
+            'q' => 'Searchable',
+            'per_page' => 50,
+        ]))
+        ->assertOk()
+        ->assertJsonCount(10, 'data');
 });
 
 it('rejects service pricing updates when admin and mentor splits do not equal the student price', function () {
