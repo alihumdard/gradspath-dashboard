@@ -3,22 +3,24 @@ on:
   push:
     branches:
       - main
+      - staging
   pull_request:
     branches:
       - main
+      - staging
 
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: Deploy to server
+  deploy-production:
+    name: Deploy production
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - name: Deploy over SSH
+      - name: Deploy production over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -29,6 +31,35 @@ jobs:
           script: |
             cd "${{ secrets.PROJECT_PATH }}"
             git pull origin main
+            composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+            php artisan migrate --force
+            php artisan optimize:clear
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            sudo chown -R www-data:www-data storage bootstrap/cache
+            sudo find storage bootstrap/cache -type d -exec chmod 775 {} \;
+            sudo find storage bootstrap/cache -type f -not -name '.gitignore' -exec chmod 664 {} \;
+            sudo systemctl reload php8.3-fpm
+            sudo systemctl reload nginx
+
+  deploy-staging:
+    name: Deploy staging
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+
+    steps:
+      - name: Deploy staging over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true
+          script: |
+            cd "${{ secrets.STAGING_PROJECT_PATH }}"
+            git pull origin staging
             composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
             php artisan migrate --force
             php artisan optimize:clear
