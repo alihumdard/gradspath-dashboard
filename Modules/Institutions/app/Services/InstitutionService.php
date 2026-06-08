@@ -58,8 +58,8 @@ class InstitutionService
                                 ->map(fn($mentor): array => [
                                     'name' => $mentor->user?->name ?? 'Mentor',
                                     'roleLabel' => $this->mentorRoleLabel($mentor->program_type, $university),
-                                    'score' => $mentor->rating?->avg_stars
-                                        ? number_format((float) $mentor->rating->avg_stars, 1)
+                                    'score' => $mentor->rating?->has_effective_rating
+                                        ? number_format((float) $mentor->rating->effective_rating, 1)
                                         : 'New',
                                     'description' => $mentor->description
                                         ?: $mentor->bio

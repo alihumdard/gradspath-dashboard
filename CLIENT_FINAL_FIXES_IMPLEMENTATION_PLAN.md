@@ -476,7 +476,7 @@ Scope:
 - [x] Remove the left arrow from type-of-session if decorative/unneeded.
 - [x] Add browser QA for booking from dashboard, Find Mentors, and institution detail.
 
-### 19a. Recent Feedback in mentor notes comes from latest Quick Feedback
+### 19a. Recent Feedback in mentor notes comes from latest Quick Feedback - (Done)
 
 **Client question:** Recent Feedback must automatically come from the latest user form Quick Feedback and update often.
 
@@ -484,14 +484,14 @@ Scope:
 
 **Current finding:** Feedback stores `comment`, and discovery featured cards already use `latestVisibleFeedback`. Mentor Notes currently show only mentor note fields, not latest student quick feedback.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Add relationship/query for latest feedback per mentor/booking/student.
-- Surface latest `Feedback.comment` as "Recent Feedback".
-- Ensure it is tied to the correct booking and mentor.
-- Update after feedback submission via existing rating listener/event.
+- [x] Add relationship/query for latest feedback per mentor/booking/student.
+- [x] Surface latest `Feedback.comment` as "Recent Feedback".
+- [x] Ensure it is tied to the correct booking and mentor.
+- [x] Update after feedback submission via existing rating listener/event.
 
-### 20. Office Hours meeting choice, mentor payout, services, rating order
+### 20. Office Hours meeting choice, mentor payout, services, rating order - (Done)
 
 **Client question:** Test Office Hours service choice; mentors get `$15` per person; all mentors on page; mentors only show services they can offer; no rotation for mentors with one service; only Tutoring, Program Insights, Interview Prep; order by highest rating; admin can override rating.
 
@@ -499,20 +499,20 @@ Scope:
 
 **Current finding:** Office Hours supports service choice and 12-hour cutoff. `$15` per attendee exists in `ServiceConfigSeeder` and `MentorPayoutCalculator`. Current office-hours/service code may still include other services in places. Mentor rating override is not clearly implemented.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Restrict Office Hours eligible services to:
+- [x] Restrict Office Hours eligible services to:
   - Tutoring.
   - Program Insights.
   - Interview Prep.
-- For mentors with only one eligible service, lock that service; no rotation.
-- For mentors with multiple eligible services, rotate only among eligible services.
-- Sort Office Hours mentors by rating descending.
-- Add admin rating override fields and ensure rankings use effective rating.
-- Verify payout creation: one attendee equals `$15` mentor earning from platform account.
-- Add tests for one-service mentor, multi-service mentor, service choice window, and payout ledger.
+- [x] For mentors with only one eligible service, lock that service; no rotation.
+- [x] For mentors with multiple eligible services, rotate only among eligible services.
+- [x] Sort Office Hours mentors by rating descending.
+- [x] Add admin rating override fields and ensure rankings use effective rating.
+- [x] Verify payout creation: one attendee equals `$15` mentor earning from platform account.
+- [x] Add tests for one-service mentor, multi-service mentor, service choice window, and payout ledger.
 
-### 21. Mentor Notes on Users only visible to mentors; tab order/search/read more
+### 21. Mentor Notes on Users only visible to mentors; tab order/search/read more - (Done)
 
 **Client question:** Students must not see Mentor Notes at all. Rename to Mentor Notes on Users. Feedback tab should come before it. Add search bars and centered purple Read More.
 
@@ -520,16 +520,16 @@ Scope:
 
 **Current finding:** Student routes and sidebar currently include `/student/notes`. Mentor sidebar already labels "Mentor Notes on Users", but Feedback currently comes after Mentor Notes in mentor sidebar. Mentor notes page title still says "Users Notes".
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Remove student Mentor Notes route/sidebar item or return 404/403.
-- Keep mentor notes route under `role:mentor` only.
-- Reorder mentor sidebar: Feedback before Mentor Notes on Users.
-- Rename page title/header to "Mentor Notes on Users".
-- Keep most recent forms first.
-- Match search bars from `image15`.
-- Ensure Read More button is purple and centered.
-- Ensure card rows show user name and correct mentor names from notes.
+- [x] Remove student Mentor Notes route/sidebar item or return 404/403.
+- [x] Keep mentor notes route under `role:mentor` only.
+- [x] Reorder mentor sidebar: Feedback before Mentor Notes on Users.
+- [x] Rename page title/header to "Mentor Notes on Users".
+- [x] Keep most recent forms first.
+- [x] Match search bars from `image15`.
+- [x] Ensure Read More button is purple and centered.
+- [x] Ensure card rows show user name and correct mentor names from notes.
 
 ### 22. Feedback stats live update
 

@@ -57,6 +57,27 @@
           @enderror
         </label>
 
+        <label class="manual-field">
+          <span>Rating override</span>
+          <input id="manualMentorRatingOverride" name="admin_rating_override" type="number" min="0" max="5" step="0.01" value="{{ old('admin_rating_override') }}" placeholder="0.00 - 5.00" />
+          @error('admin_rating_override')
+            <small class="manual-field__error">{{ $message }}</small>
+          @enderror
+        </label>
+
+        <label class="manual-field">
+          <span>Override note</span>
+          <input id="manualMentorRatingOverrideNote" name="admin_rating_override_note" type="text" maxlength="1000" value="{{ old('admin_rating_override_note') }}" placeholder="Optional reason for override" />
+          @error('admin_rating_override_note')
+            <small class="manual-field__error">{{ $message }}</small>
+          @enderror
+        </label>
+
+        <label class="manual-check">
+          <input id="manualMentorClearRatingOverride" type="checkbox" name="clear_admin_rating_override" value="1" @checked(old('clear_admin_rating_override')) />
+          <span>Clear rating override</span>
+        </label>
+
         <button class="primary-btn manual-submit-btn" type="submit">Save mentor action</button>
       </form>
 

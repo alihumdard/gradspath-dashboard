@@ -162,7 +162,7 @@ class BookingService
         }
 
         if (! $isAdmin && ! $booking->isSelfCancellationWindowOpen()) {
-            throw new BookingException('Self-service cancellation closes 24 hours before the meeting. Please contact support if you need help.');
+            throw new BookingException('Self-service cancellation closes 12 hours before the meeting. Please contact support if you need help.');
         }
 
         DB::transaction(function () use ($booking, $actor, $reason) {

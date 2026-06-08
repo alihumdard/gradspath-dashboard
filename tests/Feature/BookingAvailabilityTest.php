@@ -20,6 +20,7 @@ use Modules\Bookings\app\Models\BookingMeetingEvent;
 use Modules\Bookings\app\Services\BookingPageService;
 use Modules\Bookings\app\Services\BookingService;
 use Modules\Bookings\app\Services\ZoomService;
+use Modules\Feedback\app\Models\MentorRating;
 use Modules\Feedback\app\Services\FeedbackService;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Payments\app\Models\UserCredit;
@@ -1591,7 +1592,7 @@ it('unlocks feedback after the fallback grace period even without zoom attendanc
     expect($feedback->booking_id)->toBe($booking->id);
 });
 
-it('allows a mentor to cancel more than 24 hours ahead and sends cancellation notifications', function () {
+it('allows a mentor to cancel more than 12 hours ahead and sends cancellation notifications', function () {
     Mail::fake();
     fakeZoomApi();
 
@@ -1639,7 +1640,7 @@ it('allows a mentor to cancel more than 24 hours ahead and sends cancellation no
     Mail::assertSent(BookingCancelledNotificationMail::class);
 });
 
-it('blocks self-cancellation inside 24 hours for both students and mentors', function () {
+it('blocks self-cancellation inside 12 hours for both students and mentors', function () {
     fakeZoomApi();
 
     $student = makeUser('late-cancel-student');
@@ -1655,7 +1656,7 @@ it('blocks self-cancellation inside 24 hours for both students and mentors', fun
         'price_1on5_total' => 0,
     ]);
     attachMentorService($mentor, $service);
-    $sessionStart = now('America/New_York')->addHours(23);
+    $sessionStart = now('America/New_York')->addHours(11);
     $sessionEnd = $sessionStart->copy()->addHour();
 
     $slotId = DB::table('mentor_availability_slots')->insertGetId([
@@ -2311,7 +2312,91 @@ it('renders dynamic office hours data from upcoming sessions', function () {
         });
 });
 
-it('excludes mentors without active upcoming office-hours sessions from the office-hours directory', function () {
+it('orders office-hours mentors by admin override rating before calculated rating', function () {
+    $student = makeUser('office-hours-override-order-student');
+    $student->assignRole('student');
+    $officeHoursService = makeService([
+        'service_name' => 'Office Hours',
+        'service_slug' => 'office_hours_'.Str::lower(Str::random(6)),
+        'is_office_hours' => true,
+        'price_1on1' => null,
+        'price_1on3_per_person' => null,
+        'price_1on3_total' => null,
+        'price_1on5_per_person' => null,
+        'price_1on5_total' => null,
+        'office_hours_subscription_price' => 200,
+        'office_hours_mentor_payout_per_attendee' => 15,
+    ]);
+    $focusService = makeService([
+        'service_name' => 'Program Insights',
+        'service_slug' => 'program_insights_'.Str::lower(Str::random(6)),
+    ]);
+    $overrideMentor = makeMentor();
+    $calculatedMentor = makeMentor();
+
+    MentorRating::query()->create([
+        'mentor_id' => $overrideMentor->id,
+        'avg_stars' => 4.10,
+        'admin_rating_override' => 5.00,
+        'recommend_rate' => 100,
+        'total_reviews' => 1,
+        'total_sessions' => 1,
+    ]);
+    MentorRating::query()->create([
+        'mentor_id' => $calculatedMentor->id,
+        'avg_stars' => 4.90,
+        'recommend_rate' => 100,
+        'total_reviews' => 10,
+        'total_sessions' => 10,
+    ]);
+
+    foreach ([$overrideMentor, $calculatedMentor] as $index => $mentor) {
+        DB::table('mentor_services')->insert([
+            ['mentor_id' => $mentor->id, 'service_config_id' => $officeHoursService->id, 'is_active' => true, 'sort_order' => 0, 'created_at' => now(), 'updated_at' => now()],
+            ['mentor_id' => $mentor->id, 'service_config_id' => $focusService->id, 'is_active' => true, 'sort_order' => 1, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $scheduleId = DB::table('office_hour_schedules')->insertGetId([
+            'mentor_id' => $mentor->id,
+            'current_service_id' => $focusService->id,
+            'day_of_week' => 'tue',
+            'start_time' => sprintf('%02d:00:00', 17 + $index),
+            'timezone' => 'America/New_York',
+            'frequency' => 'weekly',
+            'max_spots' => 3,
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('office_hour_sessions')->insert([
+            'schedule_id' => $scheduleId,
+            'current_service_id' => $focusService->id,
+            'session_date' => now()->addDays(7)->toDateString(),
+            'start_time' => sprintf('%02d:00:00', 17 + $index),
+            'timezone' => 'America/New_York',
+            'current_occupancy' => 0,
+            'max_spots' => 3,
+            'is_full' => false,
+            'service_locked' => false,
+            'status' => 'upcoming',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    $this->actingAs($student)
+        ->get(route('student.office-hours'))
+        ->assertOk()
+        ->assertViewHas('officeHoursData', function (array $officeHoursData) use ($overrideMentor, $calculatedMentor) {
+            $ids = collect($officeHoursData)->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+            return array_slice($ids, 0, 2) === [$overrideMentor->id, $calculatedMentor->id]
+                && (float) $officeHoursData[0]['rating'] === 5.0;
+        });
+});
+
+it('shows office-hours mentors without active upcoming sessions as not bookable', function () {
     $student = makeUser('office-hours-directory-disabled-student');
     $student->assignRole('student');
     $mentor = makeMentor();
@@ -2367,7 +2452,13 @@ it('excludes mentors without active upcoming office-hours sessions from the offi
         ->get(route('student.office-hours'))
         ->assertOk()
         ->assertViewHas('officeHoursData', function (array $officeHoursData) use ($mentor) {
-            return ! collect($officeHoursData)->contains(fn (array $row) => (int) $row['id'] === (int) $mentor->id);
+            return collect($officeHoursData)->contains(function (array $row) use ($mentor) {
+                return (int) $row['id'] === (int) $mentor->id
+                    && $row['isBookable'] === false
+                    && $row['weeklyService'] === 'Interview Prep'
+                    && $row['sessionTime'] === 'Schedule coming soon'
+                    && (int) $row['spotsFilled'] === 0;
+            });
         });
 });
 
@@ -2448,6 +2539,7 @@ it('syncs the next weekly office-hours session and rotates the service focus', f
         'sort_order' => 0,
     ]);
     $firstService = makeService(['service_name' => 'Tutoring', 'sort_order' => 1]);
+    $unsupportedService = makeService(['service_name' => 'Application Review', 'sort_order' => 2]);
     $secondService = makeService(['service_name' => 'Interview Prep', 'sort_order' => 2]);
 
     DB::table('mentor_services')->insert([
@@ -2469,9 +2561,17 @@ it('syncs the next weekly office-hours session and rotates the service focus', f
         ],
         [
             'mentor_id' => $mentor->id,
-            'service_config_id' => $secondService->id,
+            'service_config_id' => $unsupportedService->id,
             'is_active' => true,
             'sort_order' => 2,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+        [
+            'mentor_id' => $mentor->id,
+            'service_config_id' => $secondService->id,
+            'is_active' => true,
+            'sort_order' => 3,
             'created_at' => now(),
             'updated_at' => now(),
         ],
@@ -2653,7 +2753,7 @@ it('rejects office-hours service choice outside the eligibility rules', function
     'not first student' => [['first_booker_id' => 'other'], 'Only the first student booked for this session can choose the focus.'],
 ]);
 
-it('rejects service choices that are not active non-office-hours mentor services', function (array $serviceOverrides) {
+it('rejects service choices that are not eligible active non-office-hours mentor services', function (array $serviceOverrides) {
     $student = makeUser('office-choice-invalid-service');
     $student->assignRole('student');
     $mentor = makeMentor();
@@ -2708,4 +2808,5 @@ it('rejects service choices that are not active non-office-hours mentor services
 })->with([
     'inactive service' => [['service_name' => 'Inactive Focus', 'is_active' => false]],
     'office-hours service' => [['service_name' => 'Office Hours', 'service_slug' => 'office_hours_invalid', 'is_office_hours' => true]],
+    'unsupported service' => [['service_name' => 'Application Review']],
 ]);

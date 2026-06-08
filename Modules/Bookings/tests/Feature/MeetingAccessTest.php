@@ -524,6 +524,7 @@ it('includes mentor program name and email in the student feedback payload', fun
 
     $mentor->forceFill(['university_program_id' => $program->id])->save();
     $mentorUser->forceFill(['email' => 'mentor.feedback@example.edu'])->save();
+    Carbon::setTestNow($context['booking']->session_at->copy()->subHours(25));
 
     $response = $this
         ->actingAs($context['studentUser'])
@@ -617,11 +618,11 @@ it('excludes past incomplete bookings from the mentor upcoming list', function (
     expect(collect($payload['upcomingBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $pastBooking->id))->toBeFalse();
 });
 
-it('moves live bookings from the student upcoming list to the current list', function () {
+it('moves bookings within 24 hours from the student upcoming list to the current list', function () {
     $context = createBookingAccessContext();
     $liveBooking = $context['booking']->fresh();
 
-    Carbon::setTestNow($liveBooking->session_at->copy()->addMinutes(6));
+    Carbon::setTestNow($liveBooking->session_at->copy()->subHours(23));
 
     $response = $this
         ->actingAs($context['studentUser'])
@@ -635,11 +636,11 @@ it('moves live bookings from the student upcoming list to the current list', fun
         ->and(collect($payload['upcomingBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $liveBooking->id))->toBeFalse();
 });
 
-it('moves live bookings from the mentor upcoming list to the current list', function () {
+it('moves bookings within 24 hours from the mentor upcoming list to the current list', function () {
     $context = createBookingAccessContext();
     $liveBooking = $context['booking']->fresh();
 
-    Carbon::setTestNow($liveBooking->session_at->copy()->addMinutes(6));
+    Carbon::setTestNow($liveBooking->session_at->copy()->subHours(23));
 
     $response = $this
         ->actingAs($context['mentorUser'])

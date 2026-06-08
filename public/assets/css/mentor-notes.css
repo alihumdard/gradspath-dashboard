@@ -737,22 +737,24 @@ a {
 
 .note-list-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   padding: 0 20px 20px;
 }
 
 .read-more-btn {
-  border: none;
-  background: transparent;
-  color: var(--purple-dark);
+  border: 1px solid var(--hover-line);
+  background: var(--purple-soft);
+  color: var(--purple);
+  border-radius: 999px;
   font-size: 0.9rem;
   font-weight: 800;
   cursor: pointer;
-  padding: 4px 2px;
+  padding: 9px 18px;
 }
 
 .read-more-btn:hover {
-  text-decoration: underline;
+  background: var(--purple);
+  color: #fff;
 }
 
 .empty-state {

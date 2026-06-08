@@ -396,6 +396,27 @@ it('ranks mentors of the week by top rating', function () {
     ]);
 });
 
+it('uses admin rating overrides when ranking mentors of the week', function () {
+    Carbon::setTestNow(Carbon::create(2026, 4, 29, 12, 0, 0, 'UTC'));
+
+    $lowerCalculated = createDashboardMentor('Admin Override Featured Mentor');
+    $higherCalculated = createDashboardMentor('Calculated Featured Mentor');
+
+    rateDashboardMentor($lowerCalculated, 4.10, 2, 2)->forceFill([
+        'admin_rating_override' => 5.00,
+        'admin_rating_override_note' => 'Promote for launch',
+    ])->save();
+    rateDashboardMentor($higherCalculated, 4.90, 10, 10);
+
+    $mentors = app(MentorDiscoveryService::class)->featured(2);
+
+    expect($mentors->pluck('name')->all())->toBe([
+        'Admin Override Featured Mentor',
+        'Calculated Featured Mentor',
+    ])->and($mentors->firstWhere('name', 'Admin Override Featured Mentor')['rating'])->toBe('5.0');
+});
+
+
 it('shows admin-chosen featured mentors before automatic rating fill', function () {
     $manual = createDashboardMentor('Admin Pick Mentor');
     $topRated = createDashboardMentor('Automatic Top Mentor');

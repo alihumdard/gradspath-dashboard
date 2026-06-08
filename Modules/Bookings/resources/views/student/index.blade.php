@@ -238,7 +238,7 @@
           <div class="upcoming-header">
             <div>
               <h3>Current Appointments</h3>
-              <p>Meetings that are live and running right now appear here.</p>
+              <p>Meetings happening within the next 24 hours appear here.</p>
             </div>
           </div>
           <div class="upcoming-list" id="currentList">
@@ -248,7 +248,7 @@
           <div class="upcoming-header">
             <div>
               <h3>Upcoming Appointments</h3>
-              <p>Future booked sessions that have not started yet appear here.</p>
+              <p>Meetings more than 24 hours away appear here.</p>
             </div>
           </div>
           <div class="upcoming-list" id="upcomingList">
@@ -293,7 +293,8 @@
 
 @section('portal_after_shell')
         <div class="modal-overlay hidden" id="cancelModal">
-          <div class="modal-card">
+          <div class="modal-card cancel-meeting-card">
+            <button class="modal-close-btn" id="cancelClose1" type="button" aria-label="Close cancel dialog">&times;</button>
             <h3>Cancel this meeting?</h3>
             <p>This will remove your upcoming session from your schedule.</p>
             <div class="modal-actions">

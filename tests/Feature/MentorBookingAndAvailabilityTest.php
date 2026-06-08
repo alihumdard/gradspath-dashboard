@@ -1382,7 +1382,7 @@ it('blocks stripe checkout when the host mentor zoom connection is revoked', fun
     Http::assertNotSent(fn ($request) => str_starts_with((string) $request->url(), 'https://stripe.test/checkout/sessions'));
 });
 
-it('allows either mentor participant to cancel a mentor-booked session before 24 hours', function () {
+it('allows either mentor participant to cancel a mentor-booked session before the 12 hour cutoff', function () {
     [$hostUser, $hostMentor] = makePortalMentor('cancel-host', 'professional');
     [$bookerUser] = makePortalMentor('cancel-booker');
     $service = makePortalService();
@@ -1417,7 +1417,7 @@ it('allows either mentor participant to cancel a mentor-booked session before 24
 
     $this->actingAs($hostUser)
         ->patch(route('mentor.bookings.cancel', $booking->id), [
-            'reason' => 'Host mentor cancelled before the 24 hour cutoff.',
+            'reason' => 'Host mentor cancelled before the 12 hour cutoff.',
         ])
         ->assertRedirect(route('mentor.bookings.index'));
 

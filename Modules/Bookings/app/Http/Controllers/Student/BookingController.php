@@ -3,6 +3,7 @@
 namespace Modules\Bookings\app\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -214,13 +215,13 @@ class BookingController extends Controller
     private function isUpcomingBooking(Booking $booking): bool
     {
         return in_array((string) $booking->status, ['pending', 'confirmed'], true)
-            && $this->meetingPresenter->scheduledState($booking) === 'upcoming';
+            && $this->bookingStartsAfterCurrentWindow($booking);
     }
 
     private function isCurrentBooking(Booking $booking): bool
     {
         return in_array((string) $booking->status, ['pending', 'confirmed'], true)
-            && $this->meetingPresenter->scheduledState($booking) === 'live';
+            && $this->bookingFallsInCurrentWindow($booking);
     }
 
     private function transformBooking(Booking $booking): array
@@ -262,6 +263,8 @@ class BookingController extends Controller
             'sessionDateLabel' => $sessionAt?->format('l, F j, Y'),
             'sessionTimeLabel' => $sessionAt?->format('g:i A'),
             'sessionMonthLabel' => $sessionAt?->format('F Y'),
+            'sessionStartsAt' => $booking->session_at?->toIso8601String(),
+            'sessionEndsAt' => $booking->scheduledEndAt()?->toIso8601String(),
             'meetingLink' => $this->meetingLinkForBooking($booking),
             'meetingProvider' => $this->meetingPresenter->providerLabel($booking),
             'meetingLinkLabel' => $this->meetingPresenter->linkLabel($booking),
@@ -287,7 +290,7 @@ class BookingController extends Controller
             'cancelUrl' => Route::has('student.bookings.cancel')
                 ? route('student.bookings.cancel', $booking->id)
                 : null,
-            'cancelPolicyCopy' => 'Self-service cancellation is available until 24 hours before the meeting. After that, please contact support.',
+            'cancelPolicyCopy' => 'Self-service cancellation is available until 12 hours before the meeting. After that, please contact support.',
             'chatThreadUrl' => route('student.bookings.chat.index', $booking->id),
             'chatSendUrl' => route('student.bookings.chat.store', $booking->id),
             'chatChannel' => 'booking.'.$booking->id,
@@ -313,6 +316,29 @@ class BookingController extends Controller
                 'scheme' => config('broadcasting.connections.reverb.options.scheme', 'http'),
             ],
         ];
+    }
+
+    private function bookingFallsInCurrentWindow(Booking $booking): bool
+    {
+        $start = $booking->session_at?->copy();
+        $end = $booking->scheduledEndAt();
+
+        if (! $start || ! $end) {
+            return false;
+        }
+
+        $now = Carbon::now('UTC');
+
+        return $end->greaterThanOrEqualTo($now)
+            && $start->lessThanOrEqualTo($now->copy()->addHours(24));
+    }
+
+    private function bookingStartsAfterCurrentWindow(Booking $booking): bool
+    {
+        $start = $booking->session_at?->copy();
+
+        return $start !== null
+            && $start->greaterThan(Carbon::now('UTC')->addHours(24));
     }
 
     private function meetingSizeLabel(?string $sessionType): string

@@ -120,7 +120,7 @@ function renderMentors() {
                 <p>${getDisplayProgramLine(mentor)}</p>
               </div>
             </div>
-            <div class="rating-pill">★ ${Number(mentor.rating || 5).toFixed(1)}</div>
+            <div class="rating-pill">★ ${Number(Number.isFinite(Number(mentor.rating)) ? mentor.rating : 5).toFixed(1)}</div>
           </div>
 
           <p class="office-hours-line">

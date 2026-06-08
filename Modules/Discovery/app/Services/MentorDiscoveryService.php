@@ -56,7 +56,7 @@ class MentorDiscoveryService
                     'category' => $this->programFamily($mentor->program_type),
                     'categoryLabel' => $mentor->title ?: $this->programLabel($mentor->program_type),
                     'school' => $school,
-                    'rating' => $mentor->rating?->avg_stars ? (float) $mentor->rating->avg_stars : null,
+                    'rating' => $mentor->rating?->has_effective_rating ? (float) $mentor->rating->effective_rating : null,
                     'officeHours' => $mentor->office_hours_schedule ?: 'Schedule coming soon',
                     'bio' => $mentor->bio ?: $mentor->description ?: 'Available to support students with applications, strategy, and next steps.',
                     'bioExtra' => $mentor->description ?: $mentor->bio ?: 'Mentor profile details coming soon.',
@@ -132,8 +132,8 @@ class MentorDiscoveryService
             'category' => $this->programFamily($mentor->program_type),
             'profession' => $mentor->mentor_type === 'professional' ? 'professional' : 'graduate',
             'role' => ($mentor->title ?: $this->programLabel($mentor->program_type)).' • '.$school,
-            'rating' => $mentor->rating?->avg_stars
-                ? number_format((float) $mentor->rating->avg_stars, 1)
+            'rating' => $mentor->rating?->has_effective_rating
+                ? number_format((float) $mentor->rating->effective_rating, 1)
                 : 'New',
             'officeHours' => $mentor->office_hours_schedule ?: 'Schedule coming soon',
             'bio' => $mentor->bio ?: $mentor->description ?: 'Available to support students with applications, strategy, and next steps.',

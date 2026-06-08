@@ -24,12 +24,10 @@
                       the designated service for that week.</p>
                     <p>
                       If only one student is booked 24 hours before the session,
-                      that student may choose from any available service:
+                      that student may choose from the eligible services this mentor offers:
                       <strong>Tutoring</strong>,
                       <strong>Program Insights</strong>,
-                      <strong>Interview Prep</strong>,
-                      <strong>Application Review</strong>, and
-                      <strong>Gap Year Planning</strong>.
+                      and <strong>Interview Prep</strong>.
                     </p>
                   </div>
                 </div>

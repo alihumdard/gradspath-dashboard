@@ -28,9 +28,8 @@ class MentorNotesController extends Controller
                 'booking:id,service_config_id,session_at,session_timezone,session_type',
                 'booking.service:id,service_name,service_slug',
             ])
-            ->where('mentor_id', $viewerMentor->id)
             ->where('is_deleted', false)
-            ->orderByDesc('session_date')
+            ->orderByDesc('updated_at')
             ->orderByDesc('id')
             ->get();
 
@@ -158,7 +157,7 @@ class MentorNotesController extends Controller
                 }
 
                 $sortedNotes = $group
-                    ->sortByDesc(fn (MentorNote $note) => optional($note->session_date)?->format('Y-m-d') ?: '')
+                    ->sortByDesc(fn (MentorNote $note) => $this->noteSortTimestamp($note))
                     ->values();
 
                 return [
@@ -191,6 +190,7 @@ class MentorNotesController extends Controller
             'service' => $note->service_type ?: $this->serviceName($note->booking),
             'date' => optional($note->session_date)?->format('F j, Y') ?? 'Unknown date',
             'rawDate' => optional($note->session_date)?->format('Y-m-d'),
+            'rawSubmittedAt' => optional($note->updated_at ?? $note->created_at)?->toIso8601String(),
             'sessionWork' => (string) $note->worked_on,
             'nextSteps' => (string) $note->next_steps,
             'sessionOutcome' => (string) $note->session_result,
@@ -209,6 +209,11 @@ class MentorNotesController extends Controller
             'sessionDate' => $this->formattedSessionDate($booking),
             'sessionType' => $this->serviceName($booking),
         ];
+    }
+
+    private function noteSortTimestamp(MentorNote $note): int
+    {
+        return ($note->updated_at ?? $note->created_at ?? $note->session_date)?->getTimestamp() ?? 0;
     }
 
     private function formattedSessionDate(Booking $booking): string

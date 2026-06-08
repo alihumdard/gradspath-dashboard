@@ -21,7 +21,7 @@ class BookingPageService
             ->with([
                 'user:id,name,avatar_url',
                 'university:id,name,display_name',
-                'rating:id,mentor_id,avg_stars',
+                'rating:id,mentor_id,avg_stars,admin_rating_override',
                 'services' => fn ($query) => $query
                     ->where('services_config.is_active', true)
                     ->wherePivot('is_active', true)
@@ -113,8 +113,8 @@ class BookingPageService
                 'description' => $mentor->bio
                     ?: $mentor->description
                     ?: 'This mentor is available to support strategy, applications, and next steps.',
-                'rating' => $mentor->rating?->avg_stars
-                    ? number_format((float) $mentor->rating->avg_stars, 1)
+                'rating' => $mentor->rating?->has_effective_rating
+                    ? number_format((float) $mentor->rating->effective_rating, 1)
                     : 'New',
             ],
             'student' => [

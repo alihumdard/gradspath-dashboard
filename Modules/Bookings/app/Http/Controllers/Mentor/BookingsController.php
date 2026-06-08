@@ -3,6 +3,7 @@
 namespace Modules\Bookings\app\Http\Controllers\Mentor;
 
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
@@ -186,12 +187,12 @@ class BookingsController extends Controller
             ],
             'currentBookings' => collect(array_merge($hosted, $booked))
                 ->filter(fn (array $booking) => $this->isCurrentBookingPayload($booking))
-                ->sortBy(fn (array $booking) => $booking['sessionDateKey'] ?? '')
+                ->sortBy(fn (array $booking) => $booking['sessionStartsAt'] ?? '')
                 ->values()
                 ->all(),
             'upcomingBookings' => collect(array_merge($hosted, $booked))
                 ->filter(fn (array $booking) => $this->isUpcomingBookingPayload($booking))
-                ->sortBy(fn (array $booking) => $booking['sessionDateKey'] ?? '')
+                ->sortBy(fn (array $booking) => $booking['sessionStartsAt'] ?? '')
                 ->values()
                 ->all(),
             'supportUrl' => route('mentor.support.index'),
@@ -200,14 +201,27 @@ class BookingsController extends Controller
 
     private function isUpcomingBookingPayload(array $booking): bool
     {
+        $start = $this->payloadDate($booking['sessionStartsAt'] ?? null);
+
         return in_array((string) ($booking['status'] ?? ''), ['pending', 'confirmed'], true)
-            && (string) ($booking['meetingState'] ?? '') === 'upcoming';
+            && $start !== null
+            && $start->greaterThan(Carbon::now('UTC')->addHours(24));
     }
 
     private function isCurrentBookingPayload(array $booking): bool
     {
+        $start = $this->payloadDate($booking['sessionStartsAt'] ?? null);
+        $end = $this->payloadDate($booking['sessionEndsAt'] ?? null);
+
+        if (! $start || ! $end) {
+            return false;
+        }
+
+        $now = Carbon::now('UTC');
+
         return in_array((string) ($booking['status'] ?? ''), ['pending', 'confirmed'], true)
-            && (string) ($booking['meetingState'] ?? '') === 'live';
+            && $end->greaterThanOrEqualTo($now)
+            && $start->lessThanOrEqualTo($now->copy()->addHours(24));
     }
 
     private function transformBooking(Booking $booking, string $perspective): array
@@ -243,6 +257,8 @@ class BookingsController extends Controller
             'sessionDateLabel' => $sessionAt?->format('l, F j, Y'),
             'sessionTimeLabel' => $sessionAt?->format('g:i A'),
             'sessionMonthLabel' => $sessionAt?->format('F Y'),
+            'sessionStartsAt' => $booking->session_at?->toIso8601String(),
+            'sessionEndsAt' => $booking->scheduledEndAt()?->toIso8601String(),
             'meetingLink' => $this->meetingLinkForPerspective($booking, $perspective),
             'meetingProvider' => $this->meetingPresenter->providerLabel($booking),
             'meetingLinkLabel' => $this->meetingLinkLabelForPerspective($booking, $perspective),
@@ -266,7 +282,7 @@ class BookingsController extends Controller
             'canCancel' => in_array((string) $booking->status, ['pending', 'confirmed'], true)
                 && $booking->isSelfCancellationWindowOpen(),
             'cancelUrl' => route('mentor.bookings.cancel', $booking->id),
-            'cancelPolicyCopy' => 'Self-service cancellation is available until 24 hours before the meeting. After that, please contact support.',
+            'cancelPolicyCopy' => 'Self-service cancellation is available until 12 hours before the meeting. After that, please contact support.',
             'mentorNotesAvailable' => $mentorNotesAllowed,
             'mentorNotesUrl' => $mentorNotesAllowed ? route('mentor.notes.bookings.edit', $booking->id) : null,
             'mentorNotesSubmitted' => $hasHostedMentorNote,
@@ -301,6 +317,11 @@ class BookingsController extends Controller
                 'scheme' => config('broadcasting.connections.reverb.options.scheme', 'http'),
             ],
         ];
+    }
+
+    private function payloadDate(?string $value): ?Carbon
+    {
+        return $value ? Carbon::parse($value)->utc() : null;
     }
 
     private function meetingSizeLabel(?string $sessionType): string

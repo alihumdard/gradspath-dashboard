@@ -118,6 +118,12 @@ class AvailabilityController extends Controller
                 (int) $service->id => $this->allowedSessionTypesForService($service),
             ])
             ->all();
+        $officeHoursFocusServiceIds = (clone $activeMentorServiceQuery)
+            ->where('services_config.is_active', true)
+            ->officeHoursFocusEligible()
+            ->pluck('services_config.id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
         $submittedSlotIds = collect((array) $request->input('date_slots', []))
             ->flatMap(fn ($dateSlot) => collect((array) ($dateSlot['slots'] ?? []))
                 ->map(fn ($slot) => (int) ($slot['slot_id'] ?? 0)))
@@ -147,7 +153,7 @@ class AvailabilityController extends Controller
             ->filter(fn ($slot) => (int) ($slot->active_bookings_count ?? 0) > 0)
             ->groupBy(fn ($slot) => $slot->slot_date->toDateString());
 
-        $validator->after(function ($validator) use ($request, $mentor, $mentorServiceIds, $mentorServiceDurations, $mentorServiceMeetingSizes, $existingBookedSlots, $existingSubmittedSlots) {
+        $validator->after(function ($validator) use ($request, $mentor, $mentorServiceIds, $mentorServiceDurations, $mentorServiceMeetingSizes, $officeHoursFocusServiceIds, $existingBookedSlots, $existingSubmittedSlots) {
             $submittedDateValues = collect((array) $request->input('date_slots', []))
                 ->map(fn ($dateSlot) => (string) ($dateSlot['date'] ?? ''))
                 ->filter()
@@ -350,8 +356,8 @@ class AvailabilityController extends Controller
                 return;
             }
 
-            if ($mentorServiceIds === []) {
-                $validator->errors()->add('office_hours.service_config_id', 'Add at least one active mentor service before enabling office hours.');
+            if ($officeHoursFocusServiceIds === []) {
+                $validator->errors()->add('office_hours.service_config_id', 'Add Tutoring, Program Insights, or Interview Prep before enabling office hours.');
 
                 return;
             }
@@ -364,8 +370,8 @@ class AvailabilityController extends Controller
 
             if (!$serviceId) {
                 $validator->errors()->add('office_hours.service_config_id', 'Choose the weekly focus service for office hours.');
-            } elseif (!in_array($serviceId, $mentorServiceIds, true)) {
-                $validator->errors()->add('office_hours.service_config_id', 'Office hours must use one of your active mentor services.');
+            } elseif (!in_array($serviceId, $officeHoursFocusServiceIds, true)) {
+                $validator->errors()->add('office_hours.service_config_id', 'Office hours must use Tutoring, Program Insights, or Interview Prep.');
             }
 
             if ($dayOfWeek === '') {

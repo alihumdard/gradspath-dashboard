@@ -188,7 +188,11 @@ class AdminManualActionsService
                 'status' => $mentor->status ?: 'pending',
                 'is_featured' => (bool) $mentor->is_featured,
                 'featured_sort_order' => $mentor->featured_sort_order,
-                'rating' => $mentor->rating?->avg_stars ? number_format((float) $mentor->rating->avg_stars, 1) : 'New',
+                'rating' => $mentor->rating?->has_effective_rating ? number_format((float) $mentor->rating->effective_rating, 1) : 'New',
+                'calculated_rating' => (float) ($mentor->rating?->avg_stars ?? 0) > 0 ? number_format((float) $mentor->rating->avg_stars, 1) : 'New',
+                'admin_rating_override' => $mentor->rating?->admin_rating_override !== null ? number_format((float) $mentor->rating->admin_rating_override, 2) : null,
+                'admin_rating_override_note' => $mentor->rating?->admin_rating_override_note,
+                'has_admin_rating_override' => (bool) ($mentor->rating?->has_admin_rating_override ?? false),
                 'total_reviews' => (int) ($mentor->rating?->total_reviews ?? 0),
                 'total_sessions' => (int) ($mentor->rating?->total_sessions ?? 0),
                 'type' => $mentor->title ?: ($mentor->mentor_type === 'professional' ? 'Professional Mentor' : 'Graduate Mentor'),
@@ -202,7 +206,7 @@ class AdminManualActionsService
                 ->map(fn (Mentor $mentor) => [
                     'id' => $mentor->id,
                     'name' => $mentor->user?->name ?: 'Unknown mentor',
-                    'rating' => $mentor->rating?->avg_stars ? number_format((float) $mentor->rating->avg_stars, 1) : 'New',
+                    'rating' => $mentor->rating?->has_effective_rating ? number_format((float) $mentor->rating->effective_rating, 1) : 'New',
                 ])
                 ->values()
                 ->all(),

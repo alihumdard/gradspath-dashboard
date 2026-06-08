@@ -9,6 +9,7 @@
 
   const payloadEl = document.getElementById("mentorAvailabilityPayload");
   const form = document.getElementById("mentorAvailabilityForm");
+  const officeHoursFocusServiceNames = new Set(["Tutoring", "Program Insights", "Interview Prep"]);
 
   initTheme();
   initShell();
@@ -151,11 +152,19 @@
     );
     const today = parseDateInput(String(input.today || formatDateKey(new Date())));
     const initialSelectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const serviceOptions = normalizeServiceOptions(input.service_options);
+    let officeHoursServiceOptions = normalizeServiceOptions(
+      input.office_hours?.config?.service_options || input.office_hours?.service_options || [],
+    );
+    if (officeHoursServiceOptions.length === 0) {
+      officeHoursServiceOptions = serviceOptions.filter((option) => officeHoursFocusServiceNames.has(option.label));
+    }
 
     return {
       saveUrl: String(input.save_url || form.action || ""),
       timezoneOptions: Array.isArray(input.timezone_options) ? input.timezone_options : [],
-      serviceOptions: normalizeServiceOptions(input.service_options),
+      serviceOptions,
+      officeHoursServiceOptions,
       timeOptions: Array.isArray(input.time_options) ? input.time_options : [],
       windowWeeks: Number(input.window_weeks || 12),
       timezone: String(input.timezone || "UTC"),
@@ -187,7 +196,7 @@
       currentView: "week",
       selectedDate: initialSelectedDate,
       selectedDayKey: formatDateKey(initialSelectedDate),
-      officeHours: normalizeOfficeHours(input.office_hours, input.service_options),
+      officeHours: normalizeOfficeHours(input.office_hours, officeHoursServiceOptions),
     };
   }
 
@@ -435,12 +444,13 @@
 
   function handleServiceSelectionChange() {
     state.serviceOptions = serviceOptionsFromInputs();
+    state.officeHoursServiceOptions = officeHoursServiceOptionsFromInputs();
 
     if (
       state.officeHours.serviceConfigId
-      && !state.serviceOptions.some((option) => Number(option.value) === Number(state.officeHours.serviceConfigId))
+      && !state.officeHoursServiceOptions.some((option) => Number(option.value) === Number(state.officeHours.serviceConfigId))
     ) {
-      state.officeHours.serviceConfigId = defaultServiceConfigId();
+      state.officeHours.serviceConfigId = defaultOfficeHoursServiceConfigId();
     }
 
     markDirty();
@@ -1283,6 +1293,7 @@
     state.saveUrl = next.saveUrl;
     state.timezoneOptions = next.timezoneOptions;
     state.serviceOptions = next.serviceOptions;
+    state.officeHoursServiceOptions = next.officeHoursServiceOptions;
     state.timeOptions = next.timeOptions;
     state.windowWeeks = next.windowWeeks;
     state.timezone = next.timezone;
@@ -1406,7 +1417,7 @@
   }
 
   function buildDraftOfficeHoursPreview() {
-    const serviceName = serviceLabelById(state.officeHours.serviceConfigId) || "Office Hours";
+    const serviceName = officeHoursServiceLabelById(state.officeHours.serviceConfigId) || "Office Hours";
     const weekday = weekdayLabel(state.officeHours.dayOfWeek);
     const recurringTime = state.officeHours.enabled
       ? state.officeHours.startTime
@@ -1445,7 +1456,7 @@
     const currentValue = officeHoursServiceSelect.value;
     const options = [
       '<option value="">Select service</option>',
-      ...state.serviceOptions.map((option) => {
+      ...state.officeHoursServiceOptions.map((option) => {
         const value = String(option.value);
         return `<option value="${escapeHtml(value)}">${escapeHtml(option.label)}</option>`;
       }),
@@ -1637,6 +1648,12 @@
     return match ? String(match.label || "") : "";
   }
 
+  function officeHoursServiceLabelById(serviceId) {
+    const match = state.officeHoursServiceOptions.find((option) => Number(option.value) === Number(serviceId));
+
+    return match ? String(match.label || "") : "";
+  }
+
   function serviceLabelFromOptions(options, serviceId) {
     const match = (Array.isArray(options) ? options : [])
       .find((option) => Number(option?.value) === Number(serviceId));
@@ -1664,6 +1681,11 @@
         duration_minutes: Math.max(Number(input.dataset.serviceDuration || 1), 1),
         allowed_sizes: parseAllowedSessionTypes(input.dataset.serviceAllowedSizes),
       }));
+  }
+
+  function officeHoursServiceOptionsFromInputs() {
+    return serviceOptionsFromInputs()
+      .filter((option) => officeHoursFocusServiceNames.has(option.label));
   }
 
   function parseAllowedSessionTypes(value) {
@@ -2146,6 +2168,10 @@
 
   function defaultServiceConfigId() {
     return hasServiceOptions() ? Number(state.serviceOptions[0].value) : null;
+  }
+
+  function defaultOfficeHoursServiceConfigId() {
+    return state.officeHoursServiceOptions.length > 0 ? Number(state.officeHoursServiceOptions[0].value) : null;
   }
 
   function countActiveDaysForMonth(monthDate) {

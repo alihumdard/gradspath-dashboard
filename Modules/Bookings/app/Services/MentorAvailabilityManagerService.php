@@ -376,7 +376,7 @@ class MentorAvailabilityManagerService
             ->first();
         $serviceOptions = $mentor->services()
             ->where('services_config.is_active', true)
-            ->where('services_config.is_office_hours', false)
+            ->officeHoursFocusEligible()
             ->orderBy('mentor_services.sort_order')
             ->orderBy('services_config.sort_order')
             ->get([

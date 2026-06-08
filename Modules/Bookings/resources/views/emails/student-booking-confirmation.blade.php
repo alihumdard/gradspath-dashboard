@@ -77,7 +77,7 @@
 
                     <tr>
                         <td style="padding:8px 32px 32px;">
-                            <p style="margin:0; font-size:14px; line-height:1.7; color:#4b5563;">You can return to your bookings page anytime to review your booking details, manage messages, and review the 24-hour cancellation window. We recommend keeping communication inside the platform rather than sharing personal email addresses unless support or policy requires it.</p>
+                            <p style="margin:0; font-size:14px; line-height:1.7; color:#4b5563;">You can return to your bookings page anytime to review your booking details, manage messages, and review the 12-hour cancellation window. We recommend keeping communication inside the platform rather than sharing personal email addresses unless support or policy requires it.</p>
                             <p style="margin:22px 0 0; font-size:14px; line-height:1.7; color:#4b5563;">Thanks,<br><strong>Grads Paths</strong></p>
                         </td>
                     </tr>

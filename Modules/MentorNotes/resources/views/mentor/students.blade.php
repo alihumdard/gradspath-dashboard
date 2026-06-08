@@ -1,6 +1,6 @@
 @extends('layouts.portal-mentor')
 
-@section('title', 'Users Notes - Grads Paths')
+@section('title', 'Mentor Notes on Users - Grads Paths')
 @section('portal_css_asset', 'assets/css/mentor-notes.css')
 @section('portal_active_nav', 'mentor-notes')
 
@@ -19,8 +19,8 @@
     <main class="page">
       <header class="page-header">
         <div class="page-title-wrap">
-          <h1>Users Notes</h1>
-          <p>Internal notes from all mentors. Only visible to mentors and admins.</p>
+          <h1>Mentor Notes on Users</h1>
+          <p>Internal notes from all mentors. Only visible to mentors.</p>
         </div>
       </header>
 
@@ -50,7 +50,7 @@
 
       <section class="section-header">
         <div>
-          <h4>Mentor Feedback on Users</h4>
+          <h4>Mentor Notes on Users</h4>
           <p>Open any note to see the full mentor session form response.</p>
         </div>
         <span id="resultsCount">0 users</span>

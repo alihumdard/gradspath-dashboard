@@ -164,6 +164,7 @@ const officeHoursServiceChoiceAlert = document.getElementById("officeHoursServic
 const closeOfficeHoursServiceChoiceBtn = document.getElementById("closeOfficeHoursServiceChoiceBtn");
 const saveOfficeHoursServiceChoiceBtn = document.getElementById("saveOfficeHoursServiceChoiceBtn");
 const cancelNo1 = document.getElementById("cancelNo1");
+const cancelClose1 = document.getElementById("cancelClose1");
 const cancelYes1 = document.getElementById("cancelYes1");
 const cancelNo2 = document.getElementById("cancelNo2");
 const cancelYes2 = document.getElementById("cancelYes2");
@@ -527,10 +528,10 @@ function syncCancelState(booking) {
 
   cancelMeetingBtn.disabled = !hasBooking;
   cancelMeetingBtn.setAttribute("aria-disabled", hasBooking ? "false" : "true");
-  cancelMeetingBtn.textContent = canCancel ? "Cancel Meeting" : "Contact Support";
+  cancelMeetingBtn.textContent = "Cancel Meeting";
   cancelMeetingBtn.title = canCancel
     ? "Cancel this meeting"
-    : booking?.cancelPolicyCopy || "Self-service cancellation closes 24 hours before the meeting";
+    : booking?.cancelPolicyCopy || "Self-service cancellation closes 12 hours before the meeting";
 
   if (!cancelBookingForm) {
     return;
@@ -1635,7 +1636,7 @@ function renderUpcomingAppointments() {
   const todayStart = new Date(today);
   todayStart.setHours(0, 0, 0, 0);
 
-  renderAppointmentSection(currentListEl, currentBookings, "No live meetings right now.", todayStart);
+  renderAppointmentSection(currentListEl, currentBookings, "No meetings in the next 24 hours.", todayStart);
   renderAppointmentSection(upcomingListEl, upcomingBookings, "No future bookings yet.", todayStart);
 }
 
@@ -2008,6 +2009,12 @@ if (closeFeedbackModalBtn) {
 
 if (cancelNo1) {
   cancelNo1.addEventListener("click", () => {
+    closeModal(cancelModal);
+  });
+}
+
+if (cancelClose1) {
+  cancelClose1.addEventListener("click", () => {
     closeModal(cancelModal);
   });
 }

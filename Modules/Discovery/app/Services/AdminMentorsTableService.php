@@ -35,7 +35,7 @@ class AdminMentorsTableService
                 'user:id,name,email',
                 'university:id,name,display_name',
                 'bookings.service:id,service_name,price_1on1,price_1on3_per_person,price_1on5_per_person,office_hours_subscription_price',
-                'rating:id,mentor_id,avg_stars',
+                'rating:id,mentor_id,avg_stars,admin_rating_override',
             ])
             ->orderByDesc('approved_at')
             ->orderBy('id')
@@ -76,8 +76,8 @@ class AdminMentorsTableService
                 }
             }
 
-            $ratingValue = $mentor->rating && (float) $mentor->rating->avg_stars > 0
-                ? number_format((float) $mentor->rating->avg_stars, 1)
+            $ratingValue = $mentor->rating?->has_effective_rating
+                ? number_format((float) $mentor->rating->effective_rating, 1)
                 : '-';
 
             return [

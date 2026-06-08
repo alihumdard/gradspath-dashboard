@@ -94,7 +94,7 @@ class Booking extends Model
 
     public function isSelfCancellationWindowOpen(): bool
     {
-        return $this->session_at !== null && $this->session_at->gt(now()->addDay());
+        return $this->session_at !== null && $this->session_at->gt(now()->addHours(12));
     }
 
     public function sessionAtInTimezone(?string $timezone = null): ?Carbon

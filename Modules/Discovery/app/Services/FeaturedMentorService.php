@@ -69,9 +69,12 @@ class FeaturedMentorService
     private function baseMentorQuery(): Builder
     {
         return Mentor::query()
-            ->withAggregate('rating as rating_avg_stars', 'avg_stars')
-            ->withAggregate('rating as rating_total_reviews', 'total_reviews')
-            ->withAggregate('rating as rating_total_sessions', 'total_sessions')
+            ->leftJoin('mentor_ratings', 'mentor_ratings.mentor_id', '=', 'mentors.id')
+            ->select('mentors.*')
+            ->selectRaw('COALESCE(mentor_ratings.admin_rating_override, mentor_ratings.avg_stars) as rating_effective_stars')
+            ->selectRaw('mentor_ratings.avg_stars as rating_avg_stars')
+            ->selectRaw('mentor_ratings.total_reviews as rating_total_reviews')
+            ->selectRaw('mentor_ratings.total_sessions as rating_total_sessions')
             ->where('mentors.status', 'active')
             ->whereHas('user');
     }
@@ -79,7 +82,7 @@ class FeaturedMentorService
     private function orderByRating(Builder $query): void
     {
         $query
-            ->orderByDesc('rating_avg_stars')
+            ->orderByDesc('rating_effective_stars')
             ->orderByDesc('rating_total_reviews')
             ->orderByDesc('rating_total_sessions')
             ->orderByDesc('mentors.id');

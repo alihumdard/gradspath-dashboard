@@ -2,6 +2,7 @@
 
 namespace Modules\Payments\app\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,6 +12,12 @@ use Modules\Settings\app\Models\Mentor;
 class ServiceConfig extends Model
 {
     protected $table = 'services_config';
+
+    public const OFFICE_HOURS_FOCUS_SERVICE_NAMES = [
+        'Tutoring',
+        'Program Insights',
+        'Interview Prep',
+    ];
 
     protected $fillable = [
         'service_name',
@@ -65,5 +72,12 @@ class ServiceConfig extends Model
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
+    }
+
+    public function scopeOfficeHoursFocusEligible(Builder $query): Builder
+    {
+        return $query
+            ->where('services_config.is_office_hours', false)
+            ->whereIn('services_config.service_name', self::OFFICE_HOURS_FOCUS_SERVICE_NAMES);
     }
 }

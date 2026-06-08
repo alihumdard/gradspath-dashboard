@@ -25,9 +25,8 @@
               </p>
               <p>
                 If only one student is booked 24 hours before the session, that student may choose
-                from any available service: <strong>Tutoring</strong>,
-                <strong>Program Insights</strong>, <strong>Interview Prep</strong>,
-                <strong>Application Review</strong>, and <strong>Gap Year Planning</strong>.
+                from the eligible services this mentor offers: <strong>Tutoring</strong>,
+                <strong>Program Insights</strong>, and <strong>Interview Prep</strong>.
               </p>
             </div>
           </div>

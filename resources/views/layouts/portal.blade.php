@@ -106,7 +106,6 @@
         '/mentor/institutions',
         '/student/mentors',
         '/mentor/mentors',
-        '/student/notes',
         '/mentor/notes',
         '/student/feedback',
         '/feedback',

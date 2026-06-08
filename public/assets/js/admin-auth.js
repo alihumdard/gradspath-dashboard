@@ -2343,6 +2343,15 @@ function initializeManualActionsHub() {
         : [];
     const mentorSelect = document.getElementById("manualMentorSelect");
     const mentorSummary = document.getElementById("manualMentorSummary");
+    const mentorRatingOverrideInput = document.getElementById(
+        "manualMentorRatingOverride",
+    );
+    const mentorRatingOverrideNoteInput = document.getElementById(
+        "manualMentorRatingOverrideNote",
+    );
+    const mentorClearRatingOverrideInput = document.getElementById(
+        "manualMentorClearRatingOverride",
+    );
     const featuredMentorList = document.getElementById(
         "manualFeaturedMentorSelect",
     );
@@ -2422,11 +2431,25 @@ function initializeManualActionsHub() {
             return;
         }
 
+        if (mentorRatingOverrideInput) {
+            mentorRatingOverrideInput.value = mentor.admin_rating_override || "";
+        }
+
+        if (mentorRatingOverrideNoteInput) {
+            mentorRatingOverrideNoteInput.value = mentor.admin_rating_override_note || "";
+        }
+
+        if (mentorClearRatingOverrideInput) {
+            mentorClearRatingOverrideInput.checked = false;
+        }
+
         renderSummary(mentorSummary, [
             { label: "Mentor", value: `${mentor.name} (${mentor.email})` },
             { label: "Current status", value: mentor.status },
             { label: "Mentors of the Week", value: mentor.is_featured ? "Yes" : "No" },
-            { label: "Rating", value: `${mentor.rating || "New"} (${mentor.total_reviews || 0} reviews)` },
+            { label: "Effective rating", value: `${mentor.rating || "New"} (${mentor.total_reviews || 0} reviews)` },
+            { label: "Calculated rating", value: mentor.calculated_rating || "New" },
+            { label: "Admin override", value: mentor.has_admin_rating_override ? mentor.admin_rating_override : "None" },
             { label: "Institution", value: mentor.institution },
             {
                 label: "Services",

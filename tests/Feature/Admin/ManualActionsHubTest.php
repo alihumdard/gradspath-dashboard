@@ -7,6 +7,8 @@ use Illuminate\Support\Str;
 use Modules\Auth\app\Models\AdminLog;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Feedback\app\Models\Feedback;
+use Modules\Feedback\app\Models\MentorRating;
+use Modules\Feedback\app\Services\RatingAggregationService;
 use Modules\Institutions\app\Models\University;
 use Modules\Institutions\app\Models\UniversityProgram;
 use Modules\Payments\app\Models\ServiceConfig;
@@ -194,6 +196,98 @@ it('writes an admin log for mentor updates and returns to the mentor section', f
         'target_table' => 'mentors',
         'target_id' => $mentor->id,
     ]);
+});
+
+it('lets admins set and clear mentor rating overrides', function () {
+    $admin = createManualActionsAdmin();
+    $mentor = createManualMentor();
+
+    MentorRating::query()->create([
+        'mentor_id' => $mentor->id,
+        'avg_stars' => 4.10,
+        'recommend_rate' => 100,
+        'total_reviews' => 2,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.manual-actions.mentors.update'), [
+            'mentor_id' => $mentor->id,
+            'status' => 'active',
+            'admin_rating_override' => '4.95',
+            'admin_rating_override_note' => 'Launch ordering adjustment',
+            'manual_section' => 'mentor',
+        ])
+        ->assertRedirect(route('admin.manual-actions'));
+
+    $rating = $mentor->fresh('rating')->rating;
+
+    expect((float) $rating->avg_stars)->toBe(4.10)
+        ->and((float) $rating->admin_rating_override)->toBe(4.95)
+        ->and($rating->admin_rating_override_note)->toBe('Launch ordering adjustment')
+        ->and($rating->admin_rating_overridden_by)->toBe($admin->id)
+        ->and($rating->admin_rating_overridden_at)->not->toBeNull()
+        ->and((float) $rating->effective_rating)->toBe(4.95);
+
+    $this->assertDatabaseHas('admin_logs', [
+        'admin_id' => $admin->id,
+        'action' => 'amend_mentor',
+        'target_table' => 'mentors',
+        'target_id' => $mentor->id,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.manual-actions.mentors.update'), [
+            'mentor_id' => $mentor->id,
+            'status' => 'active',
+            'clear_admin_rating_override' => '1',
+            'manual_section' => 'mentor',
+        ])
+        ->assertRedirect(route('admin.manual-actions'));
+
+    $rating = $mentor->fresh('rating')->rating;
+
+    expect($rating->admin_rating_override)->toBeNull()
+        ->and($rating->admin_rating_override_note)->toBeNull()
+        ->and($rating->admin_rating_overridden_by)->toBeNull()
+        ->and($rating->admin_rating_overridden_at)->toBeNull()
+        ->and((float) $rating->effective_rating)->toBe(4.10);
+});
+
+it('preserves admin rating overrides when feedback recalculates calculated ratings', function () {
+    $mentor = createManualMentor();
+    $student = createManualStudent();
+    $service = createManualService();
+    $booking = createManualBooking($student, $mentor, $service);
+
+    MentorRating::query()->create([
+        'mentor_id' => $mentor->id,
+        'avg_stars' => 3.00,
+        'admin_rating_override' => 4.80,
+        'admin_rating_override_note' => 'Do not erase me',
+        'recommend_rate' => 100,
+        'total_reviews' => 1,
+    ]);
+
+    Feedback::query()->create([
+        'booking_id' => $booking->id,
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'stars' => 5,
+        'comment' => 'Helpful session.',
+        'recommend' => true,
+        'service_type' => 'office_hours',
+        'is_verified' => true,
+        'is_visible' => true,
+    ]);
+
+    app(RatingAggregationService::class)->recalculate($mentor->id);
+
+    $rating = $mentor->fresh('rating')->rating;
+
+    expect((float) $rating->avg_stars)->toBe(5.00)
+        ->and((float) $rating->admin_rating_override)->toBe(4.80)
+        ->and($rating->admin_rating_override_note)->toBe('Do not erase me')
+        ->and((float) $rating->effective_rating)->toBe(4.80);
 });
 
 it('writes admin logs for institution and service pricing actions', function () {

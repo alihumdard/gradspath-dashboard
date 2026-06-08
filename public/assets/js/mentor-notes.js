@@ -58,8 +58,8 @@ function getInitials(name) {
 
 function sortNotesByDate(notes) {
   return [...notes].sort((a, b) => {
-    const first = a.rawDate || a.date;
-    const second = b.rawDate || b.date;
+    const first = a.rawSubmittedAt || a.rawDate || a.date;
+    const second = b.rawSubmittedAt || b.rawDate || b.date;
     return new Date(second) - new Date(first);
   });
 }
@@ -93,7 +93,7 @@ function notePreviewTitle(user, note) {
     return escapeHtml(note.service || "Session");
   }
 
-  return escapeHtml(user.name);
+  return escapeHtml(note.mentor || "Mentor");
 }
 
 function modalUserNameValue(user) {
@@ -112,15 +112,24 @@ function renderUsers() {
   const userTerm = userSearch?.value.trim().toLowerCase() || "";
   const mentorTerm = mentorSearch?.value.trim().toLowerCase() || "";
 
-  const filteredUsers = usersData.filter((user) => {
-    const matchesUser = !userTerm || String(user.name || "").toLowerCase().includes(userTerm);
-    const matchesMentor =
-      !mentorTerm ||
-      (Array.isArray(user.notes) &&
-        user.notes.some((note) => String(note.mentor || "").toLowerCase().includes(mentorTerm)));
+  const filteredUsers = usersData
+    .filter((user) => {
+      const matchesUser = !userTerm || String(user.name || "").toLowerCase().includes(userTerm);
+      const matchesMentor =
+        !mentorTerm ||
+        (Array.isArray(user.notes) &&
+          user.notes.some((note) => String(note.mentor || "").toLowerCase().includes(mentorTerm)));
 
-    return matchesUser && matchesMentor;
-  });
+      return matchesUser && matchesMentor;
+    })
+    .sort((a, b) => {
+      const firstNote = sortNotesByDate(a.notes || [])[0];
+      const secondNote = sortNotesByDate(b.notes || [])[0];
+      const firstDate = firstNote?.rawSubmittedAt || firstNote?.rawDate || firstNote?.date || "";
+      const secondDate = secondNote?.rawSubmittedAt || secondNote?.rawDate || secondNote?.date || "";
+
+      return new Date(secondDate) - new Date(firstDate);
+    });
 
   if (!usersGrid || !resultsCount || !emptyState) {
     return;
@@ -155,7 +164,7 @@ function renderUsers() {
         <div class="sessions-pill">${notes.length} ${notes.length === 1 ? "Note" : "Notes"}</div>
       </div>
 
-      <div class="notes-label">Mentor Notes</div>
+      <div class="notes-label">Mentor Notes on Users</div>
 
       <div class="note-list">
         ${visibleNotes

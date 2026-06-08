@@ -31,7 +31,7 @@ class FeedbackController extends Controller
                 'mentor:id,user_id,title,grad_school_display,mentor_type,program_type,bio,description,avatar_url',
                 'mentor.user:id,name,avatar_url',
                 'mentor.services:id,service_name',
-                'mentor.rating:id,mentor_id,avg_stars,recommend_rate,total_reviews,total_sessions,top_tag,top_tags_json',
+                'mentor.rating:id,mentor_id,avg_stars,admin_rating_override,recommend_rate,total_reviews,total_sessions,top_tag,top_tags_json',
             ])
             ->where('is_visible', true)
             ->orderByDesc('created_at')
@@ -119,8 +119,8 @@ class FeedbackController extends Controller
             })
             ->all();
 
-        $rating = $mentor->rating?->avg_stars !== null
-            ? (float) $mentor->rating->avg_stars
+        $rating = $mentor->rating?->has_effective_rating
+            ? (float) $mentor->rating->effective_rating
             : round((float) $group->avg('stars'), 1);
 
         return [

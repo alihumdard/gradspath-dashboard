@@ -1,6 +1,6 @@
 @extends('layouts.portal-mentor')
 
-@section('title', 'Mentor Session Notes - Grads Paths')
+@section('title', 'Mentor Notes on Users - Grads Paths')
 @section('portal_css_asset', 'assets/css/mentor-notes-detail.css')
 @section('portal_active_nav', 'mentor-notes')
 
@@ -20,7 +20,7 @@
             <section class="notes-card">
               <div class="card-top">
                 <span class="eyebrow">Internal Mentor Notes</span>
-                <h1>Mentor Notes After Session</h1>
+                <h1>Mentor Notes on Users</h1>
                 <p class="intro-text">
                   These notes are for internal mentor use only. Students cannot view this information.
                 </p>

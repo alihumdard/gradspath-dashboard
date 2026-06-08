@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Modules\Auth\app\Services\AdminAuditService;
+use Modules\Feedback\app\Models\MentorRating;
 use Modules\Auth\app\Models\User;
 use Modules\Payments\app\Services\CreditService;
 use Modules\Settings\app\Models\Mentor;
@@ -63,16 +64,66 @@ class ManualActionsController extends Controller
         $data = $request->validate([
             'mentor_id' => ['required', 'integer', 'exists:mentors,id'],
             'status' => ['required', 'in:pending,active,paused,rejected'],
+            'admin_rating_override' => ['nullable', 'numeric', 'min:0', 'max:5'],
+            'clear_admin_rating_override' => ['nullable', 'boolean'],
+            'admin_rating_override_note' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'manual_section' => ['nullable', 'string'],
         ]);
 
         $admin = Auth::user();
-        $mentor = Mentor::query()->findOrFail((int) $data['mentor_id']);
+        $mentor = Mentor::query()->with('rating')->findOrFail((int) $data['mentor_id']);
+        $rating = $mentor->rating;
 
-        $before = $mentor->only(['status']);
-        $mentor->status = $data['status'];
-        $mentor->save();
+        $before = [
+            'status' => $mentor->status,
+            'admin_rating_override' => $rating?->admin_rating_override !== null ? (float) $rating->admin_rating_override : null,
+            'admin_rating_override_note' => $rating?->admin_rating_override_note,
+            'admin_rating_overridden_by' => $rating?->admin_rating_overridden_by,
+            'admin_rating_overridden_at' => $rating?->admin_rating_overridden_at?->toIso8601String(),
+        ];
+
+        DB::transaction(function () use ($mentor, $admin, $data): void {
+            $mentor->status = $data['status'];
+            $mentor->save();
+
+            $clearOverride = (bool) ($data['clear_admin_rating_override'] ?? false);
+            $overrideProvided = array_key_exists('admin_rating_override', $data)
+                && $data['admin_rating_override'] !== null
+                && $data['admin_rating_override'] !== '';
+
+            if ($clearOverride || $overrideProvided) {
+                $rating = MentorRating::query()->firstOrNew(['mentor_id' => $mentor->id]);
+
+                if ($clearOverride) {
+                    $rating->forceFill([
+                        'admin_rating_override' => null,
+                        'admin_rating_override_note' => null,
+                        'admin_rating_overridden_by' => null,
+                        'admin_rating_overridden_at' => null,
+                    ]);
+                } else {
+                    $rating->forceFill([
+                        'admin_rating_override' => round((float) $data['admin_rating_override'], 2),
+                        'admin_rating_override_note' => $data['admin_rating_override_note'] ?? null,
+                        'admin_rating_overridden_by' => $admin?->id,
+                        'admin_rating_overridden_at' => now(),
+                    ]);
+                }
+
+                $rating->save();
+            }
+        });
+
+        $mentor->refresh()->load('rating');
+        $rating = $mentor->rating;
+        $after = [
+            'status' => $mentor->status,
+            'admin_rating_override' => $rating?->admin_rating_override !== null ? (float) $rating->admin_rating_override : null,
+            'admin_rating_override_note' => $rating?->admin_rating_override_note,
+            'admin_rating_overridden_by' => $rating?->admin_rating_overridden_by,
+            'admin_rating_overridden_at' => $rating?->admin_rating_overridden_at?->toIso8601String(),
+        ];
 
         $this->audit->log(
             $admin,
@@ -80,7 +131,7 @@ class ManualActionsController extends Controller
             'mentors',
             $mentor->id,
             $before,
-            ['status' => $mentor->status],
+            $after,
             $data['notes'] ?? null
         );
 

@@ -205,10 +205,25 @@ class BookingAvailabilityService
             ->with([
                 'user:id,name',
                 'university:id,name,display_name',
-                'rating:id,mentor_id,avg_stars',
-                'services' => fn ($query) => $query->where('services_config.is_active', true)->orderBy('services_config.sort_order'),
+                'rating:id,mentor_id,avg_stars,admin_rating_override,total_reviews,total_sessions',
+                'officeHourSchedules' => fn ($query) => $query
+                    ->with('currentService:id,service_name,service_slug')
+                    ->where('is_active', true)
+                    ->latest('id'),
+                'services' => fn ($query) => $query
+                    ->where('services_config.is_active', true)
+                    ->officeHoursFocusEligible()
+                    ->orderBy('services_config.sort_order'),
             ])
             ->where('status', 'active')
+            ->whereHas('services', fn (Builder $query) => $query
+                ->where('services_config.is_active', true)
+                ->where('services_config.is_office_hours', true)
+                ->where('mentor_services.is_active', true))
+            ->whereHas('services', fn (Builder $query) => $query
+                ->where('services_config.is_active', true)
+                ->officeHoursFocusEligible()
+                ->where('mentor_services.is_active', true))
             ->get();
 
         $sessionsByMentor = $this->nextOfficeHourSessionsForMentors($mentors->pluck('id')->all());
@@ -216,12 +231,9 @@ class BookingAvailabilityService
         return $mentors
             ->map(function (Mentor $mentor) use ($sessionsByMentor) {
                 $session = $sessionsByMentor->get($mentor->id);
-
-                if (!$session) {
-                    return null;
-                }
-
-                $sessionData = $this->transformOfficeHourSession($mentor, $session, $session->timezone ?: 'UTC');
+                $sessionData = $session
+                    ? $this->transformOfficeHourSession($mentor, $session, $session->timezone ?: 'UTC')
+                    : $this->transformOfficeHourDirectoryPlaceholder($mentor);
 
                 return [
                     'id' => $mentor->id,
@@ -230,7 +242,9 @@ class BookingAvailabilityService
                     'school' => $mentor->grad_school_display ?: $mentor->university?->display_name ?: $mentor->university?->name ?: 'School not listed',
                     'program' => $this->programLabel($mentor->program_type),
                     'programLabel' => $this->programLabel($mentor->program_type),
-                    'rating' => (float) ($mentor->rating?->avg_stars ?? 5.0),
+                    'rating' => (float) ($mentor->rating?->effective_rating ?? 5.0),
+                    'totalReviews' => (int) ($mentor->rating?->total_reviews ?? 0),
+                    'totalSessions' => (int) ($mentor->rating?->total_sessions ?? 0),
                     'officeHours' => $mentor->office_hours_schedule ?: $sessionData['sessionTime'],
                     'description' => $mentor->bio ?: $mentor->description ?: 'Mentor profile coming soon.',
                     'weeklyService' => $sessionData['weeklyService'],
@@ -239,7 +253,6 @@ class BookingAvailabilityService
                     'spotsFilled' => $sessionData['spotsFilled'],
                     'maxSpots' => $sessionData['maxSpots'],
                     'servicesOffered' => $mentor->services
-                        ->where('is_office_hours', false)
                         ->pluck('service_name')
                         ->values()
                         ->all(),
@@ -252,6 +265,12 @@ class BookingAvailabilityService
                 ];
             })
             ->filter()
+            ->sortBy([
+                ['rating', 'desc'],
+                ['totalReviews', 'desc'],
+                ['totalSessions', 'desc'],
+                ['id', 'desc'],
+            ])
             ->values()
             ->all();
     }
@@ -282,6 +301,32 @@ class BookingAvailabilityService
             ->groupBy(fn (OfficeHourSession $session) => (int) ($session->schedule?->mentor_id ?? 0))
             ->map(fn (Collection $sessions) => $sessions->first())
             ->forget(0);
+    }
+
+    private function transformOfficeHourDirectoryPlaceholder(Mentor $mentor): array
+    {
+        $schedule = $mentor->officeHourSchedules->first();
+        $focusService = $mentor->services->first();
+        $eligibleServiceIds = $mentor->services->pluck('id')->map(fn ($id) => (int) $id);
+        $serviceName = $schedule?->currentService && $eligibleServiceIds->contains((int) $schedule->current_service_id)
+            ? $schedule->currentService->service_name
+            : ($focusService?->service_name ?: 'Office Hours');
+        $sessionTime = 'Schedule coming soon';
+
+        if ($schedule) {
+            $sessionTime = $this->nextScheduleStart($schedule)->format('l, g:i A T');
+        } elseif ($mentor->office_hours_schedule) {
+            $sessionTime = $mentor->office_hours_schedule;
+        }
+
+        return [
+            'weeklyService' => $serviceName,
+            'sessionTime' => $sessionTime,
+            'rotation' => 'Weekly',
+            'spotsFilled' => 0,
+            'maxSpots' => 3,
+            'isBookable' => false,
+        ];
     }
 
     private function nextGeneratedOfficeHourSession(int $mentorId): ?OfficeHourSession
