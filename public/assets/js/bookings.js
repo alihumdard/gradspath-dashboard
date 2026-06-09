@@ -29,8 +29,30 @@ const upcomingBookings =
   Array.isArray(bookingDetailsData.upcomingBookings) &&
   bookingDetailsData.upcomingBookings.length > 0
     ? bookingDetailsData.upcomingBookings
-    : [fallbackBooking];
-const activeBookings = [...currentBookings, ...upcomingBookings];
+    : [];
+const allBookings =
+  Array.isArray(bookingDetailsData.allBookings) &&
+  bookingDetailsData.allBookings.length > 0
+    ? bookingDetailsData.allBookings
+    : [];
+const mergedRealBookings = [
+  ...allBookings,
+  ...currentBookings,
+  ...upcomingBookings,
+  ...(bookingDetailsData.selectedBooking ? [bookingDetailsData.selectedBooking] : []),
+];
+const uniqueRealBookings = Array.from(
+  mergedRealBookings
+    .reduce((carry, booking) => {
+      if (booking?.id != null && !carry.has(String(booking.id))) {
+        carry.set(String(booking.id), booking);
+      }
+
+      return carry;
+    }, new Map())
+    .values(),
+);
+const activeBookings = uniqueRealBookings.length > 0 ? uniqueRealBookings : [fallbackBooking];
 
 const selectedBooking =
   activeBookings.find((booking) => booking.id === bookingDetailsData.selectedBookingId) ||
@@ -526,8 +548,8 @@ function syncCancelState(booking) {
   const hasBooking = Boolean(booking);
   const canCancel = Boolean(booking?.canCancel && booking?.cancelUrl && cancelBookingForm);
 
-  cancelMeetingBtn.disabled = !hasBooking;
-  cancelMeetingBtn.setAttribute("aria-disabled", hasBooking ? "false" : "true");
+  cancelMeetingBtn.disabled = !canCancel;
+  cancelMeetingBtn.setAttribute("aria-disabled", canCancel ? "false" : "true");
   cancelMeetingBtn.textContent = "Cancel Meeting";
   cancelMeetingBtn.title = canCancel
     ? "Cancel this meeting"
@@ -1950,9 +1972,6 @@ if (cancelMeetingBtn) {
     }
 
     if (!booking?.canCancel || !booking?.cancelUrl || !cancelModal) {
-      if (supportModal) {
-        openModal(supportModal);
-      }
       return;
     }
 
@@ -2021,8 +2040,16 @@ if (cancelClose1) {
 
 if (cancelYes1) {
   cancelYes1.addEventListener("click", () => {
+    const booking = getBookingByDateKey(selectedDateKey);
+
+    if (!booking?.canCancel || !booking?.cancelUrl || !cancelBookingForm) {
+      closeModal(cancelModal);
+      return;
+    }
+
     closeModal(cancelModal);
-    openModal(cancelConfirmModal);
+    cancelYes1.disabled = true;
+    cancelBookingForm.submit();
   });
 }
 

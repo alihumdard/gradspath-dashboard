@@ -196,6 +196,11 @@ class BookingController extends Controller
             'viewerId' => (int) Auth::id(),
             'viewerName' => Auth::user()?->name,
             'chat' => $this->chatConfiguration(),
+            'allBookings' => $bookings->getCollection()
+                ->sortBy('session_at')
+                ->map(fn (Booking $booking) => $this->transformBooking($booking))
+                ->values()
+                ->all(),
             'currentBookings' => $bookings->getCollection()
                 ->filter(fn (Booking $booking) => $this->isCurrentBooking($booking))
                 ->sortBy('session_at')

@@ -6,6 +6,7 @@ use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Modules\Auth\app\Models\OauthToken;
@@ -527,20 +528,35 @@ class ZoomService
             throw new \RuntimeException('Zoom did not return an access token.');
         }
 
-        return OauthToken::query()->updateOrCreate(
-            [
-                'provider' => 'zoom',
-                'provider_user_id' => $providerUserId,
-            ],
-            [
+        return DB::transaction(function () use ($user, $providerUserId, $accessToken, $refreshToken, $payload): OauthToken {
+            $providerToken = OauthToken::query()
+                ->where('provider', 'zoom')
+                ->where('provider_user_id', $providerUserId)
+                ->first();
+
+            $userToken = OauthToken::query()
+                ->where('user_id', $user->id)
+                ->where('provider', 'zoom')
+                ->first();
+
+            if ($providerToken && $userToken && $providerToken->isNot($userToken)) {
+                $userToken->delete();
+            }
+
+            $token = $providerToken ?? $userToken ?? new OauthToken(['provider' => 'zoom']);
+
+            $token->fill([
                 'user_id' => $user->id,
+                'provider' => 'zoom',
                 'provider_user_id' => $providerUserId,
                 'access_token' => $accessToken,
                 'refresh_token' => $refreshToken,
                 // Zoom access tokens are short-lived; the refresh token is stored separately and reused until Zoom rotates or revokes it.
                 'token_expires_at' => now()->addSeconds(max((int) ($payload['expires_in'] ?? 3600) - 60, 60)),
-            ]
-        );
+            ])->save();
+
+            return $token;
+        });
     }
 
     private function refreshFailureRequiresReconnect(\Throwable $exception): bool

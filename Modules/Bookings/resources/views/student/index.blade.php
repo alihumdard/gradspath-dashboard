@@ -313,19 +313,6 @@
             </div>
           </div>
         </div>
-        <div class="modal-overlay hidden" id="supportModal">
-          <div class="modal-card support-card">
-            <h3>Cancellation Submitted</h3>
-            <p>Your meeting has been marked for cancellation. If the automatic refund needs admin review, support can help from the link below.</p>
-            <a href="#" class="support-link" id="supportLink"
-            >Contact Us / Support</a
-            >
-            <div class="support-note">Include your mentor name, booked date, and session time if you contact support.</div>
-            <div class="modal-actions single">
-              <button class="modal-btn primary" id="supportCloseBtn" type="button">Done</button>
-            </div>
-          </div>
-        </div>
         <div class="modal-overlay hidden" id="officeHoursServiceChoiceModal">
           <div class="modal-card service-choice-modal-card">
             <h3>Choose Office Hours Focus</h3>

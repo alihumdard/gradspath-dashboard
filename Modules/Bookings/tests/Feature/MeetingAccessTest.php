@@ -559,7 +559,8 @@ it('excludes completed bookings from the student upcoming list', function () {
 
     $payload = $response->viewData('bookingPageData');
 
-    expect(collect($payload['upcomingBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $completedBooking->id))->toBeFalse();
+    expect(collect($payload['upcomingBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $completedBooking->id))->toBeFalse()
+        ->and(collect($payload['allBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $completedBooking->id))->toBeTrue();
 });
 
 it('excludes completed bookings from the mentor upcoming list', function () {
@@ -579,7 +580,8 @@ it('excludes completed bookings from the mentor upcoming list', function () {
 
     $payload = $response->viewData('bookingPageData');
 
-    expect(collect($payload['upcomingBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $completedBooking->id))->toBeFalse();
+    expect(collect($payload['upcomingBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $completedBooking->id))->toBeFalse()
+        ->and(collect($payload['allBookings'])->contains(fn (array $booking) => (int) $booking['id'] === (int) $completedBooking->id))->toBeTrue();
 });
 
 it('excludes past incomplete bookings from the student upcoming list', function () {

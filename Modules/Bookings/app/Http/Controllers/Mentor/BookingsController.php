@@ -185,6 +185,10 @@ class BookingsController extends Controller
                     'items' => $booked,
                 ],
             ],
+            'allBookings' => collect(array_merge($hosted, $booked))
+                ->sortBy(fn (array $booking) => $booking['sessionStartsAt'] ?? '')
+                ->values()
+                ->all(),
             'currentBookings' => collect(array_merge($hosted, $booked))
                 ->filter(fn (array $booking) => $this->isCurrentBookingPayload($booking))
                 ->sortBy(fn (array $booking) => $booking['sessionStartsAt'] ?? '')
