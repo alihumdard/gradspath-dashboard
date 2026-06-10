@@ -8,10 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Modules\Auth\app\Models\User;
 use Modules\Feedback\app\Models\Feedback;
 use Modules\Feedback\app\Models\MentorFeedback;
 use Modules\MentorNotes\app\Models\MentorNote;
+use Modules\Payments\app\Models\BookingRefund;
 use Modules\OfficeHours\app\Models\OfficeHourSession;
 use Modules\Payments\app\Models\CreditTransaction;
 use Modules\Payments\app\Models\ServiceConfig;
@@ -287,6 +289,16 @@ class Booking extends Model
     public function meetingEvents(): HasMany
     {
         return $this->hasMany(BookingMeetingEvent::class, 'booking_id');
+    }
+
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(BookingRefund::class, 'booking_id');
+    }
+
+    public function latestRefund(): HasOne
+    {
+        return $this->hasOne(BookingRefund::class, 'booking_id')->latestOfMany();
     }
 
     public function participants(): BelongsToMany

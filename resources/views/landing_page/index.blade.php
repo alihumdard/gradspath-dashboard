@@ -148,30 +148,36 @@
               />
             </svg>
           </button>
-          <!-- <button
-            id="btn-dashboard"
-            class="hidden sm:inline-flex items-center justify-center gap-2 px-5 py-2 rounded-full min-w-[112px] text-sm font-bold text-white bg-[#4F46E5]/[0.95] hover:opacity-90 transition-all"
-          >
-            Dashboard
-          </button> -->
-          <!-- <button
-            id="btn-logout"
-            class="hidden sm:inline-flex items-center justify-center gap-2 px-5 py-2 rounded-full min-w-[112px] text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
-          >
-            Logout
-          </button> -->
-          <button
-            id="btn-login"
-            class="inline-flex items-center justify-center gap-2 px-3 sm:px-[30px] py-1.5 sm:py-[10px] rounded-full min-w-0 sm:min-w-[112px] text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
-          >
-            Login
-          </button>
-          <button
-            id="btn-signup"
-            class="inline-flex items-center justify-center gap-2 px-3 sm:px-7 py-1.5 sm:py-2 rounded-full min-w-0 sm:min-w-[124px] text-xs sm:text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
-          >
-            Sign Up
-          </button>
+          @auth
+            <a
+              href="{{ url('/') }}"
+              class="inline-flex items-center justify-center gap-2 px-3 sm:px-[30px] py-1.5 sm:py-[10px] rounded-full min-w-0 sm:min-w-[112px] text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
+            >
+              Dashboard
+            </a>
+            <form method="POST" action="{{ route('auth.logout') }}" class="inline-flex">
+              @csrf
+              <button
+                type="submit"
+                class="inline-flex items-center justify-center gap-2 px-3 sm:px-7 py-1.5 sm:py-2 rounded-full min-w-0 sm:min-w-[112px] text-xs sm:text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
+              >
+                Logout
+              </button>
+            </form>
+          @else
+            <button
+              id="btn-login"
+              class="inline-flex items-center justify-center gap-2 px-3 sm:px-[30px] py-1.5 sm:py-[10px] rounded-full min-w-0 sm:min-w-[112px] text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
+            >
+              Login
+            </button>
+            <button
+              id="btn-signup"
+              class="inline-flex items-center justify-center gap-2 px-3 sm:px-7 py-1.5 sm:py-2 rounded-full min-w-0 sm:min-w-[124px] text-xs sm:text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
+            >
+              Sign Up
+            </button>
+          @endauth
           <button
             id="menu-toggle"
             class="md:hidden w-10 h-10 flex items-center justify-center rounded-full border border-slate-300 dark:border-slate-600 text-black dark:text-white"
@@ -211,30 +217,36 @@
         <div
           class="flex gap-3 p-4 border-t border-slate-200 dark:border-slate-700"
         >
-          <button
-            id="btn-dashboard-mob"
-            class="hidden flex-1 py-[12px] rounded-full text-sm font-bold text-white bg-[#4F46E5]/[0.95] hover:opacity-90 transition-all"
-          >
-            Dashboard
-          </button>
-          <button
-            id="btn-logout-mob"
-            class="hidden flex-1 py-2.5 rounded-full text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
-          >
-            Logout
-          </button>
-          <button
-            id="btn-login-mob"
-            class="flex-1 py-[12px] rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
-          >
-            Login
-          </button>
-          <button
-            id="btn-signup-mob"
-            class="flex-1 py-2.5 rounded-full text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
-          >
-            Sign Up
-          </button>
+          @auth
+            <a
+              href="{{ url('/') }}"
+              class="flex-1 py-[12px] rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all text-center"
+            >
+              Dashboard
+            </a>
+            <form method="POST" action="{{ route('auth.logout') }}" class="flex-1">
+              @csrf
+              <button
+                type="submit"
+                class="w-full py-2.5 rounded-full text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
+              >
+                Logout
+              </button>
+            </form>
+          @else
+            <button
+              id="btn-login-mob"
+              class="flex-1 py-[12px] rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
+            >
+              Login
+            </button>
+            <button
+              id="btn-signup-mob"
+              class="flex-1 py-2.5 rounded-full text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
+            >
+              Sign Up
+            </button>
+          @endauth
         </div>
       </div>
     </div>
@@ -3534,41 +3546,69 @@
         </p>
 
         <div id="contact-signin-required" class="flex justify-center">
-          <div
-            class="w-full max-w-md bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-5 sm:p-6 lg:p-8 shadow-sm text-center"
-          >
+          @auth
             <div
-              class="w-14 h-14 mx-auto mb-4 rounded-full bg-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center"
+              class="w-full max-w-md bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-5 sm:p-6 lg:p-8 shadow-sm text-center"
             >
-              <i
-                class="fa-solid fa-lock text-2xl text-[var(--primary)]"
-                aria-hidden="true"
-              ></i>
-            </div>
-            <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">
-              Sign in to submit feedback
-            </h3>
-            <p class="text-[var(--text-muted)] text-sm mb-6">
-              You need an account and must be signed in to create a support
-              ticket.
-            </p>
-            <div class="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                type="button"
-                id="contact-open-login"
-                class="px-6 py-3 rounded-xl bg-[var(--primary)] text-white text-sm font-bold hover:opacity-90 transition-all"
+              <div
+                class="w-14 h-14 mx-auto mb-4 rounded-full bg-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center"
               >
-                Login
-              </button>
-              <button
-                type="button"
-                id="contact-open-signup"
-                class="px-6 py-3 rounded-xl border-2 border-[var(--border)] text-[var(--text-main)] text-sm font-bold hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all"
+                <i
+                  class="fa-solid fa-ticket text-2xl text-[var(--primary)]"
+                  aria-hidden="true"
+                ></i>
+              </div>
+              <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">
+                Open your support tickets
+              </h3>
+              <p class="text-[var(--text-muted)] text-sm mb-6">
+                Go to the portal Support tab to create a ticket or review
+                replies from the team.
+              </p>
+              <a
+                href="{{ route('public.support') }}"
+                class="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-[var(--primary)] text-white text-sm font-bold hover:opacity-90 transition-all"
               >
-                Signup
-              </button>
+                Open Support
+              </a>
             </div>
-          </div>
+          @else
+            <div
+              class="w-full max-w-md bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-5 sm:p-6 lg:p-8 shadow-sm text-center"
+            >
+              <div
+                class="w-14 h-14 mx-auto mb-4 rounded-full bg-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center"
+              >
+                <i
+                  class="fa-solid fa-lock text-2xl text-[var(--primary)]"
+                  aria-hidden="true"
+                ></i>
+              </div>
+              <h3 class="text-xl font-bold text-[var(--text-main)] mb-2">
+                Sign in to submit feedback
+              </h3>
+              <p class="text-[var(--text-muted)] text-sm mb-6">
+                You need an account and must be signed in to create a support
+                ticket.
+              </p>
+              <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button
+                  type="button"
+                  id="contact-open-login"
+                  class="px-6 py-3 rounded-xl bg-[var(--primary)] text-white text-sm font-bold hover:opacity-90 transition-all"
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  id="contact-open-signup"
+                  class="px-6 py-3 rounded-xl border-2 border-[var(--border)] text-[var(--text-main)] text-sm font-bold hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all"
+                >
+                  Signup
+                </button>
+              </div>
+            </div>
+          @endauth
         </div>
 
         <div id="contact-form-wrapper" class="flex justify-center hidden">

@@ -17,6 +17,13 @@
   </head>
 
   <body>
+    @php
+      $adminSupportOpenCount = class_exists(\Modules\Support\app\Models\SupportTicket::class)
+        ? \Modules\Support\app\Models\SupportTicket::query()
+            ->whereIn('status', ['open', 'pending', 'in_progress', 'more_information_required'])
+            ->count()
+        : 0;
+    @endphp
     <div class="app">
       <section class="dashboard" id="dashboard">
         <div class="sidebar-overlay" id="adminSidebarOverlay"></div>
@@ -37,7 +44,12 @@
             <a class="nav-link{{ request()->routeIs('admin.revenue') ? ' active' : '' }}" href="{{ route('admin.revenue') }}">Revenue</a>
             <a class="nav-link{{ request()->routeIs('admin.payouts*') ? ' active' : '' }}" href="{{ route('admin.payouts') }}">Payouts</a>
             <a class="nav-link{{ request()->routeIs('admin.rankings') ? ' active' : '' }}" href="{{ route('admin.rankings') }}">Rankings</a>
-            <a class="nav-link{{ request()->routeIs('admin.support.*') ? ' active' : '' }}" href="{{ route('admin.support.tickets.index') }}">Support</a>
+            <a class="nav-link nav-link--with-badge{{ request()->routeIs('admin.support.*') ? ' active' : '' }}" href="{{ route('admin.support.tickets.index') }}">
+              <span>Support</span>
+              @if ($adminSupportOpenCount > 0)
+                <span class="nav-badge">{{ $adminSupportOpenCount > 99 ? '99+' : $adminSupportOpenCount }}</span>
+              @endif
+            </a>
             <a class="nav-link{{ request()->routeIs('admin.manual-actions') ? ' active' : '' }}" href="{{ route('admin.manual-actions') }}">Manual Actions</a>
           </nav>
 

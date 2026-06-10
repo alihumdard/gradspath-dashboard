@@ -1349,6 +1349,15 @@ it('blocks students from creating new bookings when completed session feedback i
         BookingException::class,
         'Please submit feedback for your completed session before booking another meeting.'
     );
+
+    $this->actingAs($student)
+        ->get(route('student.dashboard'))
+        ->assertRedirect(route('student.feedback.index'))
+        ->assertSessionHas('warning', 'Please complete your pending session feedback before continuing in the student portal.');
+
+    $this->actingAs($student)
+        ->get(route('student.feedback.index'))
+        ->assertOk();
 });
 
 it('blocks mentors from creating or receiving new bookings when session notes are overdue', function () {

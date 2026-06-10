@@ -14,6 +14,7 @@ use Modules\Bookings\app\Http\Requests\AdminCancelBookingRequest;
 use Modules\Bookings\app\Http\Requests\AdminUpdateBookingRequest;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Services\BookingService;
+use Modules\Payments\app\Models\BookingRefund;
 use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Settings\app\Models\Mentor;
 
@@ -33,6 +34,7 @@ class BookingManagementController extends Controller
                 'booker:id,name,email',
                 'mentor.user:id,name,email',
                 'service:id,service_name',
+                'latestRefund',
             ])
             ->orderByDesc('session_at')
             ->get();
@@ -136,15 +138,15 @@ class BookingManagementController extends Controller
         return match ($entityType) {
             'user' => [
                 User::query()->findOrFail($entityId)->name ?: "User #{$entityId}",
-                Booking::query()->where('student_id', $entityId)->whereNotIn('status', ['cancelled', 'cancelled_pending_refund']),
+                Booking::query()->where('student_id', $entityId),
             ],
             'mentor' => [
                 Mentor::query()->with('user:id,name')->findOrFail($entityId)->user?->name ?: "Mentor #{$entityId}",
-                Booking::query()->where('mentor_id', $entityId)->whereNotIn('status', ['cancelled', 'cancelled_pending_refund']),
+                Booking::query()->where('mentor_id', $entityId),
             ],
             'service' => [
                 ServiceConfig::query()->findOrFail($entityId)->service_name ?: "Service #{$entityId}",
-                Booking::query()->where('service_config_id', $entityId)->whereNotIn('status', ['cancelled', 'cancelled_pending_refund']),
+                Booking::query()->where('service_config_id', $entityId),
             ],
             default => abort(404),
         };
@@ -188,6 +190,9 @@ class BookingManagementController extends Controller
     private function transformBooking(Booking $booking): array
     {
         $sessionAt = $booking->sessionAtInTimezone($booking->session_timezone);
+        $refund = $booking->relationLoaded('latestRefund')
+            ? $booking->latestRefund
+            : $booking->latestRefund()->first();
 
         return [
             'id' => $booking->id,
@@ -210,6 +215,20 @@ class BookingManagementController extends Controller
             'can_cancel' => in_array((string) $booking->status, ['pending', 'confirmed'], true)
                 && $booking->session_at?->isFuture(),
             'can_edit' => ! in_array((string) $booking->status, ['cancelled', 'cancelled_pending_refund'], true),
+            'refund' => $refund ? [
+                'id' => $refund->id,
+                'type' => $refund->type,
+                'type_label' => $this->labelize($refund->type),
+                'status' => $refund->status,
+                'status_label' => $this->labelize($refund->status),
+                'amount' => (float) $refund->amount,
+                'credits' => (int) $refund->credits,
+                'currency' => strtoupper((string) ($refund->currency ?: 'USD')),
+                'stripe_refund_id' => $refund->stripe_refund_id,
+                'stripe_transfer_reversal_id' => $refund->stripe_transfer_reversal_id,
+                'failure_reason' => $refund->failure_reason,
+                'requires_admin_review' => $refund->status === BookingRefund::STATUS_REQUIRES_ADMIN_REVIEW,
+            ] : null,
         ];
     }
 

@@ -4,6 +4,7 @@ namespace Modules\Payments\app\Services;
 
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Payments\app\Models\BookingPayment;
 use Modules\Payments\app\Models\BookingRefund;
@@ -199,6 +200,12 @@ class BookingRefundService
                 'failed_at' => now(),
             ])->save();
         });
+
+        Log::warning('Booking cancellation refund requires admin review.', [
+            'booking_id' => $booking->id,
+            'booking_refund_id' => $refund->id,
+            'reason' => $reason,
+        ]);
 
         return $refund->fresh();
     }

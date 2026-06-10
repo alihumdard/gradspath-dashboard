@@ -2,8 +2,11 @@
 
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\User;
+use Modules\Bookings\app\Jobs\SendBookingChatMessageJob;
+use Modules\Bookings\app\Mail\BookingChatMessageMail;
 use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Models\Chat;
 use Modules\Payments\app\Models\ServiceConfig;
@@ -124,8 +127,8 @@ it('lets a student load a booking chat thread and marks received messages as rea
     ]);
 });
 
-it('lets a student send a chat message and broadcasts it without sending email', function () {
-    Mail::fake();
+it('lets a student send a chat message and queues an email notification', function () {
+    Queue::fake();
 
     [$booking, $student, $mentor, $mentorUser] = makeChatBooking('1on3');
 
@@ -146,9 +149,49 @@ it('lets a student send a chat message and broadcasts it without sending email',
         'message_text' => 'I will upload my interview notes tonight.',
     ]);
 
-    Mail::assertNothingSent();
+    $chat = Chat::query()->where('booking_id', $booking->id)->firstOrFail();
+
+    Queue::assertPushed(SendBookingChatMessageJob::class, fn ($job) => $job->chatId === $chat->id);
 
     expect(Chat::query()->where('booking_id', $booking->id)->count())->toBe(1);
+});
+
+it('sends booking chat email notifications to the receiver', function () {
+    Mail::fake();
+
+    [$booking, $student, $mentor, $mentorUser] = makeChatBooking();
+
+    $chat = Chat::query()->create([
+        'booking_id' => $booking->id,
+        'sender_id' => $student->id,
+        'receiver_id' => $mentorUser->id,
+        'message_text' => 'Please check the prep notes.',
+        'is_read' => false,
+        'sent_at' => now(),
+    ]);
+
+    (new SendBookingChatMessageJob($chat->id))->handle();
+
+    Mail::assertSent(BookingChatMessageMail::class, fn ($mail) => $mail->hasTo($mentorUser->email));
+});
+
+it('shows unread booking chat counts in the student sidebar', function () {
+    [$booking, $student, $mentor, $mentorUser] = makeChatBooking();
+
+    Chat::query()->create([
+        'booking_id' => $booking->id,
+        'sender_id' => $mentorUser->id,
+        'receiver_id' => $student->id,
+        'message_text' => 'Unread sidebar message.',
+        'is_read' => false,
+        'sent_at' => now(),
+    ]);
+
+    $this->actingAs($student)
+        ->get(route('student.bookings.index'))
+        ->assertOk()
+        ->assertSee('portal-nav-badge', false)
+        ->assertSee('1 unread booking messages');
 });
 
 it('lets a mentor load and send messages for their booking thread', function () {

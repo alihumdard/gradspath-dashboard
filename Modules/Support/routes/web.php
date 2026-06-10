@@ -5,12 +5,12 @@ use Modules\Support\app\Http\Controllers\Admin\SupportTicketsController;
 use Modules\Support\app\Http\Controllers\Mentor\TicketsController as MentorTicketsController;
 use Modules\Support\app\Http\Controllers\Student\TicketsController as StudentTicketsController;
 
-Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:student', 'feedback.required'])->group(function () {
 	Route::get('/student/support', [StudentTicketsController::class, 'index'])->name('student.support.index');
 	Route::post('/student/support', [StudentTicketsController::class, 'store'])->middleware('throttle:5,60')->name('student.support.store');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:mentor'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.notes.required'])->group(function () {
 	Route::get('/mentor/support', [MentorTicketsController::class, 'index'])->name('mentor.support.index');
 	Route::post('/mentor/support', [MentorTicketsController::class, 'store'])->middleware('throttle:5,60')->name('mentor.support.store');
 });

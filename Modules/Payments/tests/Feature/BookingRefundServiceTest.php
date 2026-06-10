@@ -106,7 +106,7 @@ function createRefundPaidPayment(array $context, string $paymentIntent = 'pi_ref
         'service_config_id' => $context['service']->id,
         'mentor_availability_slot_id' => $context['slot']->id,
         'session_type' => '1on1',
-        'meeting_type' => 'zoom',
+        'meeting_type' => 'google_meet',
         'amount' => 120,
         'currency' => 'USD',
         'request_payload' => [
@@ -114,7 +114,7 @@ function createRefundPaidPayment(array $context, string $paymentIntent = 'pi_ref
             'service_config_id' => $context['service']->id,
             'session_type' => '1on1',
             'mentor_availability_slot_id' => $context['slot']->id,
-            'meeting_type' => 'zoom',
+            'meeting_type' => 'google_meet',
             'guest_participants' => [],
             'portal_context' => 'student',
         ],
@@ -181,7 +181,7 @@ it('automatically refunds credits when a credit booking is cancelled', function 
         'service_config_id' => $context['service']->id,
         'session_type' => 'office_hours',
         'office_hour_session_id' => $sessionId,
-        'meeting_type' => 'zoom',
+        'meeting_type' => 'google_meet',
         'guest_participants' => [],
     ]);
 
@@ -285,6 +285,39 @@ it('marks paid booking cancellation for admin review when stripe refund fails', 
     expect($booking->fresh()->status)->toBe('cancelled_pending_refund')
         ->and($refund->status)->toBe(BookingRefund::STATUS_REQUIRES_ADMIN_REVIEW)
         ->and($refund->failure_reason)->toContain('Refund failed');
+});
+
+it('exposes failed booking refund details in the admin booking manager', function () {
+    Http::fake([
+        'https://api.stripe.com/v1/refunds' => Http::response([
+            'error' => [
+                'message' => 'Refund failed.',
+            ],
+        ], 400),
+    ]);
+    $this->app->instance(HttpFactory::class, Http::getFacadeRoot());
+
+    $admin = createRefundUser('admin');
+    $context = createRefundBookingContext();
+    $payment = createRefundPaidPayment($context, 'pi_admin_refund_fail_123');
+    $booking = Booking::query()->findOrFail($payment->booking_id);
+
+    app(BookingService::class)->cancelBooking($booking, $context['student'], 'Changed plans');
+
+    $response = $this->actingAs($admin)->getJson(route('admin.bookings.related', [
+        'entityType' => 'user',
+        'entityId' => $context['student']->id,
+    ]));
+
+    $response->assertOk();
+
+    $payloadBooking = collect($response->json('bookings'))->firstWhere('id', $booking->id);
+
+    expect($payloadBooking)->not->toBeNull()
+        ->and($payloadBooking['status'])->toBe('cancelled_pending_refund')
+        ->and($payloadBooking['refund']['status'])->toBe(BookingRefund::STATUS_REQUIRES_ADMIN_REVIEW)
+        ->and($payloadBooking['refund']['requires_admin_review'])->toBeTrue()
+        ->and($payloadBooking['refund']['failure_reason'])->toContain('Refund failed');
 });
 
 it('does not refund student when transferred payout reversal fails', function () {

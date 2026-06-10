@@ -7,7 +7,7 @@ use Modules\Discovery\app\Http\Controllers\Mentor\MentorSearchController as Ment
 use Modules\Discovery\app\Http\Controllers\Student\DashboardController;
 use Modules\Discovery\app\Http\Controllers\Student\MentorSearchController as StudentMentorSearchController;
 
-Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved', 'mentor.notes.required'])->group(function () {
     Route::get('/mentor/dashboard', [MentorDashboardController::class, 'index'])->name('mentor.dashboard');
     Route::get('/mentor/mentors', [MentorMentorSearchController::class, 'index'])->name('mentor.mentors.index');
     Route::get('/mentor/mentors/{id}', [MentorMentorSearchController::class, 'show'])->name('mentor.mentors.show');
@@ -24,11 +24,11 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->prefix(config('auth.
     Route::get('/dashboard/manual-actions', [AdminDashboardController::class, 'manualActions'])->name('manual-actions');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:student', 'feedback.required'])->group(function () {
     Route::get('/student/dashboard', [DashboardController::class, 'index'])->name('student.dashboard');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:student', 'feedback.required'])->group(function () {
     Route::get('/student/explore', [StudentMentorSearchController::class, 'index'])->name('student.explore');
     Route::get('/student/mentors', [StudentMentorSearchController::class, 'index'])->name('student.mentors.index');
     Route::get('/student/mentors/{id}', [StudentMentorSearchController::class, 'show'])->name('student.mentors.show');

@@ -3,6 +3,7 @@
 namespace Modules\Institutions\app\Http\Controllers\Mentor;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Modules\Institutions\app\Http\Requests\FilterUniversitiesRequest;
 use Modules\Institutions\app\Services\InstitutionService;
@@ -18,7 +19,7 @@ class InstitutionsController extends Controller
 
         return view('institutions::mentor.index', [
             'institutions' => $result,
-            'institutionsData' => $this->institutions->browseData(),
+            'institutionsData' => $this->institutions->browseData('mentor', Auth::user()?->mentor?->id),
             'filters' => $filters,
         ]);
     }

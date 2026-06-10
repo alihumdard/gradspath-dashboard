@@ -23,12 +23,6 @@
                   <p class="subtitle" id="bookingSubtitle">Here is your meeting information with your student.</p>
                 </div>
                 <div class="booking-header-right">
-                  <p class="cancel-copy" id="mentorNotesHelper">Internal notes stay visible to mentors only.</p>
-                  <button
-                  class="feedback-trigger-btn mentor-notes-trigger"
-                  id="mentorNotesBtn"
-                  type="button"
-                  >Add Session Notes</button>
                   <p class="cancel-copy">Want to cancel your meeting?</p>
                   <button
                   class="cancel-btn"
@@ -276,6 +270,22 @@
             <button type="submit">Send</button>
           </form>
         </section>
+        <section class="feedback-entry-section mentor-notes-entry-section">
+          <div class="feedback-entry-copy">
+            <span class="feedback-entry-eyebrow">Post-Meeting Notes</span>
+            <h3>Session Notes After Your Meeting</h3>
+            <p>Mentor session notes unlock after the hosted meeting ends and stay visible to mentors only.</p>
+            <p class="feedback-entry-helper" id="mentorNotesHelper">Select a hosted booking to add session notes.</p>
+          </div>
+          <div class="feedback-entry-actions">
+            <span class="feedback-status-pill" id="mentorNotesStatusPill">Locked</span>
+            <button
+            class="feedback-trigger-btn mentor-notes-trigger"
+            id="mentorNotesBtn"
+            type="button"
+            >Add Session Notes</button>
+          </div>
+        </section>
       </div>
       </div>
       </div>
@@ -295,6 +305,7 @@
         </div>
         <div class="modal-overlay hidden" id="cancelConfirmModal">
           <div class="modal-card">
+            <button class="modal-close-btn" id="cancelClose2" type="button" aria-label="Close cancel confirmation">&times;</button>
             <h3>Are you absolutely sure?</h3>
             <p>Eligible cancellations automatically refund the credits or payment used for this booking.</p>
             <div class="modal-actions">

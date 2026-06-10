@@ -189,6 +189,7 @@ const cancelNo1 = document.getElementById("cancelNo1");
 const cancelClose1 = document.getElementById("cancelClose1");
 const cancelYes1 = document.getElementById("cancelYes1");
 const cancelNo2 = document.getElementById("cancelNo2");
+const cancelClose2 = document.getElementById("cancelClose2");
 const cancelYes2 = document.getElementById("cancelYes2");
 const supportCloseBtn = document.getElementById("supportCloseBtn");
 const supportLink = document.getElementById("supportLink");
@@ -196,6 +197,7 @@ const cancelBookingForm = document.getElementById("cancelBookingForm");
 const cancelBookingReasonInput = document.getElementById("cancelBookingReason");
 const mentorNotesBtn = document.getElementById("mentorNotesBtn");
 const mentorNotesHelperEl = document.getElementById("mentorNotesHelper");
+const mentorNotesStatusPillEl = document.getElementById("mentorNotesStatusPill");
 const feedbackModal = document.getElementById("feedbackModal");
 const openFeedbackModalBtn = document.getElementById("openFeedbackModalBtn");
 const closeFeedbackModalBtn = document.getElementById("closeFeedbackModalBtn");
@@ -732,21 +734,34 @@ async function saveOfficeHoursServiceChoice() {
 }
 
 function syncMentorNotesState(booking) {
-  if (!mentorNotesBtn) return;
-
   const hasBooking = Boolean(booking?.id);
   const canOpenNotes = Boolean(booking?.mentorNotesAvailable && booking?.mentorNotesUrl);
+  const submitted = Boolean(booking?.mentorNotesSubmitted);
 
-  mentorNotesBtn.disabled = !hasBooking || !canOpenNotes;
-  mentorNotesBtn.textContent = booking?.mentorNotesLabel || "Add Session Notes";
-  mentorNotesBtn.title = canOpenNotes
-    ? "Open internal mentor notes for this hosted session"
-    : booking?.mentorNotesHelper || "Mentor notes can only be added for sessions hosted by you.";
+  if (mentorNotesBtn) {
+    mentorNotesBtn.disabled = !hasBooking || !canOpenNotes;
+    mentorNotesBtn.textContent = booking?.mentorNotesLabel || "Add Session Notes";
+    mentorNotesBtn.title = canOpenNotes
+      ? "Open internal mentor notes for this hosted session"
+      : booking?.mentorNotesHelper || "Mentor notes can only be added for sessions hosted by you.";
+  }
 
   if (mentorNotesHelperEl) {
     mentorNotesHelperEl.textContent = !hasBooking
       ? "Select a booking to open internal mentor notes."
       : booking?.mentorNotesHelper || "Internal notes stay visible to mentors only.";
+  }
+
+  if (mentorNotesStatusPillEl) {
+    mentorNotesStatusPillEl.textContent = !hasBooking
+      ? "Locked"
+      : submitted
+        ? "Completed"
+        : canOpenNotes
+          ? "Ready"
+          : "Locked";
+    mentorNotesStatusPillEl.classList.toggle("open", hasBooking && canOpenNotes && !submitted);
+    mentorNotesStatusPillEl.classList.toggle("done", hasBooking && submitted);
   }
 }
 
@@ -2055,6 +2070,12 @@ if (cancelYes1) {
 
 if (cancelNo2) {
   cancelNo2.addEventListener("click", () => {
+    closeModal(cancelConfirmModal);
+  });
+}
+
+if (cancelClose2) {
+  cancelClose2.addEventListener("click", () => {
     closeModal(cancelConfirmModal);
   });
 }

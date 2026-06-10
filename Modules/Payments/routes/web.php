@@ -9,7 +9,7 @@ use Modules\Payments\app\Http\Controllers\Payments\StripeWebhookController;
 use Modules\Payments\app\Http\Controllers\Student\BookingCheckoutController;
 use Modules\Payments\app\Http\Controllers\Student\CreditsController;
 
-Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:student', 'feedback.required'])->group(function () {
 	Route::get('/student/store', [CreditsController::class, 'index'])->name('student.store');
 	Route::get('/student/credits/balance', [CreditsController::class, 'balance'])->name('student.credits.balance');
 	Route::post('/student/store/purchase', [CreditsController::class, 'purchase'])->name('student.store.purchase');
@@ -19,7 +19,7 @@ Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () 
 	Route::get('/student/bookings/checkout/success', [BookingCheckoutController::class, 'success'])->name('student.bookings.checkout.success');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved', 'mentor.notes.required'])->group(function () {
 	Route::get('/mentor/store', [CreditsController::class, 'index'])->name('mentor.store');
 	Route::get('/mentor/credits/balance', [CreditsController::class, 'balance'])->name('mentor.credits.balance');
 	Route::post('/mentor/store/purchase', [CreditsController::class, 'purchase'])->name('mentor.store.purchase');

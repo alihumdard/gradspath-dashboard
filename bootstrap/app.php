@@ -52,6 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'booking.participant' => \Modules\Bookings\app\Http\Middleware\EnsureBookingParticipant::class,
             'mentor.approved' => \App\Http\Middleware\EnsureMentorApproved::class,
             'feedback.required' => \App\Http\Middleware\EnsureFeedbackCompleted::class,
+            'mentor.notes.required' => \App\Http\Middleware\EnsureMentorSessionNotesCompleted::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

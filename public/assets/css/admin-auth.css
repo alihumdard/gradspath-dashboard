@@ -237,6 +237,29 @@ select {
   line-height: 1.25;
 }
 
+.nav-link--with-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nav-badge {
+  min-width: 24px;
+  min-height: 22px;
+  border-radius: 999px;
+  padding: 2px 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(167, 139, 250, 0.36);
+  background: rgba(167, 139, 250, 0.18);
+  color: #ddd1ff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .nav-link.active,
 .nav-link:hover {
   background: rgba(255, 255, 255, 0.05);
@@ -3571,6 +3594,28 @@ body.admin-modal-open {
 .admin-bookings-chip--muted {
   background: rgba(255, 255, 255, 0.08);
   color: var(--muted);
+}
+
+.admin-bookings-chip--warning {
+  background: rgba(242, 166, 63, 0.16);
+  color: #ffd89c;
+}
+
+.admin-bookings-refund {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(98, 169, 255, 0.18);
+  background: rgba(98, 169, 255, 0.08);
+}
+
+.admin-bookings-refund.is-review {
+  border-color: rgba(242, 166, 63, 0.28);
+  background: rgba(242, 166, 63, 0.1);
+  color: #ffd89c;
+}
+
+.admin-bookings-refund strong {
+  color: inherit;
 }
 
 .admin-bookings-item__actions {

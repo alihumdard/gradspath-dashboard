@@ -230,17 +230,24 @@ class MentorPayoutService
             $response = $exception->response;
             $payout->forceFill([
                 'status' => MentorPayout::STATUS_FAILED,
-                'failure_reason' => (string) data_get($response?->json(), 'error.message', $exception->getMessage()),
+                'failure_reason' => $this->failureReason(
+                    (string) data_get($response?->json(), 'error.message', $exception->getMessage())
+                ),
                 'failed_at' => now(),
             ])->save();
         } catch (\Throwable $exception) {
             $payout->forceFill([
                 'status' => MentorPayout::STATUS_FAILED,
-                'failure_reason' => $exception->getMessage(),
+                'failure_reason' => $this->failureReason($exception->getMessage()),
                 'failed_at' => now(),
             ])->save();
         }
 
         return $payout->fresh();
+    }
+
+    private function failureReason(string $message): string
+    {
+        return mb_strimwidth($message, 0, 2000, '...');
     }
 }

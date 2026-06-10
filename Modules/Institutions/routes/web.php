@@ -6,12 +6,12 @@ use Modules\Institutions\app\Http\Controllers\Admin\UniversityProgramsController
 use Modules\Institutions\app\Http\Controllers\Mentor\InstitutionsController as MentorInstitutionsController;
 use Modules\Institutions\app\Http\Controllers\Student\InstitutionsController as StudentInstitutionsController;
 
-Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:student', 'feedback.required'])->group(function () {
 	Route::get('/student/institutions', [StudentInstitutionsController::class, 'index'])->name('student.institutions.index');
 	Route::get('/student/institutions/{id}', [StudentInstitutionsController::class, 'show'])->name('student.institutions.show');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved', 'mentor.notes.required'])->group(function () {
 	Route::get('/mentor/institutions', [MentorInstitutionsController::class, 'index'])->name('mentor.institutions.index');
 	Route::get('/mentor/institutions/{id}', [MentorInstitutionsController::class, 'show'])->name('mentor.institutions.show');
 });

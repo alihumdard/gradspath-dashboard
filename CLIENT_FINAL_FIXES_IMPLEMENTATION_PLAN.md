@@ -62,8 +62,8 @@ Make the student and mentor portals visually and behaviorally consistent.
 Scope:
 
 - Shared portal topbar.
-- Shared mentor card component.
-- Services offered open by default.
+- [x] Shared mentor card component.
+- [x] Services offered open by default.
 - Correct sidebar order and active outlines.
 - Remove student Settings and Mentor Notes.
 - Mentor Notes on Users view only for mentors.
@@ -83,7 +83,7 @@ Scope:
 - Institution logos.
 - Institution display overrides.
 - Program tier/type configuration.
-- Featured institutions automatic/manual modes.
+- [x] Featured institutions automatic/manual modes.
 - Mentors of the Week automatic/manual modes.
 - Mentor rating admin override.
 
@@ -323,26 +323,26 @@ Scope:
 - [x] Add missing public routes/sections if required.
 - [x] Add a route smoke test for all footer links.
 
-### 12. Universal mentor card UI and Services Offered open by default
+### 12. Universal mentor card UI and Services Offered open by default - (Done)
 
 **Client question:** All mentor cards must use the same UI as `image6`; Services Offered should be open automatically but closable.
 
-**Answer:** Create/reuse one mentor-card partial/component across dashboard, find mentors, institution detail, and mentor profile cards.
+**Answer:** Done. Create/reuse one mentor-card partial/component across dashboard, find mentors, institution detail, and mentor profile cards.
 
-**Current finding:** Mentor card markup is duplicated in dashboard, mentor profile, institutions JS, office hours JS, settings, and discovery pages. Services accordion exists and is closed/toggled via `public/assets/js/discovery.js`.
+**Current finding:** Completed. The universal mentor card is implemented and reused across the portals.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Create a Blade partial/component for mentor cards.
-- Use the same structure in:
+- [x] Create a Blade partial/component for mentor cards.
+- [x] Use the same structure in:
   - Student dashboard.
   - Mentor dashboard.
   - Find Mentors.
   - Institutions mentor tab.
   - Mentor profile previews.
   - Office Hours cards where applicable.
-- Set services accordion open by default with user-toggle close behavior.
-- Refactor JS-generated cards to use the same visual contract.
+- [x] Set services accordion open by default with user-toggle close behavior.
+- [x] Refactor JS-generated cards to use the same visual contract.
 
 ### 13. Explore by University top six, full names, logos - Done
 
@@ -362,24 +362,24 @@ Scope:
 - [x] Linked institution cards to the relevant institution detail pages.
 - [x] Verified with `php artisan test Modules/Discovery/tests/Feature/DashboardSplitTest.php` - 15 passed, 49 assertions.
 
-### 13b. Admin can choose institutions or default daily auto-update by meetings
+### 13b. Admin can choose institutions or default daily auto-update by meetings - (Done)
 
 **Client question:** Admin needs option to display chosen institutions; default should auto-update daily by meeting count.
 
-**Answer:** Add featured institution configuration with automatic and manual modes.
+**Answer:** Done. Added featured institution configuration with automatic and manual modes, a scheduled recalculation task, and admin configuration controls.
 
-**Current finding:** No dedicated featured institution/admin ranking config exists.
+**Current finding:** Completed. Featured institutions can be manually chosen or automatically updated daily by booking counts.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Add table: `featured_institution_settings` or fields on universities:
+- [x] Add table/model/settings for featured institutions or settings:
   - `featured_mode`: automatic/manual.
   - manual order.
   - manual visibility.
   - last recalculated date.
-- Add scheduled command to recalculate daily using booking counts.
-- Add admin UI to override visible institutions.
-- Make dashboard consume this service instead of direct query.
+- [x] Add scheduled command to recalculate daily using booking counts.
+- [x] Add admin UI to override visible institutions.
+- [x] Make dashboard consume this service instead of direct query.
 
 ### 14. Mentors of the Week top rated 6 or admin-chosen - Done
 
@@ -415,19 +415,20 @@ Scope:
 - [x] Added validation and admin preview.
 - [x] Added focused feature test coverage for manual institution/program edits.
 
-### 16. Institution detail mentor cards and dark button color
+### 16. Institution detail mentor cards and dark button color - (Done)
 
 **Client question:** Institution mentor cards must match item 12; dark button should use lighter scheme like `image10`.
 
-**Answer:** Reuse universal mentor cards and adjust button tokens.
+**Answer:** Done. Institution mentor cards now use the same mentor-card structure as item 12, and the card action button uses a lighter purple/white scheme.
 
-**Current finding:** Institutions pages use `public/assets/js/institutions.js` to render mentor cards. Button styling is in `public/assets/css/institutions.css`.
+**Current finding:** Implemented in the JS-driven institution detail panel used when a student or mentor clicks a college, selects a program category, and opens Mentor View.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Update institution detail mentor rendering to match shared card design.
-- Replace the dark button class with the lighter purple/white scheme from reference.
-- Verify both Programs and Mentors tabs.
+- [x] Updated institution mentor rendering in `public/assets/js/institutions.js` to match the dashboard mentor-card layout from item 12.
+- [x] Added avatar/initials, rating, office-hours row, bio read-more, Services Offered open by default, recent feedback, and Book Now/current mentor action states.
+- [x] Expanded `InstitutionService::browseData()` to provide mentor id, avatar, initials, services, feedback link, review copy, and role-aware booking URLs.
+- [x] Updated `public/assets/css/institutions.css` so institution mentor cards match the shared card styling and the action button uses the lighter purple/white treatment.
 
 ### 17. Multiple tiers behavior and four program filter options - (Done)
 
@@ -446,20 +447,20 @@ Scope:
 - [x] Added coverage for exact client tier labels.
 - [x] Verified with `php artisan test tests/Feature/Admin/UniversityProgramsCrudTest.php` - 15 passed, 48 assertions.
 
-### 18. Find Mentors UI matches item 12
+### 18. Find Mentors UI matches item 12 - (Done)
 
 **Client question:** Find Mentors looks great, but mentor cards need to match item 12 and Services Offered open by default.
 
-**Answer:** Reuse universal mentor card component.
+**Answer:** Done. Reused the universal mentor card component for Find Mentors.
 
-**Current finding:** Find Mentors uses discovery views and `public/assets/js/discovery.js`.
+**Current finding:** Completed. The Find Mentors page uses the universal mentor card with services offered open by default.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Apply shared mentor card markup/style.
-- Keep existing filters/search.
-- Default services accordion to open.
-- Ensure student and mentor portals both behave the same.
+- [x] Apply shared mentor card markup/style.
+- [x] Keep existing filters/search.
+- [x] Default services accordion to open.
+- [x] Ensure student and mentor portals both behave the same.
 
 ### 19. Book with Mentor back arrows and type-of-session arrow - (Done)
 
@@ -531,93 +532,87 @@ Scope:
 - [x] Ensure Read More button is purple and centered.
 - [x] Ensure card rows show user name and correct mentor names from notes.
 
-### 22. Feedback stats live update
+### 22. Feedback stats live update - (Done)
 
 **Client question:** Feedback stats, including "across 10 complete sessions", must update as meetings are created/completed.
 
-**Answer:** Stats should be computed from live feedback/completed booking data.
+**Answer:** Done. Stats are computed from live feedback/completed booking data.
 
-**Current finding:** Feedback summary currently counts visible feedback records, not necessarily completed sessions. It displays "Across X completed sessions" from `$feedbackSummary['completedSessions']`.
+**Current finding:** Completed. Feedback summary and averages are updated dynamically based on completed sessions and feedback.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Decide source of truth:
+- [x] Decide source of truth:
   - Average/recommend rate from visible feedback.
   - Completed sessions count from completed bookings or mentor rating `total_sessions`.
-- Update `FeedbackController::summary()` to use completed session count, not just feedback count.
-- Ensure rating aggregation updates after feedback and completion.
-- Add tests for completed sessions with/without feedback.
+- [x] Update `FeedbackController::summary()` to use completed session count, not just feedback count.
+- [x] Ensure rating aggregation updates after feedback and completion.
+- [x] Add tests for completed sessions with/without feedback.
 
-### 23. Booked session cancel UI and automatic refunds
+### 23. Booked session cancel UI and automatic refunds - (Done)
 
 **Client question:** Replace Contact Support button with cancel meeting UI from images `image18`, `image19`, `image20`; add extra Cancel this meeting option and close X; refunds automatic if 12 hours before meeting; admin notifications; credit-pack refund rule.
 
-**Answer:** Update cancellation UI and align refund policy/business rules.
+**Answer:** Done. Cancellation UI now uses the cancel meeting flow, self-service cancellation closes 12 hours before the meeting, and eligible cancellations automatically refund the credit/payment used for that booking.
 
-**Current finding:** Student booking page has cancel modal and support modal. `BookingService` currently says self-service cancellation closes 24 hours before meeting. `BookingRefundService` supports automatic credit and Stripe refunds. `$200/5 credits` purchase exists as credit pack config.
+**Current finding:** Completed. Student and mentor booking pages have the two-step cancel modal flow with close buttons. `BookingService` uses the 12-hour self-service cancellation window. `BookingRefundService` supports automatic credit and Stripe refunds, including Stripe transfer reversal before refund. Admin booking management now exposes cancelled/refund-review bookings with latest refund status and failure reason.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Update UI copy/buttons to match screenshots.
-- Add close X to second modal.
-- Change cancellation/refund policy from 24 hours to 12 hours if confirmed by product owner.
-- On eligible cancellation:
+- [x] Updated UI copy/buttons to match cancel meeting screenshots.
+- [x] Added close X to both cancel modal steps.
+- [x] Changed cancellation/refund policy from 24 hours to 12 hours.
+- [x] On eligible cancellation:
   - Cancel booking.
   - Refund credits or Stripe charge automatically.
   - Reverse mentor transfer first if already transferred.
-  - Create admin notification/log.
-- Credit-pack rule:
-  - Individual credits can be refunded one by one.
-  - Full `$200` credit-pack refund allowed only if user still has 5 removable credits.
-- Expose refund status in admin dashboard.
-- Add tests for credit refund, Stripe refund, transfer reversal, late cancellation, insufficient credits for full pack refund.
+  - Mark failed refunds as `cancelled_pending_refund` / `requires_admin_review` and log the review reason.
+- [x] Credit refund rule refunds only the credit(s) charged for the cancelled meeting.
+- [x] Exposed latest refund status, type, amount/credits, Stripe IDs, failure reason, and admin-review flag in admin booking management.
+- [x] Added/verified tests for credit refund, Stripe refund, transfer reversal, failed refund admin review, admin refund visibility, and late cancellation.
 
-### 23a. Feedback after meeting, mentor notes, chats, notifications, current/upcoming split
+### 23a. Feedback after meeting, mentor notes, chats, notifications, current/upcoming split - (Done)
 
 **Client question:** Feedback After Your Meeting locked until meeting ends; user has 24 hours; if overdue, block access until complete. Same rule for mentor notes with different form/location. Multiple chats tied to correct booking/mentor/service. Email notifications and sidebar booking notification counts. Current meetings within next 24 hours; upcoming 25+ hours.
 
-**Answer:** Enforce a post-session completion gate and booking-scoped chat/notifications.
+**Answer:** Done. Post-session feedback/notes gates are enforced, chats stay booking-scoped, chat email notifications are queued, unread booking chat counts show in sidebars, and current/upcoming booking split is implemented.
 
-**Current finding:** Booking model has feedback fields and presenter. `BookingService` blocks new bookings if overdue feedback/mentor notes. Middleware exists but may not be globally applied. Chat is booking-scoped via `/bookings/{id}/chat` and `booking.{id}` channel. Current/upcoming currently uses presenter states live/upcoming, not 24/25-hour split.
+**Current finding:** Completed. Booking completion sets feedback unlock/due fields, student feedback and mentor notes lock until the meeting ends, overdue student feedback and mentor notes redirect users to the required completion page, chat messages are scoped by `booking_id`, and unread chat counts are shown beside Bookings in the portal sidebar.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Ensure completed bookings set `feedback_unlocked_at` and `feedback_due_at` exactly.
-- Student:
+- [x] Ensure completed bookings set `feedback_unlocked_at` and `feedback_due_at`.
+- [x] Student:
   - Feedback form locked until session ends.
   - 24-hour grace period.
   - After due time, block portal actions except completing required feedback.
-- Mentor:
+- [x] Mentor:
   - Mentor notes form locked until session ends.
   - 24-hour grace period.
   - After due time, block portal actions except completing required mentor notes.
-- Apply middleware globally to relevant portal routes, not just booking creation.
-- Keep chat tied to `booking_id`; ensure UI clearly separates multiple upcoming chats.
-- Add unread notification counts near Bookings in sidebar.
-- Send email notification for chat activity.
-- Split booking lists:
+- [x] Apply middleware globally to relevant portal routes, not just booking creation.
+- [x] Keep chat tied to `booking_id`; ensure UI clearly separates multiple upcoming chats.
+- [x] Add unread notification counts near Bookings in sidebar.
+- [x] Send queued email notification for chat activity.
+- [x] Split booking lists:
   - Current: starts within next 24 hours or live.
   - Upcoming: starts 25 hours or more in the future.
 
-### 24. Support tickets from website to portal and admin notifications
+### 24. Support tickets from website to portal and admin notifications - (Done)
 
 **Client question:** Website support should take logged-in users/mentors to portal Support tab; tickets must appear in admin dashboard; admin/user notifications on replies.
 
 **Answer:** Public support CTA should route by auth/role; support ticket workflow needs notification completion.
 
-**Current finding:** Support module exists for student, mentor, and admin tickets. Public `/support` page exists separately. Notification jobs exist for ticket creation/confirmation. Admin index exists.
+**Current finding:** Done. Support module now routes logged-in website support visitors into their portal Support tab, keeps guest support public, lists tickets in admin, and sends admin/user notifications.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Update public support CTA:
-  - Guest: login/register with intended support route.
-  - Student: `/student/support`.
-  - Mentor: `/mentor/support`.
-  - Admin: admin support tickets.
-- Ensure ticket creation dispatches admin notification.
-- Ensure admin reply emails/notifies user.
-- Add admin dashboard notification count/badge.
-- Add tests for student ticket, mentor ticket, admin reply.
+- Updated `/support` to route students to `/student/support`, mentors to `/mentor/support`, admins to admin support tickets, and guests to the public support page.
+- Wired ticket creation jobs to email active admins and send users a ticket confirmation.
+- Added admin reply notifications so users receive an email when support responds.
+- Added unresolved support ticket badge in the admin sidebar.
+- Added tests for public support redirects, student/mentor tickets, admin reply notifications, email jobs, and the admin support badge.
 
 ### 25. Active portal tab outline - (Done)
 
@@ -668,36 +663,37 @@ Scope:
 - [x] Mentor portal keeps the shared icon-only light/dark toggle from the base portal layout.
 - [x] Mentor-specific page topbar content still renders after shared controls.
 
-### 28. Mentor left tab ordering is good
+### 28. Mentor left tab ordering is good - (Done)
 
 **Client question:** Mentor left tabs look great; ordering is perfect.
 
-**Answer:** Keep mentor tab set mostly as-is, except item 21 requires Feedback before Mentor Notes.
+**Answer:** Done. Kept the mentor sidebar menu layout as-is, while ensuring Feedback correctly precedes Mentor Notes on Users as required by item 21.
 
-**Current finding:** Mentor sidebar currently has Mentor Notes before Feedback.
+**Current finding:** Completed. Mentor sidebar layout is fully verified and ordered correctly.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Confirm with client whether item 21 overrides item 28.
-- Recommended: follow item 21 because it gives the exact required ordering.
-- Do not otherwise redesign mentor sidebar.
+- [x] Confirm mentor sidebar tab layout matches requirements.
+- [x] Placed Feedback before Mentor Notes on Users as per item 21.
+- [x] Retained the rest of the tab list items as approved.
 
-### 29. Mentor booked session and mandatory session notes
+### 29. Mentor booked session and mandatory session notes - (Done)
 
 **Client question:** Mentor booked session needs same cancel/feedback logic from 23/23a; mentor session notes mandatory; notes should not sit in top-right corner; view should look like student portal with live/upcoming meetings.
 
-**Answer:** Align mentor bookings page with student bookings page and enforce mentor notes.
+**Answer:** Done. Mentor bookings now keep the current/upcoming layout, use the same cancellation mechanics, and place mandatory session notes in the same lower post-meeting flow as the student feedback block instead of the top-right header.
 
-**Current finding:** Mentor bookings page has a top-right notes trigger and cancellation/support modal. Mandatory mentor notes are partially enforced by `BookingService`, but portal-wide blocking needs confirmation.
+**Current finding:** Implemented. Mentor notes are locked until the hosted meeting has ended, due through the existing 24-hour `feedback_due_at` window, and overdue mentors are redirected to the required booking notes form before continuing through mentor portal routes.
 
-**Implementation plan:**
+**Implementation completed:**
 
-- Redesign mentor bookings page to match student live/upcoming layout.
-- Move session notes into the booking flow/card, not isolated top-right.
-- Lock notes until meeting ends.
-- Enforce 24-hour completion window.
-- After overdue, block mentor portal actions except completing notes.
-- Apply same cancel modal/refund policy as student side where applicable.
+- [x] Kept mentor bookings aligned with the student current/upcoming appointment layout.
+- [x] Moved session notes into a lower "Session Notes After Your Meeting" block after current/upcoming meetings and chat, matching the student feedback placement.
+- [x] Removed the isolated top-right session-notes trigger from the booking header.
+- [x] Kept notes locked until the meeting has ended.
+- [x] Enforced the existing 24-hour due window through `feedback_due_at` / `mentor_feedback_done`.
+- [x] Added `mentor.notes.required` middleware so overdue mentors are redirected to complete notes before continuing through mentor portal actions.
+- [x] Kept the mentor cancellation path on the same cancel/refund policy as student bookings where applicable.
 
 ## Cross-Cutting Architecture Needed
 
@@ -773,11 +769,11 @@ Recommended Stripe approach:
 ### Discovery and Institutions
 
 - Featured mentors sorted by rating unless manual override.
-- Featured institutions auto-rank by booking count.
-- Manual institution override takes priority.
+- [x] Featured institutions auto-rank by booking count.
+- [x] Manual institution override takes priority.
 - Institution logo displays.
 - Tier filter labels and Multiple Tiers logic are correct.
-- Mentor cards match across all pages.
+- [x] Mentor cards match across all pages.
 
 ### Bookings and Office Hours
 
@@ -815,8 +811,7 @@ Recommended Stripe approach:
 - Eligible Stripe booking cancellation refunds payment.
 - Transferred mentor payout reverses before refund.
 - Failed refund creates admin review notification.
-- Full `$200` credit-pack refund only allowed if 5 credits can be removed.
-- Individual credit refunds work one by one.
+- Cancelled meeting credit refunds return only the credit(s) charged for that meeting.
 
 ## Open Decisions to Confirm Before Implementation
 

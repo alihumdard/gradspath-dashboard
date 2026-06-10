@@ -3,6 +3,7 @@
 @php($roleLabel = ucfirst($currentUser?->getRoleNames()->first() ?? 'mentor'))
 @php($sidebarInitials = collect(preg_split('/\s+/', trim($currentUser?->name ?? '')) ?: [])->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode(''))
 @php($isActiveNav = fn (string $nav, array $routePatterns, array $pathPatterns) => $activeNav === $nav || request()->routeIs(...$routePatterns) || request()->is(...$pathPatterns))
+@php($bookingUnreadCount = $currentUser ? \Modules\Bookings\app\Models\Chat::query()->where('receiver_id', $currentUser->id)->where('is_read', false)->count() : 0)
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-top">
@@ -129,6 +130,9 @@
           </span>
           <span class="nav-text">Bookings</span>
         </span>
+        @if ($bookingUnreadCount > 0)
+          <span class="portal-nav-badge" aria-label="{{ $bookingUnreadCount }} unread booking messages">{{ $bookingUnreadCount > 99 ? '99+' : $bookingUnreadCount }}</span>
+        @endif
       </a>
     </div>
 

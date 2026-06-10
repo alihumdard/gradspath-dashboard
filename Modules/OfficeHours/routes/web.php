@@ -11,11 +11,11 @@ use Modules\OfficeHours\app\Http\Controllers\Student\OfficeHoursController as St
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:student', 'feedback.required'])->group(function () {
     Route::get('/student/office-hours', [StudentOfficeHoursController::class, 'index'])->name('student.office-hours');
     Route::patch('/student/office-hours/sessions/{session}/service', [OfficeHourSessionServiceController::class, 'update'])->name('student.office-hours.sessions.service');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved', 'mentor.notes.required'])->group(function () {
     Route::get('/mentor/office-hours', [MentorOfficeHoursController::class, 'index'])->name('mentor.office-hours');
 });

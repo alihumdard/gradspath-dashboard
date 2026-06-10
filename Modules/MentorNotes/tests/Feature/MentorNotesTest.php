@@ -272,6 +272,28 @@ it('keeps mentor notes locked after the scheduled booking end until the meeting 
     ]);
 });
 
+it('redirects overdue mentors to the required booking notes form before portal navigation', function () {
+    [$mentorUser, $mentor] = createMentorUser('notes-overdue');
+    $student = createStudentUser('notes-overdue-student');
+    $service = createService();
+    $booking = createBookingForMentor($mentor, $student, $service, [
+        'status' => 'completed',
+        'session_at' => now()->subDays(2)->utc()->toDateTimeString(),
+        'actual_ended_at' => now()->subDay()->utc()->toDateTimeString(),
+        'feedback_due_at' => now()->subHour(),
+        'mentor_feedback_done' => false,
+    ]);
+
+    $this->actingAs($mentorUser)
+        ->get(route('mentor.bookings.index'))
+        ->assertRedirect(route('mentor.notes.bookings.edit', $booking->id))
+        ->assertSessionHas('warning', 'Please complete your required session notes before continuing in the mentor portal.');
+
+    $this->actingAs($mentorUser)
+        ->get(route('mentor.notes.bookings.edit', $booking->id))
+        ->assertOk();
+});
+
 it('shows all mentor notes on the mentor notes browser page', function () {
     [$viewerUser, $viewerMentor] = createMentorUser('browser-viewer');
     [$otherMentorUser, $otherMentor] = createMentorUser('browser-other');

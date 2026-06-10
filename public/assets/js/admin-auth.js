@@ -3564,7 +3564,20 @@ initializeManualActionsHub();
         emptyEl.classList.add("hidden");
         listEl.innerHTML = state.bookings
             .map(
-                (booking) => `
+                (booking) => {
+                    const refund = booking.refund || null;
+                    const refundSummary = refund
+                        ? `
+                            <p class="admin-bookings-refund ${refund.requires_admin_review ? "is-review" : ""}">
+                                Refund: ${escapeHtml(refund.status_label)} · ${escapeHtml(refund.type_label)}
+                                ${Number(refund.credits || 0) > 0 ? ` · ${escapeHtml(refund.credits)} credit${Number(refund.credits) === 1 ? "" : "s"}` : ""}
+                                ${Number(refund.amount || 0) > 0 ? ` · ${escapeHtml(refund.currency)} ${escapeHtml(Number(refund.amount).toFixed(2))}` : ""}
+                                ${refund.failure_reason ? `<br><strong>${escapeHtml(refund.failure_reason)}</strong>` : ""}
+                            </p>
+                        `
+                        : "";
+
+                    return `
                     <article class="admin-bookings-item" data-booking-id="${escapeHtml(booking.id)}">
                         <div class="admin-bookings-item__content">
                             <div class="admin-bookings-item__title-row">
@@ -3572,17 +3585,20 @@ initializeManualActionsHub();
                                 <div class="admin-bookings-item__chips">
                                     <span class="admin-bookings-chip">${escapeHtml(booking.status_label)}</span>
                                     <span class="admin-bookings-chip admin-bookings-chip--muted">${escapeHtml(booking.session_outcome_label)}</span>
+                                    ${refund?.requires_admin_review ? `<span class="admin-bookings-chip admin-bookings-chip--warning">Refund Review</span>` : ""}
                                 </div>
                             </div>
                             <p>${escapeHtml(booking.student_name)} · ${escapeHtml(booking.mentor_name)}</p>
                             <p>${escapeHtml(booking.session_at_display)} · ${escapeHtml(booking.session_timezone)}</p>
+                            ${refundSummary}
                         </div>
                         <div class="admin-bookings-item__actions">
                             <button class="ghost-btn admin-bookings-item__button" type="button" data-booking-edit="${escapeHtml(booking.id)}"${booking.can_edit ? "" : " disabled"}>Edit</button>
                             <button class="ghost-btn admin-bookings-item__button admin-bookings-item__button--danger" type="button" data-booking-delete="${escapeHtml(booking.id)}"${booking.can_cancel ? "" : " disabled"}>Delete</button>
                         </div>
                     </article>
-                `,
+                `;
+                },
             )
             .join("");
     }

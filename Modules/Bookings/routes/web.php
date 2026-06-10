@@ -13,7 +13,7 @@ use Modules\Bookings\app\Http\Controllers\Webhooks\ZoomWebhookController;
 
 Route::post('/webhooks/zoom', [ZoomWebhookController::class, 'handle'])->name('webhooks.zoom');
 
-Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:student', 'feedback.required'])->group(function () {
     Route::get('/student/bookings', [BookingController::class, 'index'])->name('student.bookings.index');
     Route::get('/student/bookings/availability/months', [BookingAvailabilityController::class, 'months'])->name('student.bookings.availability.months');
     Route::get('/student/bookings/availability/days', [BookingAvailabilityController::class, 'days'])->name('student.bookings.availability.days');
@@ -29,7 +29,7 @@ Route::middleware(['web', 'auth', 'active', 'role:student'])->group(function () 
     Route::post('/student/bookings/{id}/chat', [BookingChatController::class, 'store'])->middleware('booking.participant')->name('student.bookings.chat.store');
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.approved', 'mentor.notes.required'])->group(function () {
     Route::get('/mentor/bookings/availability/months', [BookingAvailabilityController::class, 'months'])->name('mentor.bookings.availability.months');
     Route::get('/mentor/bookings/availability/days', [BookingAvailabilityController::class, 'days'])->name('mentor.bookings.availability.days');
     Route::get('/mentor/bookings/availability/times', [BookingAvailabilityController::class, 'times'])->name('mentor.bookings.availability.times');

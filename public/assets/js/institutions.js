@@ -56,6 +56,61 @@ function escapeHtml(str) {
     .replaceAll("'", "&#039;");
 }
 
+function normalizedAssetUrl(url) {
+  const value = String(url || "").trim();
+  if (!value) return "";
+  return value.startsWith("http") || value.startsWith("/") ? value : `/${value}`;
+}
+
+function mentorAvatarMarkup(mentor) {
+  if (mentor.avatarUrl) {
+    return `<img src="${escapeHtml(normalizedAssetUrl(mentor.avatarUrl))}" alt="${escapeHtml(mentor.name)}" class="mentor-avatar-image" loading="lazy">`;
+  }
+
+  return escapeHtml(mentor.initials || "GP");
+}
+
+function mentorServicesMarkup(mentor) {
+  const services = Array.isArray(mentor.services) && mentor.services.length
+    ? mentor.services
+    : mentor.tags || [];
+
+  if (!services.length) {
+    return `<div class="service-pill">Program Insights</div>`;
+  }
+
+  return services
+    .slice(0, 6)
+    .map((service) => `<div class="service-pill">${escapeHtml(service)}</div>`)
+    .join("");
+}
+
+function bindMentorCardInteractions() {
+  mentorGrid.querySelectorAll(".read-more-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      const block = button.closest(".read-more-block");
+      const label = button.querySelector(".read-more-label");
+
+      if (!block || !label) return;
+
+      block.classList.toggle("expanded");
+      label.textContent = block.classList.contains("expanded")
+        ? "Read Less"
+        : "Read More";
+    });
+  });
+
+  mentorGrid.querySelectorAll(".services-toggle").forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      const accordion = toggle.closest(".services-accordion");
+      if (!accordion) return;
+
+      const open = accordion.classList.toggle("open");
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+  });
+}
+
 function normalizePrograms(programs) {
   const seen = new Set();
 
@@ -424,39 +479,75 @@ function renderMentorsForProgram(school, program) {
   mentorGrid.innerHTML = mentors
     .map(
       (mentor) => `
-        <div class="mentor-card">
-          <div class="mentor-card-top">
-            <div class="mentor-top-left">
+        <article class="mentor-card">
+          <div class="mentor-card-header">
+            <div class="mentor-card-identity">
               <div class="mentor-avatar">
-                <i data-lucide="${escapeHtml(mentor.icon || "graduation-cap")}"></i>
+                ${mentorAvatarMarkup(mentor)}
               </div>
 
-              <div class="mentor-header-copy">
-                <h4 class="mentor-name">${escapeHtml(mentor.name)}</h4>
-                <p class="mentor-role">${escapeHtml(mentor.roleLabel || school.school)}</p>
+              <div>
+                <div class="mentor-name">${escapeHtml(mentor.name)}</div>
+                <div class="mentor-role">${escapeHtml(mentor.roleLabel || school.school)}</div>
               </div>
             </div>
 
-            <div class="mentor-score">
-              <i data-lucide="star"></i>
-              ${escapeHtml(mentor.score || "New")}
+            <div class="mentor-rating">&#9733; ${escapeHtml(mentor.score || "New")}</div>
+          </div>
+
+          <div class="mentor-office-hours">
+            <span class="mentor-office-hours-title">Office Hours:</span>
+            <span class="mentor-office-hours-time">${escapeHtml(mentor.officeHours || "Schedule coming soon")}</span>
+          </div>
+
+          <div class="read-more-block">
+            <div class="mentor-note-box read-more-text">
+              ${escapeHtml(mentor.description || "Available to support applications and next steps for this program.")}
+            </div>
+            <button class="read-more-btn" type="button">
+              <span class="read-more-label">Read More</span>
+              <span class="read-more-chevron">&#8964;</span>
+            </button>
+          </div>
+
+          <div class="services-accordion open">
+            <button class="services-toggle" type="button" aria-expanded="true">
+              <span class="services-toggle-text">SERVICES OFFERED</span>
+              <span class="services-toggle-icon">&or;</span>
+            </button>
+
+            <div class="services-dropdown">
+              <div class="service-grid">
+                ${mentorServicesMarkup(mentor)}
+              </div>
             </div>
           </div>
 
-          <p class="mentor-desc">${escapeHtml(mentor.description || "Available to support applications and next steps for this program.")}</p>
+          <div class="student-note-box">
+            <div class="feedback-header">
+              <div class="student-note-title">Recent Feedback</div>
+              ${mentor.feedbackUrl ? `<a href="${escapeHtml(mentor.feedbackUrl)}" class="see-more-feedback">See more Feedback</a>` : ""}
+            </div>
 
-          <div class="mentor-tags">
-            ${(mentor.tags || [])
-              .slice(0, 3)
-              .map((tag) => `<span class="mentor-tag">${escapeHtml(tag)}</span>`)
-              .join("")}
+            <div class="read-more-block feedback-read-more">
+              <p class="read-more-text">&ldquo;${escapeHtml(mentor.review || "Students value this mentor for practical, focused guidance.")}&rdquo;</p>
+              <button class="read-more-btn" type="button">
+                <span class="read-more-label">Read More</span>
+                <span class="read-more-chevron">&#8964;</span>
+              </button>
+            </div>
           </div>
-        </div>
+
+          ${mentor.canBook === false || !mentor.bookingUrl
+            ? `<button class="book-now-btn" type="button" disabled>Current Mentor</button>`
+            : `<a href="${escapeHtml(mentor.bookingUrl)}" class="book-now-btn">Book Now</a>`}
+        </article>
       `,
     )
     .join("");
 
   lucide.createIcons();
+  bindMentorCardInteractions();
 
   setTimeout(() => {
     window.scrollTo({

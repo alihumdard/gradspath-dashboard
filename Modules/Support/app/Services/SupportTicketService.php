@@ -4,6 +4,7 @@ namespace Modules\Support\app\Services;
 
 use Illuminate\Support\Facades\DB;
 use Modules\Auth\app\Models\User;
+use Modules\Support\app\Jobs\SendUserTicketReplyJob;
 use Modules\Support\app\Events\SupportTicketCreated;
 use Modules\Support\app\Models\SupportTicket;
 
@@ -32,8 +33,9 @@ class SupportTicketService
 
     public function reply(SupportTicket $ticket, User $admin, string $reply, string $status = 'in_progress'): SupportTicket
     {
-        return DB::transaction(function () use ($ticket, $admin, $reply, $status) {
-            $reply = trim($reply);
+        $reply = trim($reply);
+
+        $updatedTicket = DB::transaction(function () use ($ticket, $admin, $reply, $status) {
             $updates = [
                 'status' => $status,
                 'handled_by' => $admin->id,
@@ -48,6 +50,12 @@ class SupportTicketService
 
             return $ticket->fresh();
         });
+
+        if ($reply !== '') {
+            SendUserTicketReplyJob::dispatch($updatedTicket->id);
+        }
+
+        return $updatedTicket;
     }
 
     private function generateTicketRef(): string

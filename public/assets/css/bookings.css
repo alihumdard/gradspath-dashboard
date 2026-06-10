@@ -1567,6 +1567,10 @@ h1 {
   min-width: 190px;
 }
 
+.mentor-notes-entry-section {
+  margin-top: 20px;
+}
+
 .feedback-inline-alert {
   margin-top: 14px;
   border-radius: 14px;

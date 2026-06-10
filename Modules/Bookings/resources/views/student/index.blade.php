@@ -305,6 +305,7 @@
         </div>
         <div class="modal-overlay hidden" id="cancelConfirmModal">
           <div class="modal-card">
+            <button class="modal-close-btn" id="cancelClose2" type="button" aria-label="Close cancel confirmation">&times;</button>
             <h3>Are you absolutely sure?</h3>
             <p>Eligible cancellations automatically refund the credits or payment used for this booking.</p>
             <div class="modal-actions">
