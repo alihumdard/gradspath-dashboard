@@ -101,6 +101,26 @@
       color: #b9d8ff;
     }
 
+    .support-action-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      transition: all 0.2s ease;
+    }
+
+    .support-action-link:hover {
+      background: rgba(98, 169, 255, 0.12);
+      border-color: rgba(98, 169, 255, 0.45);
+      color: #b9d8ff;
+      transform: translateY(-1px);
+    }
+
     .support-admin-detail {
       display: grid;
       gap: 16px;
@@ -331,23 +351,22 @@
     </form>
 
     <div class="table-wrap">
-      <table style="min-width: 820px;">
+      <table style="min-width: 880px;">
         <thead>
           <tr>
             <th>Ticket</th>
             <th>User</th>
             <th>Status</th>
             <th>Created</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           @forelse ($supportTickets as $ticket)
             <tr>
               <td>
-                <a class="support-ticket-link" href="{{ route('admin.support.tickets.show', $ticket->id) }}">
-                  <strong>{{ $ticket->ticket_ref }}</strong>
-                  <span>{{ $ticket->subject }}</span>
-                </a>
+                <strong>{{ $ticket->ticket_ref }}</strong>
+                <span>{{ $ticket->subject }}</span>
               </td>
               <td>
                 <strong>{{ $ticket->user?->name ?? 'Deleted user' }}</strong>
@@ -362,10 +381,18 @@
                 <strong>{{ $ticket->created_at?->format('M j, Y') }}</strong>
                 <span>{{ $ticket->created_at?->format('g:i A') }}</span>
               </td>
+              <td>
+                <a class="support-action-link" href="{{ route('admin.support.tickets.show', $ticket->id) }}" title="View Detail">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                </a>
+              </td>
             </tr>
           @empty
             <tr>
-              <td colspan="4">No support tickets match this view.</td>
+              <td colspan="5">No support tickets match this view.</td>
             </tr>
           @endforelse
         </tbody>

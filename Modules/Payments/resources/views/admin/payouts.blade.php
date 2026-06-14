@@ -107,6 +107,26 @@
       color: #b9d8ff;
     }
 
+    .payout-action-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      transition: all 0.2s ease;
+    }
+
+    .payout-action-link:hover {
+      background: rgba(98, 169, 255, 0.12);
+      border-color: rgba(98, 169, 255, 0.45);
+      color: #b9d8ff;
+      transform: translateY(-1px);
+    }
+
     .payout-pagination {
       margin-top: 14px;
     }
@@ -313,7 +333,7 @@
     </form>
 
     <div class="table-wrap">
-      <table style="min-width: 1120px;">
+      <table style="min-width: 1180px;">
         <thead>
           <tr>
             <th>Payout</th>
@@ -322,16 +342,15 @@
             <th>Amounts</th>
             <th>Status</th>
             <th>Reference</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           @forelse ($payouts as $payout)
             <tr>
               <td>
-                <a class="payout-link" href="{{ route('admin.payouts.show', array_merge(['id' => $payout['id']], request()->only(['q', 'status', 'range']))) }}">
-                  <strong>#{{ $payout['id'] }}</strong>
-                  <span>Booking {{ $payout['booking_id'] ? '#'.$payout['booking_id'] : '-' }} · {{ $payout['session_type'] }}</span>
-                </a>
+                <strong>#{{ $payout['id'] }}</strong>
+                <span>Booking {{ $payout['booking_id'] ? '#'.$payout['booking_id'] : '-' }} · {{ $payout['session_type'] }}</span>
               </td>
               <td>
                 <strong>{{ $payout['mentor_name'] }}</strong>
@@ -351,10 +370,18 @@
               <td>
                 <strong>{{ $formatDate($payout['reference_at']) }}</strong>
               </td>
+              <td>
+                <a class="payout-action-link" href="{{ route('admin.payouts.show', array_merge(['id' => $payout['id']], request()->only(['q', 'status', 'range']))) }}" title="View Detail">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                </a>
+              </td>
             </tr>
           @empty
             <tr>
-              <td colspan="6">No mentor payouts match this view.</td>
+              <td colspan="7">No mentor payouts match this view.</td>
             </tr>
           @endforelse
         </tbody>

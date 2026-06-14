@@ -8,6 +8,12 @@ use Modules\Payments\app\Models\StripeWebhook;
 
 class StripeWebhookService
 {
+    private const HANDLED_EVENTS = [
+        'checkout.session.completed',
+        'account.updated',
+        'v2.core.account_link.returned',
+    ];
+
     public function __construct(
         private readonly BookingCheckoutService $bookingCheckout,
         private readonly CreditService $creditService,
@@ -22,6 +28,17 @@ class StripeWebhookService
 
         if ($eventId === '') {
             throw new \InvalidArgumentException('Stripe event id is required.');
+        }
+
+        if (! in_array($eventType, self::HANDLED_EVENTS, true)) {
+            return new StripeWebhook([
+                'event_id' => $eventId,
+                'event_type' => $eventType,
+                'payload' => [],
+                'processed' => true,
+                'received_at' => now(),
+                'processed_at' => now(),
+            ]);
         }
 
         $webhook = $this->reserveWebhook($eventId, $eventType, $payload);

@@ -12,6 +12,7 @@ use Modules\Payments\app\Jobs\ProcessStripeWebhookJob;
 use Modules\Payments\app\Jobs\QueueMentorPayoutsJob;
 use Modules\Payments\app\Models\MentorPayout;
 use Modules\Payments\app\Models\ServiceConfig;
+use Modules\Payments\app\Models\StripeWebhook;
 use Modules\Payments\app\Services\StripeWebhookService;
 use Modules\Settings\app\Models\Mentor;
 use Spatie\Permission\Models\Role;
@@ -297,6 +298,54 @@ it('accepts connect webhooks using the connect webhook secret', function () {
         return $job->payload['id'] === 'evt_connect_route_123'
             && $job->payload['type'] === 'v2.core.account_link.returned';
     });
+});
+
+it('ignores unhandled stripe webhook events without storing payloads', function () {
+    app(StripeWebhookService::class)->process([
+        'id' => 'evt_capability_noise_123',
+        'type' => 'capability.updated',
+        'data' => [
+            'object' => [
+                'id' => 'transfers',
+                'status' => 'active',
+            ],
+        ],
+    ]);
+
+    $this->assertDatabaseMissing('stripe_webhooks', [
+        'event_id' => 'evt_capability_noise_123',
+    ]);
+});
+
+it('prunes old processed stripe webhook rows', function () {
+    StripeWebhook::query()->create([
+        'event_id' => 'evt_old_processed_123',
+        'event_type' => 'checkout.session.completed',
+        'payload' => ['id' => 'evt_old_processed_123'],
+        'processed' => true,
+        'received_at' => now()->subDays(91),
+        'processed_at' => now()->subDays(91),
+    ]);
+
+    StripeWebhook::query()->create([
+        'event_id' => 'evt_old_pending_123',
+        'event_type' => 'checkout.session.completed',
+        'payload' => ['id' => 'evt_old_pending_123'],
+        'processed' => false,
+        'received_at' => now()->subDays(91),
+    ]);
+
+    $this->artisan('stripe:prune-webhooks')
+        ->expectsOutput('Pruned Stripe webhooks: 1')
+        ->assertSuccessful();
+
+    $this->assertDatabaseMissing('stripe_webhooks', [
+        'event_id' => 'evt_old_processed_123',
+    ]);
+
+    $this->assertDatabaseHas('stripe_webhooks', [
+        'event_id' => 'evt_old_pending_123',
+    ]);
 });
 
 it('queues eligible mentor payouts for horizon processing', function () {
