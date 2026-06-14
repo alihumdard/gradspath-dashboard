@@ -112,6 +112,57 @@ it('lets payout-enabled mentors open a hosted Stripe update flow', function () {
     });
 });
 
+it('replaces stale connected accounts and continues onboarding', function () {
+    Http::fake([
+        'https://api.stripe.com/v1/account_links' => Http::sequence()
+            ->push([
+                'error' => [
+                    'message' => 'You requested an account link for an account that is not connected to your platform.',
+                ],
+            ], 400)
+            ->push([
+                'url' => 'https://connect.stripe.test/onboarding/acct_recovered_123',
+            ], 200),
+        'https://api.stripe.com/v1/accounts' => Http::response([
+            'id' => 'acct_recovered_123',
+        ], 200),
+    ]);
+    $this->app->instance(HttpFactory::class, Http::getFacadeRoot());
+
+    $mentorUser = createMentorUserForPayouts();
+    Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'status' => 'active',
+        'stripe_account_id' => 'acct_stale_123',
+        'stripe_onboarding_complete' => false,
+        'payouts_enabled' => false,
+    ]);
+
+    $response = $this->withoutMiddleware()
+        ->actingAs($mentorUser)
+        ->get(route('mentor.payouts.connect'));
+
+    $response->assertRedirect('https://connect.stripe.test/onboarding/acct_recovered_123');
+
+    $mentor = $mentorUser->fresh()->mentor;
+
+    expect($mentor?->stripe_account_id)->toBe('acct_recovered_123');
+    expect($mentor?->stripe_onboarding_complete)->toBeFalse();
+    expect($mentor?->payouts_enabled)->toBeFalse();
+
+    Http::assertSent(function ($request) {
+        return $request->url() === 'https://api.stripe.com/v1/account_links'
+            && str_contains($request->body(), 'account=acct_stale_123');
+    });
+
+    Http::assertSent(function ($request) {
+        return $request->url() === 'https://api.stripe.com/v1/account_links'
+            && str_contains($request->body(), 'account=acct_recovered_123')
+            && str_contains($request->body(), 'type=account_onboarding');
+    });
+});
+
 it('marks mentor payouts as enabled when stripe sends account updates', function () {
     $mentorUser = createMentorUserForPayouts();
     $mentor = Mentor::query()->create([

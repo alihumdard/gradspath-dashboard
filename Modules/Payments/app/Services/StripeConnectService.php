@@ -4,6 +4,7 @@ namespace Modules\Payments\app\Services;
 
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Modules\Auth\app\Models\User;
 use Modules\Settings\app\Models\Mentor;
 
@@ -57,6 +58,17 @@ class StripeConnectService
                 $linkType
             ));
         } catch (RequestException $exception) {
+            if ($this->isStaleConnectedAccountException($exception)) {
+                $mentor = $this->replaceStaleConnectedAccount($mentor);
+
+                return $this->stripe->createAccountLink($this->accountLinkPayload(
+                    $mentor,
+                    $refreshUrl,
+                    $returnUrl,
+                    'account_onboarding'
+                ));
+            }
+
             if ($linkType !== 'account_update') {
                 throw $exception;
             }
@@ -68,6 +80,45 @@ class StripeConnectService
                 'account_onboarding'
             ));
         }
+    }
+
+    private function replaceStaleConnectedAccount(Mentor $mentor): Mentor
+    {
+        $staleAccountId = $mentor->stripe_account_id;
+        $user = $mentor->loadMissing('user')->user;
+
+        if (!$user) {
+            throw new \RuntimeException('Cannot recreate Stripe account without a mentor user.');
+        }
+
+        Log::warning('Resetting stale Stripe connected account before onboarding retry.', [
+            'mentor_id' => $mentor->id,
+            'user_id' => $mentor->user_id,
+            'stripe_account_id' => $staleAccountId,
+        ]);
+
+        $mentor->update([
+            'stripe_account_id' => null,
+            'payouts_enabled' => false,
+            'stripe_onboarding_complete' => false,
+        ]);
+
+        return $this->ensureConnectedAccount($user);
+    }
+
+    private function isStaleConnectedAccountException(RequestException $exception): bool
+    {
+        $response = $exception->response;
+
+        if (!$response || !in_array($response->status(), [400, 404], true)) {
+            return false;
+        }
+
+        $message = strtolower((string) data_get($response->json(), 'error.message'));
+
+        return str_contains($message, 'not connected to your platform')
+            || str_contains($message, 'no such account')
+            || str_contains($message, 'does not have access to account');
     }
 
     public function syncMentorFromStripeAccount(array $account): void
