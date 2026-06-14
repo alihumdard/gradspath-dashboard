@@ -34,6 +34,7 @@ class ZoomService
             'client_id' => $this->clientId(),
             'redirect_uri' => $this->redirectUri(),
             'state' => $state,
+            'prompt' => 'login',
         ]);
     }
 
@@ -54,6 +55,7 @@ class ZoomService
         ]);
 
         $profile = $this->retrieveCurrentUserProfile((string) ($payload['access_token'] ?? ''));
+        $this->assertZoomProfileBelongsToUser($user, $profile);
 
         return $this->storeUserToken($user, $payload, $profile);
     }
@@ -500,6 +502,26 @@ class ZoomService
         }
 
         return $response;
+    }
+
+    private function assertZoomProfileBelongsToUser(User $user, array $profile): void
+    {
+        $zoomEmail = trim((string) Arr::get($profile, 'email', ''));
+        $userEmail = trim((string) $user->email);
+
+        if ($zoomEmail === '' || $userEmail === '') {
+            return;
+        }
+
+        if (strcasecmp($zoomEmail, $userEmail) === 0) {
+            return;
+        }
+
+        throw new \RuntimeException(sprintf(
+            'Zoom is currently signed in as %s. Please sign out of Zoom or use an incognito window, then connect the Zoom account for %s.',
+            $zoomEmail,
+            $userEmail
+        ));
     }
 
     private function clearUserToken(User $user): void

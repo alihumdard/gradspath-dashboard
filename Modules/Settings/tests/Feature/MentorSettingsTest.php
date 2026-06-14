@@ -627,6 +627,7 @@ it('starts the mentor zoom oauth flow from settings', function () {
 
     $response->assertRedirect();
     expect($response->headers->get('Location'))->toContain('https://zoom.us/oauth/authorize');
+    expect($response->headers->get('Location'))->toContain('prompt=login');
     expect(session('mentor_zoom_oauth_state'))->not->toBeEmpty();
 });
 
@@ -655,7 +656,7 @@ it('stores the mentor zoom token after a successful oauth callback', function ()
         ], 200),
         'https://api.zoom.us/v2/users/me' => Http::response([
             'id' => 'zoom-user-123',
-            'email' => 'mentor.zoom@example.com',
+            'email' => $mentorUser->email,
         ], 200),
     ]);
 
@@ -709,7 +710,7 @@ it('moves an existing zoom token to the reconnecting mentor instead of duplicati
         ], 200),
         'https://api.zoom.us/v2/users/me' => Http::response([
             'id' => 'zoom-user-123',
-            'email' => 'mentor.zoom@example.com',
+            'email' => $newMentorUser->email,
         ], 200),
     ]);
 
@@ -764,7 +765,7 @@ it('updates an existing mentor zoom token when reconnecting with a different zoo
         ], 200),
         'https://api.zoom.us/v2/users/me' => Http::response([
             'id' => 'new-zoom-user-456',
-            'email' => 'mentor.newzoom@example.com',
+            'email' => $mentorUser->email,
         ], 200),
     ]);
 
@@ -782,6 +783,52 @@ it('updates an existing mentor zoom token when reconnecting with a different zoo
         'provider' => 'zoom',
         'provider_user_id' => 'new-zoom-user-456',
         'access_token' => 'new-zoom-access-token',
+    ]);
+});
+
+it('rejects zoom oauth when the browser is signed in to a different zoom email', function () {
+    $mentorUser = createSettingsUser('mentor');
+    Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'status' => 'active',
+    ]);
+
+    config([
+        'services.zoom.enabled' => true,
+        'services.zoom.client_id' => 'zoom-client-id',
+        'services.zoom.client_secret' => 'zoom-client-secret',
+        'services.zoom.redirect_uri' => 'https://gradspath.test/mentor/settings/zoom/callback',
+        'services.zoom.api_base' => 'https://api.zoom.us/v2',
+    ]);
+
+    Http::fake([
+        'https://zoom.us/oauth/token' => Http::response([
+            'access_token' => 'wrong-zoom-access-token',
+            'refresh_token' => 'wrong-zoom-refresh-token',
+            'expires_in' => 3600,
+            'token_type' => 'Bearer',
+        ], 200),
+        'https://api.zoom.us/v2/users/me' => Http::response([
+            'id' => 'tyler-zoom-user',
+            'email' => 'tyler@example.com',
+        ], 200),
+    ]);
+
+    $response = $this->actingAs($mentorUser)
+        ->withSession(['mentor_zoom_oauth_state' => 'zoom-state-123'])
+        ->get(route('mentor.settings.zoom.callback', [
+            'code' => 'zoom-auth-code',
+            'state' => 'zoom-state-123',
+        ]));
+
+    $response
+        ->assertRedirect(route('mentor.settings.index'))
+        ->assertSessionHasErrors('zoom');
+
+    $this->assertDatabaseMissing('oauth_tokens', [
+        'user_id' => $mentorUser->id,
+        'provider' => 'zoom',
     ]);
 });
 
