@@ -948,6 +948,8 @@ body:has(.availability-main) .main-content {
   border: 1px solid rgba(122, 77, 255, 0.12);
   background: rgba(255, 255, 255, 0.95);
   text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 .availability-month-cell--single {
@@ -955,8 +957,17 @@ body:has(.availability-main) .main-content {
 }
 
 .availability-month-cell:hover:not(.is-locked):not(.is-outside-month) {
-  transform: translateY(-1px);
-  box-shadow: 0 16px 28px rgba(17, 24, 39, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(122, 77, 255, 0.12);
+  border-color: rgba(122, 77, 255, 0.45);
+}
+
+.availability-month-cell.is-inactive:hover:not(.is-locked):not(.is-outside-month) {
+  background: rgba(122, 77, 255, 0.04);
+}
+
+.availability-month-cell.is-active:hover:not(.is-locked):not(.is-outside-month) {
+  background: linear-gradient(135deg, rgba(122, 77, 255, 0.16) 0%, rgba(122, 77, 255, 0.28) 100%);
 }
 
 .availability-month-cell.is-selected {
@@ -1470,6 +1481,19 @@ body:has(.availability-main) .main-content {
 [data-theme="dark"] .availability-month-cell.is-inactive {
   border-color: rgba(154, 124, 255, 0.18);
   background: linear-gradient(180deg, #241f2d 0%, #211c2a 100%);
+}
+
+[data-theme="dark"] .availability-month-cell:hover:not(.is-locked):not(.is-outside-month) {
+  border-color: rgba(154, 124, 255, 0.6);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.24);
+}
+
+[data-theme="dark"] .availability-month-cell.is-inactive:hover:not(.is-locked):not(.is-outside-month) {
+  background: rgba(154, 124, 255, 0.08);
+}
+
+[data-theme="dark"] .availability-month-cell.is-active:hover:not(.is-locked):not(.is-outside-month) {
+  background: linear-gradient(135deg, rgba(154, 124, 255, 0.28) 0%, rgba(70, 216, 202, 0.14) 100%);
 }
 
 [data-theme="dark"] .availability-month-cell.is-active,
