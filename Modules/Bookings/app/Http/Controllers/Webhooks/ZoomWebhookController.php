@@ -18,9 +18,14 @@ class ZoomWebhookController extends Controller
         $decoded = json_decode($payload, true);
 
         Log::info('Zoom webhook received.', [
+            'method' => $request->method(),
+            'path' => $request->path(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
             'event' => is_array($decoded) ? ($decoded['event'] ?? null) : null,
             'event_id' => is_array($decoded) ? ($decoded['event_id'] ?? null) : null,
             'payload_bytes' => strlen($payload),
+            'payload_decoded' => is_array($decoded),
             'signature_present' => filled($request->header('x-zm-signature')),
             'timestamp_present' => filled($request->header('x-zm-request-timestamp')),
             'meeting_id' => is_array($decoded)
@@ -64,6 +69,11 @@ class ZoomWebhookController extends Controller
         }
 
         $this->webhooks->process($decoded);
+
+        Log::info('Zoom webhook accepted.', [
+            'event' => $decoded['event'] ?? null,
+            'event_id' => $decoded['event_id'] ?? null,
+        ]);
 
         return response()->json([
             'message' => 'Webhook received.',
