@@ -56,7 +56,7 @@ class MentorPayoutService
             $payout->save();
 
             return $payout->fresh();
-        });
+        }, 5);
     }
 
     public function recordOfficeHoursEarning(Booking $booking): ?MentorPayout
@@ -101,7 +101,7 @@ class MentorPayoutService
             $payout->save();
 
             return $payout->fresh();
-        });
+        }, 5);
     }
 
     public function releaseForCompletedBooking(Booking $booking): ?MentorPayout
@@ -166,7 +166,7 @@ class MentorPayoutService
             $payout->save();
 
             return $payout->fresh();
-        });
+        }, 5);
     }
 
     public function retryEligiblePayouts(int $limit = 50): int

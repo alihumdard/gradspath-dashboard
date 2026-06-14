@@ -76,7 +76,7 @@ class BookingRefundService
             ])->save();
 
             return $refund->fresh();
-        });
+        }, 5);
     }
 
     private function refundStripeBooking(Booking $booking, BookingPayment $payment): BookingRefund
@@ -108,7 +108,7 @@ class BookingRefundService
             ])->save();
 
             return $refund->fresh();
-        });
+        }, 5);
 
         try {
             if ($this->needsTransferReversal($payout) && ! $refund->stripe_transfer_reversal_id) {
@@ -134,7 +134,7 @@ class BookingRefundService
                         'failure_reason' => null,
                         'failed_at' => null,
                     ])->save();
-                });
+                }, 5);
             }
 
             if (! $refund->fresh()->stripe_refund_id) {
@@ -199,7 +199,7 @@ class BookingRefundService
                 'failure_reason' => $reason,
                 'failed_at' => now(),
             ])->save();
-        });
+        }, 5);
 
         Log::warning('Booking cancellation refund requires admin review.', [
             'booking_id' => $booking->id,

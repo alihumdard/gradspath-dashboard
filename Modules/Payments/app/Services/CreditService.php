@@ -55,7 +55,7 @@ class CreditService
             ]);
 
             return $wallet;
-        });
+        }, 5);
     }
 
     public function purchase(User $user, int $amount, ?string $paymentId = null, ?string $eventId = null): UserCredit
@@ -111,7 +111,7 @@ class CreditService
             event(new CreditsPurchased($user, $amount));
 
             return $wallet;
-        });
+        }, 5);
     }
 
     public function refund(User $user, int $amount, ?Booking $booking = null, ?User $performedBy = null, ?string $description = null): UserCredit
@@ -137,6 +137,6 @@ class CreditService
             ]);
 
             return $wallet;
-        });
+        }, 5);
     }
 }
