@@ -15,6 +15,7 @@ use Modules\Bookings\app\Services\BookingOutcomeService;
 use Modules\Bookings\app\Services\BookingService;
 use Modules\OfficeHours\app\Models\OfficeHourSchedule;
 use Modules\OfficeHours\app\Models\OfficeHourSession;
+use Modules\Payments\app\Jobs\ProcessMentorPayoutJob;
 use Modules\Payments\app\Models\BookingPayment;
 use Modules\Payments\app\Models\BookingRefund;
 use Modules\Payments\app\Models\MentorPayout;
@@ -692,11 +693,11 @@ it('retries a ready payout successfully after mentor onboarding completes', func
         'stripe_onboarding_complete' => true,
     ])->save();
 
-    $processed = app(MentorPayoutService::class)->retryEligiblePayouts();
     $payout = MentorPayout::query()->where('booking_id', $booking->id)->firstOrFail();
+    (new ProcessMentorPayoutJob($payout->id))->handle(app(MentorPayoutService::class));
+    $payout = $payout->fresh();
 
-    expect($processed)->toBe(1)
-        ->and($payout->status)->toBe(MentorPayout::STATUS_TRANSFERRED)
+    expect($payout->status)->toBe(MentorPayout::STATUS_TRANSFERRED)
         ->and($payout->stripe_transfer_id)->toBe('tr_retry_123');
 });
 

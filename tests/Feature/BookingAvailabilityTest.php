@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Modules\Auth\app\Models\OauthToken;
 use Modules\Auth\app\Models\User;
 use Modules\Bookings\app\Jobs\SendBookingConfirmationJob;
+use Modules\Bookings\app\Jobs\MarkCompletedBookingsJob;
 use Modules\Bookings\app\Jobs\SendBookingReminderJob;
 use Modules\Bookings\app\Mail\BookingCancelledNotificationMail;
 use Modules\Bookings\app\Mail\MentorBookingNotificationMail;
@@ -19,6 +20,7 @@ use Modules\Bookings\app\Models\Booking;
 use Modules\Bookings\app\Models\BookingMeetingEvent;
 use Modules\Bookings\app\Services\BookingPageService;
 use Modules\Bookings\app\Services\BookingService;
+use Modules\Bookings\app\Services\MarkCompletedBookingsService;
 use Modules\Bookings\app\Services\ZoomService;
 use Modules\Feedback\app\Models\MentorRating;
 use Modules\Feedback\app\Services\FeedbackService;
@@ -1126,8 +1128,7 @@ it('marks confirmed bookings completed only after the scheduled end time', funct
         'approval_status' => 'not_required',
     ]);
 
-    $this->artisan('bookings:mark-completed')
-        ->assertSuccessful();
+    (new MarkCompletedBookingsJob)->handle(app(MarkCompletedBookingsService::class));
 
     expect($booking->fresh()->status)->toBe('completed')
         ->and($booking->fresh()->completion_source)->toBe('schedule')
@@ -1581,8 +1582,7 @@ it('unlocks feedback after the fallback grace period even without zoom attendanc
         'approval_status' => 'not_required',
     ]);
 
-    $this->artisan('bookings:mark-completed')
-        ->assertSuccessful();
+    (new MarkCompletedBookingsJob)->handle(app(MarkCompletedBookingsService::class));
 
     $booking = $booking->fresh();
 

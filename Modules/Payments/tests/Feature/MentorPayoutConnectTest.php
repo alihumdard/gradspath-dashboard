@@ -6,7 +6,12 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Modules\Auth\app\Models\User;
+use Modules\Bookings\app\Models\Booking;
+use Modules\Payments\app\Jobs\ProcessMentorPayoutJob;
 use Modules\Payments\app\Jobs\ProcessStripeWebhookJob;
+use Modules\Payments\app\Jobs\QueueMentorPayoutsJob;
+use Modules\Payments\app\Models\MentorPayout;
+use Modules\Payments\app\Models\ServiceConfig;
 use Modules\Payments\app\Services\StripeWebhookService;
 use Modules\Settings\app\Models\Mentor;
 use Spatie\Permission\Models\Role;
@@ -291,5 +296,68 @@ it('accepts connect webhooks using the connect webhook secret', function () {
     Queue::assertPushed(ProcessStripeWebhookJob::class, function (ProcessStripeWebhookJob $job) {
         return $job->payload['id'] === 'evt_connect_route_123'
             && $job->payload['type'] === 'v2.core.account_link.returned';
+    });
+});
+
+it('queues eligible mentor payouts for horizon processing', function () {
+    Queue::fake();
+
+    $mentorUser = createMentorUserForPayouts();
+    $mentor = Mentor::query()->create([
+        'user_id' => $mentorUser->id,
+        'mentor_type' => 'graduate',
+        'status' => 'active',
+        'stripe_account_id' => 'acct_ready_123',
+        'stripe_onboarding_complete' => true,
+        'payouts_enabled' => true,
+    ]);
+
+    $student = User::factory()->create([
+        'is_active' => true,
+    ]);
+
+    $service = ServiceConfig::query()->create([
+        'service_name' => 'Payout Test',
+        'service_slug' => 'payout-test-'.Str::uuid(),
+        'duration_minutes' => 60,
+        'is_active' => true,
+        'price_1on1' => 65,
+    ]);
+
+    $booking = Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'session_at' => now()->subHour(),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'credits_charged' => 0,
+        'amount_charged' => 65,
+        'currency' => 'USD',
+        'status' => 'completed',
+        'approval_status' => 'not_required',
+        'completed_at' => now(),
+    ]);
+
+    $payout = MentorPayout::query()->create([
+        'mentor_id' => $mentor->id,
+        'booking_id' => $booking->id,
+        'student_id' => $student->id,
+        'stripe_account_id' => $mentor->stripe_account_id,
+        'amount' => 42,
+        'gross_amount' => 65,
+        'mentor_share_amount' => 42,
+        'platform_fee_amount' => 23,
+        'currency' => 'USD',
+        'status' => MentorPayout::STATUS_READY,
+        'eligible_at' => now(),
+    ]);
+
+    (new QueueMentorPayoutsJob)->handle();
+
+    Queue::assertPushed(ProcessMentorPayoutJob::class, function (ProcessMentorPayoutJob $job) use ($payout) {
+        return $job->payoutId === $payout->id;
     });
 });

@@ -1,24 +1,15 @@
 <?php
 
-namespace Modules\Bookings\app\Console;
+namespace Modules\Bookings\app\Services;
 
 use Carbon\Carbon;
-use Illuminate\Console\Command;
 use Modules\Bookings\app\Models\Booking;
-use Modules\Bookings\app\Services\BookingAttendanceResolver;
 
-class MarkCompletedBookingsCommand extends Command
+class MarkCompletedBookingsService
 {
-    protected $signature = 'bookings:mark-completed';
+    public function __construct(private readonly BookingAttendanceResolver $attendance) {}
 
-    protected $description = 'Mark past confirmed bookings as completed and set feedback due window.';
-
-    public function __construct(private readonly BookingAttendanceResolver $attendance)
-    {
-        parent::__construct();
-    }
-
-    public function handle(): int
+    public function process(int $chunkSize = 100): int
     {
         $count = 0;
 
@@ -26,7 +17,7 @@ class MarkCompletedBookingsCommand extends Command
             ->where('status', 'confirmed')
             ->whereNotNull('session_at')
             ->orderBy('id')
-            ->chunkById(100, function ($bookings) use (&$count) {
+            ->chunkById($chunkSize, function ($bookings) use (&$count) {
                 foreach ($bookings as $booking) {
                     $scheduledEnd = $booking->session_at?->copy()->addMinutes(max((int) $booking->duration_minutes, 1));
 
@@ -51,8 +42,6 @@ class MarkCompletedBookingsCommand extends Command
                 }
             });
 
-        $this->info("Bookings marked completed: {$count}");
-
-        return self::SUCCESS;
+        return $count;
     }
 }

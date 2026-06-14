@@ -169,35 +169,6 @@ class MentorPayoutService
         }, 5);
     }
 
-    public function retryEligiblePayouts(int $limit = 50): int
-    {
-        $processed = 0;
-        $retryLimit = max((int) config('payments.mentor_payout_retry_limit', 5), 1);
-
-        MentorPayout::query()
-            ->with(['booking.mentor'])
-            ->whereIn('status', [
-                MentorPayout::STATUS_READY,
-                MentorPayout::STATUS_FAILED,
-            ])
-            ->where('attempt_count', '<', $retryLimit)
-            ->orderBy('id')
-            ->limit($limit)
-            ->get()
-            ->each(function (MentorPayout $payout) use (&$processed) {
-                $booking = $payout->booking;
-
-                if (! $booking || $booking->status !== 'completed') {
-                    return;
-                }
-
-                $this->releaseForCompletedBooking($booking);
-                $processed++;
-            });
-
-        return $processed;
-    }
-
     private function attemptTransfer(MentorPayout $payout, Booking $booking): MentorPayout
     {
         $payout->attempt_count = (int) $payout->attempt_count + 1;

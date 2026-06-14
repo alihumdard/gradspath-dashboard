@@ -6,12 +6,12 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Modules\Bookings\app\Console\DispatchBookingRemindersCommand;
-use Modules\Bookings\app\Console\MarkCompletedBookingsCommand;
 use Modules\Bookings\app\Console\RefreshMentorZoomTokensCommand;
 use Modules\Bookings\app\Console\ResyncBookingMeetingsCommand;
 use Modules\Bookings\app\Console\SyncMentorAvailabilityCommand;
 use Modules\Bookings\app\Events\BookingCancelled;
 use Modules\Bookings\app\Events\BookingCreated;
+use Modules\Bookings\app\Jobs\MarkCompletedBookingsJob;
 use Modules\Bookings\app\Listeners\GenerateMeetingLinkListener;
 use Modules\Bookings\app\Listeners\HandleBookingCancelledListener;
 
@@ -32,7 +32,6 @@ class BookingsServiceProvider extends ServiceProvider
 
         $this->commands([
             DispatchBookingRemindersCommand::class,
-            MarkCompletedBookingsCommand::class,
             RefreshMentorZoomTokensCommand::class,
             ResyncBookingMeetingsCommand::class,
             SyncMentorAvailabilityCommand::class,
@@ -42,7 +41,7 @@ class BookingsServiceProvider extends ServiceProvider
             $schedule = $this->app->make(Schedule::class);
             $schedule->command('bookings:send-reminders --hours=24')->everyFifteenMinutes();
             $schedule->command('bookings:send-reminders --hours=1')->everyFifteenMinutes();
-            $schedule->command('bookings:mark-completed')->everyFifteenMinutes();
+            $schedule->job(new MarkCompletedBookingsJob)->everyFifteenMinutes();
             $schedule->command('bookings:sync-availability')->dailyAt('00:15');
             $schedule->command('zoom:refresh-mentor-tokens')->dailyAt('01:00');
         });

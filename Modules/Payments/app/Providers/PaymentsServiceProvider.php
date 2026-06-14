@@ -4,8 +4,8 @@ namespace Modules\Payments\app\Providers;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
-use Modules\Payments\app\Console\RetryMentorPayoutsCommand;
 use Modules\Payments\app\Console\RetryStripeWebhooksCommand;
+use Modules\Payments\app\Jobs\QueueMentorPayoutsJob;
 
 class PaymentsServiceProvider extends ServiceProvider
 {
@@ -19,14 +19,13 @@ class PaymentsServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
 
         $this->commands([
-            RetryMentorPayoutsCommand::class,
             RetryStripeWebhooksCommand::class,
         ]);
 
         $this->app->booted(function (): void {
             $schedule = $this->app->make(Schedule::class);
             $schedule->command('stripe:retry-webhooks')->everyFiveMinutes();
-            $schedule->command('payments:retry-mentor-payouts')->everyFiveMinutes();
+            $schedule->job(new QueueMentorPayoutsJob)->everyFiveMinutes();
         });
     }
 
