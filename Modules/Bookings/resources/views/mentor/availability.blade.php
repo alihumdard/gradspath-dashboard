@@ -285,6 +285,12 @@
                 </option>
               @endforeach
             </select>
+            <p class="availability-timezone-hint" id="availabilityTimezoneHint">
+              We use this timezone when saving your availability. Students see these slots converted to their own timezone.
+            </p>
+            <button class="availability-timezone-detected-btn" id="availabilityUseDetectedTimezone" type="button" hidden>
+              Use detected timezone
+            </button>
           </div>
 
         </div>

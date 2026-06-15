@@ -109,6 +109,10 @@
               </select>
             </div>
             <p class="helper-text">We use your timezone as the default when showing booking dates and times.</p>
+            <button type="button" class="settings-timezone-detected-btn" id="settingsUseDetectedTimezone" hidden>
+              Use detected timezone
+            </button>
+            <p class="settings-timezone-detected-hint" id="settingsDetectedTimezoneHint" hidden></p>
             <p class="error-text">{{ $viewErrors->first('timezone') }}</p>
           </div>
 
@@ -127,24 +131,35 @@
     const shell = document.querySelector(".app-shell");
     const themeToggle = document.getElementById("themeToggle");
     const timezoneSelect = document.getElementById("settingsTimezone");
+    const useDetectedTimezoneButton = document.getElementById("settingsUseDetectedTimezone");
+    const detectedTimezoneHint = document.getElementById("settingsDetectedTimezoneHint");
+    let detectedTimezone = "";
 
-    async function autoSaveDetectedTimezone() {
-      if (!timezoneSelect || timezoneSelect.dataset.hasSavedTimezone === "true") {
-        return;
-      }
-
-      const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (!detectedTimezone) {
-        return;
-      }
-
+    function isSupportedTimezone(timezone) {
       const supported = Array.from(timezoneSelect.options).map((option) => option.value);
-      if (!supported.includes(detectedTimezone)) {
+      return supported.includes(timezone);
+    }
+
+    function renderDetectedTimezoneButton() {
+      if (!useDetectedTimezoneButton || !detectedTimezone || !timezoneSelect) {
         return;
       }
 
-      timezoneSelect.value = detectedTimezone;
+      const shouldShow = timezoneSelect.value !== detectedTimezone;
+      useDetectedTimezoneButton.hidden = !shouldShow;
+      useDetectedTimezoneButton.textContent = shouldShow
+        ? `Use ${detectedTimezone}`
+        : "Use detected timezone";
 
+      if (detectedTimezoneHint) {
+        detectedTimezoneHint.hidden = !shouldShow;
+        detectedTimezoneHint.textContent = shouldShow
+          ? `Your current detected timezone is ${detectedTimezone}.`
+          : "";
+      }
+    }
+
+    async function saveTimezone(timezone) {
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
       if (!csrfToken || !timezoneSelect.dataset.timezoneAutosaveUrl) {
         return;
@@ -159,8 +174,28 @@
           "X-Requested-With": "XMLHttpRequest",
         },
         credentials: "same-origin",
-        body: JSON.stringify({ timezone: detectedTimezone }),
+        body: JSON.stringify({ timezone }),
       }).catch(() => {});
+
+      timezoneSelect.dataset.hasSavedTimezone = "true";
+    }
+
+    async function autoSaveDetectedTimezone() {
+      if (!timezoneSelect) {
+        return;
+      }
+
+      detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      if (!detectedTimezone || !isSupportedTimezone(detectedTimezone)) {
+        return;
+      }
+
+      if (timezoneSelect.dataset.hasSavedTimezone !== "true") {
+        timezoneSelect.value = detectedTimezone;
+        await saveTimezone(detectedTimezone);
+      }
+
+      renderDetectedTimezoneButton();
     }
 
     function updateTheme(theme) {
@@ -187,6 +222,18 @@
     if (overlay && shell) {
       overlay.addEventListener("click", () => shell.classList.remove("sidebar-active"));
     }
+
+    timezoneSelect?.addEventListener("change", renderDetectedTimezoneButton);
+
+    useDetectedTimezoneButton?.addEventListener("click", async () => {
+      if (!detectedTimezone || !timezoneSelect) {
+        return;
+      }
+
+      timezoneSelect.value = detectedTimezone;
+      renderDetectedTimezoneButton();
+      await saveTimezone(detectedTimezone);
+    });
 
     autoSaveDetectedTimezone();
   </script>

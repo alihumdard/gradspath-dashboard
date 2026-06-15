@@ -763,6 +763,49 @@ body {
   color: var(--muted);
 }
 
+.settings-timezone-detected-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  margin-top: 12px;
+  padding: 10px 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(122, 77, 255, 0.08);
+  color: var(--purple);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.settings-timezone-detected-btn:hover {
+  border-color: var(--purple);
+  background: rgba(122, 77, 255, 0.14);
+}
+
+.settings-timezone-detected-btn[hidden] {
+  display: none;
+}
+
+.settings-timezone-detected-hint {
+  max-width: 560px;
+  width: fit-content;
+  margin-top: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--purple-soft);
+  color: var(--purple);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.settings-timezone-detected-hint[hidden] {
+  display: none;
+}
+
 .helper-spacing {
   margin-top: -8px;
   margin-bottom: 14px;

@@ -566,12 +566,12 @@ it('auto-saves a detected supported timezone when the user has no saved timezone
     $this->withoutMiddleware()
         ->actingAs($mentorUser)
         ->postJson(route('settings.timezone.store'), [
-            'timezone' => 'Asia/Karachi',
+            'timezone' => 'America/New_York',
         ])
         ->assertOk()
-        ->assertJsonPath('timezone', 'Asia/Karachi');
+        ->assertJsonPath('timezone', 'America/New_York');
 
-    expect($mentorUser->fresh()->setting?->timezone)->toBe('Asia/Karachi');
+    expect($mentorUser->fresh()->setting?->timezone)->toBe('America/New_York');
 });
 
 it('does not overwrite a saved supported timezone from the detection endpoint', function () {
@@ -595,13 +595,13 @@ it('does not overwrite a saved supported timezone from the detection endpoint', 
     expect($mentorUser->fresh()->setting?->timezone)->toBe('Asia/Karachi');
 });
 
-it('rejects unsupported detected timezones', function () {
+it('rejects invalid detected timezones', function () {
     $mentorUser = createSettingsUser('mentor');
 
     $this->withoutMiddleware()
         ->actingAs($mentorUser)
         ->postJson(route('settings.timezone.store'), [
-            'timezone' => 'Asia/Dubai',
+            'timezone' => 'Mars/Olympus_Mons',
         ])
         ->assertStatus(422);
 

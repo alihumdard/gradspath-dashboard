@@ -706,7 +706,7 @@ it('lets a mentor save recurring office hours on the availability page', functio
         'current_service_id' => $service->id,
         'day_of_week' => 'sun',
         'start_time' => '20:00:00',
-        'timezone' => 'Asia/Karachi',
+        'timezone' => 'America/New_York',
         'frequency' => 'weekly',
         'max_spots' => 3,
         'is_active' => true,
@@ -714,7 +714,7 @@ it('lets a mentor save recurring office hours on the availability page', functio
     $this->assertDatabaseHas('office_hour_sessions', [
         'current_service_id' => $service->id,
         'start_time' => '20:00:00',
-        'timezone' => 'Asia/Karachi',
+        'timezone' => 'America/New_York',
         'current_occupancy' => 0,
         'max_spots' => 3,
         'is_full' => false,
@@ -850,7 +850,7 @@ it('returns scheduler hydration data when saving availability as json', function
         ])
         ->assertOk()
         ->assertJsonPath('message', 'Mentor availability updated successfully.')
-        ->assertJsonPath('formData.timezone', 'Asia/Karachi')
+        ->assertJsonPath('formData.timezone', 'America/New_York')
         ->assertJsonPath('formData.date_slots.0.date', $targetDate)
         ->assertJsonPath('formData.date_slots.0.slots.0.start_time', '09:00')
         ->assertJsonPath('formData.date_slots.0.slots.0.service_config_id', $service->id)
@@ -864,7 +864,12 @@ it('returns scheduler hydration data when saving availability as json', function
         'slot_date' => $targetDate,
         'start_time' => '09:00:00',
         'end_time' => '12:00:00',
+        'timezone' => 'America/New_York',
         'service_config_id' => $service->id,
+    ]);
+    $this->assertDatabaseHas('user_settings', [
+        'user_id' => $mentorUser->id,
+        'timezone' => 'America/New_York',
     ]);
 });
 

@@ -41,13 +41,26 @@ class AvailabilityController extends Controller
             $dateSlots = [];
         }
 
+        $submittedTimezone = (string) ($request->input('timezone') ?: TimezoneOptions::preferredFor(Auth::user()?->loadMissing('setting')));
+
+        if (! TimezoneOptions::isSupported($submittedTimezone)) {
+            $submittedTimezone = TimezoneOptions::fallback();
+        }
+
+        $submittedOfficeHours = (array) $request->input('office_hours', []);
+        $submittedOfficeHoursTimezone = (string) ($submittedOfficeHours['timezone'] ?? $submittedTimezone);
+
+        if (! TimezoneOptions::isSupported($submittedOfficeHoursTimezone)) {
+            $submittedOfficeHoursTimezone = $submittedTimezone;
+        }
+
         $request->merge([
             'date_slots' => array_values($dateSlots),
             'effective_from' => null,
             'effective_until' => null,
-            'timezone' => TimezoneOptions::fallback(),
-            'office_hours' => array_merge((array) $request->input('office_hours', []), [
-                'timezone' => TimezoneOptions::fallback(),
+            'timezone' => $submittedTimezone,
+            'office_hours' => array_merge($submittedOfficeHours, [
+                'timezone' => $submittedOfficeHoursTimezone,
             ]),
         ]);
 
@@ -412,6 +425,7 @@ class AvailabilityController extends Controller
         }
 
         $data = $validator->validated();
+        $this->saveUserTimezone((string) $data['timezone']);
 
         if ($shouldSyncServices) {
             $serviceIds = collect($data['service_config_ids'] ?? [])
@@ -542,6 +556,28 @@ class AvailabilityController extends Controller
     private function normalizeSessionType(string $sessionType): string
     {
         return in_array($sessionType, ['1on1', '1on3', '1on5'], true) ? $sessionType : '1on1';
+    }
+
+    private function saveUserTimezone(string $timezone): void
+    {
+        if (! TimezoneOptions::isSupported($timezone)) {
+            return;
+        }
+
+        $user = Auth::user();
+
+        if (! $user) {
+            return;
+        }
+
+        $setting = $user->setting()->firstOrCreate([], [
+            'theme' => 'light',
+            'email_notifications' => true,
+            'sms_notifications' => false,
+            'timezone' => null,
+        ]);
+
+        $setting->forceFill(['timezone' => $timezone])->save();
     }
 
     private function hasEnabledRegularAvailability(Request $request): bool

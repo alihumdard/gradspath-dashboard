@@ -526,6 +526,30 @@ body:has(.availability-main) .main-content {
   color: var(--availability-danger);
 }
 
+.availability-timezone-hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.availability-timezone-detected-btn {
+  margin-top: 10px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(122, 77, 255, 0.22);
+  background: rgba(122, 77, 255, 0.08);
+  color: var(--purple);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.availability-timezone-detected-btn:hover {
+  border-color: rgba(122, 77, 255, 0.38);
+  background: rgba(122, 77, 255, 0.13);
+}
+
 .availability-office-hours-fixed {
   display: grid;
   align-content: start;
@@ -1000,6 +1024,10 @@ body:has(.availability-main) .main-content {
   font-weight: 600;
   letter-spacing: -0.05em;
   color: var(--purple-dark);
+}
+
+.availability-month-cell:not(.availability-month-cell--single) .availability-month-cell-label {
+  display: none;
 }
 
 .availability-month-cell-label {
@@ -1592,6 +1620,70 @@ body:has(.availability-main) .main-content {
   }
 }
 
+@media (max-width: 1360px) {
+  .availability-month-grid {
+    gap: 4px !important;
+  }
+
+  .availability-month-weekday {
+    padding: 4px 2px !important;
+    font-size: 11px !important;
+  }
+
+  .availability-month-cell {
+    min-height: 76px !important;
+    padding: 8px 4px !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 4px !important;
+  }
+
+  .availability-month-cell-date {
+    font-size: 1.2rem !important;
+    margin-bottom: 2px !important;
+  }
+
+  .availability-month-cell-meta {
+    font-size: 10px !important;
+  }
+
+  .availability-month-cell-badge {
+    min-height: 20px !important;
+    height: 20px !important;
+    width: 20px !important;
+    padding: 0 !important;
+    margin: 2px 0 !important;
+    border-radius: 50% !important;
+    font-size: 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .availability-month-cell-badge .badge-text {
+    display: none !important;
+  }
+
+  .availability-month-cell-booked {
+    margin-top: 0 !important;
+    margin-bottom: 2px !important;
+    font-size: 10px !important;
+    line-height: 1.1 !important;
+  }
+
+  .availability-month-cell-booked .booked-text {
+    display: none !important;
+  }
+
+  .availability-month-cell-booked::after {
+    content: "B" !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    opacity: 0.8 !important;
+    margin-left: 1px !important;
+  }
+}
+
 @media (max-width: 640px) {
   .availability-main {
     padding-inline: 12px;
@@ -1613,15 +1705,6 @@ body:has(.availability-main) .main-content {
 
   .availability-month-grid.is-year-view {
     grid-template-columns: 1fr;
-  }
-
-  .availability-month-cell-date {
-    font-size: 1.3rem;
-  }
-
-  .availability-month-cell-label,
-  .availability-month-cell-meta {
-    font-size: 11px;
   }
 }
 

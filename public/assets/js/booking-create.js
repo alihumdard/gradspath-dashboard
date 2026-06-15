@@ -276,17 +276,12 @@ async function autoSaveDetectedTimezone() {
   }
 
   const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  if (!detectedTimezone || !timezoneAutoSaveUrl) {
-    return;
-  }
+  const autoSaveCsrfToken =
+    document.querySelector('meta[name="csrf-token"]')?.content ||
+    document.querySelector('#bookingForm input[name="_token"]')?.value ||
+    "";
 
-  const supported = ["UTC", "Asia/Karachi", "Europe/London", "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles"];
-  if (!supported.includes(detectedTimezone)) {
-    return;
-  }
-
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-  if (!csrfToken) {
+  if (!timezoneAutoSaveUrl || !autoSaveCsrfToken || !detectedTimezone) {
     return;
   }
 
@@ -294,7 +289,7 @@ async function autoSaveDetectedTimezone() {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-CSRF-TOKEN": csrfToken,
+      "X-CSRF-TOKEN": autoSaveCsrfToken,
       Accept: "application/json",
       "X-Requested-With": "XMLHttpRequest",
     },

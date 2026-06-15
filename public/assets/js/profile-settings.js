@@ -21,6 +21,8 @@ const calendlyLink = document.getElementById("calendlyLink");
 const bio = document.getElementById("bio");
 const description = document.getElementById("description");
 const settingsTimezone = document.getElementById("settingsTimezone");
+const settingsUseDetectedTimezone = document.getElementById("settingsUseDetectedTimezone");
+const settingsDetectedTimezoneHint = document.getElementById("settingsDetectedTimezoneHint");
 const universityPicker = document.querySelector("[data-mentor-university-picker]");
 const universitySearch = universityPicker?.querySelector("[data-university-search]");
 const universityIdInput = universityPicker?.querySelector("[data-university-id]");
@@ -35,6 +37,7 @@ const payoutError = document.getElementById("payoutError");
 const enablePayoutsBtn = document.getElementById("enablePayoutsBtn");
 const payoutStatus = document.getElementById("payoutStatus");
 const payoutSummary = document.getElementById("payoutSummary");
+let detectedTimezone = "";
 
 function updateTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
@@ -490,23 +493,31 @@ if (mentorForm) {
   });
 }
 
-async function autoSaveDetectedTimezone() {
-  if (!settingsTimezone || settingsTimezone.dataset.hasSavedTimezone === "true") {
-    return;
-  }
-
-  const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  if (!detectedTimezone) {
-    return;
-  }
-
+function isSupportedTimezone(timezone) {
   const supported = Array.from(settingsTimezone.options).map((option) => option.value);
-  if (!supported.includes(detectedTimezone)) {
+  return supported.includes(timezone);
+}
+
+function renderDetectedTimezoneButton() {
+  if (!settingsUseDetectedTimezone || !detectedTimezone || !settingsTimezone) {
     return;
   }
 
-  settingsTimezone.value = detectedTimezone;
+  const shouldShow = settingsTimezone.value !== detectedTimezone;
+  settingsUseDetectedTimezone.hidden = !shouldShow;
+  settingsUseDetectedTimezone.textContent = shouldShow
+    ? `Use ${detectedTimezone}`
+    : "Use detected timezone";
 
+  if (settingsDetectedTimezoneHint) {
+    settingsDetectedTimezoneHint.hidden = !shouldShow;
+    settingsDetectedTimezoneHint.textContent = shouldShow
+      ? `Your current detected timezone is ${detectedTimezone}.`
+      : "";
+  }
+}
+
+async function saveTimezone(timezone) {
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
   if (!csrfToken || !settingsTimezone.dataset.timezoneAutosaveUrl) {
     return;
@@ -521,8 +532,40 @@ async function autoSaveDetectedTimezone() {
       "X-Requested-With": "XMLHttpRequest",
     },
     credentials: "same-origin",
-    body: JSON.stringify({ timezone: detectedTimezone }),
+    body: JSON.stringify({ timezone }),
   }).catch(() => {});
+
+  settingsTimezone.dataset.hasSavedTimezone = "true";
 }
+
+async function autoSaveDetectedTimezone() {
+  if (!settingsTimezone) {
+    return;
+  }
+
+  detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  if (!detectedTimezone || !isSupportedTimezone(detectedTimezone)) {
+    return;
+  }
+
+  if (settingsTimezone.dataset.hasSavedTimezone !== "true") {
+    settingsTimezone.value = detectedTimezone;
+    await saveTimezone(detectedTimezone);
+  }
+
+  renderDetectedTimezoneButton();
+}
+
+settingsTimezone?.addEventListener("change", renderDetectedTimezoneButton);
+
+settingsUseDetectedTimezone?.addEventListener("click", async () => {
+  if (!detectedTimezone || !settingsTimezone) {
+    return;
+  }
+
+  settingsTimezone.value = detectedTimezone;
+  renderDetectedTimezoneButton();
+  await saveTimezone(detectedTimezone);
+});
 
 autoSaveDetectedTimezone();

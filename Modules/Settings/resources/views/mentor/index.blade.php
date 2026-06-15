@@ -286,6 +286,10 @@
                       </select>
                     </div>
                     <p class="helper-text">We use your timezone as the default for scheduling and booking display.</p>
+                    <button type="button" class="settings-timezone-detected-btn" id="settingsUseDetectedTimezone" hidden>
+                      Use detected timezone
+                    </button>
+                    <p class="settings-timezone-detected-hint" id="settingsDetectedTimezoneHint" hidden></p>
                     <p class="error-text">{{ $viewErrors->first('timezone') }}</p>
                   </div>
                 </div>

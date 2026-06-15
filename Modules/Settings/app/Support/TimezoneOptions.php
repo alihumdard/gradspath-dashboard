@@ -10,9 +10,23 @@ class TimezoneOptions
 
     public static function all(): array
     {
-        return [
-            'Asia/Karachi' => 'Karachi',
-        ];
+        $timezones = timezone_identifiers_list();
+
+        usort($timezones, function (string $a, string $b): int {
+            if ($a === self::FALLBACK) {
+                return -1;
+            }
+
+            if ($b === self::FALLBACK) {
+                return 1;
+            }
+
+            return $a <=> $b;
+        });
+
+        return collect($timezones)
+            ->mapWithKeys(fn (string $timezone): array => [$timezone => self::labelFor($timezone)])
+            ->all();
     }
 
     public static function values(): array
@@ -49,5 +63,14 @@ class TimezoneOptions
     {
         return is_string($timezone)
             && in_array($timezone, timezone_identifiers_list(), true);
+    }
+
+    private static function labelFor(string $timezone): string
+    {
+        $parts = explode('/', $timezone);
+        $city = str_replace('_', ' ', end($parts) ?: $timezone);
+        $region = count($parts) > 1 ? $parts[0] : 'Other';
+
+        return "{$city} - {$region}";
     }
 }

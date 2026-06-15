@@ -19,6 +19,8 @@
   }
 
   const timezoneSelect = document.getElementById("availabilityTimezone");
+  const timezoneHint = document.getElementById("availabilityTimezoneHint");
+  const useDetectedTimezoneButton = document.getElementById("availabilityUseDetectedTimezone");
   const effectiveFromInput = document.getElementById("availabilityEffectiveFrom");
   const effectiveUntilInput = document.getElementById("availabilityEffectiveUntil");
   const rangeNote = document.getElementById("availabilityRangeNote");
@@ -185,6 +187,7 @@
       timeOptions: Array.isArray(input.time_options) ? input.time_options : [],
       windowWeeks: Number(input.window_weeks || 12),
       timezone: String(input.timezone || "UTC"),
+      detectedTimezone: "",
       effectiveFrom: String(input.effective_from || ""),
       effectiveUntil: String(input.effective_until || ""),
       dayOrder,
@@ -427,6 +430,19 @@
     timezoneSelect?.addEventListener("change", () => {
       state.timezone = timezoneSelect.value;
       state.officeHours.timezone = timezoneSelect.value;
+      state.hasSavedTimezone = true;
+      markDirty();
+      safeRender();
+    });
+
+    useDetectedTimezoneButton?.addEventListener("click", () => {
+      if (!state.detectedTimezone) {
+        return;
+      }
+
+      state.timezone = state.detectedTimezone;
+      state.officeHours.timezone = state.detectedTimezone;
+      state.hasSavedTimezone = true;
       markDirty();
       safeRender();
     });
@@ -586,10 +602,6 @@
   }
 
   async function autoSaveDetectedTimezone() {
-    if (state.hasSavedTimezone) {
-      return;
-    }
-
     const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (!detectedTimezone) {
       return;
@@ -597,6 +609,13 @@
 
     const supported = state.timezoneOptions.map((option) => option.value);
     if (!supported.includes(detectedTimezone)) {
+      return;
+    }
+
+    state.detectedTimezone = detectedTimezone;
+
+    if (state.hasSavedTimezone) {
+      safeRender();
       return;
     }
 
@@ -1080,7 +1099,7 @@
 
   function renderDateCellMeta(meta, blockCount, bookedCount, locked) {
     if (bookedCount > 0 && blockCount === 0) {
-      return `<span class="availability-month-cell-booked">${bookedCount} ${bookedCount === 1 ? "Booked" : "Bookings"}</span>`;
+      return `<span class="availability-month-cell-booked"><span class="booked-num">${bookedCount}</span><span class="booked-text"> ${bookedCount === 1 ? "Booked" : "Bookings"}</span></span>`;
     }
 
     if (locked && meta) {
@@ -1089,13 +1108,13 @@
 
     if (blockCount > 0) {
       return `
-        <span class="availability-month-cell-badge is-positive">${blockCount} ${blockCount === 1 ? "Slot" : "Slots"}</span>
-        <span class="availability-month-cell-booked">${bookedCount} Booked</span>
+        <span class="availability-month-cell-badge is-positive"><span class="badge-num">${blockCount}</span><span class="badge-text"> ${blockCount === 1 ? "Slot" : "Slots"}</span></span>
+        <span class="availability-month-cell-booked"><span class="booked-num">${bookedCount}</span><span class="booked-text"> Booked</span></span>
       `;
     }
 
     if (!meta) {
-      return '<span class="availability-month-cell-badge is-zero">0 Slots</span>';
+      return '<span class="availability-month-cell-badge is-zero"><span class="badge-num">0</span><span class="badge-text"> Slots</span></span>';
     }
 
     return `<span class="availability-month-cell-meta">${escapeHtml(meta)}</span>`;
@@ -1359,6 +1378,18 @@
       timezoneSelect.value = state.timezone;
     }
 
+    if (timezoneHint) {
+      timezoneHint.textContent = timezoneHintText();
+    }
+
+    if (useDetectedTimezoneButton) {
+      const canUseDetected = Boolean(state.detectedTimezone && state.detectedTimezone !== state.timezone);
+      useDetectedTimezoneButton.hidden = !canUseDetected;
+      useDetectedTimezoneButton.textContent = canUseDetected
+        ? `Use ${state.detectedTimezone}`
+        : "Use detected timezone";
+    }
+
     if (effectiveFromInput && effectiveFromInput.value !== state.effectiveFrom) {
       effectiveFromInput.value = state.effectiveFrom;
     }
@@ -1544,6 +1575,7 @@
     state.timeOptions = next.timeOptions;
     state.windowWeeks = next.windowWeeks;
     state.timezone = next.timezone;
+    state.detectedTimezone = next.detectedTimezone || state.detectedTimezone;
     state.effectiveFrom = next.effectiveFrom;
     state.effectiveUntil = next.effectiveUntil;
     state.dayOrder = next.dayOrder;
@@ -1887,6 +1919,22 @@
       : value === "Asia/Karachi"
       ? "PKT"
       : value;
+  }
+
+  function timezoneHintText() {
+    if (state.detectedTimezone && state.timezone === state.detectedTimezone && !state.hasSavedTimezone) {
+      return `Detected from your browser: ${state.detectedTimezone}. You can change this before saving. Students see slots converted to their own timezone.`;
+    }
+
+    if (state.detectedTimezone && state.timezone === state.detectedTimezone) {
+      return `Using your browser timezone: ${state.detectedTimezone}. Students see slots converted to their own timezone.`;
+    }
+
+    if (state.detectedTimezone && state.timezone !== state.detectedTimezone) {
+      return `Using ${state.timezone}. Your browser timezone is ${state.detectedTimezone}; use it for this schedule if your availability should follow your current device timezone.`;
+    }
+
+    return `Using ${state.timezone}. Students see these slots converted to their own timezone.`;
   }
 
   function serviceLabelById(serviceId) {
