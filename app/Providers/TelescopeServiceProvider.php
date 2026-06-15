@@ -21,13 +21,24 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 
         $recordsAllEntries = $this->app->environment([
             'local',
-            'production',
             'staging',
         ]);
+        $recordsErrorsOnly = $this->app->environment('production');
 
-        Telescope::filter(function (IncomingEntry $entry) use ($recordsAllEntries) {
-            return $recordsAllEntries ||
-                   $entry->isReportableException() ||
+        Telescope::filter(function (IncomingEntry $entry) use ($recordsAllEntries, $recordsErrorsOnly) {
+            if ($recordsAllEntries) {
+                return true;
+            }
+
+            if ($recordsErrorsOnly) {
+                return $entry->isReportableException() ||
+                       $entry->isFailedRequest() ||
+                       $entry->isFailedJob() ||
+                       $entry->isScheduledTask() ||
+                       $entry->hasMonitoredTag();
+            }
+
+            return $entry->isReportableException() ||
                    $entry->isFailedRequest() ||
                    $entry->isFailedJob() ||
                    $entry->isScheduledTask() ||
