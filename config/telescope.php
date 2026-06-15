@@ -16,7 +16,11 @@ return [
     |
     */
 
-    'enabled' => env('TELESCOPE_ENABLED', true),
+    'enabled' => env('TELESCOPE_ENABLED', in_array(env('APP_ENV', 'production'), [
+        'local',
+        'production',
+        'staging',
+    ], true)),
 
     /*
     |--------------------------------------------------------------------------

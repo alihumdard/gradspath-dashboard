@@ -36,6 +36,14 @@ beforeEach(function () {
         'services.zoom.client_secret' => 'zoom-client-secret',
         'services.zoom.redirect_uri' => 'https://gradspath.test/mentor/settings/zoom/callback',
         'services.zoom.api_base' => 'https://api.zoom.us/v2',
+        'services.zoom.token_url' => 'https://zoom.us/oauth/token',
+    ]);
+
+    Http::fake([
+        'https://api.zoom.us/v2/users/me' => Http::response([
+            'id' => 'zoom-user-test',
+            'email' => 'mentor@example.edu',
+        ], 200),
     ]);
 });
 
@@ -135,6 +143,21 @@ function nextWeekdayDate(string $dayOfWeek): string
 function dateSlotsPayload(array $entries): string
 {
     return json_encode(array_values($entries), JSON_THROW_ON_ERROR);
+}
+
+function fakeUsableZoomRefreshHttp(): void
+{
+    Http::fake([
+        'https://api.zoom.us/v2/users/me' => Http::response([
+            'id' => 'zoom-user-test',
+            'email' => 'mentor@example.edu',
+        ], 200),
+        'https://zoom.us/oauth/token*' => Http::response([
+            'access_token' => 'refreshed-zoom-access-token',
+            'refresh_token' => 'refreshed-zoom-refresh-token',
+            'expires_in' => 3600,
+        ], 200),
+    ]);
 }
 
 function createGenericRule(Mentor $mentor, string $dayOfWeek, string $start = '08:00:00', string $end = '10:00:00', ?int $serviceConfigId = null): MentorAvailabilityRule
@@ -497,6 +520,8 @@ it('allows an unchanged saved same-day past slot while adding a new future slot'
     $today = now('Asia/Karachi')->toDateString();
     $existingSlotId = createGenericSlot($mentor, $today, '09:00:00', '10:00:00', null, $service->id, 'Asia/Karachi');
 
+    fakeUsableZoomRefreshHttp();
+
     $this->actingAs($mentorUser)
         ->patch(route('mentor.availability.update'), [
             'timezone' => 'Asia/Karachi',
@@ -844,7 +869,7 @@ it('returns validation errors when office hours are enabled without a valid serv
         ])
         ->assertStatus(422)
         ->assertJsonValidationErrors(['office_hours.service_config_id'])
-        ->assertJsonFragment(['Add at least one active mentor service before enabling office hours.']);
+        ->assertJsonFragment(['Add Tutoring, Program Insights, or Interview Prep before enabling office hours.']);
 });
 
 it('rejects biweekly office hours because office hours are weekly only', function () {
@@ -989,6 +1014,8 @@ it('allows same-day availability slots that start later in the current day', fun
     $service = makePortalService();
     attachServiceToMentor($mentor, $service);
     $today = Carbon\Carbon::now('Asia/Karachi')->toDateString();
+
+    fakeUsableZoomRefreshHttp();
 
     $this->actingAs($mentorUser)
         ->patchJson(route('mentor.availability.update'), [
@@ -1151,6 +1178,16 @@ it('returns availability only for slots matching the requested meeting size', fu
     attachServiceToMentor($hostMentor, $service);
     $targetDate = now()->addDays(7)->toDateString();
 
+    DB::table('user_settings')->insert([
+        'user_id' => $student->id,
+        'theme' => 'light',
+        'email_notifications' => true,
+        'sms_notifications' => false,
+        'timezone' => 'America/New_York',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
     $this->actingAs($hostUser)
         ->patch(route('mentor.availability.update'), [
             'timezone' => 'America/New_York',
@@ -1250,9 +1287,10 @@ it('creates a paid 1on3 booking with one payer and guest participants', function
 
     (new SendBookingConfirmationJob($booking->id))->handle(app(BookingMeetingPresenter::class));
 
-    Mail::assertSent(StudentBookingConfirmationMail::class, function (StudentBookingConfirmationMail $mail) use ($booking) {
-        return $mail->bookingDetails['meeting_link'] === route('student.bookings.join-meeting', $booking->id)
-            && $mail->bookingDetails['meeting_link_label'] === 'Join Zoom Meeting';
+    Mail::assertSent(StudentBookingConfirmationMail::class, function (StudentBookingConfirmationMail $mail) use ($booking, $student) {
+        return $mail->hasTo($student->email)
+            && $mail->bookingDetails['meeting_link'] === $booking->meeting_link
+            && $mail->bookingDetails['meeting_link_label'] === 'Open Zoom Meeting';
     });
 
     Mail::assertSent(MentorBookingNotificationMail::class, function (MentorBookingNotificationMail $mail) use ($booking) {
@@ -1396,7 +1434,7 @@ it('blocks stripe checkout when the host mentor zoom connection is revoked', fun
         ->where('provider', 'zoom')
         ->firstOrFail();
     $hostToken->forceFill([
-        'access_token' => 'expired-access-token',
+        'access_token' => '',
         'refresh_token' => 'revoked-refresh-token',
         'token_expires_at' => now()->subMinute(),
     ])->save();
@@ -1407,7 +1445,8 @@ it('blocks stripe checkout when the host mentor zoom connection is revoked', fun
     ]);
 
     Http::fake([
-        'https://zoom.us/oauth/token' => Http::response(['error' => 'invalid_grant'], 400),
+        'https://api.zoom.us/v2/users/me*' => Http::response(['message' => 'Unauthorized'], 401),
+        'https://zoom.us/oauth/token*' => Http::response(['error' => 'invalid_grant'], 400),
         'https://stripe.test/*' => Http::response([
             'id' => 'cs_should_not_be_created',
             'url' => 'https://stripe.test/checkout/cs_should_not_be_created',
