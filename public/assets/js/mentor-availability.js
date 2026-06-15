@@ -367,8 +367,20 @@
 
     if (pickerPopup && pickerOverlay) {
       const rect = triggerEl.getBoundingClientRect();
-      pickerPopup.style.top = (rect.bottom + window.scrollY + 6) + "px";
-      pickerPopup.style.left = (rect.left + window.scrollX) + "px";
+      const gap = 8;
+      const viewportPadding = 12;
+      const popupWidth = pickerPopup.offsetWidth || 320;
+      const popupHeight = pickerPopup.offsetHeight || 330;
+      const maxLeft = window.innerWidth - popupWidth - viewportPadding;
+      const left = Math.max(viewportPadding, Math.min(rect.left, maxLeft));
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const shouldOpenAbove = spaceBelow < popupHeight + gap && rect.top > popupHeight + gap;
+      const top = shouldOpenAbove
+        ? rect.top + window.scrollY - popupHeight - gap
+        : rect.bottom + window.scrollY + gap;
+
+      pickerPopup.style.top = `${Math.max(window.scrollY + viewportPadding, top)}px`;
+      pickerPopup.style.left = `${left + window.scrollX}px`;
       pickerOverlay.classList.add("open");
 
       setTimeout(() => {
