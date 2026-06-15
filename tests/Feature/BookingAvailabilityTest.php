@@ -1385,7 +1385,8 @@ it('blocks mentors from creating or receiving new bookings when session notes ar
         'meeting_type' => 'zoom',
         'status' => 'completed',
         'approval_status' => 'not_required',
-        'feedback_due_at' => now()->subHour(),
+        'completed_at' => now()->subDays(2),
+        'feedback_due_at' => null,
         'student_feedback_done' => true,
         'mentor_feedback_done' => false,
     ]);

@@ -555,6 +555,51 @@ it('renders the mentor availability editor page', function () {
         ->assertSee('availabilityDayPanel', false);
 });
 
+it('redirects mentors with overdue session notes away from availability management', function () {
+    [$mentorUser, $mentor] = makePortalMentor('availability-notes-overdue');
+    $student = makePortalUser('availability-notes-overdue-student', 'student');
+    $service = makePortalService();
+
+    Booking::query()->create([
+        'student_id' => $student->id,
+        'mentor_id' => $mentor->id,
+        'service_config_id' => $service->id,
+        'session_type' => '1on1',
+        'session_at' => now()->subDays(2),
+        'session_timezone' => 'UTC',
+        'duration_minutes' => 60,
+        'meeting_type' => 'zoom',
+        'status' => 'completed',
+        'approval_status' => 'not_required',
+        'completed_at' => now()->subDays(2),
+        'feedback_due_at' => null,
+        'student_feedback_done' => true,
+        'mentor_feedback_done' => false,
+    ]);
+
+    $overdueBooking = Booking::query()->latest('id')->firstOrFail();
+
+    $this->actingAs($mentorUser)
+        ->get(route('mentor.availability.index'))
+        ->assertRedirect(route('mentor.notes.bookings.edit', $overdueBooking->id))
+        ->assertSessionHas('warning', 'Please complete your required session notes before continuing in the mentor portal.');
+
+    $this->actingAs($mentorUser)
+        ->patch(route('mentor.availability.update'), [
+            'timezone' => 'America/New_York',
+            'date_slots_payload' => dateSlotsPayload([
+                [
+                    'date' => now()->addDays(3)->toDateString(),
+                    'enabled' => true,
+                    'slots' => [
+                        ['start_time' => '08:00', 'end_time' => '11:00', 'service_config_id' => $service->id],
+                    ],
+                ],
+            ]),
+        ])
+        ->assertRedirect(route('mentor.notes.bookings.edit', $overdueBooking->id));
+});
+
 it('renders mentor services on the availability editor page', function () {
     [$mentorUser, $mentor] = makePortalMentor('availability-services-page');
     $service = makePortalService(['service_name' => 'Program Insights']);

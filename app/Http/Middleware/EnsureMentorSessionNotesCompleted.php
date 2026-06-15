@@ -32,10 +32,24 @@ class EnsureMentorSessionNotesCompleted
 
         $overdueBooking = Booking::query()
             ->where('mentor_id', $mentor->id)
-            ->whereNotNull('feedback_due_at')
-            ->where('feedback_due_at', '<', now())
             ->where('mentor_feedback_done', false)
             ->whereIn('status', ['completed'])
+            ->where(function ($query) {
+                $fallbackDueCutoff = now()->subDay();
+
+                $query
+                    ->where('feedback_due_at', '<', now())
+                    ->orWhere(function ($query) use ($fallbackDueCutoff) {
+                        $query
+                            ->whereNull('feedback_due_at')
+                            ->where(function ($query) use ($fallbackDueCutoff) {
+                                $query
+                                    ->where('completed_at', '<', $fallbackDueCutoff)
+                                    ->orWhere('actual_ended_at', '<', $fallbackDueCutoff)
+                                    ->orWhere('session_at', '<', $fallbackDueCutoff);
+                            });
+                    });
+            })
             ->orderBy('feedback_due_at')
             ->first(['id']);
 
