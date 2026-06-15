@@ -240,14 +240,13 @@
               </div>
 
               <div class="availability-field">
-                <label for="officeHoursTime">Start Time</label>
-                <select id="officeHoursTime" name="office_hours[start_time]">
-                  @foreach ($initialSchedulerPayload['time_options'] ?? [] as $option)
-                    <option value="{{ $option['value'] }}" @selected($selectedOfficeHoursTime === $option['value'])>
-                      {{ $option['label'] }}
-                    </option>
-                  @endforeach
-                </select>
+                <label for="officeHoursTimeTrigger">Start Time</label>
+                <button class="time-trigger" type="button" id="officeHoursTimeTrigger">
+                  <i class="ti ti-clock" aria-hidden="true"></i>
+                  <span id="officeHoursTimeDisplay">Select Time</span>
+                  <i class="ti ti-chevron-down" aria-hidden="true"></i>
+                </button>
+                <input type="hidden" id="officeHoursTime" name="office_hours[start_time]" value="{{ $selectedOfficeHoursTime }}" />
                 <p class="availability-field-error" id="officeHoursTimeError">{{ $errors->first('office_hours.start_time') }}</p>
               </div>
 
@@ -404,5 +403,36 @@
   </main>
 
   <script id="mentorAvailabilityPayload" type="application/json">@json($initialSchedulerPayload)</script>
+  
+  <div class="picker-overlay" id="picker-overlay">
+    <div class="picker-popup" id="picker-popup">
+      <div class="picker-header">
+        <span id="picker-label">Start time</span>
+        <button type="button" id="picker-close-btn" aria-label="Close">×</button>
+      </div>
+      <div class="col-labels">
+        <div class="col-label">Hour</div>
+        <div class="col-label">Min</div>
+        <div class="col-label">AM/PM</div>
+      </div>
+      <div class="picker-columns">
+        <div class="scroll-col" id="hour-col">
+          <div class="scroll-highlight"></div>
+        </div>
+        <div class="scroll-col" id="min-col">
+          <div class="scroll-highlight"></div>
+        </div>
+        <div class="ampm-col" id="ampm-col">
+          <button type="button" class="ampm-btn" id="am-btn">AM</button>
+          <button type="button" class="ampm-btn" id="pm-btn">PM</button>
+        </div>
+      </div>
+      <div class="picker-footer">
+        <button type="button" class="btn-cancel" id="picker-cancel-btn">Cancel</button>
+        <button type="button" class="btn-apply" id="picker-apply-btn">Apply</button>
+      </div>
+    </div>
+  </div>
+
   <div class="availability-toast" id="availabilityToast"></div>
 @endsection

@@ -536,6 +536,14 @@
           @enderror
         </label>
 
+        <label class="manual-field">
+          <span>Session duration (minutes)</span>
+          <input name="duration_minutes" type="number" min="15" max="300" step="1" value="{{ old('duration_minutes', 60) }}" required />
+          @error('duration_minutes')
+            <small class="manual-field__error">{{ $message }}</small>
+          @enderror
+        </label>
+
         <fieldset class="manual-fieldset manual-field--full">
           <legend>Session types</legend>
           <div class="manual-check-grid">
@@ -665,7 +673,7 @@
           @foreach (collect($services)->take(6) as $service)
             <li>
               <strong>{{ $service['name'] }}</strong>
-              <span>{{ $service['is_active'] ? 'Active' : 'Inactive' }}</span>
+              <span>{{ $service['duration_minutes'] }} min - {{ $service['is_active'] ? 'Active' : 'Inactive' }}</span>
             </li>
           @endforeach
         </ul>
@@ -675,8 +683,8 @@
 
   <div class="manual-panel" id="manual-section-pricing" data-section-panel="pricing">
     <div class="manual-panel__copy">
-      <h4>Update service pricing</h4>
-      <p>Edit pricing for an existing service without leaving the manual actions hub.</p>
+      <h4>Update service details</h4>
+      <p>Edit session duration and pricing for an existing service without leaving the manual actions hub.</p>
     </div>
 
     <div class="manual-panel__grid">
@@ -694,6 +702,14 @@
             @endforeach
           </select>
           @error('service_id')
+            <small class="manual-field__error">{{ $message }}</small>
+          @enderror
+        </label>
+
+        <label class="manual-field">
+          <span>Session duration (minutes)</span>
+          <input name="duration_minutes" type="number" min="15" max="300" step="1" value="{{ old('duration_minutes') }}" required />
+          @error('duration_minutes')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror
         </label>
@@ -792,12 +808,12 @@
           @enderror
         </label>
 
-        <button class="primary-btn manual-submit-btn" type="submit">Update pricing</button>
+        <button class="primary-btn manual-submit-btn" type="submit">Update service</button>
       </form>
 
       <aside class="manual-summary" id="manualPricingSummary">
-        <h5>Current pricing</h5>
-        <p>Select a service to review the current pricing before updating it.</p>
+        <h5>Current service details</h5>
+        <p>Select a service to review the current duration and pricing before updating it.</p>
       </aside>
     </div>
   </div>

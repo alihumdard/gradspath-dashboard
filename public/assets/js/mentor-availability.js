@@ -53,6 +53,23 @@
   const officeHoursFrequencyError = document.getElementById("officeHoursFrequencyError");
   const serviceInputs = Array.from(document.querySelectorAll(".availability-service-option-input"));
 
+  // Custom Time Picker DOM references & state
+  const pickerOverlay = document.getElementById("picker-overlay");
+  const pickerPopup = document.getElementById("picker-popup");
+  const pickerLabel = document.getElementById("picker-label");
+  const pickerCloseBtn = document.getElementById("picker-close-btn");
+  const pickerCancelBtn = document.getElementById("picker-cancel-btn");
+  const pickerApplyBtn = document.getElementById("picker-apply-btn");
+  const amBtn = document.getElementById("am-btn");
+  const pmBtn = document.getElementById("pm-btn");
+  const hourCol = document.getElementById("hour-col");
+  const minCol = document.getElementById("min-col");
+  const officeHoursTimeTrigger = document.getElementById("officeHoursTimeTrigger");
+  const officeHoursTimeDisplay = document.getElementById("officeHoursTimeDisplay");
+
+  let activePickerTarget = null;
+  let tempTimeState = { h: 12, m: 0, ap: "AM" };
+
   const monthGrid = document.getElementById("availabilityMonthGrid");
   const monthLabel = document.getElementById("availabilityMonthLabel");
   const monthMeta = document.getElementById("availabilityMonthMeta");
@@ -236,6 +253,164 @@
     };
   }
 
+  function parse24HourTo12Hour(timeStr) {
+    if (!timeStr) {
+      timeStr = "12:00";
+    }
+    const [hourRaw, minuteRaw] = timeStr.split(":").map(Number);
+    const hour = Number.isFinite(hourRaw) ? hourRaw : 12;
+    const minute = Number.isFinite(minuteRaw) ? minuteRaw : 0;
+    const ap = hour >= 12 ? "PM" : "AM";
+    const h = hour % 12 || 12;
+    const m = Math.round(minute / 5) * 5 % 60;
+    return { h, m, ap };
+  }
+
+  function format12HourTo24Hour({ h, m, ap }) {
+    let hour = h;
+    if (ap === "PM" && hour < 12) {
+      hour += 12;
+    }
+    if (ap === "AM" && hour === 12) {
+      hour = 0;
+    }
+    return `${String(hour).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+
+  function buildHoursColumn() {
+    if (!hourCol) return;
+    hourCol.innerHTML = '<div class="scroll-highlight"></div>';
+    const pad = document.createElement("div");
+    pad.style.height = "72px";
+    hourCol.appendChild(pad);
+
+    for (let i = 1; i <= 12; i++) {
+      const el = document.createElement("div");
+      el.className = "scroll-item" + (i === tempTimeState.h ? " selected" : "");
+      el.textContent = String(i).padStart(2, "0");
+      el.dataset.val = i;
+      el.onclick = () => selectHourItem(i, el);
+      hourCol.appendChild(el);
+    }
+
+    const pad2 = document.createElement("div");
+    pad2.style.height = "108px";
+    hourCol.appendChild(pad2);
+  }
+
+  function buildMinsColumn() {
+    if (!minCol) return;
+    minCol.innerHTML = '<div class="scroll-highlight"></div>';
+    const pad = document.createElement("div");
+    pad.style.height = "72px";
+    minCol.appendChild(pad);
+
+    for (let m = 0; m < 60; m += 5) {
+      const el = document.createElement("div");
+      el.className = "scroll-item" + (m === tempTimeState.m ? " selected" : "");
+      el.textContent = String(m).padStart(2, "0");
+      el.dataset.val = m;
+      el.onclick = () => selectMinItem(m, el);
+      minCol.appendChild(el);
+    }
+
+    const pad2 = document.createElement("div");
+    pad2.style.height = "108px";
+    minCol.appendChild(pad2);
+  }
+
+  function selectHourItem(h, el) {
+    tempTimeState.h = h;
+    hourCol.querySelectorAll(".scroll-item").forEach((e) => e.classList.remove("selected"));
+    el.classList.add("selected");
+    hourCol.scrollTo({ top: (h - 1) * 36, behavior: "smooth" });
+  }
+
+  function selectMinItem(m, el) {
+    tempTimeState.m = m;
+    minCol.querySelectorAll(".scroll-item").forEach((e) => e.classList.remove("selected"));
+    el.classList.add("selected");
+    minCol.scrollTo({ top: (m / 5) * 36, behavior: "smooth" });
+  }
+
+  function setPickerAmPm(ap) {
+    tempTimeState.ap = ap;
+    if (amBtn) amBtn.classList.toggle("active", ap === "AM");
+    if (pmBtn) pmBtn.classList.toggle("active", ap === "PM");
+  }
+
+  function openCustomPicker(target, triggerEl) {
+    activePickerTarget = target;
+
+    let initialValue = "12:00";
+    if (target.type === "slot") {
+      const block = getBlock(state.selectedDayKey, target.blockId);
+      if (block) {
+        initialValue = target.field === "startTime" ? block.startTime : block.endTime;
+      }
+    } else if (target.type === "office_hours") {
+      initialValue = state.officeHours.startTime || "20:00";
+    }
+
+    tempTimeState = parse24HourTo12Hour(initialValue);
+
+    if (pickerLabel) {
+      pickerLabel.textContent = target.field === "startTime" ? "Start time" : "End time";
+    }
+
+    buildHoursColumn();
+    buildMinsColumn();
+    setPickerAmPm(tempTimeState.ap);
+
+    document.querySelectorAll(".time-trigger").forEach((b) => b.classList.remove("active"));
+    triggerEl.classList.add("active");
+
+    if (pickerPopup && pickerOverlay) {
+      const rect = triggerEl.getBoundingClientRect();
+      pickerPopup.style.top = (rect.bottom + window.scrollY + 6) + "px";
+      pickerPopup.style.left = (rect.left + window.scrollX) + "px";
+      pickerOverlay.classList.add("open");
+
+      setTimeout(() => {
+        if (hourCol) hourCol.scrollTop = (tempTimeState.h - 1) * 36;
+        if (minCol) minCol.scrollTop = (tempTimeState.m / 5) * 36;
+      }, 10);
+    }
+  }
+
+  function closeCustomPicker() {
+    if (pickerOverlay) pickerOverlay.classList.remove("open");
+    document.querySelectorAll(".time-trigger").forEach((b) => b.classList.remove("active"));
+    activePickerTarget = null;
+  }
+
+  function applyCustomTime() {
+    if (!activePickerTarget) return;
+
+    const newTime = format12HourTo24Hour(tempTimeState);
+
+    if (activePickerTarget.type === "slot") {
+      const block = getBlock(state.selectedDayKey, activePickerTarget.blockId);
+      if (block) {
+        if (activePickerTarget.field === "startTime") {
+          block.startTime = newTime;
+          block.endTime = endTimeForService(block.startTime, block.serviceConfigId);
+        } else if (activePickerTarget.field === "endTime") {
+          block.endTime = newTime;
+        }
+        state.days[state.selectedDayKey].blocks = sortBlocks(state.days[state.selectedDayKey].blocks);
+        markDirty();
+        safeRender();
+      }
+    } else if (activePickerTarget.type === "office_hours") {
+      state.officeHours.startTime = newTime;
+      markDirty();
+      safeRender();
+    }
+
+    closeCustomPicker();
+  }
+
   function bindEvents() {
     timezoneSelect?.addEventListener("change", () => {
       state.timezone = timezoneSelect.value;
@@ -351,6 +526,51 @@
       shiftView(1);
       safeRender();
     });
+
+    pickerCloseBtn?.addEventListener("click", closeCustomPicker);
+    pickerCancelBtn?.addEventListener("click", closeCustomPicker);
+    pickerApplyBtn?.addEventListener("click", applyCustomTime);
+    amBtn?.addEventListener("click", () => setPickerAmPm("AM"));
+    pmBtn?.addEventListener("click", () => setPickerAmPm("PM"));
+    pickerOverlay?.addEventListener("click", (e) => {
+      if (e.target === pickerOverlay) closeCustomPicker();
+    });
+
+    officeHoursTimeTrigger?.addEventListener("click", () => {
+      openCustomPicker({ type: "office_hours", field: "startTime" }, officeHoursTimeTrigger);
+    });
+
+    let hourScrollTimeout = null;
+    hourCol?.addEventListener("scroll", () => {
+      clearTimeout(hourScrollTimeout);
+      hourScrollTimeout = setTimeout(() => {
+        const top = hourCol.scrollTop;
+        const index = Math.round(top / 36);
+        const item = hourCol.querySelectorAll(".scroll-item")[index];
+        if (item) {
+          const h = Number(item.dataset.val);
+          tempTimeState.h = h;
+          hourCol.querySelectorAll(".scroll-item").forEach((e) => e.classList.remove("selected"));
+          item.classList.add("selected");
+        }
+      }, 150);
+    });
+
+    let minScrollTimeout = null;
+    minCol?.addEventListener("scroll", () => {
+      clearTimeout(minScrollTimeout);
+      minScrollTimeout = setTimeout(() => {
+        const top = minCol.scrollTop;
+        const index = Math.round(top / 36);
+        const item = minCol.querySelectorAll(".scroll-item")[index];
+        if (item) {
+          const m = Number(item.dataset.val);
+          tempTimeState.m = m;
+          minCol.querySelectorAll(".scroll-item").forEach((e) => e.classList.remove("selected"));
+          item.classList.add("selected");
+        }
+      }, 150);
+    });
   }
 
   async function autoSaveDetectedTimezone() {
@@ -458,6 +678,14 @@
   }
 
   function handleSlotListClick(event) {
+    const trigger = event.target.closest("[data-time-trigger]");
+    if (trigger) {
+      const blockId = String(trigger.dataset.blockId || "");
+      const field = trigger.dataset.timeTrigger === "start" ? "startTime" : "endTime";
+      openCustomPicker({ type: "slot", blockId, field }, trigger);
+      return;
+    }
+
     const removeButton = event.target.closest("[data-remove-slot]");
     if (!removeButton) {
       return;
@@ -1033,32 +1261,34 @@
           ${badgeLabel ? `<span class="availability-day-slot-badge">${escapeHtml(badgeLabel)}</span>` : ""}
         </div>
         <div class="availability-day-slot-controls">
-          <label class="availability-day-slot-field availability-day-slot-field--start">
+          <div class="availability-day-slot-field availability-day-slot-field--start">
             <span>Start</span>
-            <input
-              type="time"
-              data-slot-field="start"
+            <button
+              type="button"
+              class="time-trigger"
+              data-time-trigger="start"
               data-block-id="${block.id}"
-              value="${escapeAttribute(block.startTime)}"
-              min="00:00"
-              max="23:59"
-              step="60"
               ${fieldsDisabled ? "disabled" : ""}
-            />
-          </label>
-          <label class="availability-day-slot-field availability-day-slot-field--end">
+            >
+              <i class="ti ti-clock" aria-hidden="true"></i>
+              <span>${escapeHtml(formatTimeLabel(block.startTime))}</span>
+              <i class="ti ti-chevron-down" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="availability-day-slot-field availability-day-slot-field--end">
             <span>End</span>
-            <input
-              type="time"
-              data-slot-field="end"
+            <button
+              type="button"
+              class="time-trigger"
+              data-time-trigger="end"
               data-block-id="${block.id}"
-              value="${escapeAttribute(block.endTime)}"
-              min="00:00"
-              max="23:59"
-              step="60"
               ${fieldsDisabled ? "disabled" : ""}
-            />
-          </label>
+            >
+              <i class="ti ti-clock" aria-hidden="true"></i>
+              <span>${escapeHtml(formatTimeLabel(block.endTime))}</span>
+              <i class="ti ti-chevron-down" aria-hidden="true"></i>
+            </button>
+          </div>
           <label class="availability-day-slot-field availability-day-slot-service">
             <span>Service</span>
             <select data-slot-field="service" data-block-id="${block.id}" ${fieldsDisabled ? "disabled" : ""}>
@@ -1145,6 +1375,10 @@
       officeHoursTimeSelect.value = state.officeHours.startTime;
     }
 
+    if (officeHoursTimeDisplay) {
+      officeHoursTimeDisplay.textContent = formatTimeLabel(state.officeHours.startTime || "20:00");
+    }
+
     if (officeHoursFrequencySelect && officeHoursFrequencySelect.value !== state.officeHours.frequency) {
       officeHoursFrequencySelect.value = state.officeHours.frequency;
     }
@@ -1154,6 +1388,7 @@
       officeHoursDaySelect,
       officeHoursTimeSelect,
       officeHoursFrequencySelect,
+      officeHoursTimeTrigger,
     ].forEach((field) => {
       if (!field) {
         return;

@@ -579,4 +579,9 @@ class AvailabilityController extends Controller
             },
         ];
     }
+
+    private function mentorZoomAvailabilityMessage(\RuntimeException $exception): string
+    {
+        return $exception->getMessage();
+    }
 }

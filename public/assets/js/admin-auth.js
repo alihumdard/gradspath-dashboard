@@ -2755,7 +2755,10 @@ function initializeManualActionsHub() {
             return;
         }
 
-        const summaryItems = [{ label: "Service", value: service.name }];
+        const summaryItems = [
+            { label: "Service", value: service.name },
+            { label: "Duration", value: `${service.duration_minutes || 60} minutes` },
+        ];
 
         if (shouldShowSessionPricing(service)) {
             summaryItems.push(
@@ -2794,6 +2797,7 @@ function initializeManualActionsHub() {
         }
 
         [
+            "duration_minutes",
             "price_1on1",
             "platform_fee_1on1",
             "mentor_payout_1on1",

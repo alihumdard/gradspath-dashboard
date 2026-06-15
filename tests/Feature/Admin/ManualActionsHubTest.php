@@ -137,7 +137,8 @@ it('renders the manual actions hub with grouped sections', function () {
         ->assertSee('Moderation Actions')
         ->assertSee('Amend mentor account')
         ->assertSee('Adjust user credits')
-        ->assertSee('Update service pricing')
+        ->assertSee('Update service details')
+        ->assertSee('Session duration (minutes)')
         ->assertSee('Upload logo')
         ->assertSee('Logo URL or public path')
         ->assertDontSee('Alpha-2 code')
@@ -312,6 +313,7 @@ it('writes admin logs for institution and service pricing actions', function () 
     $this->actingAs($admin)
         ->patch(route('admin.manual-actions.services.pricing.update'), [
             'service_id' => $service->id,
+            'duration_minutes' => 65,
             'price_1on1' => 95,
             'platform_fee_1on1' => 40,
             'mentor_payout_1on1' => 55,
@@ -336,6 +338,7 @@ it('writes admin logs for institution and service pricing actions', function () 
 
     $this->assertDatabaseHas('services_config', [
         'id' => $service->id,
+        'duration_minutes' => 65,
         'price_1on1' => 95,
         'platform_fee_1on1' => 40,
         'mentor_payout_1on1' => 55,
@@ -351,6 +354,53 @@ it('writes admin logs for institution and service pricing actions', function () 
 
     expect(AdminLog::query()->where('action', 'manual_institution_create')->exists())->toBeTrue();
     expect(AdminLog::query()->where('action', 'manual_service_update')->exists())->toBeTrue();
+});
+
+it('lets admins create services with a controlled duration', function () {
+    $admin = createManualActionsAdmin();
+
+    $this->actingAs($admin)
+        ->post(route('admin.manual-actions.services.store'), [
+            'service_name' => 'Portfolio Review',
+            'duration_minutes' => 45,
+            'available_session_types' => ['1on1'],
+            'price_1on1' => 75,
+            'platform_fee_1on1' => 30,
+            'mentor_payout_1on1' => 45,
+            'is_active' => '1',
+            'manual_section' => 'services',
+        ])
+        ->assertRedirect(route('admin.manual-actions'))
+        ->assertSessionHas('manual_section', 'services');
+
+    $this->assertDatabaseHas('services_config', [
+        'service_name' => 'Portfolio Review',
+        'duration_minutes' => 45,
+        'price_1on1' => 75,
+        'platform_fee_1on1' => 30,
+        'mentor_payout_1on1' => 45,
+    ]);
+});
+
+it('lets admins update only the duration for an existing service', function () {
+    $admin = createManualActionsAdmin();
+    $service = createManualService(['duration_minutes' => 60]);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.manual-actions.services.pricing.update'), [
+            'service_id' => $service->id,
+            'duration_minutes' => 30,
+            'manual_section' => 'pricing',
+        ])
+        ->assertRedirect(route('admin.manual-actions'))
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('manual_section', 'pricing');
+
+    $this->assertDatabaseHas('services_config', [
+        'id' => $service->id,
+        'duration_minutes' => 30,
+        'price_1on1' => 80,
+    ]);
 });
 
 it('renders and saves manual institution and program edits', function () {
