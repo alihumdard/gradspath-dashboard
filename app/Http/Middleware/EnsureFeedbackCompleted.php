@@ -17,7 +17,7 @@ class EnsureFeedbackCompleted
             return $next($request);
         }
 
-        if ($request->routeIs('auth.logout', 'feedback.*', 'student.feedback.*')) {
+        if ($request->routeIs('auth.logout', 'feedback.*', 'student.feedback.*', 'student.bookings.index')) {
             return $next($request);
         }
 
@@ -31,7 +31,7 @@ class EnsureFeedbackCompleted
 
         if ($hasOverdueFeedback) {
             return redirect()
-                ->route('student.feedback.index')
+                ->route('student.bookings.index')
                 ->with('warning', 'Please complete your pending session feedback before continuing in the student portal.');
         }
 

@@ -1353,11 +1353,11 @@ it('blocks students from creating new bookings when completed session feedback i
 
     $this->actingAs($student)
         ->get(route('student.dashboard'))
-        ->assertRedirect(route('student.feedback.index'))
+        ->assertRedirect(route('student.bookings.index'))
         ->assertSessionHas('warning', 'Please complete your pending session feedback before continuing in the student portal.');
 
     $this->actingAs($student)
-        ->get(route('student.feedback.index'))
+        ->get(route('student.bookings.index'))
         ->assertOk();
 });
 
