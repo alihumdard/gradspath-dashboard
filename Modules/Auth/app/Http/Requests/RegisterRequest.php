@@ -2,6 +2,7 @@
 
 namespace Modules\Auth\app\Http\Requests;
 
+use App\Rules\EduEmail;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Support\Facades\Log;
@@ -46,6 +47,9 @@ class RegisterRequest extends FormRequest
                 'email',
                 'max:255',
                 'unique:users,email',
+                Rule::when($this->requiresEduEmail(), [
+                    new EduEmail(message: 'Undergrad and graduate accounts must use a .edu email address.'),
+                ]),
             ],
             'password' => ['required', 'confirmed', Password::min(8)->letters()],
             'role' => ['required', Rule::in($this->allowedRoles())],
@@ -94,5 +98,18 @@ class RegisterRequest extends FormRequest
     private function allowedRoles(): array
     {
         return config('auth-module.registration.allowed_roles', ['student', 'mentor']);
+    }
+
+    private function requiresEduEmail(): bool
+    {
+        if ($this->input('role') === 'student') {
+            return in_array($this->input('program_level'), ['undergrad', 'grad'], true);
+        }
+
+        if ($this->input('role') === 'mentor') {
+            return $this->input('mentor_type') === 'graduate';
+        }
+
+        return false;
     }
 }

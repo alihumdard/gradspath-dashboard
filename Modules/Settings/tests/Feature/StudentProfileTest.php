@@ -22,7 +22,7 @@ beforeEach(function () {
 function createProfileUser(string $role): User
 {
     $created = \App\Models\User::factory()->create([
-        'email' => Str::uuid().'@example.com',
+        'email' => Str::uuid().'@example.edu',
         'is_active' => true,
     ]);
 
@@ -117,6 +117,43 @@ it('updates the student profile using student_profiles instead of mentor data', 
     expect($profile->program_type)->toBe('mba');
     expect($student->fresh()->setting?->timezone)->toBe('Asia/Karachi');
     expect(Mentor::query()->where('user_id', $student->id)->exists())->toBeFalse();
+});
+
+it('requires a .edu account email for undergrad and grad student profiles', function () {
+    $student = createProfileUser('student');
+    $student->forceFill(['email' => 'student-profile-'.Str::uuid().'@example.com'])->save();
+
+    $this->actingAs($student)
+        ->from(route('student.settings.index'))
+        ->patch(route('student.settings.update'), [
+            'name' => 'Student Example',
+            'institution_text' => 'State U',
+            'program_level' => 'grad',
+            'program_type' => 'mba',
+            'timezone' => 'Asia/Karachi',
+        ])
+        ->assertRedirect(route('student.settings.index'))
+        ->assertSessionHasErrors('program_level');
+});
+
+it('allows professional student profiles to use non edu account emails', function () {
+    $student = createProfileUser('student');
+    $student->forceFill(['email' => 'professional-profile-'.Str::uuid().'@example.com'])->save();
+
+    $this->actingAs($student)
+        ->patch(route('student.settings.update'), [
+            'name' => 'Professional Student',
+            'institution_text' => 'Industry Org',
+            'program_level' => 'professional',
+            'program_type' => 'other',
+            'timezone' => 'Asia/Karachi',
+        ])
+        ->assertRedirect(route('student.settings.index'))
+        ->assertSessionHasNoErrors();
+
+    $profile = StudentProfile::query()->where('user_id', $student->id)->first();
+
+    expect($profile?->program_level)->toBe('professional');
 });
 
 it('keeps student and mentor profile routes separated by role', function () {

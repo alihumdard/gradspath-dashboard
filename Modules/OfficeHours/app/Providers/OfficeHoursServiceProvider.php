@@ -23,13 +23,6 @@ class OfficeHoursServiceProvider extends ServiceProvider
 
         $this->app->booted(function (): void {
             $schedule = $this->app->make(Schedule::class);
-            $testInterval = (int) env('OFFICE_HOURS_TEST_ROTATION_MINUTES', 0);
-
-            if (app()->environment('local') && $testInterval > 0) {
-                $schedule->command("office-hours:sync-sessions --test-interval={$testInterval}")->everyTwoMinutes();
-
-                return;
-            }
 
             $schedule->command('office-hours:sync-sessions')->dailyAt('00:30');
         });

@@ -2,6 +2,7 @@
 
 namespace Modules\Settings\app\Http\Requests;
 
+use App\Rules\EduEmail;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Settings\app\Support\TimezoneOptions;
@@ -55,11 +56,9 @@ class UpdateMentorSettingsRequest extends FormRequest
                 'email',
                 'max:255',
                 Rule::requiredIf(fn() => $this->input('mentor_type') === 'graduate'),
-                function (string $attribute, mixed $value, \Closure $fail): void {
-                    if ($this->input('mentor_type') === 'graduate' && is_string($value) && ! str_ends_with(strtolower($value), '.edu')) {
-                        $fail('Graduate mentors must use a .edu email address.');
-                    }
-                },
+                Rule::when($this->input('mentor_type') === 'graduate', [
+                    new EduEmail(message: 'Graduate mentors must use a .edu email address.'),
+                ]),
             ],
             'calendly_link' => ['nullable', 'url:http,https', 'max:255'],
             'timezone' => ['nullable', Rule::in(TimezoneOptions::values())],

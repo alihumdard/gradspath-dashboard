@@ -43,34 +43,6 @@ class OfficeHourSessionSyncService
         return $created;
     }
 
-    public function syncTestingSessions(int $intervalMinutes = 2, ?Carbon $now = null): int
-    {
-        $now ??= now();
-        $intervalMinutes = max($intervalMinutes, 1);
-        $created = 0;
-
-        OfficeHourSchedule::query()
-            ->with(['mentor.services', 'sessions' => fn ($query) => $query->orderByDesc('session_date')->orderByDesc('start_time')])
-            ->where('is_active', true)
-            ->where('frequency', 'weekly')
-            ->whereHas('mentor.services', fn ($query) => $query
-                ->where('services_config.is_active', true)
-                ->where('services_config.is_office_hours', true)
-                ->where('mentor_services.is_active', true))
-            ->chunkById(100, function (Collection $schedules) use ($now, $intervalMinutes, &$created) {
-                foreach ($schedules as $schedule) {
-                    $targetStart = $now->copy()
-                        ->setTimezone($schedule->timezone ?: config('app.timezone', 'UTC'))
-                        ->addMinutes($intervalMinutes)
-                        ->second(0);
-
-                    $created += $this->ensureNextSessionAt($schedule, $targetStart) ? 1 : 0;
-                }
-            });
-
-        return $created;
-    }
-
     private function ensureNextSession(OfficeHourSchedule $schedule, Carbon $now): bool
     {
         $targetStart = $this->nextStartForSchedule($schedule, $now);

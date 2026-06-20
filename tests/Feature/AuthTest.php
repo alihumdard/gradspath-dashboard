@@ -248,7 +248,7 @@ it('accepts registration with .edu country domains like .edu.pk', function () {
     $this->assertDatabaseHas('users', ['email' => $payload['email']]);
 });
 
-it('accepts registration when email is not .edu', function () {
+it('rejects undergrad registration when email is not .edu', function () {
     Notification::fake();
 
     $email = 'student-invalid-' . Str::uuid() . '@example.com';
@@ -266,9 +266,10 @@ it('accepts registration when email is not .edu', function () {
     $response = $this->from('/')
         ->post('/register', $payload);
 
-    $response->assertRedirect(route('verification.notice'));
+    $response->assertRedirect('/');
+    $response->assertSessionHasErrors('email');
 
-    $this->assertDatabaseHas('users', ['email' => $payload['email']]);
+    $this->assertDatabaseMissing('users', ['email' => $payload['email']]);
 });
 
 it('registers even when selected role was missing before signup', function () {
@@ -370,6 +371,29 @@ it('registers a professional mentor with the selected mentor type', function () 
     $this->assertDatabaseMissing('student_profiles', [
         'user_id' => $user->id,
     ]);
+});
+
+it('rejects graduate mentor registration when email is not .edu', function () {
+    Notification::fake();
+
+    $email = 'graduate-mentor-invalid-' . Str::uuid() . '@example.com';
+
+    $payload = [
+        'name' => 'Graduate Mentor Invalid',
+        'email' => $email,
+        'password' => 'Password123',
+        'password_confirmation' => 'Password123',
+        'role' => 'mentor',
+        'mentor_type' => 'graduate',
+        'institution' => 'Top Grad School',
+    ];
+
+    $this->from('/')
+        ->post('/register', $payload)
+        ->assertRedirect('/')
+        ->assertSessionHasErrors('email');
+
+    $this->assertDatabaseMissing('users', ['email' => $email]);
 });
 
 it('normalizes legacy professional mentor signup payloads', function () {
