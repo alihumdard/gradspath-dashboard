@@ -116,6 +116,14 @@ class InstitutionsController extends Controller
 
     private function validateUniversityData(Request $request, bool $isUpdate = false): array
     {
+        // The University model casts domains/web_pages as array; if the form repopulates
+        // from an existing record those fields arrive as arrays — normalize to string first.
+        foreach (['domains', 'web_pages'] as $field) {
+            if (is_array($request->input($field))) {
+                $request->merge([$field => implode("\n", $request->input($field))]);
+            }
+        }
+
         $rules = [
             'name' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255'],
             'display_name' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255'],
@@ -125,8 +133,7 @@ class InstitutionsController extends Controller
             'domains' => [$isUpdate ? 'sometimes' : 'nullable', 'string'],
             'web_pages' => [$isUpdate ? 'sometimes' : 'nullable', 'string'],
             'state_province' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255'],
-            'logo_url' => [$isUpdate ? 'sometimes' : 'nullable', 'string', 'max:2048'],
-            'logo_file' => [$isUpdate ? 'sometimes' : 'required_without:logo_url', 'file', 'mimetypes:image/jpeg,image/png,image/webp,image/gif', 'max:2048'],
+            'logo_file' => [$isUpdate ? 'sometimes' : 'required', 'nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp,image/gif', 'max:2048'],
             'is_active' => [$isUpdate ? 'sometimes' : 'nullable', 'boolean'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'manual_station' => ['nullable', 'string'],
@@ -143,10 +150,6 @@ class InstitutionsController extends Controller
 
         if (array_key_exists('alpha_two_code', $data) && $data['alpha_two_code'] !== null) {
             $data['alpha_two_code'] = strtoupper(trim((string) $data['alpha_two_code']));
-        }
-
-        if (array_key_exists('logo_url', $data)) {
-            $data['logo_url'] = $this->normalizeNullableString($data['logo_url']);
         }
 
         if ($request->hasFile('logo_file')) {

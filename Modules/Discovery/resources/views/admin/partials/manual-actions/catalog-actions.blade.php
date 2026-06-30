@@ -90,14 +90,6 @@
           @enderror
         </label>
 
-        <label class="manual-field">
-          <span>Logo URL or public path</span>
-          <input name="logo_url" type="text" value="{{ old('logo_url') }}" placeholder="Optional: university_logo/lahore.jfif" />
-          @error('logo_url')
-            <small class="manual-field__error">{{ $message }}</small>
-          @enderror
-        </label>
-
         <label class="manual-check">
           <input name="is_active" type="hidden" value="0" />
           <input name="is_active" type="checkbox" value="1" @checked(old('is_active', '1') === '1') />
@@ -105,6 +97,7 @@
         </label>
 
         <button class="primary-btn manual-submit-btn" type="submit">Create institution</button>
+
       </form>
 
       <aside class="manual-summary manual-summary--list">
@@ -203,11 +196,6 @@
         <label class="manual-field">
           <span>Replace logo upload</span>
           <input name="logo_file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
-        </label>
-
-        <label class="manual-field">
-          <span>Logo URL or public path</span>
-          <input name="logo_url" type="text" data-institution-field="logo_url" />
         </label>
 
         <label class="manual-check">

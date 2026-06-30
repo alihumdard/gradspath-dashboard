@@ -394,279 +394,84 @@
           </p>
         </header>
 
-        <!-- Single logo belt: same for all tabs, no duplicates, correct names -->
+        <!-- Single logo belt: dynamic from featured institutions, falls back to hardcoded -->
+        @php
+            $beltLogos = $featuredInstitutions->isNotEmpty()
+                ? $featuredInstitutions->map(fn($u) => [
+                    'src'  => Str::startsWith($u->logo_url, ['http://', 'https://'])
+                                ? $u->logo_url
+                                : asset($u->logo_url),
+                    'name' => $u->display_name ?: $u->name,
+                  ])->values()
+                : collect([
+                    ['src' => asset('assets_landingPage/img/logos/penn.png'),     'name' => 'UPenn Wharton'],
+                    ['src' => asset('assets_landingPage/img/logos/stanford.png'), 'name' => 'Stanford GSB'],
+                    ['src' => asset('assets_landingPage/img/logos/harvard.png'),  'name' => 'Harvard HBS'],
+                    ['src' => asset('assets_landingPage/img/logos/mit.png'),      'name' => 'MIT Sloan'],
+                    ['src' => asset('assets_landingPage/img/logos/columbia.png'), 'name' => 'Columbia'],
+                    ['src' => asset('assets_landingPage/img/logos/yale.png'),     'name' => 'Yale'],
+                    ['src' => asset('assets_landingPage/img/logos/nyu.png'),      'name' => 'NYU'],
+                    ['src' => asset('assets_landingPage/img/logos/ucla.png'),     'name' => 'UCLA'],
+                    ['src' => asset('assets_landingPage/img/logos/berkeley.png'), 'name' => 'Berkeley'],
+                    ['src' => asset('assets_landingPage/img/logos/michigan.png'), 'name' => 'Michigan'],
+                ]);
+        @endphp
         <div
           class="hover-pause relative w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg)] dark:bg-[var(--surface)] px-3 sm:px-4 py-3 sm:py-4 mb-4 sm:mb-6"
         >
           <div class="flex w-max animate-scroll">
+            {{-- First copy --}}
             <div
               class="flex items-center gap-8 sm:gap-10 md:gap-12 pr-8 sm:pr-10 md:pr-12"
             >
+              @foreach ($beltLogos as $logo)
               <div
                 class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
               >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/penn.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="UPenn Wharton"
-                />
+                @if ($logo['src'])
+                  <img
+                    src="{{ $logo['src'] }}"
+                    class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                    alt="{{ $logo['name'] }}"
+                  />
+                @else
+                  <div class="h-11 sm:h-12 md:h-14 w-11 sm:w-12 md:w-14 rounded-full bg-[var(--primary)] flex items-center justify-center text-white font-bold text-base sm:text-lg">
+                    {{ mb_strtoupper(mb_substr($logo['name'], 0, 2)) }}
+                  </div>
+                @endif
                 <span
                   class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >UPenn Wharton</span
+                  >{{ $logo['name'] }}</span
                 >
               </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/stanford.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="Stanford GSB"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >Stanford GSB</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/harvard.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="Harvard HBS"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >Harvard HBS</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/mit.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="MIT Sloan"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >MIT Sloan</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/columbia.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="Columbia"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >Columbia</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/yale.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="Yale"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >Yale</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/nyu.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="NYU"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >NYU</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/ucla.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="UCLA"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >UCLA</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/berkeley.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="Berkeley"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >Berkeley</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/michigan.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="Michigan"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >Michigan</span
-                >
-              </div>
+              @endforeach
             </div>
+            {{-- Duplicate for seamless infinite scroll --}}
             <div
               class="flex items-center gap-8 sm:gap-10 md:gap-12 pr-8 sm:pr-10 md:pr-12"
               aria-hidden="true"
             >
+              @foreach ($beltLogos as $logo)
               <div
                 class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
               >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/penn.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="UPenn Wharton"
-                />
+                @if ($logo['src'])
+                  <img
+                    src="{{ $logo['src'] }}"
+                    class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
+                    alt="{{ $logo['name'] }}"
+                  />
+                @else
+                  <div class="h-11 sm:h-12 md:h-14 w-11 sm:w-12 md:w-14 rounded-full bg-[var(--primary)] flex items-center justify-center text-white font-bold text-base sm:text-lg">
+                    {{ mb_strtoupper(mb_substr($logo['name'], 0, 2)) }}
+                  </div>
+                @endif
                 <span
                   class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >UPenn Wharton</span
+                  >{{ $logo['name'] }}</span
                 >
               </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/stanford.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="Stanford GSB"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >Stanford GSB</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/harvard.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="Harvard HBS"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >Harvard HBS</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/mit.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="MIT Sloan"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >MIT Sloan</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/columbia.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="Columbia"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >Columbia</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/yale.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="Yale"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >Yale</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/nyu.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="NYU"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >NYU</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/ucla.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="UCLA"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >UCLA</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/berkeley.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="Berkeley"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >Berkeley</span
-                >
-              </div>
-              <div
-                class="flex flex-col items-center min-w-[72px] sm:min-w-[85px] md:min-w-[90px] shrink-0"
-              >
-                <img
-                  src="{{ asset('assets_landingPage/img/logos/michigan.png') }}"
-                  class="h-11 sm:h-12 md:h-14 w-auto object-contain opacity-100"
-                  alt="Michigan"
-                />
-                <span
-                  class="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold text-black dark:text-white text-center whitespace-nowrap"
-                  >Michigan</span
-                >
-              </div>
+              @endforeach
             </div>
           </div>
         </div>
