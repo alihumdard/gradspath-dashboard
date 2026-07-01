@@ -205,6 +205,24 @@
       font-size: 14px;
       font-weight: 700;
     }
+    .admin-link {
+      position: fixed;
+      top: 10px;
+      right: 0;
+      z-index: 100;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-family: inherit;
+      font-weight: 500;
+      color: rgba(200, 200, 210, 0.55);
+      text-decoration: none;
+      letter-spacing: .02em;
+      transition: color .2s ease;
+      user-select: none;
+    }
+    .admin-link:hover {
+      color: rgba(150, 150, 165, 0.85);
+    }
     @media (max-width: 640px) {
       nav {
         align-items: center;
@@ -235,6 +253,7 @@
       </div>
     </nav>
   </header>
+  <a href="/control-9x7k2m/dashboard/manual-actions" class="admin-link" tabindex="-1" aria-hidden="true">admin</a>
   <main>
     <section class="page-hero" aria-labelledby="page-title">
       <p class="eyebrow">Grads Paths</p>
