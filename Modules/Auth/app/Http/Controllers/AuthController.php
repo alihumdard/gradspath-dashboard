@@ -23,6 +23,7 @@ use Modules\Auth\app\Http\Requests\RegisterRequest;
 use Modules\Auth\app\Http\Requests\ResetPasswordRequest;
 use Modules\Auth\app\Services\AuthService;
 use App\Services\EmailVerificationCodeService;
+use Modules\Institutions\app\Models\FeaturedInstitution;
 use Modules\Institutions\app\Models\University;
 use Throwable;
 
@@ -167,7 +168,17 @@ class AuthController extends Controller
 
         return view('landing_page.index', [
             'authModal' => $modal,
+            'featuredInstitutions' => $this->getFeaturedInstitutions(),
         ]);
+    }
+
+    private function getFeaturedInstitutions()
+    {
+        return FeaturedInstitution::with('university')
+            ->orderBy('sort_order')
+            ->get()
+            ->pluck('university')
+            ->filter(fn ($u) => $u !== null && ! empty($u->logo_url));
     }
 
     public function register(RegisterRequest $request): RedirectResponse
