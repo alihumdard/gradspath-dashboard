@@ -1,3 +1,9 @@
+@php
+  $authModal = $authModal ?? null;
+  $submittedAuthContext = old('auth_context');
+  $registerOldInput = old('role') || old('program_level') || old('institution') || old('name');
+  $activeAuthModal = $authModal ?: ($errors->any() ? ($submittedAuthContext === 'signup' || $registerOldInput ? 'signup' : 'login') : null);
+@endphp
 <!doctype html>
 <html lang="en" class="scroll-smooth">
 
@@ -6,12 +12,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Why Grads Paths - Grads Paths</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" />
-  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="{{ asset('assets_landingPage/css/style.css') }}" />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet" />
   <script>
-    if (localStorage.getItem("theme") === "light") document.documentElement.classList.remove("dark");
-    else document.documentElement.classList.add("dark");
+    if (localStorage.getItem("theme") === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -39,82 +48,200 @@
 </head>
 
 <body class="antialiased bg-[var(--bg)] text-[var(--text-main)] overflow-x-hidden transition-colors duration-300">
-  <header class="fixed inset-x-0 top-0 z-50 glass h-16 flex items-center transition-all duration-300"
-    aria-label="Main navigation">
-    <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between relative h-full">
-      <a href="/" class="flex items-center gap-2 shrink-0 z-10" aria-label="Home - Grads Paths">
-        <i class="fa-solid fa-graduation-cap text-black dark:text-white text-2xl"></i>
-        <span class="font-display font-bold text-base tracking-wide text-black dark:text-white whitespace-nowrap">Grads
-          Paths</span>
-      </a>
+    <svg
+      style="width: 0; height: 0; position: absolute"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <defs>
+        <linearGradient id="gpClockGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#5B30E5" class="gp-stop-1" />
+          <stop offset="50%" stop-color="#8C5FE2" class="gp-stop-2" />
+          <stop offset="100%" stop-color="#E57CE1" class="gp-stop-3" />
+        </linearGradient>
+      </defs>
+    </svg>
 
-      <nav
-        class="hidden md:flex items-center gap-6 sm:gap-8 font-bold text-sm absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2"
-        aria-label="Primary">
-        <a href="/"
-          class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap">Home</a>
-        <a href="/"
-          class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap">Find
-          Mentors</a>
-        <a href="/#how"
-          class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap">How it
-          Works</a>
-        <a href="/#why-us"
-          class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap">Why Us</a>
-      </nav>
+    <header
+      class="fixed inset-x-0 top-0 z-50 glass h-16 flex items-center transition-all duration-300"
+      aria-label="Main navigation"
+    >
+      <div
+        class="w-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between relative h-full"
+      >
+        <a
+          href="{{ url('/') }}"
+          class="flex items-center shrink-0 z-10"
+          aria-label="Home - Grads Paths"
+        >
+          <img
+            src="{{ asset('gradspaths_logo/Gradspaths_logo_transparent.png') }}"
+            alt="Grads Paths"
+            class="h-8 sm:h-14 w-auto max-w-[110px] sm:max-w-[180px] object-contain"
+          />
+        </a>
 
-      <div class="flex items-center gap-3 shrink-0 z-10">
-        <button id="theme-toggle"
-          class="w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-surface flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-[var(--primary)] hover:border-[var(--primary)]/40 transition-all"
-          aria-label="Toggle theme">
-          <svg class="w-5 h-5 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-          <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9 0 008.354-5.646z" />
-          </svg>
-        </button>
-        <button id="btn-login"
-          class="hidden sm:inline-flex items-center justify-center gap-2 px-[30px] py-[10px] rounded-full min-w-[112px] text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80">
-          Login
-        </button>
-        <button id="btn-signup"
-          class="hidden sm:inline-flex items-center justify-center gap-2 px-7 py-2 rounded-full min-w-[124px] text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10">
-          Sign Up
-        </button>
-        <button id="menu-toggle"
-          class="md:hidden w-10 h-10 flex items-center justify-center rounded-full border border-slate-300 dark:border-slate-600 text-black dark:text-white"
-          aria-label="Open menu">
-          <i id="menu-icon" class="fa-solid fa-bars text-lg"></i>
-        </button>
+        <nav
+          class="hidden md:flex items-center gap-6 sm:gap-8 font-bold text-sm absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2"
+          aria-label="Primary"
+        >
+          <a
+            href="{{ url('/') }}"
+            class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
+            >Home</a
+          >
+          <a
+            href="{{ url('/') }}"
+            class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
+            >Find Mentors</a
+          >
+          <a
+            href="{{ url('/#how') }}"
+            class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
+            >How it Works</a
+          >
+          <a
+            href="{{ url('/#why-us') }}"
+            class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
+            >Why Us</a
+          >
+        </nav>
+
+        <div class="flex items-center gap-1.5 sm:gap-3 shrink-0 z-10">
+          <button
+            id="theme-toggle"
+            class="w-9 h-9 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-surface flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-[var(--primary)] hover:border-[var(--primary)]/40 transition-all"
+            aria-label="Toggle theme"
+          >
+            <svg
+              class="w-5 h-5 dark:hidden"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+              />
+            </svg>
+            <svg
+              class="w-5 h-5 hidden dark:block"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+              />
+            </svg>
+          </button>
+          @auth
+            <a
+              href="{{ url('/') }}"
+              class="inline-flex items-center justify-center gap-2 px-3 sm:px-[30px] py-1.5 sm:py-[10px] rounded-full min-w-0 sm:min-w-[112px] text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
+            >
+              Dashboard
+            </a>
+            <form method="POST" action="{{ route('auth.logout') }}" class="inline-flex">
+              @csrf
+              <button
+                type="submit"
+                class="inline-flex items-center justify-center gap-2 px-3 sm:px-7 py-1.5 sm:py-2 rounded-full min-w-0 sm:min-w-[112px] text-xs sm:text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
+              >
+                Logout
+              </button>
+            </form>
+          @else
+            <button
+              id="btn-login"
+              class="inline-flex items-center justify-center gap-2 px-3 sm:px-[30px] py-1.5 sm:py-[10px] rounded-full min-w-0 sm:min-w-[112px] text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
+            >
+              Login
+            </button>
+            <button
+              id="btn-signup"
+              class="inline-flex items-center justify-center gap-2 px-3 sm:px-7 py-1.5 sm:py-2 rounded-full min-w-0 sm:min-w-[124px] text-xs sm:text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
+            >
+              Sign Up
+            </button>
+          @endauth
+          <button
+            id="menu-toggle"
+            class="md:hidden w-10 h-10 flex items-center justify-center rounded-full border border-slate-300 dark:border-slate-600 text-black dark:text-white"
+          >
+            <i id="menu-icon" class="fa-solid fa-bars text-lg"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="mobile-menu" class="md:hidden fixed top-16 inset-x-0 z-40 hidden">
+      <div
+        class="bg-white dark:bg-surface border-b border-slate-200 dark:border-slate-700 shadow-lg"
+      >
+        <nav class="flex flex-col py-2 font-semibold text-sm">
+          <a
+            href="{{ url('/') }}"
+            class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
+            >Home</a
+          >
+          <a
+            href="{{ url('/') }}"
+            class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
+            >Find Mentors</a
+          >
+          <a
+            href="{{ url('/#how') }}"
+            class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
+            >How it Works</a
+          >
+          <a
+            href="{{ url('/#why-us') }}"
+            class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
+            >Why Us</a
+          >
+        </nav>
+        <div
+          class="flex gap-3 p-4 border-t border-slate-200 dark:border-slate-700"
+        >
+          @auth
+            <a
+              href="{{ url('/') }}"
+              class="flex-1 py-[12px] rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all text-center"
+            >
+              Dashboard
+            </a>
+            <form method="POST" action="{{ route('auth.logout') }}" class="flex-1">
+              @csrf
+              <button
+                type="submit"
+                class="w-full py-2.5 rounded-full text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
+              >
+                Logout
+              </button>
+            </form>
+          @else
+            <button
+              id="btn-login-mob"
+              class="flex-1 py-[12px] rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
+            >
+              Login
+            </button>
+            <button
+              id="btn-signup-mob"
+              class="flex-1 py-2.5 rounded-full text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10"
+            >
+              Sign Up
+            </button>
+          @endauth
+        </div>
       </div>
     </div>
-  </header>
-
-  <div id="mobile-menu" class="md:hidden fixed top-16 inset-x-0 z-40 hidden">
-    <div class="bg-white dark:bg-surface border-b border-slate-200 dark:border-slate-700 shadow-lg">
-      <nav class="flex flex-col py-2 font-semibold text-sm">
-        <a href="/"
-          class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline">Home</a>
-        <a href="/"
-          class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline">Find Mentors</a>
-        <a href="/#how"
-          class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline">How it
-          Works</a>
-        <a href="/#why-us"
-          class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline">Why
-          Us</a>
-      </nav>
-      <div class="flex gap-3 p-4 border-t border-slate-200 dark:border-slate-700">
-        <button id="btn-login-mob"
-          class="flex-1 py-[12px] rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80">Login</button>
-        <button id="btn-signup-mob"
-          class="flex-1 py-2.5 rounded-full text-sm font-bold text-[#3730A3] bg-white border-2 border-slate-200 hover:bg-slate-50 transition-all dark:bg-transparent dark:text-white dark:border-white/40 dark:hover:bg-white/10">Sign Up</button>
-      </div>
-    </div>
-  </div>
 
   <main class="pt-24 pb-20 px-4 sm:px-6 max-w-6xl mx-auto overflow-x-hidden">
     <!-- Why Grads Paths: two columns - left: heading + content + card, right: 3 boxes aligned with heading -->
@@ -509,22 +636,22 @@
             <li class="flex items-start gap-2"><span class="w-2 h-2 rounded-full bg-[#6D28D9] mt-1.5 shrink-0"></span> Clear next steps after every session</li>
           </ul>
           <div class="flex flex-wrap gap-3">
-            <a href="/#get-in-touch"
+            <a href="{{ url('/#get-in-touch') }}"
               class="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-bold text-white bg-[#E92E88] hover:opacity-90 transition-opacity">Start free consult</a>
-            <a href="/"
+            <a href="{{ url('/') }}"
               class="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-bold text-[#6D28D9] dark:text-white/90 bg-white dark:bg-transparent border-2 border-[#6D28D9] dark:border-white/90 hover:bg-[#6D28D9]/5 dark:hover:bg-white/10 transition-colors">Browse mentors</a>
           </div>
         </div>
       </div>
     </section>
 
-    <p class="text-center"><a href="/" class="font-semibold text-[var(--primary)] hover:underline">Back to Home</a></p>
+    <p class="text-center"><a href="{{ url('/') }}" class="font-semibold text-[var(--primary)] hover:underline">Back to Home</a></p>
   </main>
 
   <footer class="site-footer pt-16 pb-10 font-sans" aria-label="Footer">
     <div class="max-w-6xl mx-auto px-4 sm:px-6">
       <div class="flex flex-col gap-4 mb-12">
-        <a href="/" class="inline-flex items-center gap-2 no-underline">
+        <a href="{{ url('/') }}" class="inline-flex items-center gap-2 no-underline">
           <i class="fa-solid fa-graduation-cap text-[#71a4f4] text-2xl" aria-hidden="true"></i>
           <span class="footer-brand">Grads Paths</span>
         </a>
@@ -543,28 +670,28 @@
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8 mb-12">
         <div class="footer-col">
           <h3 class="footer-col-title">Explore</h3>
-          <a href="/">Home</a>
-          <a href="/#how">How It Works</a>
-          <a href="/#services">Our Services</a>
-          <a href="why-us.html">Why Grads Paths</a>
+          <a href="{{ url('/') }}">Home</a>
+          <a href="{{ url('/#how') }}">How It Works</a>
+          <a href="{{ url('/#services') }}">Our Services</a>
+          <a href="{{ route('public.why-us') }}">Why Grads Paths</a>
         </div>
         <div class="footer-col">
           <h3 class="footer-col-title">Services</h3>
-          <a href="/">Find Mentors</a>
-          <a href="/#meeting-types">Meeting Types</a>
-          <a href="/#programs-disciplines">Programs Offered</a>
-          <a href="/#programs-disciplines">Professional Disciplines</a>
+          <a href="{{ url('/') }}">Find Mentors</a>
+          <a href="{{ url('/#meeting-types') }}">Meeting Types</a>
+          <a href="{{ url('/#programs-disciplines') }}">Programs Offered</a>
+          <a href="{{ url('/#programs-disciplines') }}">Professional Disciplines</a>
         </div>
         <div class="footer-col">
           <h3 class="footer-col-title">Connect</h3>
-          <a href="/#get-in-touch"><i class="fa-solid fa-envelope mr-1.5 text-sm opacity-90" aria-hidden="true"></i> Contact Us</a>
+          <a href="{{ url('/#get-in-touch') }}"><i class="fa-solid fa-envelope mr-1.5 text-sm opacity-90" aria-hidden="true"></i> Contact Us</a>
         </div>
       </div>
       <div class="footer-bottom pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-[#3b4656]">
         <nav class="flex flex-wrap items-center gap-x-5 gap-y-1" aria-label="Footer legal and contact">
-          <a href="/#get-in-touch"><i class="fa-solid fa-envelope mr-1 text-sm opacity-90" aria-hidden="true"></i> Contact Us</a>
-          <a href="/privacy">Privacy Policy</a>
-          <a href="/terms">Terms of Service</a>
+          <a href="{{ url('/#get-in-touch') }}"><i class="fa-solid fa-envelope mr-1 text-sm opacity-90" aria-hidden="true"></i> Contact Us</a>
+          <a href="{{ route('public.privacy') }}">Privacy Policy</a>
+          <a href="{{ route('public.terms') }}">Terms of Service</a>
         </nav>
         <div class="text-left sm:text-right">
           <p>© <span id="copyright-year-wu">2026</span> Grads Paths. All rights reserved.</p>
@@ -575,171 +702,190 @@
     <script>document.getElementById('copyright-year-wu').textContent = new Date().getFullYear();</script>
   </footer>
 
-  <!-- Login Modal -->
-  <div id="login-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop">
-    <div class="relative w-full max-w-md rounded-2xl shadow-xl bg-white border-2 border-[#6D28D9] login-modal-panel">
-      <button type="button" id="login-close"
-        class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full transition-colors text-[#3730A3] hover:bg-black/5"
-        aria-label="Close">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-      <div class="p-8 relative">
-        <h2 id="dialog-title" class="text-2xl font-bold text-[#3730A3] mb-1">Welcome back</h2>
-        <p class="text-sm text-[#6D28D9] mb-6">Sign in to continue with Grads Paths.</p>
-        <form id="login-form" class="space-y-4">
-          <div>
-            <label for="login-email" class="block text-sm font-semibold text-[#3730A3] mb-1.5">Email</label>
-            <div class="relative flex items-center">
-              <input type="email" name="email" id="login-email" placeholder="you@university.edu"
-                class="w-full rounded-xl border border-[#6D28D9] bg-white px-4 py-3 pl-4 pr-10 text-[#6D28D9] placeholder:text-[#6D28D9]/70 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm" />
-              <i class="fa-solid fa-envelope absolute right-3 text-[#6D28D9]" aria-hidden="true"></i>
-            </div>
-          </div>
-          <div>
-            <label for="login-password"
-              class="block text-sm font-semibold text-[#3730A3] mb-1.5">Password</label>
-            <div class="relative flex items-center">
-              <input type="password" name="password" id="login-password" placeholder="Your password"
-                class="w-full rounded-xl border border-[#6D28D9] bg-white px-4 py-3 pl-4 pr-16 text-[#6D28D9] placeholder:text-[#6D28D9]/70 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm" />
-              <i class="fa-solid fa-lock absolute right-9 text-[#6D28D9]" aria-hidden="true"></i>
-              <button type="button" class="password-toggle absolute right-3 text-[#6D28D9] hover:opacity-75"
-                aria-label="Toggle password" data-target="login-password">
-                <i class="fa-solid fa-eye-slash text-sm toggle-icon"></i>
-              </button>
-            </div>
-          </div>
-          <div class="flex items-center justify-between">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="login-remember" name="remember-me"
-                class="h-4 w-4 rounded border-[#6D28D9] text-[#E92E88] focus:ring-[#E92E88]" />
-              <span class="text-sm font-medium text-[#3730A3]">Remember me</span>
-            </label>
-            <button type="button" class="text-sm font-medium text-[#E92E88] hover:underline">Forgot password?</button>
-          </div>
-          <button type="submit"
-            class="w-full rounded-xl py-3 text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all mt-6">Continue</button>
-        </form>
-        <p class="mt-5 text-center text-sm text-[#6D28D9]">
-          Don't have an account? <button type="button" id="login-to-signup"
-            class="font-semibold text-[#3730A3] hover:underline">Create account</button>
-        </p>
-      </div>
-    </div>
-  </div>
+  @include('auth::user.login')
+  @include('auth::user.register')
+  @include('layouts.partials.toasts')
 
-  <!-- Signup Modal -->
-  <div id="signup-modal"
-    class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop overflow-y-auto">
-    <div
-      class="relative w-full max-w-[28rem] my-auto max-h-[calc(100vh-1.5rem)] rounded-2xl bg-white border-2 border-[#6D28D9] shadow-xl flex flex-col">
-      <button type="button" id="signup-close"
-        class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full transition-colors text-[#3730A3] hover:bg-black/5"
-        aria-label="Close">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-      <div class="px-6 py-8 pb-6 overflow-y-auto flex-1 min-h-0">
-        <h2 class="text-2xl font-bold text-[#3730A3] mb-2">Create Your Account</h2>
-        <p id="signup-subtitle" class="text-[13px] leading-snug text-[#6D28D9] mb-5">Tell us who you are so we can verify
-          your school and keep this community secure.</p>
+  <script src="{{ asset('assets_landingPage/js/app.js') }}?v={{ filemtime(public_path('assets_landingPage/js/app.js')) }}"></script>
+  <script src="{{ asset('assets_landingPage/js/script.js') }}"></script>
+  <script>
+    (function () {
+      const activeModal = @json($activeAuthModal);
+      const signupForm = document.getElementById("signup-form");
+      const roleInput = document.getElementById("signup-role-input");
+      const levelInput = document.getElementById("signup-program-level-input");
+      const mentorTypeInput = document.getElementById("signup-mentor-type-input");
+      const typeLabel = document.getElementById("signup-type-label");
+      const typeOptions = document.getElementById("signup-type-options");
 
-        <form id="signup-form" class="space-y-4">
-          <!-- Program Level -->
-          <div>
-            <label class="block text-sm font-bold text-[#1D1440] mb-2">Program level</label>
-            <div class="grid grid-cols-3 gap-3">
-              <button type="button" data-value="Undergrad"
-                class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#6D28D9] bg-[#EBE0F8] text-[#6D28D9]">
-                <i class="fa-solid fa-graduation-cap"></i> Undergrad
-              </button>
-              <button type="button" data-value="Grad"
-                class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]">
-                <i class="fa-solid fa-graduation-cap"></i> Grad
-              </button>
-              <button type="button" data-value="Professional"
-                class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]">
-                <i class="fa-solid fa-briefcase"></i> Professional
-              </button>
-            </div>
-          </div>
-          <!-- Role -->
-          <div>
-            <label class="block text-sm font-bold text-[#1D1440] mb-2">I am a:</label>
-            <div class="grid grid-cols-2 gap-3">
-              <button type="button" data-value="Student"
-                class="signup-role flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold border border-[#6D28D9] bg-[#EBE0F8] text-[#6D28D9]">
-                <i class="fa-solid fa-book-open"></i> Student
-              </button>
-              <button type="button" data-value="Mentor"
-                class="signup-role flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]">
-                <i class="fa-solid fa-building-columns"></i> Mentor
-              </button>
-            </div>
-          </div>
+      function normalizeRole(value) {
+        return value === "Mentor" ? "mentor" : value === "mentor" ? "mentor" : "student";
+      }
 
-          <!-- Full Name -->
-          <div>
-            <label class="block text-xs font-bold text-[#1D1440] mb-1.5">Full name <span
-                class="text-red-500">*</span></label>
-            <div class="relative flex items-center">
-              <input type="text" name="fullname" id="signup-fullname" placeholder="Your name"
-                class="w-full rounded-xl border border-[#6D28D9] bg-white px-3 py-2.5 pl-3 pr-10 text-[#6D28D9] placeholder:text-[#6D28D9]/60 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm" />
-              <i class="fa-solid fa-user absolute right-3 text-[#6D28D9]" aria-hidden="true"></i>
-            </div>
-          </div>
-          <!-- Email -->
-          <div>
-            <label class="block text-xs font-bold text-[#1D1440] mb-1.5">Email <span
-                class="text-red-500">*</span></label>
-            <div class="relative flex items-center">
-              <input type="email" name="email" id="signup-email" placeholder="you@university.edu"
-                class="w-full rounded-xl border border-[#6D28D9] bg-white px-3 py-2.5 pl-3 pr-10 text-[#6D28D9] placeholder:text-[#6D28D9]/60 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm" />
-              <i class="fa-solid fa-envelope absolute right-3 text-[#6D28D9]" aria-hidden="true"></i>
-            </div>
-          </div>
-          <!-- Institution -->
-          <div>
-            <label class="block text-xs font-bold text-[#1D1440] mb-1.5">Institution <span
-                class="text-red-500">*</span></label>
-            <div class="relative flex items-center">
-              <input type="text" name="institution" id="signup-institution" placeholder="Start typing to search..."
-                class="w-full rounded-xl border border-[#6D28D9] bg-white px-3 py-2.5 pl-3 pr-10 text-[#6D28D9] placeholder:text-[#6D28D9]/60 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm" />
-              <i class="fa-solid fa-school absolute right-3 text-[#6D28D9]" aria-hidden="true"></i>
-            </div>
-          </div>
-          <!-- Password -->
-          <div>
-            <label class="block text-xs font-bold text-[#1D1440] mb-1.5">Password <span
-                class="text-red-500">*</span></label>
-            <div class="relative flex items-center">
-              <input type="password" name="password" id="signup-password" placeholder="Create a password"
-                class="w-full rounded-xl border border-[#6D28D9] bg-white px-3 py-2.5 pl-3 pr-16 text-[#6D28D9] placeholder:text-[#6D28D9]/60 focus:outline-none focus:ring-1 focus:ring-[#6D28D9] text-sm" />
-              <i class="fa-solid fa-lock absolute right-9 text-[#6D28D9]" aria-hidden="true"></i>
-              <button type="button" class="password-toggle absolute right-3 text-[#6D28D9] hover:opacity-75"
-                aria-label="Toggle password" data-target="signup-password">
-                <i class="fa-solid fa-eye-slash text-xs toggle-icon"></i>
-              </button>
-            </div>
-          </div>
+      function normalizeLevel(value) {
+        if (value === "Grad" || value === "grad" || value === "graduate") {
+          return "graduate";
+        }
 
-          <p class="text-[11px] leading-tight text-[#6D28D9]">We may re-verify your email periodically to keep mentors and
-            students real and current.</p>
-          <button type="submit"
-            class="w-full rounded-xl py-3 text-[15px] font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all mt-4">Continue</button>
-        </form>
-        <p class="mt-4 text-center text-sm text-[#6D28D9]">
-          Already have an account? <button type="button" id="signup-to-login"
-            class="font-semibold text-[#1D1440] hover:underline">Log in</button>
-        </p>
-      </div>
-    </div>
-  </div>
+        if (value === "Professional" || value === "professional") {
+          return "professional";
+        }
 
-  <script src="assets/js/script.js"></script>
-  <script src="assets/js/app.js"></script>
+        return "undergrad";
+      }
+
+      function normalizeMentorType(value) {
+        const level = normalizeLevel(value);
+
+        return level === "professional" ? "professional" : "graduate";
+      }
+
+      function syncSelected(selector, activeValue) {
+        document.querySelectorAll(selector).forEach(function (btn) {
+          const isActive = btn.getAttribute("data-value") === activeValue;
+          btn.classList.toggle("border-[#6D28D9]", isActive);
+          btn.classList.toggle("bg-[#EBE0F8]", isActive);
+          btn.classList.toggle("border-[#D8B4FE]", !isActive);
+          btn.classList.toggle("bg-white", !isActive);
+          btn.classList.toggle("hover:border-[#6D28D9]", !isActive);
+          btn.dataset.selected = isActive ? "true" : "false";
+        });
+      }
+
+      function findActiveValue(selector) {
+        const activeButton = Array.from(document.querySelectorAll(selector)).find(function (btn) {
+          return btn.dataset.selected === "true";
+        });
+
+        return activeButton?.getAttribute("data-value") || null;
+      }
+
+      function findVisibleActiveLevel() {
+        const visibleActiveButton = visibleLevelButtons().find(function (btn) {
+          return btn.classList.contains("border-[#6D28D9]");
+        });
+
+        return visibleActiveButton?.getAttribute("data-value") || null;
+      }
+
+      function visibleLevelButtons() {
+        return Array.from(document.querySelectorAll(".signup-level"));
+      }
+
+      function activeRoleValue() {
+        return normalizeRole(findActiveValue(".signup-role"));
+      }
+
+      function applyRoleTypeVisibility(roleValue) {
+        const isMentor = roleValue === "mentor";
+
+        if (typeLabel) {
+          typeLabel.textContent = "Program level";
+        }
+
+        if (typeOptions) {
+          typeOptions.classList.remove("grid-cols-1", "grid-cols-2");
+          typeOptions.classList.add("grid-cols-3");
+        }
+
+        document.querySelectorAll(".signup-level").forEach(function (btn) {
+          btn.classList.remove("hidden");
+        });
+
+        const visibleButtons = visibleLevelButtons();
+        const activeButton = visibleButtons.find(function (btn) {
+          return btn.classList.contains("border-[#6D28D9]");
+        });
+
+        if (!activeButton && visibleButtons[0]) {
+          syncSelected(".signup-level", isMentor ? "graduate" : "undergrad");
+        }
+      }
+
+      function syncHiddenInputs() {
+        const roleValue = activeRoleValue();
+
+        if (roleInput) {
+          roleInput.value = roleValue;
+        }
+
+        if (levelInput) {
+          levelInput.value = roleValue === "student" ? "undergrad" : "";
+        }
+
+        if (mentorTypeInput) {
+          const activeLevel = normalizeMentorType(findVisibleActiveLevel());
+          mentorTypeInput.value = roleValue === "mentor" ? activeLevel : "";
+        }
+      }
+
+      document.querySelectorAll(".signup-role").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const selectedRole = normalizeRole(btn.getAttribute("data-value"));
+          syncSelected(".signup-role", selectedRole);
+          syncSelected(".signup-level", selectedRole === "mentor" ? normalizeMentorType(findVisibleActiveLevel()) : "undergrad");
+
+          if (roleInput) {
+            roleInput.value = selectedRole;
+          }
+
+          applyRoleTypeVisibility(roleInput?.value || "student");
+          syncHiddenInputs();
+        });
+      });
+
+      document.querySelectorAll(".signup-level").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const selectedLevel = normalizeLevel(btn.getAttribute("data-value"));
+          syncSelected(".signup-level", selectedLevel);
+          syncSelected(".signup-role", selectedLevel === "undergrad" ? "student" : "mentor");
+          if (roleInput) {
+            roleInput.value = selectedLevel === "undergrad" ? "student" : "mentor";
+          }
+          applyRoleTypeVisibility(roleInput?.value || "student");
+          syncHiddenInputs();
+        });
+      });
+
+      const oldRole = @json(old('role'));
+      const oldMentorType = @json(old('mentor_type'));
+      const savedRole = window.localStorage?.getItem("gradspaths_signup_role");
+      const savedLevel = window.localStorage?.getItem("gradspaths_signup_level");
+      const initialRole = normalizeRole(oldRole || savedRole || "mentor");
+      const initialLevel = initialRole === "mentor"
+        ? normalizeLevel(oldMentorType || savedLevel)
+        : "undergrad";
+
+      if (roleInput) {
+        roleInput.value = initialRole;
+      }
+
+      if (levelInput) {
+        levelInput.value = initialRole === "student" ? "undergrad" : "";
+      }
+
+      if (mentorTypeInput) {
+        mentorTypeInput.value = initialRole === "mentor" ? normalizeMentorType(initialLevel) : "";
+      }
+
+      syncSelected(".signup-role", initialRole);
+      syncSelected(".signup-level", initialLevel);
+      applyRoleTypeVisibility(initialRole);
+      syncHiddenInputs();
+
+      signupForm?.addEventListener("submit", function () {
+        syncHiddenInputs();
+      });
+
+      if (activeModal === "login") {
+        document.getElementById("login-modal")?.classList.remove("hidden");
+        document.getElementById("signup-modal")?.classList.add("hidden");
+      } else if (activeModal === "signup") {
+        document.getElementById("signup-modal")?.classList.remove("hidden");
+        document.getElementById("login-modal")?.classList.add("hidden");
+      }
+    })();
+  </script>
 </body>
 
 </html>

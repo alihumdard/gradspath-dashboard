@@ -99,7 +99,8 @@
             >Home</a
           >
           <a
-            href="{{ url('/') }}"
+            href="@guest {{ url('/#login') }} @else {{ url('/') }} @endguest"
+            @guest data-open-login @endguest
             class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
             >Find Mentors</a
           >
@@ -113,6 +114,14 @@
             class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
             >Why Us</a
           >
+          @guest
+            <a
+              href="{{ url('/#login') }}"
+              data-open-login
+              class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
+              >Login</a
+            >
+          @endguest
         </nav>
 
         <div class="flex items-center gap-1.5 sm:gap-3 shrink-0 z-10">
@@ -199,7 +208,8 @@
             >Home</a
           >
           <a
-            href="{{ url('/') }}"
+            href="@guest {{ url('/#login') }} @else {{ url('/') }} @endguest"
+            @guest data-open-login @endguest
             class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
             >Find Mentors</a
           >
@@ -213,6 +223,14 @@
             class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
             >Why Us</a
           >
+          @guest
+            <a
+              href="{{ url('/#login') }}"
+              data-open-login
+              class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
+              >Login</a
+            >
+          @endguest
         </nav>
         <div
           class="flex gap-3 p-4 border-t border-slate-200 dark:border-slate-700"
@@ -296,7 +314,8 @@
         </div>
         <div class="flex flex-wrap justify-center gap-4 w-full sm:w-auto">
           <a
-            href="{{ url('/') }}"
+            href="{{ url('/#login') }}"
+            @guest data-open-login @endguest
             class="hero-btn-pink group relative inline-flex items-center justify-center min-w-[240px] h-[54px] px-[28px] rounded-full bg-transparent outline-none select-none cursor-pointer decoration-0 transition-transform duration-200 ease-out hover:-translate-y-px focus-visible:ring-4 focus-visible:ring-[#E47AB4]/25 w-full sm:w-auto"
           >
             <span
@@ -334,7 +353,8 @@
           </a>
 
           <a
-            href="{{ url('/') }}"
+            href="{{ url('/#login') }}"
+            @guest data-open-login @endguest
             class="hero-btn-blue group relative inline-flex items-center justify-center min-w-[240px] h-[54px] px-[28px] rounded-full bg-transparent outline-none select-none cursor-pointer decoration-0 transition-transform duration-200 ease-out hover:-translate-y-px focus-visible:ring-4 focus-visible:ring-[#71A4F4]/25 w-full sm:w-auto"
           >
             <span
@@ -1848,7 +1868,8 @@
               (no group discount).
             </p>
             <a
-              href="{{ url('/') }}"
+              href="@guest {{ url('/#login') }} @else {{ url('/') }} @endguest"
+              @guest data-open-login @endguest
               class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
             >
               Book Today
@@ -1955,7 +1976,8 @@
               </li>
             </ul>
             <a
-              href="{{ url('/#get-in-touch') }}"
+              href="@guest {{ url('/#login') }} @else {{ url('/#get-in-touch') }} @endguest"
+              @guest data-open-login @endguest
               class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
             >
               Special Request Meeting
@@ -2047,7 +2069,8 @@
               </li>
             </ul>
             <a
-              href="{{ url('/#get-in-touch') }}"
+              href="@guest {{ url('/#login') }} @else {{ url('/#get-in-touch') }} @endguest"
+              @guest data-open-login @endguest
               class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
             >
               Special Request Meeting
@@ -2153,7 +2176,8 @@
               </li>
             </ul>
             <a
-              href="{{ url('/#get-in-touch') }}"
+              href="@guest {{ url('/#login') }} @else {{ url('/#get-in-touch') }} @endguest"
+              @guest data-open-login @endguest
               class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
             >
               Subscribe Today
@@ -3322,7 +3346,7 @@
 
         <div class="flex justify-center">
           <a
-            href="why-us.html"
+            href="{{ route('public.why-us') }}"
             class="inline-flex items-center justify-center px-6 py-3.5 rounded-full font-semibold border-2 border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)]/15 active:bg-[var(--primary)]/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent dark:bg-[var(--primary)]/20 dark:text-[var(--text-main)] dark:hover:bg-[var(--primary)]/25 transition-all"
           >
             Learn more about our approach
@@ -3556,7 +3580,8 @@
             class="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto justify-center"
           >
             <a
-              href="{{ url('/') }}"
+              href="{{ url('/#login') }}"
+              @guest data-open-login @endguest
               class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white text-black text-sm font-bold uppercase tracking-wide hover:bg-gray-100 transition-colors shadow-lg no-underline"
             >
               BOOK FREE CONSULTATION
@@ -3631,7 +3656,7 @@
           </div>
           <div class="footer-col">
             <h3 class="footer-col-title">Services</h3>
-            <a href="{{ url('/') }}"  >Find Mentors</a>
+            <a href="@guest {{ url('/#login') }} @else {{ url('/') }} @endguest" @guest data-open-login @endguest>Find Mentors</a>
             <a href="{{ url('/#meeting-types') }}">Meeting Types</a>
             <a href="#programs-disciplines">Programs Offered</a>
             <a href="#programs-disciplines">Professional Disciplines</a>
@@ -3704,7 +3729,7 @@
     @include('layouts.partials.toasts')
 
     <script src="{{ asset('assets_landingPage/js/app.js') }}?v={{ filemtime(public_path('assets_landingPage/js/app.js')) }}"></script>
-    <script src="{{ asset('assets_landingPage/js/script.js') }}"></script>
+    <script src="{{ asset('assets_landingPage/js/script.js') }}?v={{ filemtime(public_path('assets_landingPage/js/script.js')) }}"></script>
     <script>
       (function () {
         const activeModal = @json($activeAuthModal);

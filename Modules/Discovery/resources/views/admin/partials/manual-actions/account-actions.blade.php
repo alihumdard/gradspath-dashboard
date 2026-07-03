@@ -31,14 +31,18 @@
         <input type="hidden" name="manual_section" value="mentor" />
         <input type="hidden" name="featured_order" id="manualFeaturedMentorOrder" value="{{ implode(',', old('featured_order') ? explode(',', (string) old('featured_order')) : $featuredMentorIds) }}" />
 
-        <label class="manual-field">
+        <label class="manual-field manual-university-picker" data-mentor-picker>
           <span>Mentor</span>
-          <select name="mentor_id" id="manualMentorSelect" required>
-            <option value="">Select a mentor</option>
-            @foreach ($mentors as $mentor)
-              <option value="{{ $mentor['id'] }}" @selected((string) old('mentor_id') === (string) $mentor['id'])>{{ $mentor['label'] }}</option>
-            @endforeach
-          </select>
+          <input
+            id="manualMentorSearch"
+            type="text"
+            value="{{ old('mentor_id') ? (collect($mentors)->firstWhere('id', old('mentor_id'))['label'] ?? '') : '' }}"
+            placeholder="Search by mentor name or email..."
+            autocomplete="off"
+            data-mentor-picker-search
+          />
+          <input type="hidden" name="mentor_id" id="manualMentorSelect" value="{{ old('mentor_id') }}" data-mentor-picker-id required />
+          <div class="manual-picker-results" data-mentor-picker-results hidden></div>
           @error('mentor_id')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror

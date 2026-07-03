@@ -45,6 +45,11 @@ class LandingPageController extends Controller
         ]);
     }
 
+    public function whyUs(): View
+    {
+        return view('landing_page.why-us');
+    }
+
     private function getFeaturedInstitutions()
     {
         return FeaturedInstitution::with('university')

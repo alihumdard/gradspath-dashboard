@@ -3194,6 +3194,86 @@ function initializeManualActionsHub() {
         });
     }
 
+    function initializeMentorPicker() {
+        const picker = app.querySelector("[data-mentor-picker]");
+        const searchInput = picker?.querySelector("[data-mentor-picker-search]");
+        const idInput = picker?.querySelector("[data-mentor-picker-id]");
+        const results = picker?.querySelector("[data-mentor-picker-results]");
+
+        if (!picker || !searchInput || !idInput || !results) {
+            return;
+        }
+
+        let selectedLabel = searchInput.value || "";
+
+        function hideResults() {
+            results.hidden = true;
+        }
+
+        function showResults() {
+            results.hidden = false;
+        }
+
+        function renderResults(query) {
+            const normalized = query.trim().toLowerCase();
+            const matches = (
+                normalized
+                    ? mentors.filter((mentor) =>
+                          `${mentor.name || ""} ${mentor.email || ""}`
+                              .toLowerCase()
+                              .includes(normalized),
+                      )
+                    : mentors
+            ).slice(0, 3);
+
+            results.innerHTML = matches.length
+                ? matches
+                      .map(
+                          (mentor) => `
+                            <button class="manual-picker-option" type="button" data-mentor-picker-option="${escapeHtml(mentor.id)}" data-picker-label="${escapeHtml(mentor.label || mentor.name || "Mentor")}">
+                                <strong>${escapeHtml(mentor.name || mentor.label || "Mentor")}</strong>
+                                <small>${escapeHtml(mentor.email || "")}</small>
+                            </button>
+                        `,
+                      )
+                      .join("")
+                : `<div class="manual-picker-empty">No mentors found</div>`;
+
+            showResults();
+        }
+
+        searchInput.addEventListener("focus", () => {
+            renderResults(searchInput.value);
+        });
+
+        searchInput.addEventListener("input", () => {
+            if (searchInput.value !== selectedLabel) {
+                selectedLabel = "";
+                idInput.value = "";
+            }
+
+            renderResults(searchInput.value);
+        });
+
+        results.addEventListener("click", (event) => {
+            const option = event.target.closest("[data-mentor-picker-option]");
+
+            if (!option) return;
+
+            idInput.value = option.getAttribute("data-mentor-picker-option") || "";
+            selectedLabel = option.dataset.pickerLabel || "";
+            searchInput.value = selectedLabel;
+            hideResults();
+            idInput.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!picker.contains(event.target)) {
+                hideResults();
+            }
+        });
+    }
+
     function syncFeedbackSummary() {
         const item = feedbackItems.find(
             (feedback) =>
@@ -3273,6 +3353,7 @@ function initializeManualActionsHub() {
     initializeFeaturedInstitutionPickers();
     initializeInstitutionEditPicker();
     initializeProgramEditPicker();
+    initializeMentorPicker();
 
     function initializeUniversityPicker() {
         app.querySelectorAll("[data-university-picker]").forEach((picker, index) => {

@@ -153,6 +153,14 @@
     if (el) el.addEventListener("click", openSignup);
   });
 
+  // Any element marked data-open-login redirects to the login modal instead of its href.
+  document.querySelectorAll("[data-open-login]").forEach(function (el) {
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      openLogin();
+    });
+  });
+
   var dashboardBtn = document.getElementById("btn-dashboard");
   var dashboardBtnMob = document.getElementById("btn-dashboard-mob");
   var logoutBtn = document.getElementById("btn-logout");
