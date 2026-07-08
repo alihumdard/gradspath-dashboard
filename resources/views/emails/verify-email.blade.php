@@ -137,7 +137,7 @@
     <div class="email-shell" bgcolor="#f4f6fa">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="brand" style="max-width:640px;margin:0 auto 26px;">
             <tr>
-                <td align="center" bgcolor="#3161d1" style="background-color:#3161d1;padding:26px 18px;border-radius:6px;">
+                <td align="center" bgcolor="#f4f6fa" style="background-color:#f4f6fa;padding:26px 18px;border-radius:6px;">
                     <img src="{{ asset('Logo.jpeg') }}" alt="Grads Paths" class="logo" width="220" height="220" border="0" style="width:220px;max-width:220px;height:auto;display:block;margin:0 auto;border:0;outline:none;text-decoration:none;">
                 </td>
             </tr>
