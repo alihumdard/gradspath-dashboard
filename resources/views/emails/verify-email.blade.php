@@ -19,25 +19,15 @@
             padding: 42px 18px 34px;
         }
 
-        .brand {
-            max-width: 640px;
-            height: 112px;
-            margin: 0 auto 26px;
-            overflow: hidden;
-            text-align: center;
-        }
-
         .logo {
-            width: 340px;
-            max-width: 340px;
+            width: 220px;
+            max-width: 220px;
             height: auto;
             display: block;
-            margin: -94px auto 0;
+            margin: 0 auto;
             border: 0;
             outline: none;
             text-decoration: none;
-            background-color: transparent;
-            mix-blend-mode: multiply;
         }
 
         .card {
@@ -124,9 +114,8 @@
             }
 
             .logo {
-                width: 300px;
-                max-width: 300px;
-                margin-top: -82px;
+                width: 180px;
+                max-width: 180px;
             }
 
             .card {
@@ -146,9 +135,13 @@
 </head>
 <body bgcolor="#f4f6fa">
     <div class="email-shell" bgcolor="#f4f6fa">
-        <div class="brand">
-            <img src="{{ asset('Logo.jpeg') }}" alt="Grads Paths" class="logo">
-        </div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="brand" style="max-width:640px;margin:0 auto 26px;">
+            <tr>
+                <td align="center" bgcolor="#3161d1" style="background-color:#3161d1;padding:26px 18px;border-radius:6px;">
+                    <img src="{{ asset('Logo.jpeg') }}" alt="Grads Paths" class="logo" width="220" height="220" border="0" style="width:220px;max-width:220px;height:auto;display:block;margin:0 auto;border:0;outline:none;text-decoration:none;">
+                </td>
+            </tr>
+        </table>
 
         <div class="card">
             <h1>Verify your account</h1>

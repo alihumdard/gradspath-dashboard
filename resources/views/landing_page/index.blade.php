@@ -114,14 +114,6 @@
             class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
             >Why Us</a
           >
-          @guest
-            <a
-              href="{{ url('/#login') }}"
-              data-open-login
-              class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
-              >Login</a
-            >
-          @endguest
         </nav>
 
         <div class="flex items-center gap-1.5 sm:gap-3 shrink-0 z-10">
@@ -223,14 +215,6 @@
             class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
             >Why Us</a
           >
-          @guest
-            <a
-              href="{{ url('/#login') }}"
-              data-open-login
-              class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
-              >Login</a
-            >
-          @endguest
         </nav>
         <div
           class="flex gap-3 p-4 border-t border-slate-200 dark:border-slate-700"
