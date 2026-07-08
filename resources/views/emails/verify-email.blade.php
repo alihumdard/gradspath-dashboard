@@ -16,12 +16,12 @@
         .email-shell {
             width: 100%;
             background-color: #f4f6fa;
-            padding: 42px 18px 34px;
+            padding: 20px 18px 34px;
         }
 
         .logo {
-            width: 220px;
-            max-width: 220px;
+            width: 300px;
+            max-width: 300px;
             height: auto;
             display: block;
             margin: 0 auto;
@@ -114,8 +114,8 @@
             }
 
             .logo {
-                width: 180px;
-                max-width: 180px;
+                width: 220px;
+                max-width: 220px;
             }
 
             .card {
@@ -135,10 +135,10 @@
 </head>
 <body bgcolor="#f4f6fa">
     <div class="email-shell" bgcolor="#f4f6fa">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="brand" style="max-width:640px;margin:0 auto 26px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="brand" style="max-width:640px;margin:0 auto 10px;">
             <tr>
-                <td align="center" bgcolor="#f4f6fa" style="background-color:#f4f6fa;padding:26px 18px;border-radius:6px;">
-                    <img src="{{ asset('Logo.jpeg') }}" alt="Grads Paths" class="logo" width="220" height="220" border="0" style="width:220px;max-width:220px;height:auto;display:block;margin:0 auto;border:0;outline:none;text-decoration:none;">
+                <td align="center" bgcolor="#f4f6fa" style="background-color:#f4f6fa;padding:6px 18px;">
+                    <img src="{{ asset('Logo.jpeg') }}" alt="Grads Paths" class="logo" width="300" height="300" border="0" style="width:300px;max-width:300px;height:auto;display:block;margin:0 auto;border:0;outline:none;text-decoration:none;">
                 </td>
             </tr>
         </table>
