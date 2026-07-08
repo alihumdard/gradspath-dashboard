@@ -16,7 +16,7 @@
         .email-shell {
             width: 100%;
             background-color: #f4f6fa;
-            padding: 20px 18px 34px;
+            padding: 8px 18px 34px;
         }
 
         .logo {
@@ -114,8 +114,8 @@
             }
 
             .logo {
-                width: 220px;
-                max-width: 220px;
+                width: 260px;
+                max-width: 260px;
             }
 
             .card {
@@ -135,10 +135,10 @@
 </head>
 <body bgcolor="#f4f6fa">
     <div class="email-shell" bgcolor="#f4f6fa">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="brand" style="max-width:640px;margin:0 auto 10px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="brand" style="max-width:640px;margin:0 auto 6px;">
             <tr>
-                <td align="center" bgcolor="#f4f6fa" style="background-color:#f4f6fa;padding:6px 18px;">
-                    <img src="{{ asset('Logo.jpeg') }}" alt="Grads Paths" class="logo" width="300" height="300" border="0" style="width:300px;max-width:300px;height:auto;display:block;margin:0 auto;border:0;outline:none;text-decoration:none;">
+                <td align="center" bgcolor="#f4f6fa" style="background-color:#f4f6fa;padding:4px 18px;">
+                    <img src="{{ asset('gradspaths_logo/Gradspaths_logo_transparent.png') }}" alt="Grads Paths" class="logo" width="330" border="0" style="width:330px;max-width:330px;height:auto;display:block;margin:0 auto;border:0;outline:none;text-decoration:none;">
                 </td>
             </tr>
         </table>
