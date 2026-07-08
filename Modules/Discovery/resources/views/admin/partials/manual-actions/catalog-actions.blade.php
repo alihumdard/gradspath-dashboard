@@ -11,6 +11,7 @@
   $lastFeaturedRefresh = $featuredInstitutions['last_recalculated_at'] ?? null;
   $featuredInstitutionLimit = 5;
   $institutionUpdateRouteTemplate = route('admin.manual-actions.institutions.update', ['id' => '__ID__'], false);
+  $institutionDeleteRouteTemplate = route('admin.manual-actions.institutions.destroy', ['id' => '__ID__'], false);
   $programUpdateRouteTemplate = route('admin.manual-actions.programs.update', ['id' => '__ID__'], false);
   $initialInstitution = collect($institutions)->first();
   $initialProgram = collect($programs)->first();
@@ -204,7 +205,10 @@
           <span>Institution is active</span>
         </label>
 
-        <button class="primary-btn manual-submit-btn" type="submit">Save institution</button>
+        <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; margin-top: 16px; width: 100%;">
+          <button class="primary-btn" type="submit">Save institution</button>
+          <button class="primary-btn" type="button" id="deleteInstitutionBtn" style="display: none; background: var(--danger, #ff6078); color: #fff;">Delete Institution</button>
+        </div>
       </form>
 
       <aside class="manual-summary" id="manualInstitutionEditSummary">
@@ -212,6 +216,37 @@
         <p>Select an institution to preview its logo and saved details.</p>
       </aside>
     </div>
+
+    <form
+      id="manualInstitutionDeleteForm"
+      method="POST"
+      action=""
+      data-delete-route-template="{{ $institutionDeleteRouteTemplate }}"
+    >
+      @csrf
+      @method('DELETE')
+    </form>
+
+    <dialog id="deleteInstitutionConfirmModal" class="admin-bookings-dialog">
+      <div style="position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;">
+        <div class="modal-card admin-bookings-modal" style="max-width: 500px; padding: 32px; pointer-events: auto;">
+          <div class="admin-bookings-modal__header">
+            <div>
+              <p class="admin-bookings-modal__eyebrow">Confirm Deletion</p>
+              <h3>Delete Institution</h3>
+              <p class="admin-bookings-modal__subtitle" style="margin-top: 10px;">Are you sure you want to delete this institution? This action will permanently remove the record and cannot be undone.</p>
+            </div>
+          </div>
+          
+          <div class="admin-bookings-modal__body" style="margin-top: 24px;">
+            <div class="admin-bookings-actions" style="justify-content: flex-end; width: 100%;">
+              <button type="button" class="ghost-btn" id="cancelDeleteBtn">Cancel</button>
+              <button type="button" class="primary-btn" id="confirmDeleteBtn" style="background: var(--danger, #ff6078); color: #fff;">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </dialog>
   </div>
 
   <div class="manual-panel" id="manual-section-featured-institutions" data-section-panel="institutions">

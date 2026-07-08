@@ -7,6 +7,7 @@ use App\Http\Controllers\LandingPageController;
 Route::get('/', [LandingPageController::class, 'index']);
 Route::get('/home', [LandingPageController::class, 'home'])->name('public.home');
 Route::get('/why-us', [LandingPageController::class, 'whyUs'])->name('public.why-us');
+Route::get('/how-it-works', [LandingPageController::class, 'howItWorks'])->name('public.how-it-works');
 
 Route::view('/terms', 'public_pages.terms')->name('public.terms');
 Route::view('/privacy', 'public_pages.privacy')->name('public.privacy');

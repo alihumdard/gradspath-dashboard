@@ -28,4 +28,17 @@ class UniversityProgram extends Model
     {
         return $this->belongsTo(University::class);
     }
+
+    /**
+     * Get active programs for the landing page grouped by program type.
+     */
+    public static function getLandingPagePrograms()
+    {
+        return self::query()
+            ->with(['university' => fn($query) => $query->where('is_active', true)])
+            ->where('is_active', true)
+            ->whereHas('university', fn($query) => $query->where('is_active', true))
+            ->get()
+            ->groupBy('program_type');
+    }
 }

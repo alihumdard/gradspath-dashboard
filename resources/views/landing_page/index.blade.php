@@ -78,7 +78,7 @@
         class="w-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between relative h-full"
       >
         <a
-          href="{{ url('/') }}"
+          href="{{ route('public.home') }}"
           class="flex items-center shrink-0 z-10"
           aria-label="Home - Grads Paths"
         >
@@ -94,12 +94,12 @@
           aria-label="Primary"
         >
           <a
-            href="{{ url('/') }}"
+            href="{{ route('public.home') }}"
             class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
             >Home</a
           >
           <a
-            href="@guest {{ url('/#login') }} @else {{ url('/') }} @endguest"
+            href="@guest {{ route('public.home') . '#login' }} @else {{ url('/') }} @endguest"
             @guest data-open-login @endguest
             class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
             >Find Mentors</a
@@ -151,7 +151,7 @@
           </button>
           @auth
             <a
-              href="{{ url('/') }}"
+              href="{{ route('public.home') }}"
               class="inline-flex items-center justify-center gap-2 px-3 sm:px-[30px] py-1.5 sm:py-[10px] rounded-full min-w-0 sm:min-w-[112px] text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
             >
               Dashboard
@@ -195,12 +195,12 @@
       >
         <nav class="flex flex-col py-2 font-semibold text-sm">
           <a
-            href="{{ url('/') }}"
+            href="{{ route('public.home') }}"
             class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
             >Home</a
           >
           <a
-            href="@guest {{ url('/#login') }} @else {{ url('/') }} @endguest"
+            href="@guest {{ route('public.home') . '#login' }} @else {{ url('/') }} @endguest"
             @guest data-open-login @endguest
             class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
             >Find Mentors</a
@@ -221,7 +221,7 @@
         >
           @auth
             <a
-              href="{{ url('/') }}"
+              href="{{ route('public.home') }}"
               class="flex-1 py-[12px] rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all text-center"
             >
               Dashboard
@@ -298,7 +298,7 @@
         </div>
         <div class="flex flex-wrap justify-center gap-4 w-full sm:w-auto">
           <a
-            href="{{ url('/#login') }}"
+            href="{{ route('public.home') . '#login' }}"
             @guest data-open-login @endguest
             class="hero-btn-pink group relative inline-flex items-center justify-center min-w-[240px] h-[54px] px-[28px] rounded-full bg-transparent outline-none select-none cursor-pointer decoration-0 transition-transform duration-200 ease-out hover:-translate-y-px focus-visible:ring-4 focus-visible:ring-[#E47AB4]/25 w-full sm:w-auto"
           >
@@ -337,7 +337,7 @@
           </a>
 
           <a
-            href="{{ url('/#login') }}"
+            href="{{ route('public.home') . '#login' }}"
             @guest data-open-login @endguest
             class="hero-btn-blue group relative inline-flex items-center justify-center min-w-[240px] h-[54px] px-[28px] rounded-full bg-transparent outline-none select-none cursor-pointer decoration-0 transition-transform duration-200 ease-out hover:-translate-y-px focus-visible:ring-4 focus-visible:ring-[#71A4F4]/25 w-full sm:w-auto"
           >
@@ -526,177 +526,83 @@
                   A curated selection of globally recognized institutions, categorized by prestige and placement power
                 </p>
               </div>
+              @php
+                  $mbaPrograms = isset($programsByType) ? $programsByType->get('mba', collect())->groupBy('tier') : collect();
+                  $mbaTiers = [
+                      'elite' => [
+                          'title' => 'MBA Elite',
+                          'sub' => 'Top Tier',
+                          'icon' => 'fa-trophy',
+                          'border' => 'border-blue-500',
+                          'shadow' => 'hover:shadow-blue-500/10',
+                          'color' => 'text-[var(--primary)]',
+                          'bg' => 'bg-[var(--primary)]/10',
+                          'borderColor' => 'border-[var(--primary)]/20',
+                      ],
+                      'top' => [
+                          'title' => 'MBA Top 25',
+                          'sub' => 'Highly Ranked',
+                          'icon' => 'fa-star',
+                          'border' => 'border-red-500',
+                          'shadow' => 'hover:shadow-red-500/10',
+                          'color' => 'text-[var(--secondary)]',
+                          'bg' => 'bg-[var(--secondary)]/10',
+                          'borderColor' => 'border-[var(--secondary)]/20',
+                      ],
+                      'regional' => [
+                          'title' => 'MBA Regional',
+                          'sub' => 'Regional Impact',
+                          'icon' => 'fa-map-location-dot',
+                          'border' => 'border-purple-500',
+                          'shadow' => 'hover:shadow-purple-500/10',
+                          'color' => 'text-[var(--accent)]',
+                          'bg' => 'bg-[var(--accent)]/10',
+                          'borderColor' => 'border-[var(--accent)]/20',
+                      ],
+                  ];
+                  $decorativeIcons = [
+                      'fa-landmark',
+                      'fa-flask',
+                      'fa-graduation-cap',
+                      'fa-building-columns',
+                      'fa-scale-balanced',
+                  ];
+              @endphp
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full">
-                <!-- MBA Elite -->
-                <div class="group relative rounded-2xl border-2 border-blue-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
-                  <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
-                    <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
-                      <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">MBA Elite</h4>
-                      <p class="text-[10px] font-bold text-[var(--primary)] tracking-widest uppercase mt-0.5">Top Tier</p>
-                      <div class="w-8 h-8 rounded-full bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] border border-[var(--primary)]/20 mt-1.5">
-                        <i class="fa-solid fa-trophy text-[10px]"></i>
+                @foreach ($mbaTiers as $tierKey => $config)
+                  @php
+                      $tierPrograms = $mbaPrograms->get($tierKey, collect());
+                  @endphp
+                  <div class="group relative rounded-2xl border-2 {{ $config['border'] }} bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg {{ $config['shadow'] }}">
+                    <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
+                      <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
+                        <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">{{ $config['title'] }}</h4>
+                        <p class="text-[10px] font-bold {{ $config['color'] }} tracking-widest uppercase mt-0.5">{{ $config['sub'] }}</p>
+                        <div class="w-8 h-8 rounded-full {{ $config['bg'] }} flex items-center justify-center {{ $config['color'] }} border {{ $config['borderColor'] }} mt-1.5">
+                          <i class="fa-solid {{ $config['icon'] }} text-[10px]"></i>
+                        </div>
                       </div>
+                      <ul class="space-y-1.5">
+                        @forelse ($tierPrograms as $prog)
+                          @php
+                              $iconClass = $decorativeIcons[$loop->index % count($decorativeIcons)];
+                          @endphp
+                          <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                            <i class="fa-solid {{ $iconClass }} {{ $config['color'] }} text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                            <div class="flex flex-col text-left">
+                              <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">
+                                {{ mb_strtoupper($prog->university->display_name ?: $prog->university->name) }}
+                              </span>
+                              <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">{{ $prog->program_name }}</span>
+                            </div>
+                          </li>
+                        @empty
+                          <li class="text-center text-xs text-[var(--text-muted)] py-4">No programs available</li>
+                        @endforelse
+                      </ul>
                     </div>
-                    <ul class="space-y-1.5">
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UPENN</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Wharton School</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-flask text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">MIT</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Sloan School</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-graduation-cap text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">STANFORD</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Stanford GSB</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-building-columns text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">HARVARD</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Harvard Business</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-scale-balanced text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">NORTHWESTERN</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Kellogg School</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">CHICAGO</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Booth School</span>
-                        </div>
-                      </li>
-                    </ul>
                   </div>
-                </div>
-
-                <!-- MBA Top 25 -->
-                <div class="group relative rounded-2xl border-2 border-red-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-red-500/10">
-                  <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
-                    <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
-                      <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">MBA Top 25</h4>
-                      <p class="text-[10px] font-bold text-[var(--secondary)] tracking-widest uppercase mt-0.5">Highly Ranked</p>
-                      <div class="w-8 h-8 rounded-full bg-[var(--secondary)]/10 flex items-center justify-center text-[var(--secondary)] border border-[var(--secondary)]/20 mt-1.5">
-                        <i class="fa-solid fa-star text-[10px]"></i>
-                      </div>
-                    </div>
-                    <ul class="space-y-1.5">
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UNC</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UNC-Chapel Hill</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-flask text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">RICE</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Rice University</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-graduation-cap text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">GEORGIA</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">U of Georgia</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-building-columns text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UTD</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UT-Dallas</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-scale-balanced text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">NOTRE DAME</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Notre Dame</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">ROCHESTER</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">U of Rochester</span>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-
-                <!-- MBA Regional -->
-                <div class="group relative rounded-2xl border-2 border-purple-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10">
-                  <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
-                    <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
-                      <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">MBA Regional</h4>
-                      <p class="text-[10px] font-bold text-[var(--accent)] tracking-widest uppercase mt-0.5">Regional Impact</p>
-                      <div class="w-8 h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/20 mt-1.5">
-                        <i class="fa-solid fa-map-location-dot text-[10px]"></i>
-                      </div>
-                    </div>
-                    <ul class="space-y-1.5">
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">TAMU</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Texas A&M</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-flask text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UCI</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UC Irvine</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-graduation-cap text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">BC</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Boston College</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-building-columns text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">BU</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Boston U</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-scale-balanced text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">RUTGERS</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Rutgers Univ</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">SYRACUSE</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Syracuse U</span>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
+                @endforeach
               </div>
             </div>
           </div>
@@ -714,170 +620,76 @@
                   A curated selection of globally recognized institutions, categorized by prestige and placement power
                 </p>
               </div>
+              @php
+                  $lawPrograms = isset($programsByType) ? $programsByType->get('law', collect())->groupBy('tier') : collect();
+                  $lawTiers = [
+                      'elite' => [
+                          'title' => 'Law Elite',
+                          'sub' => 'Top Tier',
+                          'icon' => 'fa-scale-balanced',
+                          'border' => 'border-blue-500',
+                          'shadow' => 'hover:shadow-blue-500/10',
+                          'color' => 'text-[var(--primary)]',
+                          'bg' => 'bg-[var(--primary)]/10',
+                          'borderColor' => 'border-[var(--primary)]/20',
+                      ],
+                      'top' => [
+                          'title' => 'Law Top 25',
+                          'sub' => 'Highly Ranked',
+                          'icon' => 'fa-gavel',
+                          'border' => 'border-red-500',
+                          'shadow' => 'hover:shadow-red-500/10',
+                          'color' => 'text-[var(--secondary)]',
+                          'bg' => 'bg-[var(--secondary)]/10',
+                          'borderColor' => 'border-[var(--secondary)]/20',
+                      ],
+                      'regional' => [
+                          'title' => 'Law Regional',
+                          'sub' => 'Regional Impact',
+                          'icon' => 'fa-map-location-dot',
+                          'border' => 'border-purple-500',
+                          'shadow' => 'hover:shadow-purple-500/10',
+                          'color' => 'text-[var(--accent)]',
+                          'bg' => 'bg-[var(--accent)]/10',
+                          'borderColor' => 'border-[var(--accent)]/20',
+                      ],
+                  ];
+              @endphp
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full">
-                <!-- Law Elite -->
-                <div class="group relative rounded-2xl border-2 border-blue-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
-                  <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
-                    <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
-                      <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">Law Elite</h4>
-                      <p class="text-[10px] font-bold text-[var(--primary)] tracking-widest uppercase mt-0.5">Top Tier</p>
-                      <div class="w-8 h-8 rounded-full bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] border border-[var(--primary)]/20 mt-1.5">
-                        <i class="fa-solid fa-scale-balanced text-[10px]"></i>
+                @foreach ($lawTiers as $tierKey => $config)
+                  @php
+                      $tierPrograms = $lawPrograms->get($tierKey, collect());
+                  @endphp
+                  <div class="group relative rounded-2xl border-2 {{ $config['border'] }} bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg {{ $config['shadow'] }}">
+                    <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
+                      <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
+                        <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">{{ $config['title'] }}</h4>
+                        <p class="text-[10px] font-bold {{ $config['color'] }} tracking-widest uppercase mt-0.5">{{ $config['sub'] }}</p>
+                        <div class="w-8 h-8 rounded-full {{ $config['bg'] }} flex items-center justify-center {{ $config['color'] }} border {{ $config['borderColor'] }} mt-1.5">
+                          <i class="fa-solid {{ $config['icon'] }} text-[10px]"></i>
+                        </div>
                       </div>
+                      <ul class="space-y-1.5">
+                        @forelse ($tierPrograms as $prog)
+                          @php
+                              $iconClass = $decorativeIcons[$loop->index % count($decorativeIcons)];
+                          @endphp
+                          <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                            <i class="fa-solid {{ $iconClass }} {{ $config['color'] }} text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                            <div class="flex flex-col text-left">
+                              <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">
+                                {{ mb_strtoupper($prog->university->display_name ?: $prog->university->name) }}
+                              </span>
+                              <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">{{ $prog->program_name }}</span>
+                            </div>
+                          </li>
+                        @empty
+                          <li class="text-center text-xs text-[var(--text-muted)] py-4">No programs available</li>
+                        @endforelse
+                      </ul>
                     </div>
-                    <ul class="space-y-1.5">
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">STANFORD</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Stanford Univ</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-flask text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">YALE</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Yale Univ</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-graduation-cap text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">CHICAGO</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">U of Chicago</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-building-columns text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UVA</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">U of Virginia</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-scale-balanced text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UPENN</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">U of Pennsylvania</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">HARVARD</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Harvard Univ</span>
-                        </div>
-                      </li>
-                    </ul>
                   </div>
-                </div>
-
-                <!-- Law Top 25 -->
-                <div class="group relative rounded-2xl border-2 border-red-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-red-500/10">
-                  <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
-                    <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
-                      <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">Law Top 25</h4>
-                      <p class="text-[10px] font-bold text-[var(--secondary)] tracking-widest uppercase mt-0.5">Highly Ranked</p>
-                      <div class="w-8 h-8 rounded-full bg-[var(--secondary)]/10 flex items-center justify-center text-[var(--secondary)] border border-[var(--secondary)]/20 mt-1.5">
-                        <i class="fa-solid fa-gavel text-[10px]"></i>
-                      </div>
-                    </div>
-                    <ul class="space-y-1.5">
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">USC</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">USC (Gould)</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-flask text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">WAKE FOREST</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Wake Forest U</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-graduation-cap text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">BYU</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">BYU (Clark)</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-building-columns text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">OHIO STATE</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Ohio State U</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-scale-balanced text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">WISCONSIN</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">U of Wisconsin</span>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-
-                <!-- Law Regional -->
-                <div class="group relative rounded-2xl border-2 border-purple-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10">
-                  <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
-                    <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
-                      <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">Law Regional</h4>
-                      <p class="text-[10px] font-bold text-[var(--accent)] tracking-widest uppercase mt-0.5">Regional Impact</p>
-                      <div class="w-8 h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/20 mt-1.5">
-                        <i class="fa-solid fa-map-location-dot text-[10px]"></i>
-                      </div>
-                    </div>
-                    <ul class="space-y-1.5">
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">TAMU</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Texas A&M</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-flask text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UCI</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UC Irvine</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-graduation-cap text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">BC</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Boston College</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-building-columns text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">BU</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Boston U</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-scale-balanced text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">RUTGERS</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Rutgers Univ</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">SYRACUSE</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Syracuse U</span>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
+                @endforeach
               </div>
             </div>
           </div>
@@ -899,291 +711,92 @@
                   categorized by prestige and placement power
                 </p>
               </div>
+              @php
+                  $therapyCols = [
+                      'cmhc' => [
+                          'title' => 'CMHC',
+                          'sub' => 'Clinical Mental Health',
+                          'icon' => 'fa-heart-pulse',
+                          'border' => 'border-blue-500',
+                          'shadow' => 'hover:shadow-blue-500/10',
+                          'color' => 'text-[var(--primary)]',
+                          'bg' => 'bg-[var(--primary)]/10',
+                          'borderColor' => 'border-[var(--primary)]/20',
+                      ],
+                      'msw' => [
+                          'title' => 'MSW',
+                          'sub' => 'Social Work',
+                          'icon' => 'fa-people-group',
+                          'border' => 'border-red-500',
+                          'shadow' => 'hover:shadow-red-500/10',
+                          'color' => 'text-[var(--secondary)]',
+                          'bg' => 'bg-[var(--secondary)]/10',
+                          'borderColor' => 'border-[var(--secondary)]/20',
+                      ],
+                      'mft' => [
+                          'title' => 'MFT',
+                          'sub' => 'Marriage & Family',
+                          'icon' => 'fa-people-roof',
+                          'border' => 'border-purple-500',
+                          'shadow' => 'hover:shadow-purple-500/10',
+                          'color' => 'text-[var(--accent)]',
+                          'bg' => 'bg-[var(--accent)]/10',
+                          'borderColor' => 'border-[var(--accent)]/20',
+                      ],
+                      'clinical_psy' => [
+                          'title' => 'Clinical PsyD',
+                          'sub' => 'Psychology',
+                          'icon' => 'fa-brain',
+                          'border' => 'border-blue-500',
+                          'shadow' => 'hover:shadow-blue-500/10',
+                          'color' => 'text-[var(--primary)]',
+                          'bg' => 'bg-[var(--primary)]/10',
+                          'borderColor' => 'border-[var(--primary)]/20',
+                      ],
+                  ];
+                  $decorativeIcons = [
+                      'fa-landmark',
+                      'fa-flask',
+                      'fa-graduation-cap',
+                      'fa-building-columns',
+                      'fa-scale-balanced',
+                  ];
+              @endphp
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div
-                  class="group relative rounded-2xl border-2 border-blue-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
-                >
-                  <div
-                    class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4"
-                  >
-                    <div
-                      class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3"
-                    >
-                      <h4
-                        class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]"
-                      >
-                        CMHC
-                      </h4>
-                      <p
-                        class="text-[10px] font-bold text-[var(--primary)] tracking-widest uppercase mt-0.5"
-                      >
-                        Clinical Mental Health
-                      </p>
-                      <div
-                        class="w-8 h-8 rounded-full bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] border border-[var(--primary)]/20 mt-1.5"
-                      >
-                        <i class="fa-solid fa-heart-pulse text-[10px]"></i>
+                @foreach ($therapyCols as $typeKey => $config)
+                  @php
+                      $typePrograms = isset($programsByType) ? $programsByType->get($typeKey, collect()) : collect();
+                  @endphp
+                  <div class="group relative rounded-2xl border-2 {{ $config['border'] }} bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg {{ $config['shadow'] }}">
+                    <div class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4">
+                      <div class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3">
+                        <h4 class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]">{{ $config['title'] }}</h4>
+                        <p class="text-[10px] font-bold {{ $config['color'] }} tracking-widest uppercase mt-0.5">{{ $config['sub'] }}</p>
+                        <div class="w-8 h-8 rounded-full {{ $config['bg'] }} flex items-center justify-center {{ $config['color'] }} border {{ $config['borderColor'] }} mt-1.5">
+                          <i class="fa-solid {{ $config['icon'] }} text-[10px]"></i>
+                        </div>
                       </div>
+                      <ul class="space-y-1.5">
+                        @forelse ($typePrograms as $prog)
+                          @php
+                              $iconClass = $decorativeIcons[$loop->index % count($decorativeIcons)];
+                          @endphp
+                          <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
+                            <i class="fa-solid {{ $iconClass }} {{ $config['color'] }} text-[10px] w-5 text-center shrink-0 mt-1"></i>
+                            <div class="flex flex-col text-left">
+                              <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">
+                                {{ mb_strtoupper($prog->university->display_name ?: $prog->university->name) }}
+                              </span>
+                              <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">{{ $prog->program_name }}</span>
+                            </div>
+                          </li>
+                        @empty
+                          <li class="text-center text-xs text-[var(--text-muted)] py-4">No programs available</li>
+                        @endforelse
+                      </ul>
                     </div>
-                    <ul class="space-y-1.5">
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">JOHNS HOPKINS</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Johns Hopkins University</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-flask text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UF</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">University of Florida</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-graduation-cap text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">SYRACUSE</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Syracuse University</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-building-columns text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UNCG</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UNC Greensboro</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-scale-balanced text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">JMU</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">James Madison University</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">CU DENVER</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">University of Colorado Denver</span>
-                        </div>
-                      </li>
-                    </ul>
                   </div>
-                </div>
-                <div
-                  class="group relative rounded-2xl border-2 border-red-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-red-500/10"
-                >
-                  <div
-                    class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4"
-                  >
-                    <div
-                      class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3"
-                    >
-                      <h4
-                        class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]"
-                      >
-                        MSW
-                      </h4>
-                      <p
-                        class="text-[10px] font-bold text-[var(--secondary)] tracking-widest uppercase mt-0.5"
-                      >
-                        Social Work
-                      </p>
-                      <div
-                        class="w-8 h-8 rounded-full bg-[var(--secondary)]/10 flex items-center justify-center text-[var(--secondary)] border border-[var(--secondary)]/20 mt-1.5"
-                      >
-                        <i class="fa-solid fa-people-group text-[10px]"></i>
-                      </div>
-                    </div>
-                    <ul class="space-y-1.5">
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">MICHIGAN</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">University of Michigan</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-flask text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">WASHU</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Washington U (Brown School)</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-graduation-cap text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">CHICAGO</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UChicago (Crown Family)</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-building-columns text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">BERKELEY</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UC Berkeley</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-scale-balanced text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">COLUMBIA</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Columbia University</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--secondary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">UNC</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">UNC Chapel Hill</span>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div
-                  class="group relative rounded-2xl border-2 border-purple-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10"
-                >
-                  <div
-                    class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4"
-                  >
-                    <div
-                      class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3"
-                    >
-                      <h4
-                        class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]"
-                      >
-                        MFT
-                      </h4>
-                      <p
-                        class="text-[10px] font-bold text-[var(--accent)] tracking-widest uppercase mt-0.5"
-                      >
-                        Marriage & Family
-                      </p>
-                      <div
-                        class="w-8 h-8 rounded-full bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] border border-[var(--accent)]/20 mt-1.5"
-                      >
-                        <i class="fa-solid fa-people-roof text-[10px]"></i>
-                      </div>
-                    </div>
-                    <ul class="space-y-1.5">
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">NORTHWESTERN</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Northwestern University</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-flask text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">SYRACUSE</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Syracuse University</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-graduation-cap text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">USD</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">University of San Diego</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-building-columns text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">SDSU</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">San Diego State University</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-scale-balanced text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">ALLIANT</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Alliant International (MFT)</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--accent)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">LOMA LINDA</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Loma Linda University</span>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-                <div
-                  class="group relative rounded-2xl border-2 border-blue-500 bg-white dark:bg-[var(--surface)] p-1 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
-                >
-                  <div
-                    class="h-full rounded-xl bg-white dark:bg-[var(--surface)] p-3 sm:p-4"
-                  >
-                    <div
-                      class="flex flex-col items-center text-center mb-3 border-b border-[var(--border)] pb-2 sm:pb-3"
-                    >
-                      <h4
-                        class="text-sm sm:text-base font-bold text-black dark:text-[var(--text-main)]"
-                      >
-                        Clinical PsyD
-                      </h4>
-                      <p
-                        class="text-[10px] font-bold text-[var(--primary)] tracking-widest uppercase mt-0.5"
-                      >
-                        Psychology
-                      </p>
-                      <div
-                        class="w-8 h-8 rounded-full bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)] border border-[var(--primary)]/20 mt-1.5"
-                      >
-                        <i class="fa-solid fa-brain text-[10px]"></i>
-                      </div>
-                    </div>
-                    <ul class="space-y-1.5">
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">PAU-STANFORD</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">PAU–Stanford PsyD Consortium</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-flask text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">YESHIVA</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Yeshiva (Ferkauf) PsyD</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-graduation-cap text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">WRIGHT</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">The Wright Institute PsyD</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-building-columns text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">FULLER</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Fuller PsyD Clinical Psychology</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-scale-balanced text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">WRIGHT STATE</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Wright State University PsyD</span>
-                        </div>
-                      </li>
-                      <li class="flex items-start gap-2 p-1.5 rounded-lg hover:bg-white/50 dark:hover:bg-white/5">
-                        <i class="fa-solid fa-landmark text-[var(--primary)] text-[10px] w-5 text-center shrink-0 mt-1"></i>
-                        <div class="flex flex-col text-left">
-                          <span class="text-[9px] font-bold text-[#8C5FE2] uppercase tracking-widest leading-none mb-1">AZUSA PACIFIC</span>
-                          <span class="text-xs sm:text-sm text-[var(--text-main)] font-semibold">Azusa Pacific University PsyD</span>
-                        </div>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
+                @endforeach
               </div>
             </div>
           </div>
@@ -1380,6 +993,11 @@
   </div>
 </section>
 
+    @php
+      $selectMentorUrl = auth()->user()?->hasRole('mentor')
+          ? route('mentor.dashboard')
+          : route('student.mentors.index');
+    @endphp
     <section
       class="w-full py-8 sm:py-10 page-section-4 text-[var(--text-main)] transition-colors duration-300"
       id="services"
@@ -1405,12 +1023,13 @@
             <span class="text-[var(--secondary)] font-bold">free</span>
             15-minute consultation.
           </p>
-          <button
-            onclick="window.gradpathsHandleSelectMentor(event)"
-            class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--primary)] text-white text-sm font-bold shadow-md hover:-translate-y-1 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer border-none"
+          <a
+            href="@guest {{ route('public.home') . '#login' }} @else {{ $selectMentorUrl }} @endguest"
+            @guest data-open-login @endguest
+            class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--primary)] text-white text-sm font-bold shadow-md hover:-translate-y-1 hover:shadow-lg active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer border-none no-underline"
           >
             Select Your Mentor <i class="fa-solid fa-arrow-right text-xs"></i>
-          </button>
+          </a>
         </div>
 
         <div
@@ -1462,13 +1081,14 @@
                   >
                 </div>
 
-                <button
-                  onclick="window.gradpathsHandleSelectMentor(event)"
-                  class="block w-full rounded-xl border-2 border-[var(--primary)] py-3.5 text-center text-sm font-bold text-[var(--primary)] hover:bg-[var(--primary)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent"
+                <a
+                  href="@guest {{ route('public.home') . '#login' }} @else {{ $selectMentorUrl }} @endguest"
+                  @guest data-open-login @endguest
+                  class="block w-full rounded-xl border-2 border-[var(--primary)] py-3.5 text-center text-sm font-bold text-[var(--primary)] hover:bg-[var(--primary)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent no-underline"
                 >
                   Select Your Mentor
                   <i class="fa-solid fa-arrow-right text-xs ml-1"></i>
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -1520,13 +1140,14 @@
                   >
                 </div>
 
-                <button
-                  onclick="window.gradpathsHandleSelectMentor(event)"
-                  class="block w-full rounded-xl border-2 border-[var(--secondary)] py-3.5 text-center text-sm font-bold text-[var(--secondary)] hover:bg-[var(--secondary)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent"
+                <a
+                  href="@guest {{ route('public.home') . '#login' }} @else {{ $selectMentorUrl }} @endguest"
+                  @guest data-open-login @endguest
+                  class="block w-full rounded-xl border-2 border-[var(--secondary)] py-3.5 text-center text-sm font-bold text-[var(--secondary)] hover:bg-[var(--secondary)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent no-underline"
                 >
                   Select Your Mentor
                   <i class="fa-solid fa-arrow-right text-xs ml-1"></i>
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -1579,13 +1200,14 @@
                   >
                 </div>
 
-                <button
-                  onclick="window.gradpathsHandleSelectMentor(event)"
-                  class="block w-full rounded-xl border-2 border-[var(--accent)] py-3.5 text-center text-sm font-bold text-[var(--accent)] hover:bg-[var(--accent)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent"
+                <a
+                  href="@guest {{ route('public.home') . '#login' }} @else {{ $selectMentorUrl }} @endguest"
+                  @guest data-open-login @endguest
+                  class="block w-full rounded-xl border-2 border-[var(--accent)] py-3.5 text-center text-sm font-bold text-[var(--accent)] hover:bg-[var(--accent)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent no-underline"
                 >
                   Select Your Mentor
                   <i class="fa-solid fa-arrow-right text-xs ml-1"></i>
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -1639,13 +1261,14 @@
                   >
                 </div>
 
-                <button
-                  onclick="window.gradpathsHandleSelectMentor(event)"
-                  class="block w-full rounded-xl border-2 border-[var(--primary)] py-3.5 text-center text-sm font-bold text-[var(--primary)] hover:bg-[var(--primary)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent"
+                <a
+                  href="@guest {{ route('public.home') . '#login' }} @else {{ $selectMentorUrl }} @endguest"
+                  @guest data-open-login @endguest
+                  class="block w-full rounded-xl border-2 border-[var(--primary)] py-3.5 text-center text-sm font-bold text-[var(--primary)] hover:bg-[var(--primary)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent no-underline"
                 >
                   Select Your Mentor
                   <i class="fa-solid fa-arrow-right text-xs ml-1"></i>
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -1699,13 +1322,14 @@
                   >
                 </div>
 
-                <button
-                  onclick="window.gradpathsHandleSelectMentor(event)"
-                  class="block w-full rounded-xl border-2 border-[var(--secondary)] py-3.5 text-center text-sm font-bold text-[var(--secondary)] hover:bg-[var(--secondary)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent"
+                <a
+                  href="@guest {{ route('public.home') . '#login' }} @else {{ $selectMentorUrl }} @endguest"
+                  @guest data-open-login @endguest
+                  class="block w-full rounded-xl border-2 border-[var(--secondary)] py-3.5 text-center text-sm font-bold text-[var(--secondary)] hover:bg-[var(--secondary)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent no-underline"
                 >
                   Select Your Mentor
                   <i class="fa-solid fa-arrow-right text-xs ml-1"></i>
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -1757,13 +1381,14 @@
                   >
                 </div>
 
-                <button
-                  onclick="window.gradpathsHandleSelectMentor(event)"
-                  class="block w-full rounded-xl border-2 border-[var(--accent)] py-3.5 text-center text-sm font-bold text-[var(--accent)] hover:bg-[var(--accent)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent"
+                <a
+                  href="@guest {{ route('public.home') . '#login' }} @else {{ $selectMentorUrl }} @endguest"
+                  @guest data-open-login @endguest
+                  class="block w-full rounded-xl border-2 border-[var(--accent)] py-3.5 text-center text-sm font-bold text-[var(--accent)] hover:bg-[var(--accent)]/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 cursor-pointer bg-transparent no-underline"
                 >
                   Select Your Mentor
                   <i class="fa-solid fa-arrow-right text-xs ml-1"></i>
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -1852,7 +1477,7 @@
               (no group discount).
             </p>
             <a
-              href="@guest {{ url('/#login') }} @else {{ url('/') }} @endguest"
+              href="@guest {{ route('public.home') . '#login' }} @else {{ url('/') }} @endguest"
               @guest data-open-login @endguest
               class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
             >
@@ -1960,7 +1585,7 @@
               </li>
             </ul>
             <a
-              href="@guest {{ url('/#login') }} @else {{ url('/#get-in-touch') }} @endguest"
+              href="@guest {{ route('public.home') . '#login' }} @else {{ route('public.home') . '#get-in-touch' }} @endguest"
               @guest data-open-login @endguest
               class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
             >
@@ -2053,7 +1678,7 @@
               </li>
             </ul>
             <a
-              href="@guest {{ url('/#login') }} @else {{ url('/#get-in-touch') }} @endguest"
+              href="@guest {{ route('public.home') . '#login' }} @else {{ route('public.home') . '#get-in-touch' }} @endguest"
               @guest data-open-login @endguest
               class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
             >
@@ -2160,7 +1785,7 @@
               </li>
             </ul>
             <a
-              href="@guest {{ url('/#login') }} @else {{ url('/#get-in-touch') }} @endguest"
+              href="@guest {{ route('public.home') . '#login' }} @else {{ route('public.home') . '#get-in-touch' }} @endguest"
               @guest data-open-login @endguest
               class="mt-auto w-full rounded-xl border-2 border-gray-300 dark:border-white py-3 text-center text-sm font-bold text-black dark:text-white hover:bg-black/5 dark:hover:bg-white/10 shadow-sm hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:shadow-sm transition-all duration-200 no-underline"
             >
@@ -2409,6 +2034,23 @@
             >
           </div>
 
+          @php
+              $mbaCount = isset($mentorCounts) ? $mentorCounts->get('mba', 0) : 0;
+              $lawCount = isset($mentorCounts) ? $mentorCounts->get('law', 0) : 0;
+              $therapyCount = isset($mentorCounts) ? $mentorCounts->get('therapy', 0) : 0;
+              $nursingCount = isset($mentorCounts) ? $mentorCounts->get('nursing', 0) : 0;
+              $accountingCount = isset($mentorCounts) ? $mentorCounts->get('accounting', 0) : 0;
+              $therapyPathwayCount = $therapyPathwayCount ?? 0;
+
+              $scale = 150;
+              $mbaHeight = min(($mbaCount / $scale) * 100, 100);
+              $lawHeight = min(($lawCount / $scale) * 100, 100);
+              $therapyPathwayHeight = min(($therapyPathwayCount / $scale) * 100, 100);
+              $therapyHeight = min(($therapyCount / $scale) * 100, 100);
+              $nursingHeight = min(($nursingCount / $scale) * 100, 100);
+              $accountingHeight = min(($accountingCount / $scale) * 100, 100);
+          @endphp
+
           <div
             id="chart-view-general"
             class="programs-chart-view overflow-x-auto pb-4"
@@ -2427,61 +2069,61 @@
                 <div class="chart-grid"></div>
                 <div class="chart-bars">
                   <div class="bar-col">
-                    <span class="bar-value">150</span>
+                    <span class="bar-value">{{ $mbaCount }}</span>
                     <div class="bar-area">
                       <div
                         class="bar bar-outline bar-blue"
-                        style="height: 100%"
+                        style="height: {{ $mbaHeight }}%"
                       ></div>
                     </div>
                     <span class="bar-label">MBA</span>
                   </div>
                   <div class="bar-col">
-                    <span class="bar-value">150</span>
+                    <span class="bar-value">{{ $lawCount }}</span>
                     <div class="bar-area">
                       <div
                         class="bar bar-outline bar-pink"
-                        style="height: 100%"
+                        style="height: {{ $lawHeight }}%"
                       ></div>
                     </div>
                     <span class="bar-label">Law</span>
                   </div>
                   <div class="bar-col">
-                    <span class="bar-value">150</span>
+                    <span class="bar-value">{{ $therapyPathwayCount }}</span>
                     <div class="bar-area">
                       <div
                         class="bar bar-outline bar-purple"
-                        style="height: 100%"
+                        style="height: {{ $therapyPathwayHeight }}%"
                       ></div>
                     </div>
                     <span class="bar-label">Therapy Pathway</span>
                   </div>
                   <div class="bar-col">
-                    <span class="bar-value">3</span>
+                    <span class="bar-value">{{ $therapyCount }}</span>
                     <div class="bar-area">
                       <div
                         class="bar bar-outline bar-therapy"
-                        style="height: 2%"
+                        style="height: {{ $therapyHeight }}%"
                       ></div>
                     </div>
                     <span class="bar-label">Therapy</span>
                   </div>
                   <div class="bar-col">
-                    <span class="bar-value">2</span>
+                    <span class="bar-value">{{ $nursingCount }}</span>
                     <div class="bar-area">
                       <div
                         class="bar bar-outline bar-nursing"
-                        style="height: 1.33%"
+                        style="height: {{ $nursingHeight }}%"
                       ></div>
                     </div>
                     <span class="bar-label">Nursing</span>
                   </div>
                   <div class="bar-col">
-                    <span class="bar-value">5</span>
+                    <span class="bar-value">{{ $accountingCount }}</span>
                     <div class="bar-area">
                       <div
                         class="bar bar-outline bar-accounting"
-                        style="height: 3.33%"
+                        style="height: {{ $accountingHeight }}%"
                       ></div>
                     </div>
                     <span class="bar-label">Accounting</span>
@@ -2524,31 +2166,31 @@
                 <div class="chart-grid"></div>
                 <div class="chart-bars">
                   <div class="bar-col">
-                    <span class="bar-value">150</span>
+                    <span class="bar-value">{{ $mbaCount }}</span>
                     <div class="bar-area">
                       <div
                         class="bar bar-outline bar-blue"
-                        style="height: 100%"
+                        style="height: {{ $mbaHeight }}%"
                       ></div>
                     </div>
                     <span class="bar-label">MBA</span>
                   </div>
                   <div class="bar-col">
-                    <span class="bar-value">150</span>
+                    <span class="bar-value">{{ $lawCount }}</span>
                     <div class="bar-area">
                       <div
                         class="bar bar-outline bar-pink"
-                        style="height: 100%"
+                        style="height: {{ $lawHeight }}%"
                       ></div>
                     </div>
                     <span class="bar-label">Law</span>
                   </div>
                   <div class="bar-col">
-                    <span class="bar-value">150</span>
+                    <span class="bar-value">{{ $therapyPathwayCount }}</span>
                     <div class="bar-area">
                       <div
                         class="bar bar-outline bar-purple"
-                        style="height: 100%"
+                        style="height: {{ $therapyPathwayHeight }}%"
                       ></div>
                     </div>
                     <span class="bar-label">Therapy Pathway</span>
@@ -2591,31 +2233,31 @@
                 <div class="chart-grid"></div>
                 <div class="chart-bars">
                   <div class="bar-col">
-                    <span class="bar-value">3</span>
+                    <span class="bar-value">{{ $therapyCount }}</span>
                     <div class="bar-area">
                       <div
                         class="bar bar-outline bar-therapy"
-                        style="height: 2%"
+                        style="height: {{ $therapyHeight }}%"
                       ></div>
                     </div>
                     <span class="bar-label">Therapy</span>
                   </div>
                   <div class="bar-col">
-                    <span class="bar-value">2</span>
+                    <span class="bar-value">{{ $nursingCount }}</span>
                     <div class="bar-area">
                       <div
                         class="bar bar-outline bar-nursing"
-                        style="height: 1.33%"
+                        style="height: {{ $nursingHeight }}%"
                       ></div>
                     </div>
                     <span class="bar-label">Nursing</span>
                   </div>
                   <div class="bar-col">
-                    <span class="bar-value">5</span>
+                    <span class="bar-value">{{ $accountingCount }}</span>
                     <div class="bar-area">
                       <div
                         class="bar bar-outline bar-accounting"
-                        style="height: 3.33%"
+                        style="height: {{ $accountingHeight }}%"
                       ></div>
                     </div>
                     <span class="bar-label">Accounting</span>
@@ -2651,16 +2293,14 @@
               Graduate Programs
             </h3>
             <ul class="space-y-2 text-sm text-[var(--text-main)]">
-              <li class="flex items-start gap-2">
-                <span class="text-[var(--primary)] mt-0.5">•</span> MBA
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="text-[var(--primary)] mt-0.5">•</span> Law
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="text-[var(--primary)] mt-0.5">•</span> Therapy
-                Pathways: CMHC, MSW, MFT, Clinical Psych
-              </li>
+              @forelse (isset($disciplinesByType) ? $disciplinesByType->get('graduate', collect()) : collect() as $item)
+                <li class="flex items-start gap-2">
+                  <span class="text-[var(--primary)] mt-0.5">•</span>
+                  <span>{{ $item->name }}{{ $item->description ? ': ' . $item->description : '' }}</span>
+                </li>
+              @empty
+                <li class="text-[var(--text-muted)] text-xs">No graduate programs listed</li>
+              @endforelse
             </ul>
           </div>
           <div
@@ -2672,19 +2312,14 @@
               Professionals
             </h3>
             <ul class="space-y-2 text-sm text-[var(--text-main)]">
-              <li class="flex items-start gap-2">
-                <span class="text-[var(--primary)] mt-0.5">•</span> Therapy:
-                real world guidance, licensure pathway planning, application
-                support
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="text-[var(--primary)] mt-0.5">•</span> Nursing: RN
-                and NP pathway mentorship, graduate school planning
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="text-[var(--primary)] mt-0.5">•</span> Accounting:
-                CPA pathway guidance, recruiting preparation, resume strategy
-              </li>
+              @forelse (isset($disciplinesByType) ? $disciplinesByType->get('professional', collect()) : collect() as $item)
+                <li class="flex items-start gap-2">
+                  <span class="text-[var(--primary)] mt-0.5">•</span>
+                  <span>{{ $item->name }}{{ $item->description ? ': ' . $item->description : '' }}</span>
+                </li>
+              @empty
+                <li class="text-[var(--text-muted)] text-xs">No professional tracks listed</li>
+              @endforelse
             </ul>
           </div>
           <div
@@ -2696,22 +2331,14 @@
               General
             </h3>
             <ul class="space-y-2 text-sm text-[var(--text-main)]">
-              <li class="flex items-start gap-2">
-                <span class="text-[var(--primary)] mt-0.5">•</span> All
-                categories in one view
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="text-[var(--primary)] mt-0.5">•</span> Clear labels
-                and structured layout
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="text-[var(--primary)] mt-0.5">•</span> Built to
-                expand as Grads Paths grows
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="text-[var(--primary)] mt-0.5">•</span> COMING SOON
-                placeholders included
-              </li>
+              @forelse (isset($disciplinesByType) ? $disciplinesByType->get('general', collect()) : collect() as $item)
+                <li class="flex items-start gap-2">
+                  <span class="text-[var(--primary)] mt-0.5">•</span>
+                  <span>{{ $item->name }}</span>
+                </li>
+              @empty
+                <li class="text-[var(--text-muted)] text-xs">No general items listed</li>
+              @endforelse
             </ul>
           </div>
         </div>
@@ -2975,7 +2602,7 @@
           </div>
           <div class="text-center mt-8">
             <a
-              href="{{ url('/#feedback') }}"
+              href="{{ route('public.home') . '#feedback' }}"
               id="btn-see-feedback"
               class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--primary)] text-white text-sm font-bold hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 no-underline"
             >
@@ -3564,7 +3191,7 @@
             class="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto justify-center"
           >
             <a
-              href="{{ url('/#login') }}"
+              href="{{ route('public.home') . '#login' }}"
               @guest data-open-login @endguest
               class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white text-black text-sm font-bold uppercase tracking-wide hover:bg-gray-100 transition-colors shadow-lg no-underline"
             >
@@ -3579,8 +3206,8 @@
               </span>
             </a>
             <a
-              href="{{ url('/#how') }}"
-              class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-[#2dd4bf] text-black text-sm font-bold uppercase tracking-wide hover:opacity-95 transition-opacity shadow-lg no-underline"
+              href="{{ route('public.how-it-works') }}"
+              class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-[#2dd4bf] text-black text-sm font-bold uppercase tracking-wide hover:opacity-95 hover:scale-105 transition-all shadow-lg ring-2 ring-[#2dd4bf]/50 ring-offset-2 ring-offset-transparent animate-pulse-slow no-underline"
             >
               HOW IT WORKS
               <span
@@ -3598,7 +3225,7 @@
         <!-- Brand and tagline -->
         <div class="flex flex-col gap-4 mb-12">
           <a
-            href="{{ url('/') }}"
+            href="{{ route('public.home') }}"
             class="inline-flex items-center gap-2 no-underline"
           >
             <i
@@ -3633,19 +3260,19 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8 mb-12">
           <div class="footer-col">
             <h3 class="footer-col-title">Explore</h3>
-            <a href="{{ url('/') }}">Home</a>
+            <a href="{{ route('public.home') }}">Home</a>
             <a href="#how">How It Works</a>
-            <a href="{{ url('/#services') }}">Our Services</a>
+            <a href="{{ route('public.home') . '#services' }}">Our Services</a>
             <a href="#why-us">Why Grads Paths</a>
           </div>
           <div class="footer-col">
             <h3 class="footer-col-title">Services</h3>
-            <a href="@guest {{ url('/#login') }} @else {{ url('/') }} @endguest" @guest data-open-login @endguest>Find Mentors</a>
-            <a href="{{ url('/#meeting-types') }}">Meeting Types</a>
+            <a href="@guest {{ route('public.home') . '#login' }} @else {{ url('/') }} @endguest" @guest data-open-login @endguest>Find Mentors</a>
+            <a href="{{ route('public.home') . '#meeting-types' }}">Meeting Types</a>
             <a href="#programs-disciplines">Programs Offered</a>
             <a href="#programs-disciplines">Professional Disciplines</a>
-            <a href="{{ url('/#signup') }}" id="footer-signup">Sign Up</a>
-            <a href="{{ url('/#login') }}" id="footer-login">Log In</a>
+            <a href="{{ route('public.home') . '#signup' }}" id="footer-signup">Sign Up</a>
+            <a href="{{ route('public.home') . '#login' }}" id="footer-login">Log In</a>
           </div>
           <div class="footer-col">
             <h3 class="footer-col-title">Connect</h3>

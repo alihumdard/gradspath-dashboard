@@ -70,7 +70,7 @@
         class="w-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between relative h-full"
       >
         <a
-          href="{{ url('/') }}"
+          href="{{ route('public.home') }}"
           class="flex items-center shrink-0 z-10"
           aria-label="Home - Grads Paths"
         >
@@ -86,22 +86,22 @@
           aria-label="Primary"
         >
           <a
-            href="{{ url('/') }}"
+            href="{{ route('public.home') }}"
             class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
             >Home</a
           >
           <a
-            href="{{ url('/') }}"
+            href="{{ route('public.home') }}"
             class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
             >Find Mentors</a
           >
           <a
-            href="{{ url('/#how') }}"
+            href="{{ route('public.home') . '#how' }}"
             class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
             >How it Works</a
           >
           <a
-            href="{{ url('/#why-us') }}"
+            href="{{ route('public.home') . '#why-us' }}"
             class="nav-underline text-[var(--text-main)] hover:text-[var(--primary)] transition-colors whitespace-nowrap"
             >Why Us</a
           >
@@ -142,7 +142,7 @@
           </button>
           @auth
             <a
-              href="{{ url('/') }}"
+              href="{{ route('public.home') }}"
               class="inline-flex items-center justify-center gap-2 px-3 sm:px-[30px] py-1.5 sm:py-[10px] rounded-full min-w-0 sm:min-w-[112px] text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all dark:hover:opacity-80"
             >
               Dashboard
@@ -186,22 +186,22 @@
       >
         <nav class="flex flex-col py-2 font-semibold text-sm">
           <a
-            href="{{ url('/') }}"
+            href="{{ route('public.home') }}"
             class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
             >Home</a
           >
           <a
-            href="{{ url('/') }}"
+            href="{{ route('public.home') }}"
             class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
             >Find Mentors</a
           >
           <a
-            href="{{ url('/#how') }}"
+            href="{{ route('public.home') . '#how' }}"
             class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
             >How it Works</a
           >
           <a
-            href="{{ url('/#why-us') }}"
+            href="{{ route('public.home') . '#why-us' }}"
             class="px-6 py-3 text-black dark:text-white hover:bg-slate-100 dark:hover:bg-white/5 nav-underline"
             >Why Us</a
           >
@@ -211,7 +211,7 @@
         >
           @auth
             <a
-              href="{{ url('/') }}"
+              href="{{ route('public.home') }}"
               class="flex-1 py-[12px] rounded-full text-sm font-bold text-white bg-gradient-to-r from-[#8C5FE2] to-[#E57CE1] hover:opacity-90 transition-all text-center"
             >
               Dashboard
@@ -636,22 +636,22 @@
             <li class="flex items-start gap-2"><span class="w-2 h-2 rounded-full bg-[#6D28D9] mt-1.5 shrink-0"></span> Clear next steps after every session</li>
           </ul>
           <div class="flex flex-wrap gap-3">
-            <a href="{{ url('/#get-in-touch') }}"
+            <a href="{{ route('public.home') . '#get-in-touch' }}"
               class="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-bold text-white bg-[#E92E88] hover:opacity-90 transition-opacity">Start free consult</a>
-            <a href="{{ url('/') }}"
+            <a href="{{ route('public.home') }}"
               class="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-bold text-[#6D28D9] dark:text-white/90 bg-white dark:bg-transparent border-2 border-[#6D28D9] dark:border-white/90 hover:bg-[#6D28D9]/5 dark:hover:bg-white/10 transition-colors">Browse mentors</a>
           </div>
         </div>
       </div>
     </section>
 
-    <p class="text-center"><a href="{{ url('/') }}" class="font-semibold text-[var(--primary)] hover:underline">Back to Home</a></p>
+    <p class="text-center"><a href="{{ route('public.home') }}" class="font-semibold text-[var(--primary)] hover:underline">Back to Home</a></p>
   </main>
 
   <footer class="site-footer pt-16 pb-10 font-sans" aria-label="Footer">
     <div class="max-w-6xl mx-auto px-4 sm:px-6">
       <div class="flex flex-col gap-4 mb-12">
-        <a href="{{ url('/') }}" class="inline-flex items-center gap-2 no-underline">
+        <a href="{{ route('public.home') }}" class="inline-flex items-center gap-2 no-underline">
           <i class="fa-solid fa-graduation-cap text-[#71a4f4] text-2xl" aria-hidden="true"></i>
           <span class="footer-brand">Grads Paths</span>
         </a>
@@ -670,26 +670,26 @@
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8 mb-12">
         <div class="footer-col">
           <h3 class="footer-col-title">Explore</h3>
-          <a href="{{ url('/') }}">Home</a>
-          <a href="{{ url('/#how') }}">How It Works</a>
-          <a href="{{ url('/#services') }}">Our Services</a>
+          <a href="{{ route('public.home') }}">Home</a>
+          <a href="{{ route('public.home') . '#how' }}">How It Works</a>
+          <a href="{{ route('public.home') . '#services' }}">Our Services</a>
           <a href="{{ route('public.why-us') }}">Why Grads Paths</a>
         </div>
         <div class="footer-col">
           <h3 class="footer-col-title">Services</h3>
-          <a href="{{ url('/') }}">Find Mentors</a>
-          <a href="{{ url('/#meeting-types') }}">Meeting Types</a>
-          <a href="{{ url('/#programs-disciplines') }}">Programs Offered</a>
-          <a href="{{ url('/#programs-disciplines') }}">Professional Disciplines</a>
+          <a href="{{ route('public.home') }}">Find Mentors</a>
+          <a href="{{ route('public.home') . '#meeting-types' }}">Meeting Types</a>
+          <a href="{{ route('public.home') . '#programs-disciplines' }}">Programs Offered</a>
+          <a href="{{ route('public.home') . '#programs-disciplines' }}">Professional Disciplines</a>
         </div>
         <div class="footer-col">
           <h3 class="footer-col-title">Connect</h3>
-          <a href="{{ url('/#get-in-touch') }}"><i class="fa-solid fa-envelope mr-1.5 text-sm opacity-90" aria-hidden="true"></i> Contact Us</a>
+          <a href="{{ route('public.home') . '#get-in-touch' }}"><i class="fa-solid fa-envelope mr-1.5 text-sm opacity-90" aria-hidden="true"></i> Contact Us</a>
         </div>
       </div>
       <div class="footer-bottom pt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-t border-[#3b4656]">
         <nav class="flex flex-wrap items-center gap-x-5 gap-y-1" aria-label="Footer legal and contact">
-          <a href="{{ url('/#get-in-touch') }}"><i class="fa-solid fa-envelope mr-1 text-sm opacity-90" aria-hidden="true"></i> Contact Us</a>
+          <a href="{{ route('public.home') . '#get-in-touch' }}"><i class="fa-solid fa-envelope mr-1 text-sm opacity-90" aria-hidden="true"></i> Contact Us</a>
           <a href="{{ route('public.privacy') }}">Privacy Policy</a>
           <a href="{{ route('public.terms') }}">Terms of Service</a>
         </nav>

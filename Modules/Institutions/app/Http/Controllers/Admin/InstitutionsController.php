@@ -76,7 +76,7 @@ class InstitutionsController extends Controller
         $university = University::query()->findOrFail($id);
         $university->delete();
 
-        return back()->with('success', 'Institution deleted successfully.');
+        return $this->redirectToManualActions('institutions', 'Institution deleted successfully.');
     }
 
     public function updateFeatured(Request $request): RedirectResponse

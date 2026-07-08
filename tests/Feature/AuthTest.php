@@ -42,9 +42,16 @@ it('renders auth pages', function () {
         ->assertDontSee('Remember your password?')
         ->assertDontSee("Don't have an account?");
 
-    $this->get('/reset-password/test-token')
+    $user = User::factory()->create([
+        'email' => 'reset-view-' . Str::uuid() . '@example.edu',
+        'is_active' => true,
+    ]);
+    app(\App\Services\PasswordResetCodeService::class)->send($user, true);
+    \App\Models\PasswordResetCode::query()->where('email', $user->email)->update(['verified' => true]);
+
+    $this->get('/reset-password?email=' . urlencode($user->email))
         ->assertOk()
-        ->assertViewHas('token', 'test-token')
+        ->assertViewHas('email', $user->email)
         ->assertSee('password-toggle', false)
         ->assertDontSee('Remember your password?');
 });
@@ -766,15 +773,17 @@ it('blocks inactive authenticated users through active middleware', function () 
 });
 
 it('sends reset link through password broker', function () {
-    Password::shouldReceive('sendResetLink')
-        ->once()
-        ->andReturn(Password::RESET_LINK_SENT);
+    $user = User::factory()->create([
+        'email' => 'forgot-' . Str::uuid() . '@example.com',
+        'is_active' => true,
+    ]);
 
-    $this->post('/forgot-password', ['email' => 'forgot@example.com'])
+    $this->post('/forgot-password', ['email' => $user->email])
+        ->assertRedirect(route('password.reset.verify', ['email' => $user->email]))
         ->assertSessionHas('status');
 });
 
-it('sends branded reset password emails', function () {
+it('sends branded reset password codes', function () {
     Notification::fake();
 
     $user = User::factory()->create([
@@ -786,13 +795,15 @@ it('sends branded reset password emails', function () {
     $this->post('/forgot-password', ['email' => $user->email])
         ->assertSessionHas('status');
 
-    Notification::assertSentTo($user, QueuedResetPassword::class, function (QueuedResetPassword $notification) use ($user) {
-        $mail = $notification->toMail($user);
+    $notifiableUser = \App\Models\User::query()->findOrFail($user->id);
 
-        return $mail->view === 'emails.reset-password'
+    Notification::assertSentTo($notifiableUser, \App\Notifications\QueuedPasswordResetCode::class, function (\App\Notifications\QueuedPasswordResetCode $notification) use ($notifiableUser) {
+        $mail = $notification->toMail($notifiableUser);
+
+        return $mail->view === 'emails.verify-email'
             && $mail->subject === 'Reset your Grads Paths password'
             && $mail->viewData['userName'] === 'Reset Student'
-            && str_contains($mail->viewData['url'], '/reset-password/');
+            && $mail->viewData['code'] === $notification->code;
     });
 });
 
@@ -802,7 +813,7 @@ it('renders the admin forgot-password page under the secret admin path', functio
         ->assertViewIs('auth::forgot-password');
 });
 
-it('sends admin reset emails with the secret admin reset URL', function () {
+it('sends admin reset codes with the same branded template', function () {
     Notification::fake();
 
     $admin = User::factory()->create([
@@ -813,21 +824,20 @@ it('sends admin reset emails with the secret admin reset URL', function () {
     $admin->assignRole('admin');
 
     $this->post(route('admin.password.email'), ['email' => $admin->email])
+        ->assertRedirect(route('admin.password.reset.verify', ['email' => $admin->email]))
         ->assertSessionHas('status');
 
     $notifiableAdmin = \App\Models\User::query()->findOrFail($admin->id);
 
-    Notification::assertSentTo($notifiableAdmin, QueuedResetPassword::class, function (QueuedResetPassword $notification) use ($notifiableAdmin) {
+    Notification::assertSentTo($notifiableAdmin, \App\Notifications\QueuedPasswordResetCode::class, function (\App\Notifications\QueuedPasswordResetCode $notification) use ($notifiableAdmin) {
         $mail = $notification->toMail($notifiableAdmin);
 
-        return $mail->view === 'emails.reset-password'
-            && $mail->subject === 'Reset your Grads Paths password'
-            && str_contains($mail->viewData['url'], '/'.config('auth.admin_path').'/reset-password/')
-            && str_contains($mail->viewData['url'], 'email='.urlencode($notifiableAdmin->email));
+        return $mail->view === 'emails.verify-email'
+            && $mail->subject === 'Reset your Grads Paths password';
     });
 });
 
-it('does not send admin reset emails to non-admin users or unknown emails', function () {
+it('does not send admin reset codes to non-admin users or unknown emails', function () {
     Notification::fake();
 
     $student = User::factory()->create([
@@ -844,20 +854,21 @@ it('does not send admin reset emails to non-admin users or unknown emails', func
 
     $notifiableStudent = \App\Models\User::query()->findOrFail($student->id);
 
-    Notification::assertNotSentTo($notifiableStudent, QueuedResetPassword::class);
+    Notification::assertNotSentTo($notifiableStudent, \App\Notifications\QueuedPasswordResetCode::class);
 });
 
-it('resets an admin password through the admin reset route', function () {
+it('resets an admin password after verifying the reset code', function () {
     $admin = User::factory()->create([
         'email' => 'admin-password-reset-' . Str::uuid() . '@example.com',
         'password' => Hash::make('OldPassword123'),
         'is_active' => true,
     ]);
     $admin->assignRole('admin');
-    $token = Password::broker()->createToken($admin);
+
+    app(\App\Services\PasswordResetCodeService::class)->send($admin, true);
+    \App\Models\PasswordResetCode::query()->where('email', $admin->email)->update(['verified' => true]);
 
     $this->post(route('admin.password.update'), [
-        'token' => $token,
         'email' => $admin->email,
         'password' => 'NewPassword123',
         'password_confirmation' => 'NewPassword123',
@@ -875,24 +886,28 @@ it('returns validation error for invalid forgot password email', function () {
         ->assertSessionHasErrors('email');
 });
 
-it('resets password through password broker', function () {
+it('verifies a password reset code and allows setting a new password', function () {
     $user = User::factory()->create([
-        'email' => 'reset-user@example.com',
+        'email' => 'reset-user-' . Str::uuid() . '@example.com',
         'password' => Hash::make('OldPassword123'),
         'is_active' => true,
     ]);
 
-    Password::shouldReceive('reset')
-        ->once()
-        ->andReturnUsing(function (array $credentials, Closure $callback) use ($user) {
-            $callback($user, $credentials['password']);
+    $service = app(\App\Services\PasswordResetCodeService::class);
+    $service->send($user, true);
+    $code = \App\Models\PasswordResetCode::query()->where('email', $user->email)->first();
 
-            return Password::PASSWORD_RESET;
-        });
+    // Directly seed a known code since the real code is only available via the notification.
+    $knownCode = '123456';
+    $code->update(['code_hash' => Hash::make($knownCode)]);
+
+    $this->post(route('password.reset.verify.post'), [
+        'email' => $user->email,
+        'code' => $knownCode,
+    ])->assertRedirect(route('password.reset', ['email' => $user->email]));
 
     $this->post('/reset-password', [
-        'token' => 'valid-token',
-        'email' => 'reset-user@example.com',
+        'email' => $user->email,
         'password' => 'NewPassword123',
         'password_confirmation' => 'NewPassword123',
     ])
@@ -902,6 +917,7 @@ it('resets password through password broker', function () {
     $user->refresh();
 
     expect(Hash::check('NewPassword123', $user->password))->toBeTrue();
+    expect(\App\Models\PasswordResetCode::query()->where('email', $user->email)->exists())->toBeFalse();
 });
 
 it('shows the reset-password success toast on the login page', function () {
@@ -913,14 +929,14 @@ it('shows the reset-password success toast on the login page', function () {
         ->assertSee('appToastViewport');
 });
 
-it('returns broker error when password reset fails', function () {
-    Password::shouldReceive('reset')
-        ->once()
-        ->andReturn(Password::INVALID_TOKEN);
+it('rejects a password reset when the code has not been verified', function () {
+    $user = User::factory()->create([
+        'email' => 'reset-fail-' . Str::uuid() . '@example.com',
+        'is_active' => true,
+    ]);
 
     $this->post('/reset-password', [
-        'token' => 'invalid-token',
-        'email' => 'reset-fail@example.com',
+        'email' => $user->email,
         'password' => 'NewPassword123',
         'password_confirmation' => 'NewPassword123',
     ])->assertSessionHasErrors('email');

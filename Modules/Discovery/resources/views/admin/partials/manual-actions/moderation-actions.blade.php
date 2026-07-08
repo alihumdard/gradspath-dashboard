@@ -25,14 +25,18 @@
         @method('PATCH')
         <input type="hidden" name="manual_section" value="feedback" />
 
-        <label class="manual-field manual-field--full">
+        <label class="manual-field manual-field--full manual-university-picker" data-feedback-picker>
           <span>Feedback item</span>
-          <select name="feedback_id" id="manualFeedbackSelect" required>
-            <option value="">Select feedback</option>
-            @foreach ($feedbackItems as $item)
-              <option value="{{ $item['id'] }}" @selected((string) old('feedback_id') === (string) $item['id'])>{{ $item['label'] }}</option>
-            @endforeach
-          </select>
+          <input
+            id="manualFeedbackSearch"
+            type="text"
+            value="{{ old('feedback_id') ? (collect($feedbackItems)->firstWhere('id', old('feedback_id'))['label'] ?? '') : '' }}"
+            placeholder="Search by feedback ID, mentor or student..."
+            autocomplete="off"
+            data-feedback-picker-search
+          />
+          <input type="hidden" name="feedback_id" id="manualFeedbackSelect" value="{{ old('feedback_id') }}" data-feedback-picker-id required />
+          <div class="manual-picker-results" data-feedback-picker-results hidden></div>
           @error('feedback_id')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror
@@ -89,14 +93,18 @@
         @method('PATCH')
         <input type="hidden" name="manual_section" value="bookings" />
 
-        <label class="manual-field manual-field--full">
+        <label class="manual-field manual-field--full manual-university-picker" data-booking-picker>
           <span>Booking</span>
-          <select name="booking_id" required>
-            <option value="">Select booking</option>
-            @foreach ($bookingItems as $item)
-              <option value="{{ $item['id'] }}" @selected((string) old('booking_id') === (string) $item['id'])>{{ $item['label'] }}</option>
-            @endforeach
-          </select>
+          <input
+            id="manualBookingSearch"
+            type="text"
+            value="{{ old('booking_id') ? (collect($bookingItems)->firstWhere('id', old('booking_id'))['label'] ?? '') : '' }}"
+            placeholder="Search by booking ID, service or booker..."
+            autocomplete="off"
+            data-booking-picker-search
+          />
+          <input type="hidden" name="booking_id" id="manualBookingSelect" value="{{ old('booking_id') }}" data-booking-picker-id required />
+          <div class="manual-picker-results" data-booking-picker-results hidden></div>
           @error('booking_id')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror

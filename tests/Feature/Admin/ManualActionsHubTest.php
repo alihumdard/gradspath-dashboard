@@ -140,7 +140,7 @@ it('renders the manual actions hub with grouped sections', function () {
         ->assertSee('Update service details')
         ->assertSee('Session duration (minutes)')
         ->assertSee('Upload logo')
-        ->assertSee('Logo URL or public path')
+        ->assertSee('Replace logo upload')
         ->assertDontSee('Alpha-2 code')
         ->assertSee('Update feedback')
         ->assertDontSee('Admin note')
@@ -429,6 +429,8 @@ it('renders and saves manual institution and program edits', function () {
         ->assertSee('manualProgramEditForm', false)
         ->assertSee('university_logo/existing.png', false);
 
+    $logo = UploadedFile::fake()->create('edited-logo.png', 4, 'image/png');
+
     $this->actingAs($admin)
         ->patch(route('admin.manual-actions.institutions.update', $university), [
             'name' => 'Edited University',
@@ -439,7 +441,7 @@ it('renders and saves manual institution and program edits', function () {
             'state_province' => 'New York',
             'domains' => "edited.edu\nalumni.edited.edu",
             'web_pages' => "https://edited.edu",
-            'logo_url' => 'university_logo/edited.png',
+            'logo_file' => $logo,
             'is_active' => '1',
             'manual_section' => 'institutions',
         ])
@@ -466,8 +468,11 @@ it('renders and saves manual institution and program edits', function () {
         'display_name' => 'Edited U',
         'alpha_two_code' => 'US',
         'city' => 'New York',
-        'logo_url' => 'university_logo/edited.png',
     ]);
+
+    $updatedUniversity = $university->fresh();
+    expect($updatedUniversity->logo_url)->toStartWith('university_logo/edited-university-');
+    @unlink(public_path($updatedUniversity->logo_url));
 
     expect($university->fresh()->domains)->toBe(['edited.edu', 'alumni.edited.edu'])
         ->and($university->fresh()->web_pages)->toBe(['https://edited.edu']);
@@ -696,4 +701,22 @@ it('blocks non admin users from the manual actions hub and endpoints', function 
             'manual_section' => 'credits',
         ])
         ->assertForbidden();
+});
+
+it('allows admin users to delete an institution', function () {
+    $admin = createManualActionsAdmin();
+    $university = createManualUniversity([
+        'name' => 'University to Delete',
+        'display_name' => 'Delete U',
+    ]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.manual-actions.institutions.destroy', $university->id))
+        ->assertRedirect(route('admin.manual-actions'))
+        ->assertSessionHas('manual_section', 'institutions')
+        ->assertSessionHas('success', 'Institution deleted successfully.');
+
+    $this->assertDatabaseMissing('universities', [
+        'id' => $university->id,
+    ]);
 });

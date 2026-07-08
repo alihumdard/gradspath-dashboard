@@ -169,14 +169,18 @@
         @csrf
         <input type="hidden" name="manual_section" value="credits" />
 
-        <label class="manual-field">
+        <label class="manual-field manual-university-picker" data-user-picker>
           <span>User</span>
-          <select name="user_id" id="manualUserSelect" required>
-            <option value="">Select a user</option>
-            @foreach ($users as $user)
-              <option value="{{ $user['id'] }}" @selected((string) old('user_id') === (string) $user['id'])>{{ $user['label'] }}</option>
-            @endforeach
-          </select>
+          <input
+            id="manualUserSearch"
+            type="text"
+            value="{{ old('user_id') ? (collect($users)->firstWhere('id', old('user_id'))['label'] ?? '') : '' }}"
+            placeholder="Search by user name or email..."
+            autocomplete="off"
+            data-user-picker-search
+          />
+          <input type="hidden" name="user_id" id="manualUserSelect" value="{{ old('user_id') }}" data-user-picker-id required />
+          <div class="manual-picker-results" data-user-picker-results hidden></div>
           @error('user_id')
             <small class="manual-field__error">{{ $message }}</small>
           @enderror

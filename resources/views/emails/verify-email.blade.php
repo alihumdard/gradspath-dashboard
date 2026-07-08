@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify your Grads Paths Account</title>
+    <title>{{ $emailTitle ?? 'Verify your Grads Paths Account' }}</title>
     <style>
         body {
             margin: 0;
@@ -144,8 +144,8 @@
         </table>
 
         <div class="card">
-            <h1>Verify your account</h1>
-            <p>Use the following verification code to verify your <strong>Grads Paths</strong> account.</p>
+            <h1>{{ $heading ?? 'Verify your account' }}</h1>
+            <p>{{ $subtitle ?? 'Use the following verification code to verify your ' }}@if(!isset($subtitle))<strong>Grads Paths</strong> account.@endif</p>
 
             <div class="code-panel">
                 <div class="code">{{ $code }}</div>

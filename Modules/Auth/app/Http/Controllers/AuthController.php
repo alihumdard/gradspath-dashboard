@@ -23,6 +23,7 @@ use Modules\Auth\app\Http\Requests\RegisterRequest;
 use Modules\Auth\app\Http\Requests\ResetPasswordRequest;
 use Modules\Auth\app\Services\AuthService;
 use App\Services\EmailVerificationCodeService;
+use App\Services\PasswordResetCodeService;
 use Modules\Institutions\app\Models\FeaturedInstitution;
 use Modules\Institutions\app\Models\University;
 use Throwable;
@@ -32,6 +33,7 @@ class AuthController extends Controller
     public function __construct(
         private readonly AuthService $authService,
         private readonly EmailVerificationCodeService $verificationCodes,
+        private readonly PasswordResetCodeService $passwordResetCodes,
     ) {}
 
     public function showLogin(): View
@@ -104,11 +106,16 @@ class AuthController extends Controller
         ]);
     }
 
-    public function showResetPassword(Request $request, string $token): View
+    public function showResetPassword(Request $request): View|RedirectResponse
     {
+        $email = (string) $request->query('email');
+
+        if (!$this->passwordResetCodes->isVerified($email)) {
+            return redirect()->route('password.request');
+        }
+
         return view('auth::reset-password', [
-            'token' => $token,
-            'email' => $request->query('email'),
+            'email' => $email,
             'passwordUpdateRoute' => route('password.update'),
         ]);
     }
@@ -120,13 +127,107 @@ class AuthController extends Controller
         ]);
     }
 
-    public function showAdminResetPassword(Request $request, string $token): View
+    public function showAdminResetPassword(Request $request): View|RedirectResponse
     {
+        $email = (string) $request->query('email');
+
+        if (!$this->passwordResetCodes->isVerified($email)) {
+            return redirect()->route('admin.password.request');
+        }
+
         return view('auth::reset-password', [
-            'token' => $token,
-            'email' => $request->query('email'),
+            'email' => $email,
             'passwordUpdateRoute' => route('admin.password.update'),
         ]);
+    }
+
+    public function showVerifyResetCode(Request $request): View|RedirectResponse
+    {
+        $email = (string) $request->query('email');
+
+        if ($email === '') {
+            return redirect()->route('password.request');
+        }
+
+        return view('auth::verify-reset-code', [
+            'email' => $email,
+            'verifyRoute' => route('password.reset.verify.post'),
+            'resendRoute' => route('password.reset.resend'),
+        ]);
+    }
+
+    public function showAdminVerifyResetCode(Request $request): View|RedirectResponse
+    {
+        $email = (string) $request->query('email');
+
+        if ($email === '') {
+            return redirect()->route('admin.password.request');
+        }
+
+        return view('auth::verify-reset-code', [
+            'email' => $email,
+            'verifyRoute' => route('admin.password.reset.verify.post'),
+            'resendRoute' => route('admin.password.reset.resend'),
+        ]);
+    }
+
+    public function verifyResetCode(Request $request): RedirectResponse
+    {
+        return $this->handleVerifyResetCode($request, 'password.reset');
+    }
+
+    public function verifyAdminResetCode(Request $request): RedirectResponse
+    {
+        return $this->handleVerifyResetCode($request, 'admin.password.reset');
+    }
+
+    private function handleVerifyResetCode(Request $request, string $resetRouteName): RedirectResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+            'code' => ['nullable', 'string'],
+            'code_digits' => ['nullable', 'array', 'size:6'],
+            'code_digits.*' => ['nullable', 'string', 'regex:/^\d?$/'],
+        ]);
+
+        $email = $validated['email'];
+        $code = $validated['code'] ?? implode('', $validated['code_digits'] ?? []);
+        $result = $this->passwordResetCodes->verify($email, $code);
+
+        if (!$result->valid) {
+            return back()
+                ->withErrors(['code' => $result->message])
+                ->withInput();
+        }
+
+        return redirect()->route($resetRouteName, ['email' => $email]);
+    }
+
+    public function resendResetCode(Request $request): RedirectResponse
+    {
+        return $this->handleResendResetCode($request, 'password.reset.verify');
+    }
+
+    public function resendAdminResetCode(Request $request): RedirectResponse
+    {
+        return $this->handleResendResetCode($request, 'admin.password.reset.verify');
+    }
+
+    private function handleResendResetCode(Request $request, string $verifyRouteName): RedirectResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $user = User::query()->where('email', $validated['email'])->first();
+
+        if ($user && $this->passwordResetCodes->send($user, true)) {
+            return redirect()->route($verifyRouteName, ['email' => $validated['email']])
+                ->with('status', 'A fresh 6-digit verification code has been sent to your email address.');
+        }
+
+        return redirect()->route($verifyRouteName, ['email' => $validated['email']])
+            ->withErrors(['resend' => 'Please wait a moment before requesting another verification code.']);
     }
 
     public function login(LoginRequest $request): RedirectResponse
@@ -166,9 +267,30 @@ class AuthController extends Controller
             $modal = 'login';
         }
 
+        $mentorCounts = \Modules\Settings\app\Models\Mentor::query()
+            ->where('status', 'active')
+            ->select('program_type', \Illuminate\Support\Facades\DB::raw('count(*) as count'))
+            ->groupBy('program_type')
+            ->pluck('count', 'program_type');
+
+        $therapyPathwayCount = \Modules\Settings\app\Models\Mentor::query()
+            ->where('status', 'active')
+            ->whereIn('program_type', ['cmhc', 'msw', 'mft', 'clinical_psy'])
+            ->count();
+
+        $disciplinesByType = \Modules\Institutions\app\Models\Discipline::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->groupBy('type');
+
         return view('landing_page.index', [
             'authModal' => $modal,
             'featuredInstitutions' => $this->getFeaturedInstitutions(),
+            'programsByType' => \Modules\Institutions\app\Models\UniversityProgram::getLandingPagePrograms(),
+            'mentorCounts' => $mentorCounts,
+            'therapyPathwayCount' => $therapyPathwayCount,
+            'disciplinesByType' => $disciplinesByType,
         ]);
     }
 
@@ -243,83 +365,76 @@ class AuthController extends Controller
 
     public function sendResetLink(ForgotPasswordRequest $request): RedirectResponse
     {
-        $status = Password::sendResetLink($request->only('email'));
-
-        if ($status !== Password::RESET_LINK_SENT) {
-            return back()->withErrors(['email' => __($status)]);
-        }
-
-        return back()->with('status', __($status));
+        return $this->handleSendResetCode($request, 'password.reset.verify');
     }
 
     public function sendAdminResetLink(ForgotPasswordRequest $request): RedirectResponse
     {
-        $status = __(Password::RESET_LINK_SENT);
         $email = (string) $request->input('email');
         $user = User::query()->where('email', $email)->first();
 
-        if ($user && $user->hasRole('admin')) {
-            $token = Password::broker()->createToken($user);
-
-            $user->notify(new \App\Notifications\QueuedResetPassword(
-                $token,
-                $user,
-                route('admin.password.reset', ['token' => $token, 'email' => $user->email]),
-            ));
+        if (!$user || !$user->hasRole('admin')) {
+            return redirect()->route('admin.password.reset.verify', ['email' => $email])
+                ->with('status', 'If an account exists for that email, a verification code has been sent.');
         }
 
-        return back()->with('status', $status);
+        return $this->handleSendResetCode($request, 'admin.password.reset.verify');
+    }
+
+    private function handleSendResetCode(Request $request, string $verifyRouteName): RedirectResponse
+    {
+        $email = (string) $request->input('email');
+        $user = User::query()->where('email', $email)->first();
+
+        if ($user) {
+            $this->passwordResetCodes->send($user, true);
+        }
+
+        return redirect()->route($verifyRouteName, ['email' => $email])
+            ->with('status', 'If an account exists for that email, a verification code has been sent.');
     }
 
     public function resetPassword(ResetPasswordRequest $request): RedirectResponse
     {
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user, string $password): void {
-                $user->forceFill([
-                    'password' => Hash::make($password),
-                ])->setRememberToken(Str::random(60));
-
-                $user->save();
-
-                event(new PasswordReset($user));
-            }
-        );
-
-        if ($status !== Password::PASSWORD_RESET) {
-            return back()->withErrors(['email' => __($status)]);
-        }
-
-        return redirect()->route('login')
-            ->with('success', 'Password reset successfully. Please sign in.');
+        return $this->handleResetPassword($request, 'login');
     }
 
     public function resetAdminPassword(ResetPasswordRequest $request): RedirectResponse
     {
         $user = User::query()->where('email', (string) $request->input('email'))->first();
 
-        if (! $user || ! $user->hasRole('admin')) {
+        if (!$user || !$user->hasRole('admin')) {
             return back()->withErrors(['email' => __(Password::INVALID_TOKEN)]);
         }
 
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user, string $password): void {
-                $user->forceFill([
-                    'password' => Hash::make($password),
-                ])->setRememberToken(Str::random(60));
+        return $this->handleResetPassword($request, 'admin.login');
+    }
 
-                $user->save();
+    private function handleResetPassword(ResetPasswordRequest $request, string $loginRouteName): RedirectResponse
+    {
+        $email = (string) $request->input('email');
 
-                event(new PasswordReset($user));
-            }
-        );
-
-        if ($status !== Password::PASSWORD_RESET) {
-            return back()->withErrors(['email' => __($status)]);
+        if (!$this->passwordResetCodes->isVerified($email)) {
+            return back()->withErrors(['email' => __(Password::INVALID_TOKEN)]);
         }
 
-        return redirect()->route('admin.login')
+        $user = User::query()->where('email', $email)->first();
+
+        if (!$user) {
+            return back()->withErrors(['email' => __(Password::INVALID_USER)]);
+        }
+
+        $user->forceFill([
+            'password' => Hash::make((string) $request->input('password')),
+        ])->setRememberToken(Str::random(60));
+
+        $user->save();
+
+        event(new PasswordReset($user));
+
+        $this->passwordResetCodes->forget($email);
+
+        return redirect()->route($loginRouteName)
             ->with('success', 'Password reset successfully. Please sign in.');
     }
 

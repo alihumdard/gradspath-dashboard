@@ -15,10 +15,9 @@
 
           <form method="POST" action="{{ $passwordUpdateRoute ?? route('password.update') }}" class="login-form">
             @csrf
-            <input type="hidden" name="token" value="{{ $token }}">
-            
+            <input type="hidden" name="email" value="{{ $email }}">
+
             <div class="form-group">
-              <input type="email" name="email" placeholder="Email" required value="{{ old('email', $email ?? '') }}" />
               @error('email')
                 <span class="error">{{ $message }}</span>
               @enderror

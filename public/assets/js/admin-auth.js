@@ -2,7 +2,6 @@ const loginForm = document.getElementById("loginForm");
 const loginScreen = document.getElementById("loginScreen");
 const dashboard = document.getElementById("dashboard");
 const signOutBtn = document.getElementById("signOutBtn");
-const reloadBtn = document.getElementById("reloadBtn");
 const showPassword = document.getElementById("showPassword");
 const passwordInput = document.getElementById("password");
 
@@ -109,11 +108,6 @@ if (signOutBtn && dashboard && loginScreen && loginForm && passwordInput) {
     });
 }
 
-if (reloadBtn) {
-    reloadBtn.addEventListener("click", function () {
-        window.location.reload();
-    });
-}
 
 /* USERS FILTERING */
 const usersSearch = document.getElementById("usersSearch");
@@ -2341,6 +2335,9 @@ function initializeManualActionsHub() {
     const feedbackItems = Array.isArray(adminManualActionsData.feedback)
         ? adminManualActionsData.feedback
         : [];
+    const bookings = Array.isArray(adminManualActionsData.bookings)
+        ? adminManualActionsData.bookings
+        : [];
     const mentorSelect = document.getElementById("manualMentorSelect");
     const mentorSummary = document.getElementById("manualMentorSummary");
     const mentorRatingOverrideInput = document.getElementById(
@@ -2866,7 +2863,7 @@ function initializeManualActionsHub() {
             return;
         }
 
-        const template = form.dataset.updateRouteTemplate || "";
+        const template = form.dataset.updateRouteTemplate || form.dataset.deleteRouteTemplate || "";
         form.action = id && template ? template.replace("__ID__", encodeURIComponent(id)) : "";
     }
 
@@ -2916,6 +2913,13 @@ function initializeManualActionsHub() {
             '[data-institution-field="is_active"]',
             institution.is_active,
         );
+
+        const deleteForm = document.getElementById("manualInstitutionDeleteForm");
+        const deleteBtn = document.getElementById("deleteInstitutionBtn");
+        if (deleteForm && deleteBtn) {
+            setFormRoute(deleteForm, institution.id);
+            deleteBtn.style.display = institution.id ? "inline-block" : "none";
+        }
 
         const logoMarkup = institution.logo_preview_url
             ? `<img class="manual-logo-preview" src="${escapeHtml(institution.logo_preview_url)}" alt="" loading="lazy">`
@@ -3274,6 +3278,288 @@ function initializeManualActionsHub() {
         });
     }
 
+    function initializeUserPicker() {
+        const picker = app.querySelector("[data-user-picker]");
+        const searchInput = picker?.querySelector("[data-user-picker-search]");
+        const idInput = picker?.querySelector("[data-user-picker-id]");
+        const results = picker?.querySelector("[data-user-picker-results]");
+
+        if (!picker || !searchInput || !idInput || !results) {
+            return;
+        }
+
+        let selectedLabel = searchInput.value || "";
+
+        function hideResults() {
+            results.hidden = true;
+        }
+
+        function showResults() {
+            results.hidden = false;
+        }
+
+        function renderResults(query) {
+            const normalized = query.trim().toLowerCase();
+            const matches = (
+                normalized
+                    ? users.filter((user) =>
+                          `${user.name || ""} ${user.email || ""}`
+                              .toLowerCase()
+                              .includes(normalized),
+                      )
+                    : users
+            ).slice(0, 3);
+
+            results.replaceChildren();
+
+            if (matches.length === 0) {
+                const emptyDiv = document.createElement("div");
+                emptyDiv.className = "manual-picker-empty";
+                emptyDiv.textContent = "No users found";
+                results.appendChild(emptyDiv);
+            } else {
+                matches.forEach((user) => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "manual-picker-option";
+                    btn.setAttribute("data-user-picker-option", user.id);
+                    btn.setAttribute("data-picker-label", user.label || user.name || "User");
+
+                    const strong = document.createElement("strong");
+                    strong.textContent = user.name || user.label || "User";
+                    btn.appendChild(strong);
+
+                    const small = document.createElement("small");
+                    small.textContent = user.email || "";
+                    btn.appendChild(small);
+
+                    results.appendChild(btn);
+                });
+            }
+
+            showResults();
+        }
+
+        searchInput.addEventListener("focus", () => {
+            renderResults(searchInput.value);
+        });
+
+        searchInput.addEventListener("input", () => {
+            if (searchInput.value !== selectedLabel) {
+                selectedLabel = "";
+                idInput.value = "";
+            }
+
+            renderResults(searchInput.value);
+        });
+
+        results.addEventListener("click", (event) => {
+            const option = event.target.closest("[data-user-picker-option]");
+
+            if (!option) return;
+
+            idInput.value = option.getAttribute("data-user-picker-option") || "";
+            selectedLabel = option.dataset.pickerLabel || "";
+            searchInput.value = selectedLabel;
+            hideResults();
+            idInput.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!picker.contains(event.target)) {
+                hideResults();
+            }
+        });
+    }
+
+    function initializeFeedbackPicker() {
+        const picker = app.querySelector("[data-feedback-picker]");
+        const searchInput = picker?.querySelector("[data-feedback-picker-search]");
+        const idInput = picker?.querySelector("[data-feedback-picker-id]");
+        const results = picker?.querySelector("[data-feedback-picker-results]");
+
+        if (!picker || !searchInput || !idInput || !results) {
+            return;
+        }
+
+        let selectedLabel = searchInput.value || "";
+
+        function hideResults() {
+            results.hidden = true;
+        }
+
+        function showResults() {
+            results.hidden = false;
+        }
+
+        function renderResults(query) {
+            const normalized = query.trim().toLowerCase();
+            const matches = (
+                normalized
+                    ? feedbackItems.filter((item) =>
+                          `#${item.id || ""} ${item.mentor_name || ""} ${item.student_name || ""}`
+                              .toLowerCase()
+                              .includes(normalized),
+                      )
+                    : feedbackItems
+            ).slice(0, 3);
+
+            results.replaceChildren();
+
+            if (matches.length === 0) {
+                const emptyDiv = document.createElement("div");
+                emptyDiv.className = "manual-picker-empty";
+                emptyDiv.textContent = "No feedback items found";
+                results.appendChild(emptyDiv);
+            } else {
+                matches.forEach((item) => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "manual-picker-option";
+                    btn.setAttribute("data-feedback-picker-option", item.id);
+                    btn.setAttribute("data-picker-label", item.label || "Feedback");
+
+                    const strong = document.createElement("strong");
+                    strong.textContent = item.label || "Feedback";
+                    btn.appendChild(strong);
+
+                    const small = document.createElement("small");
+                    small.textContent = `Student: ${item.student_name || "Unknown student"} · Rating: ${item.stars}/5 stars`;
+                    btn.appendChild(small);
+
+                    results.appendChild(btn);
+                });
+            }
+
+            showResults();
+        }
+
+        searchInput.addEventListener("focus", () => {
+            renderResults(searchInput.value);
+        });
+
+        searchInput.addEventListener("input", () => {
+            if (searchInput.value !== selectedLabel) {
+                selectedLabel = "";
+                idInput.value = "";
+            }
+
+            renderResults(searchInput.value);
+        });
+
+        results.addEventListener("click", (event) => {
+            const option = event.target.closest("[data-feedback-picker-option]");
+
+            if (!option) return;
+
+            idInput.value = option.getAttribute("data-feedback-picker-option") || "";
+            selectedLabel = option.dataset.pickerLabel || "";
+            searchInput.value = selectedLabel;
+            hideResults();
+            idInput.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!picker.contains(event.target)) {
+                hideResults();
+            }
+        });
+    }
+
+    function initializeBookingPicker() {
+        const picker = app.querySelector("[data-booking-picker]");
+        const searchInput = picker?.querySelector("[data-booking-picker-search]");
+        const idInput = picker?.querySelector("[data-booking-picker-id]");
+        const results = picker?.querySelector("[data-booking-picker-results]");
+
+        if (!picker || !searchInput || !idInput || !results) {
+            return;
+        }
+
+        let selectedLabel = searchInput.value || "";
+
+        function hideResults() {
+            results.hidden = true;
+        }
+
+        function showResults() {
+            results.hidden = false;
+        }
+
+        function renderResults(query) {
+            const normalized = query.trim().toLowerCase();
+            const matches = (
+                normalized
+                    ? bookings.filter((booking) =>
+                          `#${booking.id || ""} ${booking.booker_name || ""} ${booking.mentor_name || ""} ${booking.service_name || ""}`
+                              .toLowerCase()
+                              .includes(normalized),
+                      )
+                    : bookings
+            ).slice(0, 3);
+
+            results.replaceChildren();
+
+            if (matches.length === 0) {
+                const emptyDiv = document.createElement("div");
+                emptyDiv.className = "manual-picker-empty";
+                emptyDiv.textContent = "No bookings found";
+                results.appendChild(emptyDiv);
+            } else {
+                matches.forEach((booking) => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "manual-picker-option";
+                    btn.setAttribute("data-booking-picker-option", booking.id);
+                    btn.setAttribute("data-picker-label", booking.label || "Booking");
+
+                    const strong = document.createElement("strong");
+                    strong.textContent = booking.label || "Booking";
+                    btn.appendChild(strong);
+
+                    const small = document.createElement("small");
+                    small.textContent = `Mentor: ${booking.mentor_name || "Mentor"} · Outcome: ${booking.session_outcome || "completed"}`;
+                    btn.appendChild(small);
+
+                    results.appendChild(btn);
+                });
+            }
+
+            showResults();
+        }
+
+        searchInput.addEventListener("focus", () => {
+            renderResults(searchInput.value);
+        });
+
+        searchInput.addEventListener("input", () => {
+            if (searchInput.value !== selectedLabel) {
+                selectedLabel = "";
+                idInput.value = "";
+            }
+
+            renderResults(searchInput.value);
+        });
+
+        results.addEventListener("click", (event) => {
+            const option = event.target.closest("[data-booking-picker-option]");
+
+            if (!option) return;
+
+            idInput.value = option.getAttribute("data-booking-picker-option") || "";
+            selectedLabel = option.dataset.pickerLabel || "";
+            searchInput.value = selectedLabel;
+            hideResults();
+            idInput.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!picker.contains(event.target)) {
+                hideResults();
+            }
+        });
+    }
+
     function syncFeedbackSummary() {
         const item = feedbackItems.find(
             (feedback) =>
@@ -3354,6 +3640,9 @@ function initializeManualActionsHub() {
     initializeInstitutionEditPicker();
     initializeProgramEditPicker();
     initializeMentorPicker();
+    initializeUserPicker();
+    initializeFeedbackPicker();
+    initializeBookingPicker();
 
     function initializeUniversityPicker() {
         app.querySelectorAll("[data-university-picker]").forEach((picker, index) => {
@@ -3437,6 +3726,42 @@ function initializeManualActionsHub() {
     syncFeaturedMentorOrderInput();
     syncFeaturedMentorSummary();
     syncFeaturedMentorSearch();
+
+    // Deletion Modal listeners
+    const deleteBtn = document.getElementById("deleteInstitutionBtn");
+    const deleteConfirmModal = document.getElementById("deleteInstitutionConfirmModal");
+    const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+    const deleteForm = document.getElementById("manualInstitutionDeleteForm");
+
+    if (deleteBtn && deleteConfirmModal) {
+        deleteBtn.addEventListener("click", function() {
+            deleteConfirmModal.showModal();
+            document.body.classList.add("admin-modal-open");
+        });
+    }
+
+    if (cancelDeleteBtn && deleteConfirmModal) {
+        cancelDeleteBtn.addEventListener("click", function() {
+            deleteConfirmModal.close();
+            document.body.classList.remove("admin-modal-open");
+        });
+    }
+
+    if (deleteConfirmModal) {
+        deleteConfirmModal.addEventListener("click", function(event) {
+            if (event.target === deleteConfirmModal) {
+                deleteConfirmModal.close();
+                document.body.classList.remove("admin-modal-open");
+            }
+        });
+    }
+
+    if (confirmDeleteBtn && deleteForm) {
+        confirmDeleteBtn.addEventListener("click", function() {
+            deleteForm.submit();
+        });
+    }
 }
 
 initializeManualActionsHub();

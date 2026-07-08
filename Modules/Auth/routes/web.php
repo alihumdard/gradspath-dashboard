@@ -23,7 +23,10 @@ Route::middleware(['web', 'guest'])->group(function () {
 
     Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
     Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
-    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
+    Route::get('/reset-password/verify', [AuthController::class, 'showVerifyResetCode'])->name('password.reset.verify');
+    Route::post('/reset-password/verify', [AuthController::class, 'verifyResetCode'])->name('password.reset.verify.post');
+    Route::post('/reset-password/resend', [AuthController::class, 'resendResetCode'])->name('password.reset.resend');
+    Route::get('/reset-password', [AuthController::class, 'showResetPassword'])->name('password.reset');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });
 
@@ -38,7 +41,10 @@ Route::middleware(['web'])->prefix($adminPath)->name('admin.')->group(function (
     Route::post('/login', [AuthController::class, 'adminLogin'])->name('login.post');
     Route::get('/forgot-password', [AuthController::class, 'showAdminForgotPassword'])->name('password.request');
     Route::post('/forgot-password', [AuthController::class, 'sendAdminResetLink'])->name('password.email');
-    Route::get('/reset-password/{token}', [AuthController::class, 'showAdminResetPassword'])->name('password.reset');
+    Route::get('/reset-password/verify', [AuthController::class, 'showAdminVerifyResetCode'])->name('password.reset.verify');
+    Route::post('/reset-password/verify', [AuthController::class, 'verifyAdminResetCode'])->name('password.reset.verify.post');
+    Route::post('/reset-password/resend', [AuthController::class, 'resendAdminResetCode'])->name('password.reset.resend');
+    Route::get('/reset-password', [AuthController::class, 'showAdminResetPassword'])->name('password.reset');
     Route::post('/reset-password', [AuthController::class, 'resetAdminPassword'])->name('password.update');
 });
 

@@ -54,7 +54,6 @@
           </nav>
 
           <div class="sidebar-bottom">
-            <button class="ghost-btn" id="reloadBtn" type="button">Reload</button>
             <form method="POST" action="{{ route('auth.logout') }}">
               @csrf
               <button class="ghost-btn" id="signOutBtn" type="submit">Sign out</button>
