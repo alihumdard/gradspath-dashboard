@@ -12,6 +12,14 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="{{ asset('assets/css/admin-auth.css') }}?v={{ filemtime(public_path('assets/css/admin-auth.css')) }}" />
+    <style>
+      .admin-dropdown-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .admin-dropdown-btn:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+      }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     @yield('admin_head')
   </head>
@@ -52,13 +60,6 @@
             </a>
             <a class="nav-link{{ request()->routeIs('admin.manual-actions') ? ' active' : '' }}" href="{{ route('admin.manual-actions') }}">Manual Actions</a>
           </nav>
-
-          <div class="sidebar-bottom">
-            <form method="POST" action="{{ route('auth.logout') }}">
-              @csrf
-              <button class="ghost-btn" id="signOutBtn" type="submit">Sign out</button>
-            </form>
-          </div>
         </aside>
 
         <main class="main">
@@ -75,7 +76,39 @@
                   </button>
                   <h1>@yield('admin_heading', 'Admin Dashboard')</h1>
                 </div>
-                <div class="status-pill">Live</div>
+                <div style="display: flex; align-items: center; gap: 16px;">
+                  @php
+                    $adminUser = Auth::user();
+                    $adminNameParts = collect(preg_split('/\s+/', trim($adminUser->name ?? '')) ?: [])->filter()->values();
+                    $adminInitials = $adminNameParts->isEmpty() ? 'A' : mb_strtoupper(mb_substr($adminNameParts->first(), 0, 1).($adminNameParts->count() > 1 ? mb_substr($adminNameParts->last(), 0, 1) : ''));
+                  @endphp
+                  <div class="admin-dropdown" style="position: relative; display: inline-block;">
+                    <button class="admin-dropdown-btn" id="adminDropdownBtn" type="button" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); border-radius: 12px; padding: 6px 12px; color: var(--text); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px; outline: none; transition: background 0.2s;">
+                      @if ($adminUser?->avatar_url)
+                        <img src="{{ $adminUser->avatar_url }}" alt="" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;" />
+                      @else
+                        <div style="width: 24px; height: 24px; border-radius: 50%; background: #4d44dc; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800;">
+                          {{ $adminInitials }}
+                        </div>
+                      @endif
+                      <span>{{ $adminUser->name ?? 'Admin' }}</span>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s; pointer-events: none;">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </button>
+                    
+                    <div class="admin-dropdown-menu" id="adminDropdownMenu" style="display: none; position: absolute; right: 0; top: calc(100% + 8px); background: #121622; border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); width: 180px; z-index: 1000; padding: 6px;">
+                      <a href="{{ route('admin.settings') }}" class="admin-dropdown-item" style="display: block; padding: 10px 12px; color: var(--text); text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 500; transition: background 0.2s;">Settings</a>
+                      
+                      <div style="border-top: 1px solid var(--border); margin: 6px 0;"></div>
+                      
+                      <form method="POST" action="{{ route('auth.logout') }}" style="margin: 0; padding: 0;">
+                        @csrf
+                        <button type="submit" class="admin-dropdown-item" style="display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 12px; color: var(--danger, #ff6078); font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: background 0.2s;">Sign out</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
               </div>
               <p class="topbar-desc">@yield('admin_subtitle', 'Track users, mentors, service mix, meeting sizes, schools, and revenue.')</p>
             </header>
@@ -89,5 +122,31 @@
     @include('layouts.partials.toasts')
     @yield('admin_page_data')
     <script src="{{ asset('assets/js/admin-auth.js') }}?v={{ filemtime(public_path('assets/js/admin-auth.js')) }}"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const btn = document.getElementById('adminDropdownBtn');
+        const menu = document.getElementById('adminDropdownMenu');
+        
+        if (btn && menu) {
+          btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const isVisible = menu.style.display === 'block';
+            menu.style.display = isVisible ? 'none' : 'block';
+            const svg = btn.querySelector('svg');
+            if (svg) {
+              svg.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+            }
+          });
+          
+          document.addEventListener('click', function () {
+            menu.style.display = 'none';
+            const svg = btn.querySelector('svg');
+            if (svg) {
+              svg.style.transform = 'rotate(0deg)';
+            }
+          });
+        }
+      });
+    </script>
   </body>
 </html>

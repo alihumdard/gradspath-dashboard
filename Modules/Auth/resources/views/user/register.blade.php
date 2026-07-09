@@ -59,8 +59,8 @@
             </button>
             <button
               type="button"
-              data-value="graduate"
-              data-role-scope="mentor"
+              data-value="grad"
+              data-role-scope="student,mentor"
               class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#6D28D9] bg-[#EBE0F8] text-[#6D28D9]"
             >
               <i class="fa-solid fa-graduation-cap"></i> Grad
@@ -68,7 +68,7 @@
             <button
               type="button"
               data-value="professional"
-              data-role-scope="mentor"
+              data-role-scope="student,mentor"
               class="signup-level flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-bold border border-[#D8B4FE] bg-white text-[#6D28D9] hover:border-[#6D28D9]"
             >
               <i class="fa-solid fa-briefcase"></i> Professional

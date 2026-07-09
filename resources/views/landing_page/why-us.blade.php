@@ -718,13 +718,20 @@
       const typeLabel = document.getElementById("signup-type-label");
       const typeOptions = document.getElementById("signup-type-options");
 
+      // Level values match the student `program_level` DB enum: undergrad, grad, professional.
+      // "undergrad" is student-only; "grad" and "professional" are valid for both roles.
+      const LEVELS_BY_ROLE = {
+        student: ["undergrad", "grad", "professional"],
+        mentor: ["grad", "professional"],
+      };
+
       function normalizeRole(value) {
         return value === "Mentor" ? "mentor" : value === "mentor" ? "mentor" : "student";
       }
 
       function normalizeLevel(value) {
         if (value === "Grad" || value === "grad" || value === "graduate") {
-          return "graduate";
+          return "grad";
         }
 
         if (value === "Professional" || value === "professional") {
@@ -760,24 +767,18 @@
         return activeButton?.getAttribute("data-value") || null;
       }
 
-      function findVisibleActiveLevel() {
-        const visibleActiveButton = visibleLevelButtons().find(function (btn) {
-          return btn.classList.contains("border-[#6D28D9]");
-        });
-
-        return visibleActiveButton?.getAttribute("data-value") || null;
-      }
-
-      function visibleLevelButtons() {
-        return Array.from(document.querySelectorAll(".signup-level"));
-      }
-
       function activeRoleValue() {
         return normalizeRole(findActiveValue(".signup-role"));
       }
 
+      function activeLevelValue() {
+        return normalizeLevel(findActiveValue(".signup-level"));
+      }
+
+      // Enable/disable level buttons that aren't valid for the given role,
+      // and fall back to a valid level if the current selection no longer is.
       function applyRoleTypeVisibility(roleValue) {
-        const isMentor = roleValue === "mentor";
+        const allowedLevels = LEVELS_BY_ROLE[roleValue] || LEVELS_BY_ROLE.student;
 
         if (typeLabel) {
           typeLabel.textContent = "Program level";
@@ -790,32 +791,32 @@
 
         document.querySelectorAll(".signup-level").forEach(function (btn) {
           btn.classList.remove("hidden");
+          const allowed = allowedLevels.indexOf(btn.getAttribute("data-value")) !== -1;
+          btn.disabled = !allowed;
+          btn.classList.toggle("opacity-40", !allowed);
+          btn.classList.toggle("cursor-not-allowed", !allowed);
+          btn.classList.toggle("pointer-events-none", !allowed);
         });
 
-        const visibleButtons = visibleLevelButtons();
-        const activeButton = visibleButtons.find(function (btn) {
-          return btn.classList.contains("border-[#6D28D9]");
-        });
-
-        if (!activeButton && visibleButtons[0]) {
-          syncSelected(".signup-level", isMentor ? "graduate" : "undergrad");
+        if (allowedLevels.indexOf(activeLevelValue()) === -1) {
+          syncSelected(".signup-level", allowedLevels[0]);
         }
       }
 
       function syncHiddenInputs() {
         const roleValue = activeRoleValue();
+        const levelValue = activeLevelValue();
 
         if (roleInput) {
           roleInput.value = roleValue;
         }
 
         if (levelInput) {
-          levelInput.value = roleValue === "student" ? "undergrad" : "";
+          levelInput.value = roleValue === "student" ? levelValue : "";
         }
 
         if (mentorTypeInput) {
-          const activeLevel = normalizeMentorType(findVisibleActiveLevel());
-          mentorTypeInput.value = roleValue === "mentor" ? activeLevel : "";
+          mentorTypeInput.value = roleValue === "mentor" ? normalizeMentorType(levelValue) : "";
         }
       }
 
@@ -823,49 +824,55 @@
         btn.addEventListener("click", function () {
           const selectedRole = normalizeRole(btn.getAttribute("data-value"));
           syncSelected(".signup-role", selectedRole);
-          syncSelected(".signup-level", selectedRole === "mentor" ? normalizeMentorType(findVisibleActiveLevel()) : "undergrad");
 
           if (roleInput) {
             roleInput.value = selectedRole;
           }
 
-          applyRoleTypeVisibility(roleInput?.value || "student");
+          applyRoleTypeVisibility(selectedRole);
           syncHiddenInputs();
         });
       });
 
       document.querySelectorAll(".signup-level").forEach(function (btn) {
         btn.addEventListener("click", function () {
+          if (btn.disabled) return;
+
           const selectedLevel = normalizeLevel(btn.getAttribute("data-value"));
           syncSelected(".signup-level", selectedLevel);
-          syncSelected(".signup-role", selectedLevel === "undergrad" ? "student" : "mentor");
-          if (roleInput) {
-            roleInput.value = selectedLevel === "undergrad" ? "student" : "mentor";
+
+          // Undergrad is student-only; switch role to student if needed.
+          // Grad/professional are valid for the current role, so it stays put.
+          const currentRole = activeRoleValue();
+          const nextRole = selectedLevel === "undergrad" ? "student" : currentRole;
+          if (nextRole !== currentRole) {
+            syncSelected(".signup-role", nextRole);
+            if (roleInput) {
+              roleInput.value = nextRole;
+            }
           }
-          applyRoleTypeVisibility(roleInput?.value || "student");
+
+          applyRoleTypeVisibility(nextRole);
           syncHiddenInputs();
         });
       });
 
       const oldRole = @json(old('role'));
       const oldMentorType = @json(old('mentor_type'));
+      const oldProgramLevel = @json(old('program_level'));
       const savedRole = window.localStorage?.getItem("gradspaths_signup_role");
       const savedLevel = window.localStorage?.getItem("gradspaths_signup_level");
       const initialRole = normalizeRole(oldRole || savedRole || "mentor");
-      const initialLevel = initialRole === "mentor"
-        ? normalizeLevel(oldMentorType || savedLevel)
-        : "undergrad";
+      const initialLevelRaw = initialRole === "mentor"
+        ? (oldMentorType || savedLevel)
+        : (oldProgramLevel || savedLevel);
+      let initialLevel = normalizeLevel(initialLevelRaw);
+      if ((LEVELS_BY_ROLE[initialRole] || []).indexOf(initialLevel) === -1) {
+        initialLevel = LEVELS_BY_ROLE[initialRole][0];
+      }
 
       if (roleInput) {
         roleInput.value = initialRole;
-      }
-
-      if (levelInput) {
-        levelInput.value = initialRole === "student" ? "undergrad" : "";
-      }
-
-      if (mentorTypeInput) {
-        mentorTypeInput.value = initialRole === "mentor" ? normalizeMentorType(initialLevel) : "";
       }
 
       syncSelected(".signup-role", initialRole);

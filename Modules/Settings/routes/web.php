@@ -24,3 +24,13 @@ Route::middleware(['web', 'auth', 'active', 'role:mentor', 'mentor.notes.require
 Route::middleware(['web', 'auth', 'active'])->group(function () {
 	Route::post('/settings/timezone', [TimezoneController::class, 'store'])->name('settings.timezone.store');
 });
+
+Route::middleware(['web', 'auth', 'active', 'role:admin'])
+	->prefix(config('auth.admin_path'))
+	->name('admin.')
+	->group(function () {
+		Route::get('/settings', [Modules\Settings\app\Http\Controllers\Admin\AdminSettingsController::class, 'index'])->name('settings');
+		Route::patch('/settings/email', [Modules\Settings\app\Http\Controllers\Admin\AdminSettingsController::class, 'updateEmail'])->name('settings.update-email');
+		Route::patch('/settings/password', [Modules\Settings\app\Http\Controllers\Admin\AdminSettingsController::class, 'updatePassword'])->name('settings.update-password');
+	});
+

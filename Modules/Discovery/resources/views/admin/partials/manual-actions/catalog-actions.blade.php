@@ -150,12 +150,12 @@
           <input
             id="manualInstitutionEditSearch"
             type="text"
-            value="{{ $initialInstitution['label'] ?? '' }}"
+            value=""
             placeholder="Search institutions..."
             autocomplete="off"
             data-institution-edit-search
           />
-          <input id="manualInstitutionEditId" type="hidden" value="{{ $initialInstitution['id'] ?? '' }}" data-institution-edit-id required />
+          <input id="manualInstitutionEditId" type="hidden" value="" data-institution-edit-id required />
           <div class="manual-picker-results" data-institution-edit-results hidden></div>
         </label>
 
@@ -469,12 +469,12 @@
           <input
             id="manualProgramEditSearch"
             type="text"
-            value="{{ $initialProgram['label'] ?? '' }}"
+            value=""
             placeholder="Search programs..."
             autocomplete="off"
             data-program-edit-search
           />
-          <input id="manualProgramEditId" type="hidden" value="{{ $initialProgram['id'] ?? '' }}" data-program-edit-id required />
+          <input id="manualProgramEditId" type="hidden" value="" data-program-edit-id required />
           <div class="manual-picker-results" data-program-edit-results hidden></div>
         </label>
 

@@ -618,6 +618,23 @@ if (schoolSearchInput) {
 
 renderAllUniversitiesView();
 
+(function selectSchoolFromQueryParam() {
+  const params = new URLSearchParams(window.location.search);
+  const schoolId = params.get("school");
+  if (!schoolId) return;
+
+  const school = normalizedInstitutions.find(
+    (item) => String(item.id) === schoolId,
+  );
+  if (!school) return;
+
+  state.selectedSchool = school;
+  state.selectedSchoolFamily = "All";
+  state.selectedProgram = null;
+  mentorsPanel.classList.add("hidden");
+  showProgramsForSchool(school);
+})();
+
 const menuBtn = document.getElementById("mobileMenuToggle");
 const overlay = document.getElementById("sidebarOverlay");
 const shell = document.querySelector(".app-shell");

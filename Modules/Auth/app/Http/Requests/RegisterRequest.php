@@ -56,7 +56,7 @@ class RegisterRequest extends FormRequest
             'program_level' => [
                 Rule::requiredIf(fn () => $this->input('role') === 'student'),
                 'nullable',
-                Rule::in(['undergrad']),
+                Rule::in(['undergrad', 'grad', 'professional']),
             ],
             'mentor_type' => [
                 Rule::requiredIf(fn () => $this->input('role') === 'mentor'),
@@ -73,7 +73,7 @@ class RegisterRequest extends FormRequest
         return [
             'role.in' => 'Please select a valid role.',
             'program_level.required' => 'Please select a valid student level.',
-            'program_level.in' => 'Students can only select the student level during signup.',
+            'program_level.in' => 'Please select a valid student level.',
             'mentor_type.required' => 'Please select a valid mentor type.',
             'mentor_type.in' => 'Please select either a graduate or professional mentor type.',
             'email.unique' => 'An account with this email already exists.',

@@ -163,7 +163,7 @@
                     $logoUrl = asset($logoUrl);
                 }
               @endphp
-              <a href="{{ route('student.institutions.show', $institution->id) }}" class="school-card">
+              <a href="{{ route('student.institutions.index', ['school' => $institution->id]) }}" class="school-card">
                 <span class="school-logo" aria-hidden="true">
                   @if ($logoUrl !== '')
                     <img src="{{ $logoUrl }}" alt="" loading="lazy">

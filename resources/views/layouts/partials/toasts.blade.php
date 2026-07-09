@@ -2,7 +2,11 @@
     $toastItems = collect();
     $viewErrors = $errors ?? new \Illuminate\Support\ViewErrorBag();
     $authContext = session()->getOldInput('auth_context');
-    $shouldShowErrorToast = ! in_array($authContext, ['login', 'signup'], true);
+    $shouldShowErrorToast = ! in_array($authContext, ['login', 'signup'], true)
+        && ! request()->routeIs('admin.login')
+        && ! request()->routeIs('login')
+        && ! request()->routeIs('auth.register')
+        && ! request()->routeIs('admin.settings');
 
     if (session('success')) {
         $toastItems->push([

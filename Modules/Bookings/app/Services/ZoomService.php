@@ -298,11 +298,6 @@ class ZoomService
             throw new \RuntimeException('Zoom refresh token is missing. Please reconnect Zoom.');
         }
 
-        Log::info('Refreshing Zoom OAuth token for user.', [
-            'user_id' => $token->user_id,
-            'provider_user_id' => $token->provider_user_id,
-        ]);
-
         try {
             $payload = $this->tokenRequest([
                 'grant_type' => 'refresh_token',
