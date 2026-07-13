@@ -83,7 +83,7 @@
           aria-label="Home - Grads Paths"
         >
           <img
-            src="{{ asset('gradspaths_logo/Gradspaths_logo_transparent.png') }}"
+            src="{{ asset('gradspaths_logo/header-logo.jpeg') }}"
             alt="Grads Paths"
             class="h-8 sm:h-14 w-auto max-w-[110px] sm:max-w-[180px] object-contain"
           />
